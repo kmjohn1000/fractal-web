@@ -567,6 +567,15 @@ function requestRender() {
   requestAnimationFrame(() => { renderPending = false; renderAll(); });
 }
 
+// Only shown when non-zero — no reset-to-north button on any mode, so this
+// is the only feedback that a two-finger twist has rotated the view at all.
+// Shared by every mode's HUD (WebGL fractal + all four Canvas2D vector
+// views) since they all support the same twist gesture.
+function rotationHudText(rotation) {
+  const rotDeg = (rotation || 0) * 180 / Math.PI;
+  return Math.abs(rotDeg) > 0.5 ? `   rotation: ${rotDeg.toFixed(0)}°` : "";
+}
+
 function updateHud() {
   const s = mainState;
   const eligibleType = !s.isJulia && s.ftype === FTYPE.ESCAPE;
@@ -583,10 +592,7 @@ function updateHud() {
       precision = "float32 (deep zoom unsupported for this fractal type)";
     }
   }
-  const rotDeg = ((s.rotation || 0) * 180 / Math.PI);
-  // Only shown when non-zero — no reset-to-north button, so this is the
-  // only feedback that a two-finger twist has rotated the view at all.
-  const rotText = Math.abs(rotDeg) > 0.5 ? `   rotation: ${rotDeg.toFixed(0)}°` : "";
+  const rotText = rotationHudText(s.rotation);
   // Carpet/Gasket ignore the iter slider entirely (fixed depth in the
   // shader) — showing "maxIter: 300" would misleadingly imply it still
   // does something, the same mismatch that caused the coloring bug.
@@ -600,19 +606,19 @@ function updateHud() {
 }
 
 function updateKochHud() {
-  els.hud.textContent = `Koch Snowflake   depth: ${kochState.depth}   ${kochState.fill ? "filled" : "outline"}`;
+  els.hud.textContent = `Koch Snowflake   depth: ${kochState.depth}   ${kochState.fill ? "filled" : "outline"}${rotationHudText(kochView.view.rotation)}`;
 }
 
 function updateTreeHud() {
-  els.hud.textContent = `Pythagoras Tree   depth: ${treeState.depth}`;
+  els.hud.textContent = `Pythagoras Tree   depth: ${treeState.depth}${rotationHudText(treeView.view.rotation)}`;
 }
 
 function updateDragonHud() {
-  els.hud.textContent = `Dragon Curve   depth: ${dragonState.depth}`;
+  els.hud.textContent = `Dragon Curve   depth: ${dragonState.depth}${rotationHudText(dragonView.view.rotation)}`;
 }
 
 function updateFernHud() {
-  els.hud.textContent = `Barnsley Fern   points: ${fernState.count.toLocaleString()}`;
+  els.hud.textContent = `Barnsley Fern   points: ${fernState.count.toLocaleString()}${rotationHudText(fernView.view.rotation)}`;
 }
 
 function positionCrosshair() {
@@ -1025,17 +1031,47 @@ function attachVectorViewInteraction(canvas, vectorView) {
   let panStart = null;
   let pinchStartDist = null;
   let pinchStartHalfHeight = null;
+  let pinchStartAngle = null;
+  let pinchStartRotation = null;
+
+  // Given a canvas-pixel (dpr-scaled) screen point and the world point that
+  // should end up under it, solves for the view center that makes that so
+  // — the vector-view analog of centerForAnchor above, needed once these
+  // views can rotate (a plain screen-delta pan, which this replaced,
+  // doesn't generalize to a rotated view for the same reason
+  // centerForAnchor's own comment gives).
+  function centerForVectorAnchor(sx, sy, targetX, targetY) {
+    const uvx = (sx - canvas.width / 2) / (canvas.height / 2);
+    const uvy = (canvas.height / 2 - sy) / (canvas.height / 2);
+    const rot = vectorView.view.rotation || 0;
+    const cos = Math.cos(rot), sin = Math.sin(rot);
+    const wx = uvx * cos - uvy * sin;
+    const wy = uvx * sin + uvy * cos;
+    return {
+      cx: targetX - wx * vectorView.view.halfHeight,
+      cy: targetY - wy * vectorView.view.halfHeight,
+    };
+  }
+
+  function localPixel(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    return { x: (clientX - rect.left) * vectorView.dpr, y: (clientY - rect.top) * vectorView.dpr };
+  }
 
   canvas.addEventListener("pointerdown", (e) => {
     canvas.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pointers.size === 1) {
-      panStart = { sx: e.clientX, sy: e.clientY, cx: vectorView.view.cx, cy: vectorView.view.cy };
+      const p = localPixel(e.clientX, e.clientY);
+      const world = vectorView.screenToWorld(p.x, p.y);
+      panStart = { worldX: world[0], worldY: world[1] };
     } else if (pointers.size === 2) {
       panStart = null;
       const pts = [...pointers.values()];
       pinchStartDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
       pinchStartHalfHeight = vectorView.view.halfHeight;
+      pinchStartAngle = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
+      pinchStartRotation = vectorView.view.rotation || 0;
     }
   });
 
@@ -1043,12 +1079,10 @@ function attachVectorViewInteraction(canvas, vectorView) {
     if (!pointers.has(e.pointerId)) return;
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pointers.size === 1 && panStart) {
-      const dpr = vectorView.dpr;
-      const dxScreen = e.clientX - panStart.sx;
-      const dyScreen = e.clientY - panStart.sy;
-      const v = vectorView.view;
-      v.cx = panStart.cx - (dxScreen * dpr / canvas.height) * v.halfHeight * 2.0;
-      v.cy = panStart.cy + (dyScreen * dpr / canvas.height) * v.halfHeight * 2.0;
+      const p = localPixel(e.clientX, e.clientY);
+      const anchored = centerForVectorAnchor(p.x, p.y, panStart.worldX, panStart.worldY);
+      vectorView.view.cx = anchored.cx;
+      vectorView.view.cy = anchored.cy;
       requestRender();
     } else if (pointers.size === 2 && pinchStartDist) {
       const pts = [...pointers.values()];
@@ -1058,6 +1092,11 @@ function attachVectorViewInteraction(canvas, vectorView) {
       const midY = ((pts[0].y + pts[1].y) / 2 - rect.top) * vectorView.dpr;
       const before = vectorView.screenToWorld(midX, midY);
       vectorView.view.halfHeight = pinchStartHalfHeight * (pinchStartDist / Math.max(dist, 1));
+      // Two-finger twist, same convention as attachFractalInteraction:
+      // set rotation before recomputing `after` so the before/after anchor
+      // trick keeps the midpoint stable under combined pinch+rotate.
+      const angle = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
+      vectorView.view.rotation = normalizeAngle(pinchStartRotation + (angle - pinchStartAngle));
       const after = vectorView.screenToWorld(midX, midY);
       vectorView.view.cx += before[0] - after[0];
       vectorView.view.cy += before[1] - after[1];
@@ -1069,11 +1108,14 @@ function attachVectorViewInteraction(canvas, vectorView) {
     pointers.delete(e.pointerId);
     if (pointers.size === 1) {
       const [p] = pointers.values();
-      panStart = { sx: p.x, sy: p.y, cx: vectorView.view.cx, cy: vectorView.view.cy };
+      const local = localPixel(p.x, p.y);
+      const world = vectorView.screenToWorld(local.x, local.y);
+      panStart = { worldX: world[0], worldY: world[1] };
     } else {
       panStart = null;
     }
     pinchStartDist = null;
+    pinchStartAngle = null;
   }
   canvas.addEventListener("pointerup", release);
   canvas.addEventListener("pointercancel", release);
@@ -1201,7 +1243,7 @@ els.kochAnimateBtn.addEventListener("click", () => {
 });
 
 els.kochResetBtn.addEventListener("click", () => {
-  kochView.view.cx = 0; kochView.view.cy = 0; kochView.view.halfHeight = 1.4;
+  kochView.view.cx = 0; kochView.view.cy = 0; kochView.view.halfHeight = 1.4; kochView.view.rotation = 0;
   requestRender();
 });
 
@@ -1216,7 +1258,7 @@ els.treeColormapBtn.addEventListener("click", () => {
 });
 
 els.treeResetBtn.addEventListener("click", () => {
-  treeView.view.cx = 0; treeView.view.cy = 2.3; treeView.view.halfHeight = 2.9;
+  treeView.view.cx = 0; treeView.view.cy = 2.3; treeView.view.halfHeight = 2.9; treeView.view.rotation = 0;
   requestRender();
 });
 
@@ -1231,7 +1273,7 @@ els.dragonColormapBtn.addEventListener("click", () => {
 });
 
 els.dragonResetBtn.addEventListener("click", () => {
-  dragonView.view.cx = -0.35; dragonView.view.cy = -0.24; dragonView.view.halfHeight = 1.0;
+  dragonView.view.cx = -0.35; dragonView.view.cy = -0.24; dragonView.view.halfHeight = 1.0; dragonView.view.rotation = 0;
   requestRender();
 });
 
@@ -1248,7 +1290,7 @@ els.fernColorBtn.addEventListener("click", () => {
 });
 
 els.fernResetBtn.addEventListener("click", () => {
-  fernView.view.cx = 0.24; fernView.view.cy = 5.0; fernView.view.halfHeight = 5.3;
+  fernView.view.cx = 0.24; fernView.view.cy = 5.0; fernView.view.halfHeight = 5.3; fernView.view.rotation = 0;
   requestRender();
 });
 
