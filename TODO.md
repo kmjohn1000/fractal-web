@@ -95,6 +95,12 @@
       colormap's stops, like kochAnimateBtn cycles depth; new toggle, not
       a repurposed "cycle colormap" button)
 
+- [ ] Mandelbrot toolbar wraps to two lines at 360px: the row has 9 icon
+      buttons (Surprise me was added after the 410px breakpoint was sized
+      for 8), and 9 x 40px + gaps = 404px > 360px. Options: ~36px buttons
+      below ~400px, or fold a button (e.g. dual view) into a menu. Also
+      below 410px the buttons are 40px, under the 44px touch-target min
+
 ## Deferred indefinitely
 - Menger Sponge / other 3D fractals (real 3D rendering project, not a
   slot-in)
