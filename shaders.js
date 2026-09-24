@@ -78,6 +78,7 @@ uniform float u_power;   // 2.0 or 3.0 (escape family only)
 uniform bool  u_isJulia;
 uniform vec2  u_juliaC;
 uniform sampler2D u_lut;
+uniform int   u_digitDepth; // Carpet/Gasket only, see renderDigitFractal
 
 uniform bool  u_usePerturbation;
 uniform int   u_passNum;         // 1 or 2, only meaningful when u_usePerturbation
@@ -133,30 +134,53 @@ vec3 lutColor(float t) {
 // p never grows unbounded since it's re-fract()ed back into [0,1) after
 // every level, regardless of how many levels run.
 //
-// Depth is a fixed constant, deliberately NOT u_maxIter: u_maxIter's
-// range (50-2000, from the iter slider) is calibrated for escape-time
-// iteration counts, but this recursion only has ~15-24 meaningful levels
-// in float32 before the repeated *base/re-fract() accumulates enough
-// rounding error to be numerically meaningless regardless of how many more
-// levels run (each level consumes ~log2(base) bits of the ~24-bit float32
-// mantissa). Using u_maxIter directly here shipped as a real bug: at its
-// default of 300, the actual exclusion depth (rarely above ~30) divided by
-// 299 crushed nearly the whole image into the first few percent of the
-// colormap, which for the default colormap is nearly black — it looked
-// broken ("doesn't show") even though the fractal itself was rendering
-// correctly underneath. Fixed depth of 16 was verified by rendering both
-// patterns with the real colormap LUT before shipping, same as everything
-// else here that touches float precision.
+// Depth is u_digitDepth, deliberately NOT u_maxIter: u_maxIter's range
+// (50-2000, from the iter slider) is calibrated for escape-time iteration
+// counts, but this recursion only has ~15-24 meaningful levels in float32
+// before the repeated *base/re-fract() accumulates enough rounding error to
+// be numerically meaningless (each level consumes ~log2(base) bits of the
+// ~24-bit float32 mantissa). Using u_maxIter directly here shipped as a
+// real bug: at its default of 300, the actual exclusion depth (rarely above
+// ~30) divided by 299 crushed nearly the whole image into the first few
+// percent of the colormap, which for the default colormap is nearly black.
+// Coloring is still normalized by a fixed 15 (not by u_digitDepth) so each
+// level keeps the same color at every zoom.
+//
+// u_digitDepth is the deepest level whose cells are still at least one
+// pixel wide (see digitFractalDepth in app.js), capped at 16. It used to be
+// a fixed 16, which caused visible speckle: at the default view one pixel
+// is ~3^-6.5 wide, so levels ~7-16 were sub-pixel and a single sample per
+// pixel landed on an effectively random one of them. A float64 simulation
+// of this exact loop confirmed that aliasing, not float32 precision, was
+// the cause: moving the sample a third of a pixel changed 44% of pixels,
+// while float32-vs-float64 differed on only 7% (nearly all at depth >= 13).
+// A point that survives every resolvable level is colored with the
+// area-weighted average of the sub-pixel levels below it (subPixelColor)
+// rather than one arbitrary sample — the limit a supersampled render
+// converges to, so flat regions and resolved holes agree as you zoom in.
 // No perturbation/deep-zoom support either way: this only reuses the
 // existing float32 fast path (see FRAG_SRC's top comment), so like
 // Ship/Tricorn/Julia it hits the same ~1e-5 float32 zoom ceiling rather
 // than perturbation's effectively unlimited depth.
+vec3 subPixelColor(int depth, float base) {
+  // Each level removes 1/base^2 of whatever survived the level above it;
+  // anything that survives all 16 levels is interior (black).
+  float hitFrac = 1.0 / (base * base);
+  float surviving = 1.0;
+  vec3 sum = vec3(0.0);
+  for (int k = 0; k < 16; k++) {
+    if (k < depth) continue;
+    sum += surviving * hitFrac * lutColor(float(k) / 15.0);
+    surviving *= 1.0 - hitFrac;
+  }
+  return sum;
+}
+
 vec3 renderDigitFractal(vec2 p, float base) {
-  // Literal loop bound (not a uniform, not even a named constant) to match
-  // the exact pattern already proven safe on this device/browser elsewhere
-  // in this file — see the comment above this function for why 16 and not
-  // u_maxIter.
+  // Literal loop bound with a runtime break, same pattern as u_maxIter in
+  // the escape-time loops (GLSL ES 1.00 needs a constant bound).
   for (int i = 0; i < 16; i++) {
+    if (i >= u_digitDepth) break;
     p *= base;
     vec2 cell = mod(floor(p), base);
     if (cell.x == 1.0 && cell.y == 1.0) {
@@ -164,7 +188,7 @@ vec3 renderDigitFractal(vec2 p, float base) {
     }
     p -= floor(p);
   }
-  return vec3(0.0);
+  return subPixelColor(u_digitDepth, base);
 }
 
 vec3 renderNewton(vec2 p) {

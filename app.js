@@ -60,6 +60,18 @@ const EXTRA_MODES = [
   { key: "fern", label: "Barnsley Fern", family: "other" },
 ];
 
+// Carpet/Gasket recursion depth for the current zoom: the deepest level
+// whose cells are still at least one device pixel wide, capped at 16 (past
+// that, float32 digit extraction stops being meaningful). Deeper levels are
+// sub-pixel and only produce aliasing speckle -- see renderDigitFractal in
+// shaders.js for how the shader colors what's below this depth instead.
+function digitFractalDepth(ftype, scale, heightPx) {
+  const base = ftype === FTYPE.CARPET ? 3 : 2;
+  const pixelSize = (scale * 2) / heightPx;
+  const d = Math.floor(Math.log(1 / pixelSize) / Math.log(base) + 1e-9);
+  return Math.max(1, Math.min(16, d));
+}
+
 function viewFromBounds(b) {
   return { cx: (b[0] + b[1]) / 2, cy: (b[2] + b[3]) / 2, scale: (b[3] - b[2]) / 2 };
 }
@@ -145,6 +157,7 @@ function createFractalRenderer(canvas) {
     isJulia: gl.getUniformLocation(prog, "u_isJulia"),
     juliaC: gl.getUniformLocation(prog, "u_juliaC"),
     lut: gl.getUniformLocation(prog, "u_lut"),
+    digitDepth: gl.getUniformLocation(prog, "u_digitDepth"),
     usePerturbation: gl.getUniformLocation(prog, "u_usePerturbation"),
     passNum: gl.getUniformLocation(prog, "u_passNum"),
     refOrbitTex: gl.getUniformLocation(prog, "u_refOrbitTex"),
@@ -258,6 +271,7 @@ function createFractalRenderer(canvas) {
     gl.uniform1f(u.power, state.power);
     gl.uniform1i(u.isJulia, state.isJulia ? 1 : 0);
     gl.uniform2f(u.juliaC, state.juliaC[0], state.juliaC[1]);
+    gl.uniform1i(u.digitDepth, digitFractalDepth(state.ftype, state.scale, canvas.height));
 
     // Perturbation only covers the plain z^n+c family in parameter-space
     // (non-Julia) mode — see the FRAG_SRC comment for why Ship/Tricorn/Julia
@@ -593,11 +607,13 @@ function updateHud() {
     }
   }
   const rotText = rotationHudText(s.rotation);
-  // Carpet/Gasket ignore the iter slider entirely (fixed depth in the
-  // shader) — showing "maxIter: 300" would misleadingly imply it still
+  // Carpet/Gasket ignore the iter slider entirely (zoom-derived depth in
+  // the shader) — showing "maxIter: 300" would misleadingly imply it still
   // does something, the same mismatch that caused the coloring bug.
   const usesFixedDepth = s.ftype === FTYPE.CARPET || s.ftype === FTYPE.GASKET;
-  const iterText = usesFixedDepth ? "depth: 16 (fixed)" : `maxIter: ${s.maxIter}`;
+  const iterText = usesFixedDepth
+    ? `depth: ${digitFractalDepth(s.ftype, s.scale, mainRenderer.canvas.height)} (auto)`
+    : `maxIter: ${s.maxIter}`;
   let text =
     `${currentName}   center: ${s.cx.toExponential(5)} + ${s.cy.toExponential(5)}i\n` +
     `scale: ${s.scale.toExponential(3)}   ${iterText}   precision: ${precision}${rotText}` +
@@ -706,7 +722,7 @@ function selectFractal(name) {
   if (dualActive) enterDual();
   els.dualBtn.disabled = !config.dual;
   els.dualBtn.classList.toggle("active", dualActive);
-  // Carpet/Gasket use a fixed depth (see FRAG_SRC) — the iter slider does
+  // Carpet/Gasket use a zoom-derived depth (see FRAG_SRC) — the iter slider does
   // nothing for them, and leaving it enabled implied otherwise, which is
   // exactly the mismatch that made them render as almost solid black
   // before that was caught and fixed.
