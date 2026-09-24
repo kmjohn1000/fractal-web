@@ -1636,7 +1636,9 @@ els.backBtn.addEventListener("click", () => { cancelTeleport(); popHistory(activ
 // zooming straight at a point that stays off-screen the whole way. Views
 // are [cx, cy, w] with w the visible height; returns f(t) for t in [0, 1].
 // The near-case cutoff is relative to w, not d3's absolute 1e-12 --
-// deep-zoom jumps are routinely that small in absolute terms.
+// deep-zoom jumps are routinely that small in absolute terms. f.distance
+// is the path's length in d3's units (roughly zoom levels travelled),
+// used to size the flight's duration.
 function zoomPath(p0, p1) {
   const rho = Math.SQRT2, rho2 = 2, rho4 = 4;
   const [ux0, uy0, w0] = p0, [ux1, uy1, w1] = p1;
@@ -1644,7 +1646,9 @@ function zoomPath(p0, p1) {
   const tiny = 1e-6 * Math.min(w0, w1);
   if (d2 < tiny * tiny) {
     const S = Math.log(w1 / w0) / rho;
-    return (t) => [ux0 + t * dx, uy0 + t * dy, w0 * Math.exp(rho * t * S)];
+    const f = (t) => [ux0 + t * dx, uy0 + t * dy, w0 * Math.exp(rho * t * S)];
+    f.distance = Math.abs(S);
+    return f;
   }
   const d1 = Math.sqrt(d2);
   const b0 = (w1 * w1 - w0 * w0 + rho4 * d2) / (2 * w0 * rho2 * d1);
@@ -1656,14 +1660,20 @@ function zoomPath(p0, p1) {
   const r1 = -Math.asinh(b1);
   const S = (r1 - r0) / rho;
   const coshr0 = Math.cosh(r0), sinhr0 = Math.sinh(r0);
-  return (t) => {
+  const f = (t) => {
     const s = t * S;
     const u = w0 / (rho2 * d1) * (coshr0 * Math.tanh(rho * s + r0) - sinhr0);
     return [ux0 + u * dx, uy0 + u * dy, w0 * coshr0 / Math.cosh(rho * s + r0)];
   };
+  f.distance = Math.abs(S);
+  return f;
 }
 
-const TELEPORT_MS = 500;
+// Flight time grows with distance: ~1s for a short hop from the opening
+// view (distance ~4), up to 2.5s for the longest deep-to-deep dives (~34).
+function teleportDurationMs(distance) {
+  return Math.min(2500, Math.max(1000, 1000 + (distance - 4) * 50));
+}
 let lastTeleportIndex = -1; // index into TELEPORT_DESTINATIONS; never picked twice in a row
 let teleportGeneration = 0;
 
@@ -1686,6 +1696,7 @@ function teleport() {
   activePane = "main";
   const path = zoomPath([st.cx, st.cy, 2 * st.scale], [target.cx, target.cy, 2 * target.scale]);
   const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  const durationMs = teleportDurationMs(path.distance);
   const gen = ++teleportGeneration;
   const t0 = performance.now();
 
@@ -1697,7 +1708,7 @@ function teleport() {
   // applyAutoIter once the last frame lands.
   const step = (now) => {
     if (gen !== teleportGeneration || mode !== "fractal" || mainState !== st) return;
-    const t = Math.min(1, (now - t0) / TELEPORT_MS);
+    const t = Math.min(1, (now - t0) / durationMs);
     if (t < 1) {
       const [cx, cy, w] = path(ease(t));
       st.cx = cx; st.cy = cy; st.scale = w / 2;
