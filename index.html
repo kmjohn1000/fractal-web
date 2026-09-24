@@ -16,11 +16,17 @@
 <meta name="apple-mobile-web-app-title" content="Fractal">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <style>
+  /* Every UI font size is in rem, so they all scale together off this one
+     root size. --text-scale stays 1 (no change) for now; following the
+     iOS Larger Text setting needs native Swift (read UIContentSizeCategory,
+     evaluateJavaScript to set --text-scale on documentElement.style) — a
+     plain web build can't see that setting. See TODO.md. */
+  :root { --text-scale: 1; font-size: calc(16px * var(--text-scale)); }
   html, body {
     margin: 0; padding: 0; background: #111; height: 100%;
     overflow: hidden; touch-action: none;
-    font: 12px/1.4 -apple-system, system-ui, sans-serif; color: #ddd;
   }
+  body { font: 0.75rem/1.4 -apple-system, system-ui, sans-serif; color: #ddd; }
   /* position:relative anchors #controls, which floats over the bottom of
      #canvasArea instead of taking its own slice of the column. */
   body { display: flex; flex-direction: column; position: relative; }
@@ -36,7 +42,7 @@
   #errorBanner {
     flex: none; padding: 10px 12px; padding-top: calc(10px + env(safe-area-inset-top));
     background: #6b1414; color: #fff;
-    font: 12px/1.5 -apple-system, system-ui, monospace; white-space: pre-wrap;
+    font: 0.75rem/1.5 -apple-system, system-ui, monospace; white-space: pre-wrap;
     word-break: break-word; max-height: 40vh; overflow-y: auto; z-index: 100;
   }
 
@@ -57,12 +63,12 @@
     background: rgba(0,0,0,0.7);
   }
   #hud .hudName {
-    font: 600 14px/1.3 -apple-system, system-ui, sans-serif; color: #fff;
+    font: 600 0.875rem/1.3 -apple-system, system-ui, sans-serif; color: #fff;
   }
   /* pre-wrap, not pre: keep the explicit line breaks and column spacing,
      but wrap a long line instead of running it off a phone's right edge. */
   #hud .hudStats {
-    font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+    font: 0.6875rem/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
     color: #9a9a9a; white-space: pre-wrap;
   }
 
@@ -182,7 +188,7 @@
      not two menus. */
   #fractalTypeRow .menuSectionHeader {
     flex: 1 1 100%;
-    font: 11px -apple-system, system-ui, sans-serif;
+    font: 0.6875rem -apple-system, system-ui, sans-serif;
     text-transform: uppercase; letter-spacing: 0.05em;
     color: #888; padding: 4px 2px;
   }
@@ -197,7 +203,7 @@
   }
 
   button {
-    font: 13px -apple-system, system-ui, sans-serif; padding: 10px 14px;
+    font: 0.8125rem -apple-system, system-ui, sans-serif; padding: 10px 14px;
     min-height: 44px; min-width: 44px; box-sizing: border-box;
     background: #2a2a2a; color: #eee; border: 1px solid #555; border-radius: 8px;
     white-space: nowrap; -webkit-tap-highlight-color: transparent;
@@ -237,13 +243,19 @@
     flex: 1 1 80px; min-width: 60px; height: 44px; margin: 0;
     -webkit-appearance: none; appearance: none; background: transparent;
   }
+  /* iOS UISlider look: the track is filled in the accent color from the
+     minimum up to the thumb and dim gray after it, with a plain white
+     thumb. A track pseudo-element can't read the value, so app.js keeps
+     --fill (the thumb's position, 0-100%) in sync on each slider. */
   input[type=range]::-webkit-slider-runnable-track {
-    height: 6px; border-radius: 3px; background: #444;
+    height: 6px; border-radius: 3px;
+    background: linear-gradient(to right, #6cf 0%, #6cf var(--fill, 0%), #444 var(--fill, 0%), #444 100%);
   }
   input[type=range]::-webkit-slider-thumb {
     -webkit-appearance: none; appearance: none;
     width: 28px; height: 28px; border-radius: 50%;
-    background: #6cf; border: 2px solid #1a1a1a;
+    background: #fff; border: none;
+    box-shadow: 0 0.5px 4px rgba(0,0,0,0.35), 0 3px 8px rgba(0,0,0,0.2);
     margin-top: -11px; /* (28 - 6) / 2, centers thumb on the 6px track */
   }
   /* Must stay the last rule in this sheet: it overrides .control-row at

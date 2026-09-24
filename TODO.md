@@ -101,6 +101,15 @@
       below ~400px, or fold a button (e.g. dual view) into a menu. Also
       below 410px the buttons are 40px, under the 44px touch-target min
 
+- [ ] Follow the iOS Larger Text / Dynamic Type setting in the Capacitor
+      app. All UI font sizes are rem off `:root { font-size:
+      calc(16px * var(--text-scale)) }`, but --text-scale is fixed at 1:
+      WKWebView content doesn't get Dynamic Type, and user-scalable=no
+      (needed so pinch drives the canvas) rules out browser text zoom.
+      Needs native Swift: read UIContentSizeCategory (and observe its
+      change notification), then evaluateJavaScript to set --text-scale
+      on document.documentElement.style. Not possible in the plain web build
+
 ## Deferred indefinitely
 - Menger Sponge / other 3D fractals (real 3D rendering project, not a
   slot-in)

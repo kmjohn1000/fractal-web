@@ -2,6 +2,10 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.6.0 — 2026-09-24
+- Sliders look like native iOS sliders: the track fills in blue up to the thumb and stays gray after it, and the thumb is plain white.
+- All text sizes (info card, buttons, labels, menu headers) now scale together from one setting. Nothing looks different yet; this prepares for following the iPhone's text-size setting in the app version.
+
 ## 1.5.2 — 2026-09-24
 - The slider is back on its own row above the buttons on wider screens. Phones keep all the buttons on one line.
 
