@@ -78,7 +78,8 @@ uniform float u_power;   // 2.0 or 3.0 (escape family only)
 uniform bool  u_isJulia;
 uniform vec2  u_juliaC;
 uniform sampler2D u_lut;
-uniform int   u_digitDepth; // Carpet/Gasket only, see renderDigitFractal
+uniform int   u_digitDepth;    // Carpet/Gasket only, see renderDigitFractal
+uniform int   u_digitMaxDepth; // Carpet 16, Gasket 22 (DIGIT_MAX_DEPTH in app.js)
 // Sub-pixel sample offset in pixels, (0,0) = pixel center. Supersampling
 // accumulates several jittered renders on the CPU side -- see
 // SAMPLE_OFFSETS in app.js.
@@ -147,11 +148,22 @@ vec3 lutColor(float t) {
 // real bug: at its default of 300, the actual exclusion depth (rarely above
 // ~30) divided by 299 crushed nearly the whole image into the first few
 // percent of the colormap, which for the default colormap is nearly black.
-// Coloring is still normalized by a fixed 15 (not by u_digitDepth) so each
-// level keeps the same color at every zoom.
+// Coloring is normalized by u_digitMaxDepth - 1 (not by u_digitDepth) so
+// each level keeps the same color at every zoom, and the deepest level
+// reaches the end of the colormap rather than wrapping past it.
+//
+// The cap differs by base. Carpet (base 3) stays at 16: *3 rounds, so
+// error compounds ~1.6 bits per level. Gasket (base 2) goes to 22: *2 and
+// subtracting floor() are exact in float32, so the only error is the input
+// coordinate's own rounding, which a float32-vs-float64 simulation showed
+// only ever moves a cell edge by one pixel through depth 23 (<=0.02% of
+// pixels off by more), and depth 24 breaks down (6% wrong). 22 leaves one
+// level of margin for real GPUs rounding differently from the simulation.
+// The old shared cap of 16 stopped the Gasket resolving new levels at only
+// ~50x zoom; 22 carries it to ~3,000x.
 //
 // u_digitDepth is the deepest level whose cells are still at least one
-// pixel wide (see digitFractalDepth in app.js), capped at 16. It used to be
+// pixel wide (see digitFractalDepth in app.js), capped as above. It used to be
 // a fixed 16, which caused visible speckle: at the default view one pixel
 // is ~3^-6.5 wide, so levels ~7-16 were sub-pixel and a single sample per
 // pixel landed on an effectively random one of them. A float64 simulation
@@ -168,13 +180,16 @@ vec3 lutColor(float t) {
 // than perturbation's effectively unlimited depth.
 vec3 subPixelColor(int depth, float base) {
   // Each level removes 1/base^2 of whatever survived the level above it;
-  // anything that survives all 16 levels is interior (black).
+  // anything that survives every level down to u_digitMaxDepth is interior
+  // (black).
   float hitFrac = 1.0 / (base * base);
   float surviving = 1.0;
   vec3 sum = vec3(0.0);
-  for (int k = 0; k < 16; k++) {
+  float norm = float(u_digitMaxDepth - 1);
+  for (int k = 0; k < 24; k++) {
+    if (k >= u_digitMaxDepth) break;
     if (k < depth) continue;
-    sum += surviving * hitFrac * lutColor(float(k) / 15.0);
+    sum += surviving * hitFrac * lutColor(float(k) / norm);
     surviving *= 1.0 - hitFrac;
   }
   return sum;
@@ -183,12 +198,14 @@ vec3 subPixelColor(int depth, float base) {
 vec3 renderDigitFractal(vec2 p, float base) {
   // Literal loop bound with a runtime break, same pattern as u_maxIter in
   // the escape-time loops (GLSL ES 1.00 needs a constant bound).
-  for (int i = 0; i < 16; i++) {
+  // 24 is just the constant loop bound; u_digitDepth never exceeds
+  // u_digitMaxDepth (22 at most).
+  for (int i = 0; i < 24; i++) {
     if (i >= u_digitDepth) break;
     p *= base;
     vec2 cell = mod(floor(p), base);
     if (cell.x == 1.0 && cell.y == 1.0) {
-      return lutColor(float(i) / 15.0);
+      return lutColor(float(i) / float(u_digitMaxDepth - 1));
     }
     p -= floor(p);
   }

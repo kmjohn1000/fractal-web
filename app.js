@@ -60,16 +60,22 @@ const EXTRA_MODES = [
   { key: "fern", label: "Barnsley Fern", family: "other" },
 ];
 
+// Deepest level float32 digit extraction stays accurate for, per base --
+// see renderDigitFractal in shaders.js for how these were measured.
+function digitMaxDepth(ftype) {
+  return ftype === FTYPE.CARPET ? 16 : 22;
+}
+
 // Carpet/Gasket recursion depth for the current zoom: the deepest level
-// whose cells are still at least one device pixel wide, capped at 16 (past
-// that, float32 digit extraction stops being meaningful). Deeper levels are
-// sub-pixel and only produce aliasing speckle -- see renderDigitFractal in
-// shaders.js for how the shader colors what's below this depth instead.
+// whose cells are still at least one device pixel wide, capped at
+// digitMaxDepth. Deeper levels are sub-pixel and only produce aliasing
+// speckle -- see renderDigitFractal in shaders.js for how the shader colors
+// what's below this depth instead.
 function digitFractalDepth(ftype, scale, heightPx) {
   const base = ftype === FTYPE.CARPET ? 3 : 2;
   const pixelSize = (scale * 2) / heightPx;
   const d = Math.floor(Math.log(1 / pixelSize) / Math.log(base) + 1e-9);
-  return Math.max(1, Math.min(16, d));
+  return Math.max(1, Math.min(digitMaxDepth(ftype), d));
 }
 
 function viewFromBounds(b) {
@@ -188,6 +194,7 @@ function createFractalRenderer(canvas) {
     juliaC: gl.getUniformLocation(prog, "u_juliaC"),
     lut: gl.getUniformLocation(prog, "u_lut"),
     digitDepth: gl.getUniformLocation(prog, "u_digitDepth"),
+    digitMaxDepth: gl.getUniformLocation(prog, "u_digitMaxDepth"),
     jitter: gl.getUniformLocation(prog, "u_jitter"),
     usePerturbation: gl.getUniformLocation(prog, "u_usePerturbation"),
     passNum: gl.getUniformLocation(prog, "u_passNum"),
@@ -331,6 +338,7 @@ function createFractalRenderer(canvas) {
     gl.uniform1i(u.isJulia, state.isJulia ? 1 : 0);
     gl.uniform2f(u.juliaC, state.juliaC[0], state.juliaC[1]);
     gl.uniform1i(u.digitDepth, digitFractalDepth(state.ftype, state.scale, canvas.height));
+    gl.uniform1i(u.digitMaxDepth, digitMaxDepth(state.ftype));
 
     // Perturbation only covers the plain z^n+c family in parameter-space
     // (non-Julia) mode — see the FRAG_SRC comment for why Ship/Tricorn/Julia
