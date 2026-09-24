@@ -41,7 +41,10 @@
   #hud {
     flex: none; padding: 8px 12px; padding-top: calc(8px + env(safe-area-inset-top));
     font: 12px/1.4 -apple-system, system-ui, monospace;
-    background: rgba(0,0,0,0.45); white-space: pre;
+    /* pre-wrap, not pre: keep the explicit line breaks and column spacing,
+       but wrap a long line instead of running it off a phone's right edge
+       (the second line is ~540px wide with colormap + rotation). */
+    background: rgba(0,0,0,0.45); white-space: pre-wrap;
   }
 
   #canvasArea {
