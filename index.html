@@ -246,18 +246,12 @@
     background: #6cf; border: 2px solid #1a1a1a;
     margin-top: -11px; /* (28 - 6) / 2, centers thumb on the 6px track */
   }
-  /* Must stay the last rules in this sheet: they override .control-row
-     and label.field at equal specificity.
-     Narrow phones: tighter gaps so the busiest row (9 buttons on
-     Mandelbrot) fits one line down to 360px: 9*36 + 8*3 = 348 = 360 - 2*6.
-     Wide screens: the slider shares the buttons' line (after them, taking
-     the leftover width) instead of a row of its own, which on a desktop
-     window was a full-width strip for one slider. */
+  /* Must stay the last rule in this sheet: it overrides .control-row at
+     equal specificity. Narrow phones: tighter gaps so the busiest row (9
+     buttons on Mandelbrot) fits one line down to 360px:
+     9*36 + 8*3 = 348 = 360 - 2*6. */
   @media (max-width: 410px) {
     .control-row { gap: 3px; padding: 8px 6px; }
-  }
-  @media (min-width: 700px) {
-    label.field { flex: 1 1 200px; order: 1; }
   }
 </style>
 </head>

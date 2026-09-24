@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.5.2 — 2026-09-24
+- The slider is back on its own row above the buttons on wider screens. Phones keep all the buttons on one line.
+
 ## 1.5.1 — 2026-09-24
 - Shorter toolbar. On phones the toolbar buttons share the width evenly, so every toolbar (including Mandelbrot's nine buttons) fits on one line instead of wrapping onto a third row. On wider screens the slider sits on the same line as the buttons instead of on its own row.
 
