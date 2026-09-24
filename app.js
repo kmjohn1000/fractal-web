@@ -535,6 +535,10 @@ const els = {
   fernColorSwatch: document.getElementById("fernColorSwatch"),
   fernResetBtn: document.getElementById("fernResetBtn"),
   fernBoxZoomBtn: document.getElementById("fernBoxZoomBtn"),
+  kochBackBtn: document.getElementById("kochBackBtn"),
+  treeBackBtn: document.getElementById("treeBackBtn"),
+  dragonBackBtn: document.getElementById("dragonBackBtn"),
+  fernBackBtn: document.getElementById("fernBackBtn"),
 };
 
 let mode = "fractal"; // "fractal" | "koch" | "tree" | "dragon" | "fern"
@@ -543,6 +547,9 @@ let currentName = "Mandelbrot";
 let dualActive = false;
 let boxZoomActive = false;
 let fernBoxZoomActive = false; // separate toggle: the fern has its own control row
+// Info overlay (#hud): hidden by default, one app-wide toggle shared by every
+// mode's control row, so it persists across mode switches.
+let hudVisible = false;
 let activePane = "main"; // "main" | "julia" — which pane Back/box-zoom targets
 
 // Perturbation rendering runs a CPU reference search (chooseReference) plus
@@ -1194,8 +1201,26 @@ attachFractalInteraction(els.juliaCanvas, () => juliaState, "julia", juliaRender
 // isBoxZoomActive (optional): when it returns true, a one-finger drag draws
 // the shared #boxZoomRect and zooms to it on release instead of panning --
 // the vector-view analog of the WebGL panes' box zoom (commitBoxZoom).
+//
+// Returns { back, clearHistory }: each vector view keeps its own pan/zoom
+// history stack, checkpointed at the same moments attachFractalInteraction
+// pushes for the WebGL panes (one-finger drag start, pinch start, wheel
+// zoom throttled to one checkpoint per 400ms burst, box-zoom commit).
 function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive = () => false) {
   const pointers = new Map();
+  const history = [];
+  let lastWheelPush = 0;
+  function pushViewHistory() {
+    const v = vectorView.view;
+    history.push({ cx: v.cx, cy: v.cy, halfHeight: v.halfHeight, rotation: v.rotation || 0 });
+    if (history.length > 50) history.shift();
+  }
+  function back() {
+    const snap = history.pop();
+    if (!snap) return;
+    Object.assign(vectorView.view, snap);
+    requestRender();
+  }
   const boxPane = `vector:${canvas.id}`;
   const boxDragging = () => isBoxZoomActive()
     && els.boxRect.dataset.pane === boxPane && !els.boxRect.classList.contains("hidden");
@@ -1219,6 +1244,7 @@ function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive = () =>
     const halfH = (h / 2) * dpr * unitsPerPx;
     const halfW = (w / 2) * dpr * unitsPerPx;
     const aspect = canvas.width / canvas.height;
+    pushViewHistory();
     vectorView.view.cx = cx;
     vectorView.view.cy = cy;
     vectorView.view.halfHeight = Math.max(halfH, halfW / Math.max(aspect, 1e-6));
@@ -1274,6 +1300,7 @@ function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive = () =>
       const p = localPixel(e.clientX, e.clientY);
       const world = vectorView.screenToWorld(p.x, p.y);
       panStart = { worldX: world[0], worldY: world[1] };
+      pushViewHistory();
     } else if (pointers.size === 2) {
       panStart = null;
       const pts = [...pointers.values()];
@@ -1281,6 +1308,7 @@ function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive = () =>
       pinchStartHalfHeight = vectorView.view.halfHeight;
       pinchStartAngle = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
       pinchStartRotation = vectorView.view.rotation || 0;
+      pushViewHistory();
     }
   });
 
@@ -1347,6 +1375,8 @@ function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive = () =>
   canvas.addEventListener("wheel", (e) => {
     e.preventDefault();
     if (isBoxZoomActive()) return;
+    const now = performance.now();
+    if (now - lastWheelPush > 400) { pushViewHistory(); lastWheelPush = now; }
     const rect = canvas.getBoundingClientRect();
     const sx = (e.clientX - rect.left) * vectorView.dpr;
     const sy = (e.clientY - rect.top) * vectorView.dpr;
@@ -1357,12 +1387,29 @@ function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive = () =>
     vectorView.view.cy += before[1] - after[1];
     requestRender();
   }, { passive: false });
+
+  return { back, clearHistory: () => { history.length = 0; } };
 }
 
-attachVectorViewInteraction(els.kochCanvas, kochView);
-attachVectorViewInteraction(els.treeCanvas, treeView);
-attachVectorViewInteraction(els.dragonCanvas, dragonView);
-attachVectorViewInteraction(els.fernCanvas, fernView, () => fernBoxZoomActive);
+const kochNav = attachVectorViewInteraction(els.kochCanvas, kochView);
+const treeNav = attachVectorViewInteraction(els.treeCanvas, treeView);
+const dragonNav = attachVectorViewInteraction(els.dragonCanvas, dragonView);
+const fernNav = attachVectorViewInteraction(els.fernCanvas, fernView, () => fernBoxZoomActive);
+els.kochBackBtn.addEventListener("click", () => kochNav.back());
+els.treeBackBtn.addEventListener("click", () => treeNav.back());
+els.dragonBackBtn.addEventListener("click", () => dragonNav.back());
+els.fernBackBtn.addEventListener("click", () => fernNav.back());
+
+function applyHudVisibility() {
+  els.hud.classList.toggle("hidden", !hudVisible);
+  document.querySelectorAll(".hudToggleBtn").forEach((b) => b.classList.toggle("active", hudVisible));
+  requestRender(); // the canvas area just changed height
+}
+document.querySelectorAll(".hudToggleBtn").forEach((b) => b.addEventListener("click", () => {
+  hudVisible = !hudVisible;
+  applyHudVisibility();
+}));
+applyHudVisibility();
 
 // ---------------------------------------------------------------- UI wiring
 
@@ -1468,6 +1515,7 @@ els.kochAnimateBtn.addEventListener("click", () => {
 });
 
 els.kochResetBtn.addEventListener("click", () => {
+  kochNav.clearHistory();
   kochView.view.cx = 0; kochView.view.cy = 0; kochView.view.halfHeight = 1.4; kochView.view.rotation = 0;
   requestRender();
 });
@@ -1483,6 +1531,7 @@ els.treeColormapBtn.addEventListener("click", () => {
 });
 
 els.treeResetBtn.addEventListener("click", () => {
+  treeNav.clearHistory();
   treeView.view.cx = 0; treeView.view.cy = 2.3; treeView.view.halfHeight = 2.9; treeView.view.rotation = 0;
   requestRender();
 });
@@ -1498,6 +1547,7 @@ els.dragonColormapBtn.addEventListener("click", () => {
 });
 
 els.dragonResetBtn.addEventListener("click", () => {
+  dragonNav.clearHistory();
   dragonView.view.cx = -0.35; dragonView.view.cy = -0.24; dragonView.view.halfHeight = 1.0; dragonView.view.rotation = 0;
   requestRender();
 });
@@ -1521,6 +1571,7 @@ els.fernBoxZoomBtn.addEventListener("click", () => {
 });
 
 els.fernResetBtn.addEventListener("click", () => {
+  fernNav.clearHistory();
   fernView.view.cx = 0.24; fernView.view.cy = 5.0; fernView.view.halfHeight = 5.3; fernView.view.rotation = 0;
   requestRender();
 });
