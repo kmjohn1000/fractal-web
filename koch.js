@@ -44,7 +44,7 @@ function kochSnowflake(depth) {
 
 function createKochView(canvas) {
   const ctx = canvas.getContext("2d");
-  const view = { cx: 0, cy: 0, halfHeight: 1.4 };
+  const view = { cx: 0, cy: 0, halfHeight: 1.4, rotation: 0 };
   let dpr = Math.min(window.devicePixelRatio || 1, 2);
   let cachedDepth = -1;
   let cachedVerts = null;
@@ -59,16 +59,30 @@ function createKochView(canvas) {
     }
   }
 
+  // Rotation-aware; matches app.js's screenToComplex/centerForAnchor
+  // convention exactly (rotate the screen-space offset by +rotation to get
+  // world axes, by -rotation for the inverse) so attachVectorViewInteraction's
+  // two-finger twist and pan both work the same way the WebGL canvases do.
   function worldToScreen(x, y) {
-    const sx = canvas.width / 2 + ((x - view.cx) / view.halfHeight) * (canvas.height / 2);
-    const sy = canvas.height / 2 - ((y - view.cy) / view.halfHeight) * (canvas.height / 2);
+    const wx = (x - view.cx) / view.halfHeight;
+    const wy = (y - view.cy) / view.halfHeight;
+    const rot = -(view.rotation || 0);
+    const cos = Math.cos(rot), sin = Math.sin(rot);
+    const uvx = wx * cos - wy * sin;
+    const uvy = wx * sin + wy * cos;
+    const sx = canvas.width / 2 + uvx * (canvas.height / 2);
+    const sy = canvas.height / 2 - uvy * (canvas.height / 2);
     return [sx, sy];
   }
 
   function screenToWorld(sx, sy) {
-    const x = view.cx + ((sx - canvas.width / 2) / (canvas.height / 2)) * view.halfHeight;
-    const y = view.cy - ((sy - canvas.height / 2) / (canvas.height / 2)) * view.halfHeight;
-    return [x, y];
+    const uvx = (sx - canvas.width / 2) / (canvas.height / 2);
+    const uvy = (canvas.height / 2 - sy) / (canvas.height / 2);
+    const rot = view.rotation || 0;
+    const cos = Math.cos(rot), sin = Math.sin(rot);
+    const wx = uvx * cos - uvy * sin;
+    const wy = uvx * sin + uvy * cos;
+    return [view.cx + wx * view.halfHeight, view.cy + wy * view.halfHeight];
   }
 
   function render(opts) {

@@ -50,7 +50,7 @@ function pythagorasTree(depth) {
 // works on this unmodified.
 function createPythagorasTreeView(canvas) {
   const ctx = canvas.getContext("2d");
-  const view = { cx: 0, cy: 2.3, halfHeight: 2.9 };
+  const view = { cx: 0, cy: 2.3, halfHeight: 2.9, rotation: 0 };
   let dpr = Math.min(window.devicePixelRatio || 1, 2);
   let cachedDepth = -1;
   let cachedSquares = null;
@@ -65,16 +65,29 @@ function createPythagorasTreeView(canvas) {
     }
   }
 
+  // Rotation-aware; matches app.js's screenToComplex/centerForAnchor
+  // convention exactly, see koch.js's identical functions for the full
+  // comment.
   function worldToScreen(x, y) {
-    const sx = canvas.width / 2 + ((x - view.cx) / view.halfHeight) * (canvas.height / 2);
-    const sy = canvas.height / 2 - ((y - view.cy) / view.halfHeight) * (canvas.height / 2);
+    const wx = (x - view.cx) / view.halfHeight;
+    const wy = (y - view.cy) / view.halfHeight;
+    const rot = -(view.rotation || 0);
+    const cos = Math.cos(rot), sin = Math.sin(rot);
+    const uvx = wx * cos - wy * sin;
+    const uvy = wx * sin + wy * cos;
+    const sx = canvas.width / 2 + uvx * (canvas.height / 2);
+    const sy = canvas.height / 2 - uvy * (canvas.height / 2);
     return [sx, sy];
   }
 
   function screenToWorld(sx, sy) {
-    const x = view.cx + ((sx - canvas.width / 2) / (canvas.height / 2)) * view.halfHeight;
-    const y = view.cy - ((sy - canvas.height / 2) / (canvas.height / 2)) * view.halfHeight;
-    return [x, y];
+    const uvx = (sx - canvas.width / 2) / (canvas.height / 2);
+    const uvy = (canvas.height / 2 - sy) / (canvas.height / 2);
+    const rot = view.rotation || 0;
+    const cos = Math.cos(rot), sin = Math.sin(rot);
+    const wx = uvx * cos - uvy * sin;
+    const wy = uvx * sin + uvy * cos;
+    return [view.cx + wx * view.halfHeight, view.cy + wy * view.halfHeight];
   }
 
   function render(opts) {
