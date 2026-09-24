@@ -2,6 +2,11 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.5.0 — 2026-09-24
+- The toolbar is now frosted glass that floats over the bottom of the image: the fractal shows through it, blurred, instead of stopping above a dark bar. The image now uses the full screen height.
+- Redrawn toolbar icons as one matching set (same line weight, rounded ends and corners). The menu, info and box-zoom icons are bolder and simpler so they're easier to read; box zoom is now a viewfinder frame.
+- Toolbar buttons are a subtle translucent tint instead of solid gray tiles.
+
 ## 1.4.0 — 2026-09-24
 - Keyboard navigation on desktop, in every fractal and pattern: arrow keys pan, Shift + Left/Right rotates, + and − zoom, R resets the view. Up always means up on screen, even when the view is rotated. Back undoes keyboard moves too.
 
