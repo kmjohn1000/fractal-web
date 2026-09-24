@@ -88,31 +88,49 @@ function viewFromBounds(b) {
 // rendering (see shaders.js) with margin to spare before that point.
 const DEEP_ZOOM_THRESHOLD = 1e-3;
 
+// Which fractal types have a perturbation (deep zoom) path -- see
+// perturbStep in shaders.js for the per-type delta formulas. Julia mode and
+// Burning Ship aren't covered yet.
+function perturbationEligibleType(state) {
+  return !state.isJulia && (state.ftype === FTYPE.ESCAPE || state.ftype === FTYPE.TRICORN);
+}
+
+// One float64 step of the escape-family map, z <- f(z) + c, in place on the
+// 2-element array z (avoids allocating per step in chooseReference's hot
+// loop). Must match renderEscapeFast in shaders.js.
+function stepOrbit(ftype, power, z, cr, ci) {
+  const zr = z[0], zi = z[1];
+  if (ftype === FTYPE.TRICORN) {
+    // conj(z)^2 = (zr^2 - zi^2) - 2*zr*zi*i
+    z[0] = zr * zr - zi * zi + cr;
+    z[1] = -2 * zr * zi + ci;
+  } else if (power === 3) {
+    const zr2 = zr * zr - zi * zi, zi2 = 2 * zr * zi;
+    z[0] = zr2 * zr - zi2 * zi + cr;
+    z[1] = zr2 * zi + zi2 * zr + ci;
+  } else {
+    z[0] = zr * zr - zi * zi + cr;
+    z[1] = 2 * zr * zi + ci;
+  }
+}
+
 // Computes the reference orbit Z[0..n] for perturbation rendering: Z[0]=0,
-// Z[n+1] = Z[n]^power + (cx,cy), stopping early if it escapes. Runs in plain
+// Z[n+1] = f(Z[n]) + (cx,cy), stopping early if it escapes. Runs in plain
 // JS (float64) — no bignum needed at this target depth, and this is the one
 // place genuine extended precision matters; everything the GPU touches
 // afterward (the reference values once read back, and the per-pixel delta)
 // only ever needs float32. Returns a Float32Array laid out as RGBA texels
 // (re, im, 0, 1) so it can be uploaded directly as a texture.
-function computeReferenceOrbit(cx, cy, power, maxIter) {
+function computeReferenceOrbit(state, cx, cy) {
+  const maxIter = state.maxIter;
   const cap = maxIter + 1;
   const data = new Float32Array(cap * 4);
   data[3] = 1.0; // Z[0] = (0,0)
-  let zr = 0, zi = 0;
+  const z = [0, 0];
   let len = 1;
   for (let n = 0; n < maxIter; n++) {
-    let nzr, nzi;
-    if (power === 3) {
-      const zr2 = zr * zr - zi * zi, zi2 = 2 * zr * zi;
-      nzr = zr2 * zr - zi2 * zi;
-      nzi = zr2 * zi + zi2 * zr;
-    } else {
-      nzr = zr * zr - zi * zi;
-      nzi = 2 * zr * zi;
-    }
-    zr = nzr + cx;
-    zi = nzi + cy;
+    stepOrbit(state.ftype, state.power, z, cx, cy);
+    const zr = z[0], zi = z[1];
     data[len * 4] = zr;
     data[len * 4 + 1] = zi;
     data[len * 4 + 3] = 1.0;
@@ -133,21 +151,12 @@ function computeReferenceOrbit(cx, cy, power, maxIter) {
 // point's offset from the view center (the shader's u_refOffset).
 const REFERENCE_GRID = 32;
 function chooseReference(state, widthPx, heightPx) {
+  const z = [0, 0];
   const escapeIter = (cr, ci) => {
-    let zr = 0, zi = 0;
+    z[0] = 0; z[1] = 0;
     for (let n = 0; n < state.maxIter; n++) {
-      let nzr, nzi;
-      if (state.power === 3) {
-        const zr2 = zr * zr - zi * zi, zi2 = 2 * zr * zi;
-        nzr = zr2 * zr - zi2 * zi;
-        nzi = zr2 * zi + zi2 * zr;
-      } else {
-        nzr = zr * zr - zi * zi;
-        nzi = 2 * zr * zi;
-      }
-      zr = nzr + cr;
-      zi = nzi + ci;
-      if (zr * zr + zi * zi > 16.0) return n;
+      stepOrbit(state.ftype, state.power, z, cr, ci);
+      if (z[0] * z[0] + z[1] * z[1] > 16.0) return n;
     }
     return Infinity;
   };
@@ -336,15 +345,13 @@ function createFractalRenderer(canvas) {
     gl.uniform1i(u.digitDepth, digitFractalDepth(state.ftype, state.scale, canvas.height));
     gl.uniform1i(u.digitMaxDepth, digitMaxDepth(state.ftype));
 
-    // Perturbation only covers the plain z^n+c family in parameter-space
-    // (non-Julia) mode — see the FRAG_SRC comment for why Ship/Tricorn/Julia
-    // aren't included yet. Also suppressed mid-gesture (see isInteracting)
-    // since recomputing the reference orbit every frame during a live
-    // pinch/wheel is expensive enough to visibly jank.
+    // See perturbationEligibleType for which types are covered. Also
+    // suppressed mid-gesture (see isInteracting) since recomputing the
+    // reference orbit every frame during a live pinch/wheel is expensive
+    // enough to visibly jank.
     const usePerturbation = perturbationSupported
       && !isInteracting
-      && !state.isJulia
-      && state.ftype === FTYPE.ESCAPE
+      && perturbationEligibleType(state)
       && state.scale < DEEP_ZOOM_THRESHOLD;
     gl.uniform1i(u.usePerturbation, usePerturbation ? 1 : 0);
 
@@ -357,13 +364,13 @@ function createFractalRenderer(canvas) {
       return false;
     }
 
-    const key = [state.cx, state.cy, state.scale, state.rotation || 0,
+    const key = [state.ftype, state.cx, state.cy, state.scale, state.rotation || 0,
       state.power, state.maxIter, canvas.width, canvas.height].join(",");
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, refOrbitTex);
     if (key !== refCacheKey) {
       const ref = chooseReference(state, canvas.width, canvas.height);
-      const orbit = computeReferenceOrbit(state.cx + ref.dx, state.cy + ref.dy, state.power, state.maxIter);
+      const orbit = computeReferenceOrbit(state, state.cx + ref.dx, state.cy + ref.dy);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, orbit.length, 1, 0, gl.RGBA, gl.FLOAT, orbit.data);
       refCache = { dx: ref.dx, dy: ref.dy, length: orbit.length };
       refCacheKey = key;
@@ -540,8 +547,7 @@ let lastMainUsedPerturbation = false;
 function renderAll() {
   if (mode === "fractal") {
     const deepZoomEligible = mainRenderer.perturbationSupported
-      && !mainState.isJulia
-      && mainState.ftype === FTYPE.ESCAPE
+      && perturbationEligibleType(mainState)
       && mainState.scale < DEEP_ZOOM_THRESHOLD;
 
     if (!(isInteracting && deepZoomEligible)) {
@@ -613,7 +619,7 @@ function rotationHudText(rotation) {
 
 function updateHud() {
   const s = mainState;
-  const eligibleType = !s.isJulia && s.ftype === FTYPE.ESCAPE;
+  const eligibleType = perturbationEligibleType(s);
   const deepZoomEligible = mainRenderer.perturbationSupported && eligibleType && s.scale < DEEP_ZOOM_THRESHOLD;
   let precision = "float32";
   if (isInteracting && deepZoomEligible) {

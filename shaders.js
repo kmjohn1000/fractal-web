@@ -39,11 +39,11 @@ void main() {
 // only ever computes a small per-pixel DELTA from that reference, in
 // ordinary float32, which stays accurate because the delta itself stays
 // small (this is the same "small deltas are fine in float32 regardless of
-// absolute zoom depth" property the dc offset already relied on). Scoped to
-// the plain z^n+c family (Mandelbrot, Multibrot^3) in parameter-space mode
-// only: Ship/Tricorn's abs()-kinks and Julia mode both need a different
-// reference-orbit strategy this pass doesn't implement, so those still hit
-// the plain float32 ceiling at deep zoom. A cheap "reset the delta once it
+// absolute zoom depth" property the dc offset already relied on). Covers
+// Mandelbrot, Multibrot^3 and Tricorn in parameter-space mode (see
+// perturbStep). Burning Ship's abs() creases and Julia mode need their own
+// delta formula / reference setup and aren't covered yet, so those still
+// hit the plain float32 ceiling at deep zoom. A cheap "reset the delta once it
 // grows too large" heuristic was tried and didn't meaningfully help — the
 // worst glitches happen when the reference orbit passes very close to zero
 // (common exactly where people zoom, near mini-Mandelbrot structures), and
@@ -278,6 +278,26 @@ vec3 renderEscapeFast(vec2 p) {
 
 // ---------------------------------------------------------------- perturbation
 
+// Exact delta step dz' = f(Z+dz) - f(Z) + dc for each type with a
+// perturbation path (perturbationEligibleType in app.js). Each is expanded
+// so no term is a difference of two large nearly-equal values, which is
+// what keeps the delta accurate in float32.
+vec2 perturbStep(vec2 Z, vec2 dz, vec2 dc) {
+  if (u_ftype == FTYPE_TRICORN) {
+    // conj(Z+dz)^2 - conj(Z)^2 = conj(2*Z*dz + dz^2)
+    vec2 d = cMul(2.0 * Z, dz) + cMul(dz, dz);
+    return vec2(d.x, -d.y) + dc;
+  }
+  if (u_power > 2.5) {
+    // (Z+dz)^3 - Z^3 = 3*Z^2*dz + 3*Z*dz^2 + dz^3
+    vec2 Z2 = cMul(Z, Z);
+    vec2 dz2 = cMul(dz, dz);
+    return cMul(3.0 * Z2, dz) + cMul(3.0 * Z, dz2) + cMul(dz2, dz) + dc;
+  }
+  // (Z+dz)^2 - Z^2 = 2*Z*dz + dz^2
+  return cMul(2.0 * Z, dz) + cMul(dz, dz) + dc;
+}
+
 // dc is the pixel's offset from the reference orbit's own point:
 // uv*u_scale*2.0 is always the offset from u_center, so u_refOffset
 // (reference minus u_center, see app.js) is subtracted to correct it. A
@@ -297,15 +317,7 @@ vec3 renderEscapePerturbation(vec2 uv) {
   for (int i = 0; i < 2000; i++) {
     if (i >= u_maxIter) break;
 
-    if (u_power > 2.5) {
-      // (Z+dz)^3 - Z^3 = 3*Z^2*dz + 3*Z*dz^2 + dz^3
-      vec2 Z2 = cMul(Zm, Zm);
-      vec2 dz2 = cMul(dz, dz);
-      dz = cMul(3.0 * Z2, dz) + cMul(3.0 * Zm, dz2) + cMul(dz2, dz) + dc;
-    } else {
-      // (Z+dz)^2 - Z^2 = 2*Z*dz + dz^2
-      dz = cMul(2.0 * Zm, dz) + cMul(dz, dz) + dc;
-    }
+    dz = perturbStep(Zm, dz, dc);
 
     m++;
     Zm = texture2D(u_refOrbitTex, vec2((float(m) + 0.5) / orbitLen, 0.5)).xy;
