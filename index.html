@@ -72,9 +72,11 @@
     flex: none; background: rgba(0,0,0,0.45); position: relative;
     padding-bottom: env(safe-area-inset-bottom);
   }
+  /* gap/padding sized so the busiest row (7 x 44px buttons) stays on one
+     line down to 360px-wide phones: 7*44 + 6*6 = 344 = 360 - 2*8. */
   .control-row {
-    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
-    padding: 8px 10px;
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    padding: 8px 8px;
   }
   .control-row:not(:last-child) { border-bottom: 1px solid rgba(255,255,255,0.08); }
   #fractalControls.hidden, #kochControls.hidden, #treeControls.hidden,
@@ -180,7 +182,7 @@
     reportError(`Unhandled rejection: ${r && r.message ? r.message : r}`);
   });
 </script>
-<div id="hud"></div>
+<div id="hud" class="hidden"></div>
 
 <div id="canvasArea">
   <canvas id="mainCanvas"></canvas>
@@ -202,6 +204,11 @@
         <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
       </svg>
     </button>
+    <button id="dualBtn" class="iconBtn" aria-label="Toggle dual (Julia) view" title="Toggle dual (Julia) view">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <rect x="2" y="4" width="8.5" height="16" rx="1.5"/><rect x="13.5" y="4" width="8.5" height="16" rx="1.5"/>
+      </svg>
+    </button>
     <button id="colormapBtn" class="iconBtn" aria-label="Cycle colormap" title="Cycle colormap">
       <svg viewBox="0 0 24 24">
         <circle cx="9" cy="9" r="6" fill="#e33" fill-opacity="0.75"/>
@@ -209,9 +216,9 @@
         <circle cx="12" cy="15" r="6" fill="#33e" fill-opacity="0.75"/>
       </svg>
     </button>
-    <button id="dualBtn" class="iconBtn" aria-label="Toggle dual (Julia) view" title="Toggle dual (Julia) view">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-        <rect x="2" y="4" width="8.5" height="16" rx="1.5"/><rect x="13.5" y="4" width="8.5" height="16" rx="1.5"/>
+    <button id="hudBtn" class="iconBtn hudToggleBtn" aria-label="Toggle info overlay" title="Toggle info overlay">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9 H17"/><path d="M7 13 H14"/>
       </svg>
     </button>
     <button id="boxZoomBtn" class="iconBtn" aria-label="Box zoom" title="Box zoom">
@@ -251,6 +258,16 @@
         <circle cx="12" cy="15" r="6" fill="#33e" fill-opacity="0.75"/>
       </svg>
     </button>
+    <button id="kochHudBtn" class="iconBtn hudToggleBtn" aria-label="Toggle info overlay" title="Toggle info overlay">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9 H17"/><path d="M7 13 H14"/>
+      </svg>
+    </button>
+    <button id="kochBackBtn" class="iconBtn" aria-label="Back" title="Back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12 H5"/><path d="M11 6 L5 12 L11 18"/>
+      </svg>
+    </button>
     <button id="kochResetBtn" class="iconBtn" aria-label="Reset view" title="Reset view">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 12 a9 9 0 1 0 3 -6.7"/><polyline points="3 3 3 8 8 8"/>
@@ -269,6 +286,16 @@
         <circle cx="9" cy="9" r="6" fill="#e33" fill-opacity="0.75"/>
         <circle cx="15" cy="9" r="6" fill="#3c3" fill-opacity="0.75"/>
         <circle cx="12" cy="15" r="6" fill="#33e" fill-opacity="0.75"/>
+      </svg>
+    </button>
+    <button id="treeHudBtn" class="iconBtn hudToggleBtn" aria-label="Toggle info overlay" title="Toggle info overlay">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9 H17"/><path d="M7 13 H14"/>
+      </svg>
+    </button>
+    <button id="treeBackBtn" class="iconBtn" aria-label="Back" title="Back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12 H5"/><path d="M11 6 L5 12 L11 18"/>
       </svg>
     </button>
     <button id="treeResetBtn" class="iconBtn" aria-label="Reset view" title="Reset view">
@@ -291,6 +318,16 @@
         <circle cx="12" cy="15" r="6" fill="#33e" fill-opacity="0.75"/>
       </svg>
     </button>
+    <button id="dragonHudBtn" class="iconBtn hudToggleBtn" aria-label="Toggle info overlay" title="Toggle info overlay">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9 H17"/><path d="M7 13 H14"/>
+      </svg>
+    </button>
+    <button id="dragonBackBtn" class="iconBtn" aria-label="Back" title="Back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12 H5"/><path d="M11 6 L5 12 L11 18"/>
+      </svg>
+    </button>
     <button id="dragonResetBtn" class="iconBtn" aria-label="Reset view" title="Reset view">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 12 a9 9 0 1 0 3 -6.7"/><polyline points="3 3 3 8 8 8"/>
@@ -305,12 +342,28 @@
       </svg>
     </button>
     <button id="fernColorBtn" class="iconBtn" aria-label="Cycle color" title="Cycle color">
-      <svg viewBox="0 0 24 24"><circle id="fernColorSwatch" cx="12" cy="12" r="8" fill="#46be5a"/></svg>
+      <svg viewBox="0 0 24 24">
+        <circle cx="9" cy="9" r="6" fill="#e33" fill-opacity="0.75"/>
+        <circle cx="15" cy="9" r="6" fill="#3c3" fill-opacity="0.75"/>
+        <circle cx="12" cy="15" r="6" fill="#33e" fill-opacity="0.75"/>
+        <!-- current fern color, as a corner badge (app.js updates its fill) -->
+        <circle id="fernColorSwatch" cx="19.5" cy="19.5" r="4" fill="#46be5a" stroke="#111" stroke-width="1.5"/>
+      </svg>
+    </button>
+    <button id="fernHudBtn" class="iconBtn hudToggleBtn" aria-label="Toggle info overlay" title="Toggle info overlay">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9 H17"/><path d="M7 13 H14"/>
+      </svg>
     </button>
     <button id="fernBoxZoomBtn" class="iconBtn" aria-label="Box zoom" title="Box zoom">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <path d="M4 9 V5 a1 1 0 0 1 1 -1 H9"/><path d="M15 4 H19 a1 1 0 0 1 1 1 V9"/>
         <path d="M20 15 V19 a1 1 0 0 1 -1 1 H15"/><path d="M9 20 H5 a1 1 0 0 1 -1 -1 V15"/>
+      </svg>
+    </button>
+    <button id="fernBackBtn" class="iconBtn" aria-label="Back" title="Back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12 H5"/><path d="M11 6 L5 12 L11 18"/>
       </svg>
     </button>
     <button id="fernResetBtn" class="iconBtn" aria-label="Reset view" title="Reset view">
