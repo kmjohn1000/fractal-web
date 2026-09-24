@@ -319,5 +319,8 @@ function createFernView(canvas) {
     view, resize, render, worldToScreen, screenToWorld,
     get dpr() { return dpr; },
     get accepted() { return accepted; },
+    // True while refinement frames are still pending (see render); share
+    // capture waits for this so it doesn't save a half-filled fern.
+    get refining() { return pendingFrame !== 0; },
   };
 }
