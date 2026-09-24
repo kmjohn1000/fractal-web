@@ -24,3 +24,13 @@ Follow the root CLAUDE.md's Git Hygiene section for commit granularity/messages 
 
 - **When the user suggests an idea, add it to `TODO.md` right away** — don't ask whether to. Adding it isn't approval to build it; the TODO list is for ideas not yet approved for implementation.
 - **When a commit delivers something listed in `TODO.md`, mark that entry complete right after the commit**: move it to the `## Done` section at the bottom with the commit hash, and commit + push that update.
+
+## CHANGELOG.md workflow
+
+- `CHANGELOG.md` is the version history and the single source of the current version number. Newest version goes at the **top**.
+- **Every commit that changes the app** (not TODO/CLAUDE.md/docs-only commits) bumps the version and adds an entry in the same commit. Use semver-ish bumps: patch (`1.2.3` → `1.2.4`) for fixes/tweaks, minor (`1.2.x` → `1.3.0`) for new features or modes, major only when the user asks.
+- Entry format — a heading with version and date, then one short user-facing bullet per change:
+  ```
+  ## 1.3.0 — 2026-09-24
+  - Added Viridis and Turbo colormaps.
+  ```
