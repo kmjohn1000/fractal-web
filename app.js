@@ -574,7 +574,7 @@ let juliaHistory = [];
 const kochState = { depth: 4, fill: true, animating: false, timer: null };
 const treeState = { depth: 9 };
 const dragonState = { depth: 13 };
-const fernState = { count: 60000, colorIndex: 0 };
+const fernState = { count: 1000000, colorIndex: 0 };
 
 function pushHistory(pane) {
   const st = pane === "julia" ? juliaState : mainState;
@@ -646,7 +646,12 @@ function renderAll() {
     dragonView.render({ depth: dragonState.depth, colormapIndex });
     updateDragonHud();
   } else {
-    fernView.render({ count: fernState.count, colorIndex: fernState.colorIndex });
+    fernView.render({
+      count: fernState.count,
+      colorIndex: fernState.colorIndex,
+      isActive: () => mode === "fern",
+      onProgress: updateFernHud,
+    });
     updateFernHud();
   }
 }
@@ -732,7 +737,9 @@ function updateDragonHud() {
 }
 
 function updateFernHud() {
-  els.hud.textContent = `Barnsley Fern   points: ${fernState.count.toLocaleString()}${rotationHudText(fernView.view.rotation)}`;
+  // accepted = points actually on screen so far; it climbs toward the
+  // target as refinement runs, and resets on every pan/zoom.
+  els.hud.textContent = `Barnsley Fern   points: ${fernView.accepted.toLocaleString()} / ${fernState.count.toLocaleString()}${rotationHudText(fernView.view.rotation)}`;
 }
 
 function positionCrosshair() {
