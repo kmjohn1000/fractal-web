@@ -25,16 +25,18 @@ const FTYPE = { ESCAPE: 0, SHIP: 1, TRICORN: 2, NEWTON: 3, CARPET: 4, GASKET: 5 
 //               (root-finding, not escape-time), and the digit-test
 //               carpet/gasket (self-similar IFS constructions).
 const FRACTAL_CONFIGS = {
-  // These three boxes are the sets' measured extents (antenna/tips
-  // included) plus a small margin; Tricorn's tips reach y = +-1.54, which
-  // the old +-1.25 box clipped even before aspect fitting.
+  // The escape-time and Julia boxes are the sets' measured extents
+  // (antenna/tips included; for dust-like Julia sets, points surviving 60+
+  // iterations) plus a ~0.1 margin, so each opens filling the screen.
+  // Tricorn's tips reach y = +-1.54, which its old +-1.25 box clipped even
+  // before aspect fitting.
   "Mandelbrot":   { ftype: FTYPE.ESCAPE,  power: 2, juliaC: null,               view: [-2.15, 0.65, -1.25, 1.25], dual: true,  family: "escape" },
   "Burn. Ship":   { ftype: FTYPE.SHIP,    power: 2, juliaC: null,               view: [-2.15, 1.25, -1.85, 0.65], dual: true,  family: "escape" },
   "Tricorn":      { ftype: FTYPE.TRICORN, power: 2, juliaC: null,               view: [-2.1,  1.15, -1.7,  1.7],  dual: true,  family: "escape" },
-  "Multibrot³": { ftype: FTYPE.ESCAPE, power: 3, juliaC: null,             view: [-2.0, 2.0, -1.5,  1.5],  dual: true,  family: "escape" },
-  "Julia:Rabbit": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.12256, 0.74486], view: [-1.8, 1.8, -1.35, 1.35], dual: false, family: "julia" },
-  "Julia:Dragon": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.4, 0.6],         view: [-1.8, 1.8, -1.35, 1.35], dual: false, family: "julia" },
-  "Julia:Spiral": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [0.285, 0.01],       view: [-1.8, 1.8, -1.35, 1.35], dual: false, family: "julia" },
+  "Multibrot³": { ftype: FTYPE.ESCAPE, power: 3, juliaC: null,             view: [-0.82, 0.82, -1.45, 1.45], dual: true,  family: "escape" },
+  "Julia:Rabbit": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.12256, 0.74486], view: [-1.42, 1.42, -1.2, 1.2], dual: false, family: "julia" },
+  "Julia:Dragon": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.4, 0.6],         view: [-1.5, 1.5, -1.1, 1.1],   dual: false, family: "julia" },
+  "Julia:Spiral": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [0.285, 0.01],       view: [-0.95, 0.95, -1.2, 1.2], dual: false, family: "julia" },
   "Newton z³": { ftype: FTYPE.NEWTON, power: 3, juliaC: null,              view: [-2.0, 2.0, -1.5, 1.5],   dual: false, family: "other" },
   // Digit-test fractals (see FRAG_SRC's renderDigitFractal) — defined on
   // the unit square, so centered there with a little margin. power is
