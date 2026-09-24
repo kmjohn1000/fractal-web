@@ -8,5 +8,8 @@ Future ideas raised but explicitly deferred (not approved for implementation):
 - **Screenshot/save button** — save the current canvas view as an image. Straightforward for the WebGL canvases and any Canvas2D view (`canvas.toBlob()`/`toDataURL()` + a download link or the Web Share API); needs an icon button added per mode's control row.
 - **Shareable view links / bookmarks** — encode the current view (fractal type, center, scale, rotation, maxIter, colormap, and Julia c when relevant) in the URL, e.g. `#f=Mandelbrot&x=…&y=…&s=…&r=…`, so opening the link (browser or installed PWA) lands on that exact spot. A share button copies it or uses the Web Share API; the same encoding doubles as saved bookmarks. Coordinates must be written at full float64 precision (17 significant digits) or deep-zoom links land in the wrong place. Motivation: turns individual discoveries into shareable content (App Store growth loop).
 
+- **Show the last frame while dragging at deep zoom** — below `DEEP_ZOOM_THRESHOLD` the main canvas currently freezes during a pan/pinch (see `renderAll`) instead of following the gesture. Instead, move a snapshot of the last accurate frame with the gesture until the new render lands. Note: a CSS-transform-based preview was tried before and was jumpy (see the comment above `renderAll`); drawing the snapshot as a texture through the existing rotation-aware view math is the likelier route.
+- **Box-zoom (zoom selector) for Barnsley Fern** — the drag-a-rectangle zoom the WebGL fractal modes have (`boxZoomActive` / `commitBoxZoom` in `app.js`), for the fern's Canvas2D view. Requested directly; queued after Burning Ship perturbation.
+
 ## Done
 
