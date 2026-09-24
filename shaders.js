@@ -50,21 +50,20 @@ void main() {
 // resetting a pixel's delta right then doesn't fix anything since the
 // reference passing near zero doesn't mean that pixel's true orbit does too.
 //
-// This is real two-pass glitch detection instead, using the standard
-// "Pauldelbrot criterion": a pixel is glitched if its computed value
-// collapses to near-zero relative to the reference orbit's own magnitude at
-// that step — a sign its true trajectory has drifted into different
-// territory than the reference represents, invalidating the linear
-// approximation from there on. Pass 1 renders with reference orbit A (the
-// view center) into an offscreen framebuffer and flags glitches in the
-// alpha channel. The CPU reads that back, and if any pixel glitched, picks
-// its location as a second reference orbit B. Pass 2 renders to the actual
-// canvas: clean pass-1 pixels are reused directly, glitched ones are
-// recomputed against orbit B. Bounded to exactly one retry — a pixel still
-// glitched under orbit B is accepted as-is rather than attempting a third
-// pass, which is the same bound production tools don't actually have (they
-// iterate this until clean), so some residual glitching in pathological
-// regions is still possible.
+// Glitches are handled by rebasing (Zhuoran, 2021), which replaced an
+// earlier two-pass scheme (Pauldelbrot glitch flags in an offscreen pass,
+// a full-frame readPixels to find one glitched pixel, a second reference
+// orbit from there, and a second pass -- bounded to one retry, so glitches
+// survived in hard regions). Each pixel instead tracks its own index m into
+// the reference orbit, and whenever its true value Z[m]+dz gets closer to
+// zero than dz itself -- exactly when the delta stops being a small
+// correction and glitches start -- it restarts from the beginning of the
+// reference: dz = Z[m]+dz, m = 0. That's valid because every reference
+// orbit starts at Z[0] = 0, the critical point of z^n+c, so "the pixel's
+// value is dz" and "the pixel is dz away from Z[0]" are the same statement.
+// It also rebases when it runs off the end of a reference that escaped
+// early. One reference, one draw, no readback. See
+// renderEscapePerturbation and chooseReference in app.js.
 const FRAG_SRC = `
 precision highp float;
 
@@ -86,15 +85,11 @@ uniform int   u_digitMaxDepth; // Carpet 16, Gasket 22 (DIGIT_MAX_DEPTH in app.j
 uniform vec2  u_jitter;
 
 uniform bool  u_usePerturbation;
-uniform int   u_passNum;         // 1 or 2, only meaningful when u_usePerturbation
-uniform sampler2D u_refOrbitTex; // reference orbit A — width = u_refOrbitLen
+uniform sampler2D u_refOrbitTex; // reference orbit Z[0..len-1] — width = u_refOrbitLen
 uniform int   u_refOrbitLen;
-uniform sampler2D u_pass1Tex;    // pass 2 only: pass 1's result (rgb=color, a=1.0 clean/0.0 glitched)
-uniform bool  u_hasOrbitB;       // pass 2 only: whether a glitch was found and orbit B computed
-uniform sampler2D u_refOrbitTexB;
-uniform int   u_refOrbitLenB;
-// World-space offset of orbit B's own reference point from u_center (0 for
-// orbit A, which IS u_center by construction). See renderEscapePerturbationWith.
+// World-space offset of the reference orbit's own point from u_center --
+// chooseReference in app.js doesn't always use the view center. See
+// renderEscapePerturbation.
 uniform vec2  u_refOffset;
 
 const int FTYPE_ESCAPE  = 0;
@@ -283,67 +278,38 @@ vec3 renderEscapeFast(vec2 p) {
 
 // ---------------------------------------------------------------- perturbation
 
-// dc is the pixel's offset from orbitTex's own reference point — for orbit
-// A that's u_center (refOffset=0), but orbit B's reference point is
-// wherever the glitched pixel that spawned it lives, which is NOT
-// u_center. uv*u_scale*2.0 is always the pixel's offset from u_center, so
-// refOffset (orbit's reference minus u_center, see app.js) is subtracted
-// to correct it back to an offset from the orbit actually being used. This
-// was missing entirely before: every orbit-B retry used dc relative to the
-// wrong point, silently producing wrong values instead of fixing glitches
-// (confirmed by hand: even the one pixel that DEFINED orbit B computed a
-// nonzero dc for itself, when the correct value is exactly zero, since
-// that's where the orbit starts).
-//
-// A small value regardless of absolute zoom depth either way, so plain
-// float32 is exact enough with no splitting needed (see comment above
-// FRAG_SRC). Returns (color.rgb, cleanFlag): cleanFlag is 0.0 if the
-// Pauldelbrot glitch criterion tripped, 1.0 otherwise (including
-// interior/non-escaped points, which aren't glitch-prone the same way).
-vec4 renderEscapePerturbationWith(vec2 uv, sampler2D orbitTex, int orbitLen, vec2 refOffset) {
-  vec2 dc = vec2(uv.x * u_scale * 2.0, uv.y * u_scale * 2.0) - refOffset;
+// dc is the pixel's offset from the reference orbit's own point:
+// uv*u_scale*2.0 is always the offset from u_center, so u_refOffset
+// (reference minus u_center, see app.js) is subtracted to correct it. A
+// small value regardless of absolute zoom depth, so plain float32 is exact
+// enough with no splitting needed (see comment above FRAG_SRC).
+vec3 renderEscapePerturbation(vec2 uv) {
+  vec2 dc = uv * u_scale * 2.0 - u_refOffset;
   vec2 dz = vec2(0.0);
-  vec2 Zcur = vec2(0.0); // reference orbit's Z[0] is always 0 by construction
+  vec2 Zm = vec2(0.0); // Z[m]; every reference orbit's Z[0] is 0
+  int m = 0;
+  float orbitLen = float(u_refOrbitLen);
 
   int iter = 0;
   bool escaped = false;
-  bool glitched = false;
   vec2 fullAtEscape = vec2(0.0);
 
   for (int i = 0; i < 2000; i++) {
     if (i >= u_maxIter) break;
-    if (i + 1 >= orbitLen) {
-      // The reference orbit escaped/ended before this pixel could be
-      // resolved against it -- its true state (does it also escape, does
-      // it need more iterations, etc.) is simply unknown from this
-      // reference alone. This used to fall through to "ran out of loop,
-      // never escaped" i.e. treated as solid interior, which was a real,
-      // measured bug: 16% of pixels that genuinely escape (measured near
-      // (-0.75,0.02) at scale 5e-4) were painted black because the
-      // view-center reference happened to escape early. Only flag this
-      // when the orbit stopped due to an actual escape rather than
-      // legitimately reaching u_maxIter unescaped (see computeReferenceOrbit
-      // in app.js: a non-escaping orbit has length maxIter+1, so
-      // orbitLen-1 == u_maxIter exactly in that case, not less than it) --
-      // otherwise a genuinely-interior reference would wrongly flag every
-      // pixel around it as glitched.
-      if (orbitLen - 1 < u_maxIter) glitched = true;
-      break;
-    }
 
     if (u_power > 2.5) {
       // (Z+dz)^3 - Z^3 = 3*Z^2*dz + 3*Z*dz^2 + dz^3
-      vec2 Z2 = cMul(Zcur, Zcur);
+      vec2 Z2 = cMul(Zm, Zm);
       vec2 dz2 = cMul(dz, dz);
-      dz = cMul(3.0 * Z2, dz) + cMul(3.0 * Zcur, dz2) + cMul(dz2, dz) + dc;
+      dz = cMul(3.0 * Z2, dz) + cMul(3.0 * Zm, dz2) + cMul(dz2, dz) + dc;
     } else {
       // (Z+dz)^2 - Z^2 = 2*Z*dz + dz^2
-      dz = cMul(2.0 * Zcur, dz) + cMul(dz, dz) + dc;
+      dz = cMul(2.0 * Zm, dz) + cMul(dz, dz) + dc;
     }
 
-    float nextIdx = float(i + 1);
-    vec2 Znext = texture2D(orbitTex, vec2((nextIdx + 0.5) / float(orbitLen), 0.5)).xy;
-    vec2 full = Znext + dz;
+    m++;
+    Zm = texture2D(u_refOrbitTex, vec2((float(m) + 0.5) / orbitLen, 0.5)).xy;
+    vec2 full = Zm + dz;
     iter = i;
 
     if (dot(full, full) > 16.0) {
@@ -352,24 +318,18 @@ vec4 renderEscapePerturbationWith(vec2 uv, sampler2D orbitTex, int orbitLen, vec
       break;
     }
 
-    // Pauldelbrot glitch criterion: the true trajectory has collapsed to
-    // near-zero relative to the reference orbit's own magnitude at this
-    // step, meaning this pixel has drifted into different structure than
-    // the reference orbit represents. Stop immediately rather than
-    // continuing to iterate on data that's no longer meaningful.
-    if (dot(full, full) < 1e-6 * dot(Znext, Znext)) {
-      glitched = true;
-      break;
+    // Rebase (see comment above FRAG_SRC): the pixel's value is now closer
+    // to zero than its delta, or the reference has no Z[m+1] to step to.
+    if (dot(full, full) < dot(dz, dz) || m >= u_refOrbitLen - 1) {
+      dz = full;
+      m = 0;
+      Zm = vec2(0.0);
     }
-
-    Zcur = Znext;
   }
 
-  if (glitched) return vec4(0.0, 0.0, 0.0, 0.0);
-  if (!escaped) return vec4(0.0, 0.0, 0.0, 1.0);
-
+  if (!escaped) return vec3(0.0);
   float smoothIter = float(iter) + 1.0 - log2(log2(sqrt(dot(fullAtEscape, fullAtEscape))));
-  return vec4(lutColor(smoothIter * 0.025), 1.0);
+  return lutColor(smoothIter * 0.025);
 }
 
 void main() {
@@ -377,7 +337,7 @@ void main() {
 
   // Rotate the screen-space offset once, up front — every downstream use of
   // uv (Newton's p, the fast-path p, and the perturbation delta dc inside
-  // renderEscapePerturbationWith) derives from it, so this single rotation
+  // renderEscapePerturbation) derives from it, so this single rotation
   // covers all of them. Must match app.js's screenToComplex/centerForAnchor
   // rotation convention exactly, or the rendered fractal and the pointer/
   // gesture math (panning, box-zoom, the Julia-c crosshair) disagree about
@@ -399,19 +359,7 @@ void main() {
   }
 
   if (u_usePerturbation) {
-    if (u_passNum == 1) {
-      gl_FragColor = renderEscapePerturbationWith(uv, u_refOrbitTex, u_refOrbitLen, vec2(0.0));
-    } else {
-      vec4 p1 = texture2D(u_pass1Tex, gl_FragCoord.xy / u_resolution);
-      if (p1.a > 0.5) {
-        gl_FragColor = vec4(p1.rgb, 1.0);
-      } else if (u_hasOrbitB) {
-        vec4 r = renderEscapePerturbationWith(uv, u_refOrbitTexB, u_refOrbitLenB, u_refOffset);
-        gl_FragColor = vec4(r.rgb, 1.0); // accept as-is even if still glitched — bounded to one retry
-      } else {
-        gl_FragColor = vec4(p1.rgb, 1.0);
-      }
-    }
+    gl_FragColor = vec4(renderEscapePerturbation(uv), 1.0);
     return;
   }
 

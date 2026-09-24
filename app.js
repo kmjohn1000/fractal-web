@@ -122,6 +122,58 @@ function computeReferenceOrbit(cx, cy, power, maxIter) {
   return { data: data.subarray(0, len * 4), length: len };
 }
 
+// Picks the reference point for perturbation: the view center if it never
+// escapes, else the longest-surviving point on a coarse grid over the
+// (rotated) view. The shader rebases correctly when a pixel outlives the
+// reference, but after that particular rebase dz is O(1), and in float32 the
+// pixel's tiny dc (~scale) is lost against it -- that pixel quietly drops to
+// plain-float32 accuracy. Double-precision perturbation renderers don't have
+// this problem; ours does, so it's worth a few ms of float64 CPU iteration to
+// make "reference escapes first" as rare as possible. Returns the reference
+// point's offset from the view center (the shader's u_refOffset).
+const REFERENCE_GRID = 32;
+function chooseReference(state, widthPx, heightPx) {
+  const escapeIter = (cr, ci) => {
+    let zr = 0, zi = 0;
+    for (let n = 0; n < state.maxIter; n++) {
+      let nzr, nzi;
+      if (state.power === 3) {
+        const zr2 = zr * zr - zi * zi, zi2 = 2 * zr * zi;
+        nzr = zr2 * zr - zi2 * zi;
+        nzi = zr2 * zi + zi2 * zr;
+      } else {
+        nzr = zr * zr - zi * zi;
+        nzi = 2 * zr * zi;
+      }
+      zr = nzr + cr;
+      zi = nzi + ci;
+      if (zr * zr + zi * zi > 16.0) return n;
+    }
+    return Infinity;
+  };
+  if (escapeIter(state.cx, state.cy) === Infinity) return { dx: 0, dy: 0 };
+
+  // Same uv -> world mapping as FRAG_SRC's main(), rotation included.
+  const rot = state.rotation || 0;
+  const rc = Math.cos(rot), rs = Math.sin(rot);
+  const halfW = 0.5 * widthPx / heightPx;
+  let best = { dx: 0, dy: 0, iter: -1 };
+  for (let gy = 0; gy < REFERENCE_GRID; gy++) {
+    for (let gx = 0; gx < REFERENCE_GRID; gx++) {
+      const uvx = ((gx + 0.5) / REFERENCE_GRID * 2 - 1) * halfW;
+      const uvy = ((gy + 0.5) / REFERENCE_GRID * 2 - 1) * 0.5;
+      const dx = (uvx * rc - uvy * rs) * state.scale * 2.0;
+      const dy = (uvx * rs + uvy * rc) * state.scale * 2.0;
+      const iter = escapeIter(state.cx + dx, state.cy + dy);
+      if (iter > best.iter) {
+        best = { dx, dy, iter };
+        if (iter === Infinity) return best;
+      }
+    }
+  }
+  return best;
+}
+
 // ---------------------------------------------------------------- supersampling
 // Sub-pixel sample offsets (in pixels) for progressive supersampling. One
 // sample per pixel aliases badly wherever the fractal varies faster than the
@@ -197,13 +249,8 @@ function createFractalRenderer(canvas) {
     digitMaxDepth: gl.getUniformLocation(prog, "u_digitMaxDepth"),
     jitter: gl.getUniformLocation(prog, "u_jitter"),
     usePerturbation: gl.getUniformLocation(prog, "u_usePerturbation"),
-    passNum: gl.getUniformLocation(prog, "u_passNum"),
     refOrbitTex: gl.getUniformLocation(prog, "u_refOrbitTex"),
     refOrbitLen: gl.getUniformLocation(prog, "u_refOrbitLen"),
-    pass1Tex: gl.getUniformLocation(prog, "u_pass1Tex"),
-    hasOrbitB: gl.getUniformLocation(prog, "u_hasOrbitB"),
-    refOrbitTexB: gl.getUniformLocation(prog, "u_refOrbitTexB"),
-    refOrbitLenB: gl.getUniformLocation(prog, "u_refOrbitLenB"),
     refOffset: gl.getUniformLocation(prog, "u_refOffset"),
   };
 
@@ -234,57 +281,6 @@ function createFractalRenderer(canvas) {
   }
   const perturbationSupported = !!refOrbitTex;
 
-  // Glitch detection needs a second render pass: pass 1 goes to this
-  // offscreen framebuffer (so its result can be read back and reused as an
-  // input texture in pass 2), and refOrbitTexB holds the second reference
-  // orbit used to recompute pixels pass 1 flagged as glitched.
-  const pass1Fbo = perturbationSupported ? gl.createFramebuffer() : null;
-  const pass1Tex = perturbationSupported ? gl.createTexture() : null;
-  if (pass1Tex) {
-    gl.bindTexture(gl.TEXTURE_2D, pass1Tex);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  }
-  const refOrbitTexB = perturbationSupported ? gl.createTexture() : null;
-  if (refOrbitTexB) {
-    gl.bindTexture(gl.TEXTURE_2D, refOrbitTexB);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-  }
-
-  let fboWidth = 0, fboHeight = 0;
-  function ensureFbo(w, h) {
-    if (fboWidth === w && fboHeight === h) return;
-    fboWidth = w; fboHeight = h;
-    // pass1Tex is sampled on texture unit 2 (see render()'s pass 2 setup) —
-    // bind it there explicitly rather than on whatever unit happened to be
-    // active (unit 0, the LUT's unit, right after render()'s own setup),
-    // which was silently overwriting the LUT binding with pass1Tex on every
-    // resize. Unbind afterward too: this texture is also the pass-1 FBO's
-    // color attachment, and leaving it bound on unit 2 while pass 1 renders
-    // into it is a render-to-your-own-input feedback loop, which WebGL
-    // rejects outright (confirmed via gl.getError() === 1282,
-    // GL_INVALID_OPERATION, on every perturbation draw from the second
-    // frame onward) -- see the matching unbind right before the pass-1
-    // draw call in render(), which handles the case where a PREVIOUS
-    // frame's pass 2 left it bound instead of this resize path.
-    gl.activeTexture(gl.TEXTURE2);
-    gl.bindTexture(gl.TEXTURE_2D, pass1Tex);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, pass1Fbo);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, pass1Tex, 0);
-    const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-    if (status !== gl.FRAMEBUFFER_COMPLETE) {
-      reportError(`Perturbation glitch-detection framebuffer incomplete (status ${status}) — deep zoom will fall back to single-pass rendering.`);
-    }
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.bindTexture(gl.TEXTURE_2D, null);
-  }
-
   let dpr = Math.min(window.devicePixelRatio || 1, 2);
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -314,11 +310,11 @@ function createFractalRenderer(canvas) {
     gl.disable(gl.BLEND);
   }
 
-  // Orbit B from the last sample-0 perturbation render, reused by that same
-  // view's later supersampling passes so they don't each pay for a
-  // full-frame readPixels glitch search. Only valid for the view it came
-  // from -- the caller guarantees any view change re-renders sample 0 first.
-  let orbitBCache = { has: false, length: 0, offsetX: 0, offsetY: 0 };
+  // Reference orbit for the current view, reused by that view's
+  // supersampling passes instead of re-running chooseReference's grid scan
+  // and re-uploading the texture 16 times.
+  let refCacheKey = "";
+  let refCache = null;
 
   // sampleIndex selects the sub-pixel offset from SAMPLE_OFFSETS; see there
   // and drawToCanvas for how successive samples accumulate.
@@ -361,107 +357,21 @@ function createFractalRenderer(canvas) {
       return false;
     }
 
-    // --- Pass 1: render to an offscreen framebuffer with reference orbit A
-    // (the view center), flagging glitched pixels in the alpha channel.
-    ensureFbo(canvas.width, canvas.height);
-    const orbitA = computeReferenceOrbit(state.cx, state.cy, state.power, state.maxIter);
+    const key = [state.cx, state.cy, state.scale, state.rotation || 0,
+      state.power, state.maxIter, canvas.width, canvas.height].join(",");
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, refOrbitTex);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, orbitA.length, 1, 0, gl.RGBA, gl.FLOAT, orbitA.data);
+    if (key !== refCacheKey) {
+      const ref = chooseReference(state, canvas.width, canvas.height);
+      const orbit = computeReferenceOrbit(state.cx + ref.dx, state.cy + ref.dy, state.power, state.maxIter);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, orbit.length, 1, 0, gl.RGBA, gl.FLOAT, orbit.data);
+      refCache = { dx: ref.dx, dy: ref.dy, length: orbit.length };
+      refCacheKey = key;
+    }
     gl.uniform1i(u.refOrbitTex, 1);
-    gl.uniform1i(u.refOrbitLen, orbitA.length);
-    gl.uniform1i(u.passNum, 1);
-
-    // Break the render-to-your-own-input feedback loop for the pass-1 draw:
-    // pass1Tex may still be bound on unit 2 from a PREVIOUS frame's pass 2
-    // (see below), and it's about to be rendered into via the FBO — WebGL
-    // rejects a draw where the target of an FBO's color attachment is also
-    // bound as an active sampler input, even though pass 1's shader branch
-    // never actually samples u_pass1Tex.
-    gl.activeTexture(gl.TEXTURE2);
-    gl.bindTexture(gl.TEXTURE_2D, null);
-
-    gl.bindFramebuffer(gl.FRAMEBUFFER, pass1Fbo);
-    gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-    if (sampleIndex > 0) {
-      // Supersampling pass: reuse sample 0's orbit B (still uploaded on
-      // unit 3) instead of searching this pass's glitches again. Pass 2
-      // still consults THIS pass's own glitch flags, so it only substitutes
-      // orbit B where this jittered sample actually glitched.
-      gl.activeTexture(gl.TEXTURE3);
-      gl.bindTexture(gl.TEXTURE_2D, refOrbitTexB);
-      gl.uniform1i(u.refOrbitTexB, 3);
-      gl.uniform1i(u.refOrbitLenB, orbitBCache.length);
-      gl.uniform1i(u.hasOrbitB, orbitBCache.has ? 1 : 0);
-      gl.uniform2f(u.refOffset, orbitBCache.offsetX, orbitBCache.offsetY);
-      gl.uniform1i(u.passNum, 2);
-      gl.activeTexture(gl.TEXTURE2);
-      gl.bindTexture(gl.TEXTURE_2D, pass1Tex);
-      gl.uniform1i(u.pass1Tex, 2);
-      drawToCanvas(sampleIndex);
-      return true;
-    }
-
-    // Read back the alpha channel to find whether anything glitched, and
-    // where — that location becomes reference orbit B. Bounded to a single
-    // retry: only the first glitched pixel found is used, not a search for
-    // the "best" one.
-    const pixels = new Uint8Array(canvas.width * canvas.height * 4);
-    gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-
-    let glitchIdx = -1;
-    for (let i = 3; i < pixels.length; i += 4) {
-      if (pixels[i] < 128) { glitchIdx = (i - 3) / 4; break; }
-    }
-
-    let hasOrbitB = false;
-    let refOffsetX = 0, refOffsetY = 0, orbitBLength = 0;
-    if (glitchIdx >= 0) {
-      const px = glitchIdx % canvas.width;
-      const py = Math.floor(glitchIdx / canvas.width);
-      // Same gl_FragCoord-style mapping the shader itself uses: readPixels
-      // rows run bottom-to-top, matching gl_FragCoord.y's convention.
-      const uvx = (px + 0.5 - 0.5 * canvas.width) / canvas.height;
-      const uvy = (py + 0.5 - 0.5 * canvas.height) / canvas.height;
-      // Must apply the same rotation FRAG_SRC applies to uv before ANY use
-      // (see its top-of-main comment) -- this was missing, so with a
-      // nonzero rotation orbit B was centered on the wrong world point
-      // entirely, not just offset by the (separately-fixed) refOffset.
-      const rot = state.rotation || 0;
-      const rc = Math.cos(rot), rs = Math.sin(rot);
-      const wx = uvx * rc - uvy * rs;
-      const wy = uvx * rs + uvy * rc;
-      const cxB = state.cx + wx * state.scale * 2.0;
-      const cyB = state.cy + wy * state.scale * 2.0;
-      const orbitB = computeReferenceOrbit(cxB, cyB, state.power, state.maxIter);
-      gl.activeTexture(gl.TEXTURE3);
-      gl.bindTexture(gl.TEXTURE_2D, refOrbitTexB);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, orbitB.length, 1, 0, gl.RGBA, gl.FLOAT, orbitB.data);
-      gl.uniform1i(u.refOrbitTexB, 3);
-      gl.uniform1i(u.refOrbitLenB, orbitB.length);
-      orbitBLength = orbitB.length;
-      hasOrbitB = true;
-      // Orbit B's own reference point isn't u_center, so the shader's dc
-      // (always computed as an offset from u_center) needs this correction
-      // — see renderEscapePerturbationWith's comment in shaders.js.
-      refOffsetX = cxB - state.cx;
-      refOffsetY = cyB - state.cy;
-    }
-    gl.uniform1i(u.hasOrbitB, hasOrbitB ? 1 : 0);
-    gl.uniform2f(u.refOffset, refOffsetX, refOffsetY);
-    orbitBCache = { has: hasOrbitB, length: orbitBLength, offsetX: refOffsetX, offsetY: refOffsetY };
-
-    // --- Pass 2: render to the real canvas, reusing pass 1's clean pixels
-    // and recomputing glitched ones from orbit B.
-    gl.uniform1i(u.passNum, 2);
-    gl.activeTexture(gl.TEXTURE2);
-    gl.bindTexture(gl.TEXTURE_2D, pass1Tex);
-    gl.uniform1i(u.pass1Tex, 2);
-
-    drawToCanvas(0);
-
+    gl.uniform1i(u.refOrbitLen, refCache.length);
+    gl.uniform2f(u.refOffset, refCache.dx, refCache.dy);
+    drawToCanvas(sampleIndex);
     return true;
   }
 
@@ -518,9 +428,9 @@ let dualActive = false;
 let boxZoomActive = false;
 let activePane = "main"; // "main" | "julia" — which pane Back/box-zoom targets
 
-// Perturbation rendering does two full-frame GPU passes plus a synchronous
-// gl.readPixels() (glitch detection) — genuinely slow on mobile, often
-// 100s of ms. The main canvas is frozen (see renderAll) for the whole time
+// Perturbation rendering runs a CPU reference search (chooseReference) plus
+// a heavy full-frame GPU pass — slow on mobile, often 100s of ms at high
+// maxIter. The main canvas is frozen (see renderAll) for the whole time
 // isInteracting is true, so this delay only affects how soon it snaps back
 // to an accurate render after you stop — no correctness risk either way,
 // just responsiveness.
