@@ -55,6 +55,21 @@ const FRACTAL_CONFIGS = {
   "Gasket":       { ftype: FTYPE.GASKET,  power: 2, juliaC: null,               view: [-0.15, 1.15, -0.15, 1.15], dual: false, family: "other" },
 };
 const FRACTAL_NAMES = Object.keys(FRACTAL_CONFIGS);
+
+// "Surprise me" destinations (see teleport()). Keyed by FRACTAL_CONFIGS name,
+// not FTYPE: FTYPE.ESCAPE is shared by Mandelbrot, Multibrot³ and the Julia
+// presets, whose coordinates mean different things. scale is the view's
+// half-height, as everywhere else. Every entry was checked by rendering it
+// (not taken on faith): each lands on visible boundary detail at its scale.
+// re/im are strings so the source keeps every digit it was given.
+const TELEPORT_DESTINATIONS = [
+  { fractal: "Mandelbrot", label: "Seahorse Valley", re: "-0.743643887037151", im: "0.131825904205330", scale: 4e-10 },
+  { fractal: "Mandelbrot", label: "Elephant Valley", re: "0.2925", im: "0.0165", scale: 6e-3 },
+  { fractal: "Mandelbrot", label: "Mini Mandelbrot", re: "-1.7490033809726543", im: "0.0", scale: 2e-12 },
+  { fractal: "Mandelbrot", label: "Spiral Cluster", re: "-0.7453", im: "0.1127", scale: 1e-3 },
+  { fractal: "Mandelbrot", label: "Feather Valley", re: "-0.774931606245356", im: "-0.13706041474587047", scale: 1e-8 },
+  { fractal: "Mandelbrot", label: "Double Spiral", re: "-0.16070135", im: "1.0375665", scale: 5e-7 },
+];
 const FRACTAL_FAMILIES = [
   { key: "escape", label: "Escape-time (parameter space)" },
   { key: "julia",  label: "Julia sets" },
@@ -556,6 +571,7 @@ const els = {
   dualBtn: document.getElementById("dualBtn"),
   boxZoomBtn: document.getElementById("boxZoomBtn"),
   backBtn: document.getElementById("backBtn"),
+  teleportBtn: document.getElementById("teleportBtn"),
   resetBtn: document.getElementById("resetBtn"),
   kochDepthSlider: document.getElementById("kochDepthSlider"),
   kochAnimateBtn: document.getElementById("kochAnimateBtn"),
@@ -939,6 +955,7 @@ function centerForAnchor(renderer, state, sx, sy, targetX, targetY) {
 // ---------------------------------------------------------------- fractal-type / mode switching
 
 function selectFractal(name) {
+  cancelTeleport();
   currentName = name;
   const config = FRACTAL_CONFIGS[name];
   mainState = freshState(config);
@@ -952,6 +969,7 @@ function selectFractal(name) {
   if (dualActive) enterDual();
   els.dualBtn.disabled = !config.dual;
   els.dualBtn.classList.toggle("active", dualActive);
+  els.teleportBtn.classList.toggle("hidden", !TELEPORT_DESTINATIONS.some((d) => d.fractal === name));
   // Carpet/Gasket use a zoom-derived depth (see FRAG_SRC) — the iter slider does
   // nothing for them, and leaving it enabled implied otherwise, which is
   // exactly the mismatch that made them render as almost solid black
@@ -1079,6 +1097,7 @@ function attachFractalInteraction(canvas, getState, paneName, renderer) {
   }
 
   canvas.addEventListener("pointerdown", (e) => {
+    cancelTeleport();
     canvas.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pointers.size >= 2) multiTouch = true;
@@ -1230,6 +1249,7 @@ function attachFractalInteraction(canvas, getState, paneName, renderer) {
   canvas.addEventListener("wheel", (e) => {
     e.preventDefault();
     if (boxZoomActive) return;
+    cancelTeleport();
     activePane = paneName;
     const now = performance.now();
     if (now - lastZoomPush > 400) { pushHistory(paneName); lastZoomPush = now; }
@@ -1607,7 +1627,93 @@ els.boxZoomBtn.addEventListener("click", () => {
   if (!boxZoomActive) els.boxRect.classList.add("hidden");
 });
 
-els.backBtn.addEventListener("click", () => popHistory(activePane));
+els.backBtn.addEventListener("click", () => { cancelTeleport(); popHistory(activePane); });
+
+// ---------------------------------------------------------------- teleport ("Surprise me")
+
+// d3's interpolateZoom (van Wijk & Nuij, "Smooth and efficient zooming and
+// panning"): a far jump zooms out, pans, and zooms back in, instead of
+// zooming straight at a point that stays off-screen the whole way. Views
+// are [cx, cy, w] with w the visible height; returns f(t) for t in [0, 1].
+// The near-case cutoff is relative to w, not d3's absolute 1e-12 --
+// deep-zoom jumps are routinely that small in absolute terms.
+function zoomPath(p0, p1) {
+  const rho = Math.SQRT2, rho2 = 2, rho4 = 4;
+  const [ux0, uy0, w0] = p0, [ux1, uy1, w1] = p1;
+  const dx = ux1 - ux0, dy = uy1 - uy0, d2 = dx * dx + dy * dy;
+  const tiny = 1e-6 * Math.min(w0, w1);
+  if (d2 < tiny * tiny) {
+    const S = Math.log(w1 / w0) / rho;
+    return (t) => [ux0 + t * dx, uy0 + t * dy, w0 * Math.exp(rho * t * S)];
+  }
+  const d1 = Math.sqrt(d2);
+  const b0 = (w1 * w1 - w0 * w0 + rho4 * d2) / (2 * w0 * rho2 * d1);
+  const b1 = (w1 * w1 - w0 * w0 - rho4 * d2) / (2 * w1 * rho2 * d1);
+  // d3 writes these as log(sqrt(b*b + 1) - b), which cancels to log(0) when
+  // a flight starts deep (b0 ~ distance / w0 ~ 1e10). -asinh(b) is the same
+  // value, computed stably.
+  const r0 = -Math.asinh(b0);
+  const r1 = -Math.asinh(b1);
+  const S = (r1 - r0) / rho;
+  const coshr0 = Math.cosh(r0), sinhr0 = Math.sinh(r0);
+  return (t) => {
+    const s = t * S;
+    const u = w0 / (rho2 * d1) * (coshr0 * Math.tanh(rho * s + r0) - sinhr0);
+    return [ux0 + u * dx, uy0 + u * dy, w0 * coshr0 / Math.cosh(rho * s + r0)];
+  };
+}
+
+const TELEPORT_MS = 500;
+let lastTeleportIndex = -1; // index into TELEPORT_DESTINATIONS; never picked twice in a row
+let teleportGeneration = 0;
+
+// Any direct manipulation (pointer, wheel, Back, fractal switch) wins over
+// an in-flight flight: bumping the generation makes its next frame a no-op.
+function cancelTeleport() { teleportGeneration++; }
+
+function teleport() {
+  if (mode !== "fractal") return;
+  const candidates = TELEPORT_DESTINATIONS
+    .map((d, i) => ({ d, i }))
+    .filter(({ d, i }) => d.fractal === currentName && i !== lastTeleportIndex);
+  if (candidates.length === 0) return;
+  const { d, i } = candidates[Math.floor(Math.random() * candidates.length)];
+  lastTeleportIndex = i;
+
+  const st = mainState;
+  const target = { cx: Number(d.re), cy: Number(d.im), scale: d.scale };
+  pushHistory("main");
+  activePane = "main";
+  const path = zoomPath([st.cx, st.cy, 2 * st.scale], [target.cx, target.cy, 2 * target.scale]);
+  const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  const gen = ++teleportGeneration;
+  const t0 = performance.now();
+
+  // Each frame goes through the same path as a pinch frame: markInteracting
+  // puts renderAll on its gesture path (live float32 above
+  // DEEP_ZOOM_THRESHOLD, the moving last-frame preview below it), and its
+  // settle timer does the full-quality render -- perturbation reference
+  // orbit included, via render()'s normal chooseReference call -- plus
+  // applyAutoIter once the last frame lands.
+  const step = (now) => {
+    if (gen !== teleportGeneration || mode !== "fractal" || mainState !== st) return;
+    const t = Math.min(1, (now - t0) / TELEPORT_MS);
+    if (t < 1) {
+      const [cx, cy, w] = path(ease(t));
+      st.cx = cx; st.cy = cy; st.scale = w / 2;
+    } else {
+      // Exact landing: the path's last point can be a few ulps off, which
+      // matters at 1e-12 scales.
+      Object.assign(st, target);
+    }
+    markInteracting();
+    renderAll();
+    if (t < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+els.teleportBtn.addEventListener("click", teleport);
 
 els.resetBtn.addEventListener("click", () => selectFractal(currentName));
 
