@@ -954,6 +954,9 @@ function setMode(next) {
   els.treeCanvas.classList.toggle("hidden", mode !== "tree");
   els.dragonCanvas.classList.toggle("hidden", mode !== "dragon");
   els.fernCanvas.classList.toggle("hidden", mode !== "fern");
+  // First visit to a vector mode: fit its view now that its canvas is
+  // visible and has a real size (later visits keep wherever you left it).
+  if (mode !== "fractal" && !fittedVectorModes.has(mode)) fitVectorView(mode);
   updateMenuActiveState();
   requestRender();
 }
@@ -1410,6 +1413,39 @@ function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive = () =>
   return { back, clearHistory: () => { history.length = 0; } };
 }
 
+// The region each vector view shows in full when its mode first opens and
+// on Reset: the measured extent of its geometry plus a small margin, fitted
+// to the canvas aspect with the same viewFromBounds the WebGL fractals use
+// (a fixed zoom level cut the sides off wide shapes on portrait phones).
+// Koch spans x +-0.866, y +-1; the tree (depth 12) x +-2.95, y 0..3.95; the
+// fern FERN_BOUNDS. The dragon rotates 45 degrees per depth level, so a
+// box covering every depth would open it badly zoomed out -- it's fitted
+// to the current depth instead.
+function vectorViewBox(modeKey) {
+  if (modeKey === "koch") return [-0.95, 0.95, -1.08, 1.08];
+  if (modeKey === "tree") return [-3.1, 3.1, -0.15, 4.1];
+  if (modeKey === "fern") return [-2.4, 2.9, -0.2, 10.25];
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (const [x, y] of dragonCurve(dragonState.depth)) {
+    x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+  }
+  const m = 0.06 * Math.max(x1 - x0, y1 - y0);
+  return [x0 - m, x1 + m, y0 - m, y1 + m];
+}
+
+const VECTOR_VIEWS = {
+  koch: [kochView, els.kochCanvas], tree: [treeView, els.treeCanvas],
+  dragon: [dragonView, els.dragonCanvas], fern: [fernView, els.fernCanvas],
+};
+const fittedVectorModes = new Set();
+function fitVectorView(modeKey) {
+  const [vectorView, canvas] = VECTOR_VIEWS[modeKey];
+  const aspect = canvas.clientWidth > 0 && canvas.clientHeight > 0 ? canvas.clientWidth / canvas.clientHeight : 1;
+  const v = viewFromBounds(vectorViewBox(modeKey), aspect);
+  Object.assign(vectorView.view, { cx: v.cx, cy: v.cy, halfHeight: v.scale, rotation: 0 });
+  fittedVectorModes.add(modeKey);
+}
+
 const kochNav = attachVectorViewInteraction(els.kochCanvas, kochView);
 const treeNav = attachVectorViewInteraction(els.treeCanvas, treeView);
 const dragonNav = attachVectorViewInteraction(els.dragonCanvas, dragonView);
@@ -1535,7 +1571,7 @@ els.kochAnimateBtn.addEventListener("click", () => {
 
 els.kochResetBtn.addEventListener("click", () => {
   kochNav.clearHistory();
-  kochView.view.cx = 0; kochView.view.cy = 0; kochView.view.halfHeight = 1.4; kochView.view.rotation = 0;
+  fitVectorView("koch");
   requestRender();
 });
 
@@ -1551,7 +1587,7 @@ els.treeColormapBtn.addEventListener("click", () => {
 
 els.treeResetBtn.addEventListener("click", () => {
   treeNav.clearHistory();
-  treeView.view.cx = 0; treeView.view.cy = 2.3; treeView.view.halfHeight = 2.9; treeView.view.rotation = 0;
+  fitVectorView("tree");
   requestRender();
 });
 
@@ -1567,7 +1603,7 @@ els.dragonColormapBtn.addEventListener("click", () => {
 
 els.dragonResetBtn.addEventListener("click", () => {
   dragonNav.clearHistory();
-  dragonView.view.cx = -0.35; dragonView.view.cy = -0.24; dragonView.view.halfHeight = 1.0; dragonView.view.rotation = 0;
+  fitVectorView("dragon");
   requestRender();
 });
 
@@ -1591,7 +1627,7 @@ els.fernBoxZoomBtn.addEventListener("click", () => {
 
 els.fernResetBtn.addEventListener("click", () => {
   fernNav.clearHistory();
-  fernView.view.cx = 0.24; fernView.view.cy = 5.0; fernView.view.halfHeight = 5.3; fernView.view.rotation = 0;
+  fitVectorView("fern");
   requestRender();
 });
 
