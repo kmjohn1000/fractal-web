@@ -87,7 +87,15 @@ const EXTRA_MODES = [
   { key: "tree", label: "Pythagoras Tree", family: "other" },
   { key: "dragon", label: "Dragon Curve", family: "other" },
   { key: "fern", label: "Barnsley Fern", family: "other" },
+  { key: "sierpinski", label: "Sierpinski Triangle", family: "other" },
+  { key: "levy", label: "Lévy C Curve", family: "other" },
+  { key: "vicsek", label: "Vicsek Fractal", family: "other" },
 ];
+
+// The chaos-game IFS modes (fern.js's IFS_SYSTEMS). They all share one
+// view, canvas and control row -- the fern's -- and differ only in which
+// transform table that view runs.
+const isIfsMode = (m) => Object.prototype.hasOwnProperty.call(IFS_SYSTEMS, m);
 
 // Deepest level float32 digit extraction stays accurate for, per base --
 // see renderDigitFractal in shaders.js for how these were measured.
@@ -600,7 +608,7 @@ const els = {
   shareNativeBtn: document.getElementById("shareNativeBtn"),
 };
 
-let mode = "fractal"; // "fractal" | "koch" | "tree" | "dragon" | "fern"
+let mode = "fractal"; // "fractal" | "koch" | "tree" | "dragon" | an IFS_SYSTEMS key ("fern", ...)
 let colormapIndex = 0;
 let currentName = "Mandelbrot";
 let dualActive = false;
@@ -635,7 +643,7 @@ const juliaRenderer = createFractalRenderer(els.juliaCanvas);
 const kochView = createKochView(els.kochCanvas);
 const treeView = createPythagorasTreeView(els.treeCanvas);
 const dragonView = createDragonView(els.dragonCanvas);
-const fernView = createFernView(els.fernCanvas);
+const fernView = createIfsView(els.fernCanvas);
 
 if (!mainRenderer) reportError("WebGL context creation failed on mainCanvas — this browser/device may not support WebGL.");
 if (!juliaRenderer) reportError("WebGL context creation failed on juliaCanvas.");
@@ -786,7 +794,7 @@ function renderAll() {
     fernView.render({
       count: fernState.count,
       colorIndex: fernState.colorIndex,
-      isActive: () => mode === "fern",
+      isActive: () => mode === fernView.system,
       onProgress: updateFernHud,
     });
     updateFernHud();
@@ -881,7 +889,7 @@ function updateDragonHud() {
 function updateFernHud() {
   // accepted = points actually on screen so far; it climbs toward the
   // target as refinement runs, and resets on every pan/zoom.
-  els.hud.textContent = `Barnsley Fern   points: ${fernView.accepted.toLocaleString()} / ${fernState.count.toLocaleString()}${rotationHudText(fernView.view.rotation)}`;
+  els.hud.textContent = `${IFS_SYSTEMS[fernView.system].label}   points: ${fernView.accepted.toLocaleString()} / ${fernState.count.toLocaleString()}${rotationHudText(fernView.view.rotation)}`;
 }
 
 function positionCrosshair() {
@@ -1034,13 +1042,19 @@ function setMode(next) {
   els.kochControls.classList.toggle("hidden", mode !== "koch");
   els.treeControls.classList.toggle("hidden", mode !== "tree");
   els.dragonControls.classList.toggle("hidden", mode !== "dragon");
-  els.fernControls.classList.toggle("hidden", mode !== "fern");
+  els.fernControls.classList.toggle("hidden", !isIfsMode(mode));
   els.mainCanvas.classList.toggle("hidden", mode !== "fractal");
   els.juliaCanvas.classList.toggle("hidden", mode !== "fractal" || !dualActive);
   els.kochCanvas.classList.toggle("hidden", mode !== "koch");
   els.treeCanvas.classList.toggle("hidden", mode !== "tree");
   els.dragonCanvas.classList.toggle("hidden", mode !== "dragon");
-  els.fernCanvas.classList.toggle("hidden", mode !== "fern");
+  els.fernCanvas.classList.toggle("hidden", !isIfsMode(mode));
+  // The IFS modes share fernView: point it at this mode's transforms (it
+  // keeps each one's pan/zoom). Back history belongs to the previous one.
+  if (isIfsMode(mode) && fernView.system !== mode) {
+    fernView.setSystem(mode);
+    fernNav.clearHistory();
+  }
   // First visit to a vector mode: fit its view now that its canvas is
   // visible and has a real size (later visits keep wherever you left it).
   if (mode !== "fractal" && !fittedVectorModes.has(mode)) fitVectorView(mode);
@@ -1515,6 +1529,11 @@ function vectorViewBox(modeKey) {
   if (modeKey === "koch") return [-0.95, 0.95, -1.08, 1.08];
   if (modeKey === "tree") return [-3.1, 3.1, -0.15, 4.1];
   if (modeKey === "fern") return [-2.4, 2.9, -0.2, 10.25];
+  if (isIfsMode(modeKey)) {
+    const [x0, x1, y0, y1] = ifsData(modeKey).bounds;
+    const m = 0.04 * Math.max(x1 - x0, y1 - y0);
+    return [x0 - m, x1 + m, y0 - m, y1 + m];
+  }
   let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
   for (const [x, y] of dragonCurve(dragonState.depth)) {
     x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
@@ -1526,6 +1545,8 @@ function vectorViewBox(modeKey) {
 const VECTOR_VIEWS = {
   koch: [kochView, els.kochCanvas], tree: [treeView, els.treeCanvas],
   dragon: [dragonView, els.dragonCanvas], fern: [fernView, els.fernCanvas],
+  sierpinski: [fernView, els.fernCanvas], levy: [fernView, els.fernCanvas],
+  vicsek: [fernView, els.fernCanvas],
 };
 const fittedVectorModes = new Set();
 function fitVectorView(modeKey) {
@@ -1793,20 +1814,20 @@ els.fernPointsSlider.addEventListener("input", () => {
 
 // The palette button in every row opens this picker (same popover pattern as
 // the share menu) instead of cycling blindly. Koch/tree/dragon/fractal pick
-// from the shared COLORMAPS; the fern picks from its own FERN_COLORS.
+// from the shared COLORMAPS; the fern picks from its own IFS_COLORS.
 function cmGradient(stops) {
   return `linear-gradient(to right, ${stops.map(([t, r, g, b]) => `rgb(${r},${g},${b}) ${t * 100}%`).join(", ")})`;
 }
 
 function setFernColor(i) {
   fernState.colorIndex = i;
-  const [r, g, b] = FERN_COLORS[i].rgb;
+  const [r, g, b] = IFS_COLORS[i].rgb;
   els.fernColorSwatch.setAttribute("fill", `rgb(${r}, ${g}, ${b})`);
 }
 
 function openColormapMenu(forFern) {
   const items = forFern
-    ? FERN_COLORS.map((c) => ({ name: c.name, bg: `rgb(${c.rgb.join(",")})` }))
+    ? IFS_COLORS.map((c) => ({ name: c.name, bg: `rgb(${c.rgb.join(",")})` }))
     : COLORMAPS.map((c) => ({ name: c.name, bg: cmGradient(c.stops) }));
   const current = forFern ? fernState.colorIndex : colormapIndex;
   els.colormapMenu.replaceChildren(...items.map((item, i) => {
@@ -1861,7 +1882,7 @@ els.fernBoxZoomBtn.addEventListener("click", () => {
 
 els.fernResetBtn.addEventListener("click", () => {
   fernNav.clearHistory();
-  fitVectorView("fern");
+  fitVectorView(mode);
   requestRender();
 });
 
@@ -1896,7 +1917,7 @@ function buildShareHash() {
   } else {
     const v = VECTOR_VIEWS[mode][0].view;
     put("x", v.cx); put("y", v.cy); put("s", v.halfHeight); put("r", v.rotation || 0);
-    if (mode === "fern") {
+    if (isIfsMode(mode)) {
       put("n", fernState.count); put("c", fernState.colorIndex);
     } else {
       put("cm", colormapIndex);
@@ -1941,7 +1962,7 @@ function parseShareHash(hash) {
       }
       return st;
     }
-    if (m === "fern") return { mode: m, ...view, count: int("n", 100000, 4000000), colorIndex: int("c", 0, FERN_COLORS.length - 1) };
+    if (isIfsMode(m)) return { mode: m, ...view, count: int("n", 100000, 4000000), colorIndex: int("c", 0, IFS_COLORS.length - 1) };
     const maxDepth = { koch: 8, tree: 12, dragon: 16 }[m];
     if (maxDepth === undefined) return null;
     return { mode: m, ...view, cm: int("cm", 0, COLORMAPS.length - 1), depth: int("dp", 0, maxDepth), fill: p.get("fl") !== "0" };
@@ -1965,7 +1986,8 @@ function applyShareState(st) {
     els.dualBtn.classList.toggle("active", dualActive);
     els.iterSlider.value = mainState.maxIter;
   } else {
-    if (st.mode === "fern") {
+    if (isIfsMode(st.mode)) {
+      fernView.setSystem(st.mode); // before the view is written below
       fernState.count = st.count;
       els.fernPointsSlider.value = st.count;
       setFernColor(st.colorIndex);
@@ -2039,7 +2061,7 @@ function compositeDualCanvas() {
 // synchronously and are captured immediately.
 async function captureShareBlob() {
   if (mode === "fractal") await waitUntil(() => refineDone && !isInteracting, 3000);
-  else if (mode === "fern") await waitUntil(() => !fernView.refining, 3000);
+  else if (isIfsMode(mode)) await waitUntil(() => !fernView.refining, 3000);
   const canvas = mode !== "fractal" ? VECTOR_VIEWS[mode][1] : dualActive ? compositeDualCanvas() : els.mainCanvas;
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("canvas.toBlob failed"))), "image/png");

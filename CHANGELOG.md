@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.2.0 — 2026-09-24
+- Three new fractals in the picker: Sierpinski Triangle, Lévy C Curve and Vicsek Fractal. They're drawn the same way as the Barnsley Fern and share its controls (points, color, box zoom, twist to rotate), and each keeps its own pan/zoom.
+
 ## 1.1.1 — 2026-09-24
 - Surprise me flights are slower: about 1 second for short hops, up to 2.5 seconds for the deepest dives.
 
