@@ -43,9 +43,9 @@
 - [ ] "Zoom to nearest minibrot" guided action
 
 ## Tier 4 — build once Tier 2's variety justifies it
-- [ ] Generic L-system engine (unify Koch/Pythagoras Tree/Dragon Curve
+- [x] Generic L-system engine (unify Koch/Pythagoras Tree/Dragon Curve
       into one axiom+rules+turtle interpreter; do this before adding
-      more vector fractals, not after)
+      more vector fractals, not after) — done in `ff5a58f`
 - [ ] Make-your-own-fractal formula editor (needs the building blocks
       Celtic/Buffalo/Lambda introduce before the abstraction is clear)
 - [ ] Custom 3x3 keep/remove mask for Carpet (a preset of the L-system/
