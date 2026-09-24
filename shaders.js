@@ -96,7 +96,11 @@ precision highp float;
 uniform vec2  u_resolution;
 uniform vec2  u_center;
 uniform float u_scale;
-uniform float u_rotation; // radians; two-finger twist gesture, see app.js
+// cos/sin of the view rotation (two-finger twist, see app.js), computed on
+// the CPU in float64 once per frame rather than per pixel -- also exact,
+// where some GPUs' cos()/sin() are approximations.
+uniform float u_rotCos;
+uniform float u_rotSin;
 uniform int   u_maxIter;
 uniform int   u_ftype;   // 0=escape 1=ship 2=tricorn 3=newton
 uniform float u_power;   // 2.0 or 3.0 (escape family only)
@@ -438,8 +442,7 @@ void main() {
   // rotation convention exactly, or the rendered fractal and the pointer/
   // gesture math (panning, box-zoom, the Julia-c crosshair) disagree about
   // which way is "up".
-  float rc = cos(u_rotation), rs = sin(u_rotation);
-  uv = vec2(uv.x * rc - uv.y * rs, uv.x * rs + uv.y * rc);
+  uv = vec2(uv.x * u_rotCos - uv.y * u_rotSin, uv.x * u_rotSin + uv.y * u_rotCos);
 
   if (u_ftype == FTYPE_NEWTON) {
     vec2 p = u_center + uv * u_scale * 2.0;
