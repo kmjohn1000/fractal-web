@@ -18,8 +18,10 @@ const sharedGlobals = {
   createPythagorasTreeView: "readonly",
   createDragonView: "readonly",
   dragonCurve: "readonly",
-  createFernView: "readonly",
-  FERN_COLORS: "readonly",
+  createIfsView: "readonly",
+  IFS_SYSTEMS: "readonly",
+  IFS_COLORS: "readonly",
+  ifsData: "readonly",
 };
 
 export default [
