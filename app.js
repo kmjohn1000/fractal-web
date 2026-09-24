@@ -844,6 +844,38 @@ function rotationHudText(rotation) {
   return Math.abs(rotDeg) > 0.5 ? `   rotation: ${rotDeg.toFixed(0)}°` : "";
 }
 
+// Name goes in the bold headline line, everything else in the muted
+// monospace stats block beneath it (see #hud in index.html).
+function setHud(name, stats) {
+  els.hud.querySelector(".hudName").textContent = name;
+  els.hud.querySelector(".hudStats").textContent = stats;
+}
+
+// Plain decimals while zoomed out (scale >= DEEP_ZOOM_THRESHOLD), where
+// "-0.75 + 0.00i / 1.25" reads better than exponents; full-precision
+// scientific notation once in deep-zoom territory, where the digits are
+// the point.
+function formatHudCoords(cx, cy, scale) {
+  if (scale < DEEP_ZOOM_THRESHOLD) {
+    return {
+      center: `${cx.toExponential(5)} + ${cy.toExponential(5)}i`,
+      scale: scale.toExponential(3),
+    };
+  }
+  // 2 decimals at scale ~1, one more per decade of zoom, capped at 4.
+  const decimals = Math.min(4, Math.max(2, Math.ceil(-Math.log10(scale)) + 1));
+  const fmt = (v) => {
+    let t = v.toFixed(decimals);
+    // Trim trailing zeros, but keep at least 2 decimals (0.00, not 0).
+    while (t.length - t.indexOf(".") - 1 > 2 && t.endsWith("0")) t = t.slice(0, -1);
+    return t.replace(/^-(0\.0+)$/, "$1"); // no "-0.00"
+  };
+  return {
+    center: `${fmt(cx)} + ${fmt(cy)}i`,
+    scale: String(Number(scale.toPrecision(3))),
+  };
+}
+
 function updateHud() {
   const s = mainState;
   const eligibleType = perturbationEligibleType(s);
@@ -868,29 +900,29 @@ function updateHud() {
   const iterText = usesFixedDepth
     ? `depth: ${digitFractalDepth(s.ftype, s.scale, mainRenderer.canvas.height)} (auto)`
     : `maxIter: ${s.maxIter}${s.iterAutoLocked ? "" : " (auto)"}`;
-  let text =
-    `${currentName}   center: ${s.cx.toExponential(5)} + ${s.cy.toExponential(5)}i\n` +
-    `scale: ${s.scale.toExponential(3)}   ${iterText}   precision: ${precision}${rotText}` +
-    `${dualActive ? "   [dual mode — tap left pane to set Julia c]" : ""}`;
-  els.hud.textContent = text;
+  const f = formatHudCoords(s.cx, s.cy, s.scale);
+  setHud(currentName,
+    `center: ${f.center}\n` +
+    `scale: ${f.scale}   ${iterText}   precision: ${precision}${rotText}` +
+    `${dualActive ? "   [dual mode — tap left pane to set Julia c]" : ""}`);
 }
 
 function updateKochHud() {
-  els.hud.textContent = `Koch Snowflake   depth: ${kochState.depth}   ${kochState.fill ? "filled" : "outline"}${rotationHudText(kochView.view.rotation)}`;
+  setHud("Koch Snowflake", `depth: ${kochState.depth}   ${kochState.fill ? "filled" : "outline"}${rotationHudText(kochView.view.rotation)}`);
 }
 
 function updateTreeHud() {
-  els.hud.textContent = `Pythagoras Tree   depth: ${treeState.depth}${rotationHudText(treeView.view.rotation)}`;
+  setHud("Pythagoras Tree", `depth: ${treeState.depth}${rotationHudText(treeView.view.rotation)}`);
 }
 
 function updateDragonHud() {
-  els.hud.textContent = `${LINE_CURVES[dragonView.curve].label}   depth: ${dragonState.depth}${rotationHudText(dragonView.view.rotation)}`;
+  setHud(LINE_CURVES[dragonView.curve].label, `depth: ${dragonState.depth}${rotationHudText(dragonView.view.rotation)}`);
 }
 
 function updateFernHud() {
   // accepted = points actually on screen so far; it climbs toward the
   // target as refinement runs, and resets on every pan/zoom.
-  els.hud.textContent = `${IFS_SYSTEMS[fernView.system].label}   points: ${fernView.accepted.toLocaleString()} / ${fernState.count.toLocaleString()}${rotationHudText(fernView.view.rotation)}`;
+  setHud(IFS_SYSTEMS[fernView.system].label, `points: ${fernView.accepted.toLocaleString()} / ${fernState.count.toLocaleString()}${rotationHudText(fernView.view.rotation)}`);
 }
 
 function positionCrosshair() {
