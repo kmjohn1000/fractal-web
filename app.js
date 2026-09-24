@@ -56,6 +56,8 @@ const FRACTAL_FAMILIES = [
 const EXTRA_MODES = [
   { key: "koch", label: "Koch Snowflake", family: "other" },
   { key: "tree", label: "Pythagoras Tree", family: "other" },
+  { key: "dragon", label: "Dragon Curve", family: "other" },
+  { key: "fern", label: "Barnsley Fern", family: "other" },
 ];
 
 function viewFromBounds(b) {
@@ -338,12 +340,16 @@ const els = {
   juliaCanvas: document.getElementById("juliaCanvas"),
   kochCanvas: document.getElementById("kochCanvas"),
   treeCanvas: document.getElementById("treeCanvas"),
+  dragonCanvas: document.getElementById("dragonCanvas"),
+  fernCanvas: document.getElementById("fernCanvas"),
   boxRect: document.getElementById("boxZoomRect"),
   crosshair: document.getElementById("crosshair"),
   fractalTypeRow: document.getElementById("fractalTypeRow"),
   fractalControls: document.getElementById("fractalControls"),
   kochControls: document.getElementById("kochControls"),
   treeControls: document.getElementById("treeControls"),
+  dragonControls: document.getElementById("dragonControls"),
+  fernControls: document.getElementById("fernControls"),
   iterField: document.getElementById("iterField"),
   iterSlider: document.getElementById("iterSlider"),
   colormapBtn: document.getElementById("colormapBtn"),
@@ -359,9 +365,16 @@ const els = {
   treeDepthSlider: document.getElementById("treeDepthSlider"),
   treeColormapBtn: document.getElementById("treeColormapBtn"),
   treeResetBtn: document.getElementById("treeResetBtn"),
+  dragonDepthSlider: document.getElementById("dragonDepthSlider"),
+  dragonColormapBtn: document.getElementById("dragonColormapBtn"),
+  dragonResetBtn: document.getElementById("dragonResetBtn"),
+  fernPointsSlider: document.getElementById("fernPointsSlider"),
+  fernColorBtn: document.getElementById("fernColorBtn"),
+  fernColorSwatch: document.getElementById("fernColorSwatch"),
+  fernResetBtn: document.getElementById("fernResetBtn"),
 };
 
-let mode = "fractal"; // "fractal" | "koch" | "tree"
+let mode = "fractal"; // "fractal" | "koch" | "tree" | "dragon" | "fern"
 let colormapIndex = 0;
 let currentName = "Mandelbrot";
 let dualActive = false;
@@ -390,6 +403,8 @@ const mainRenderer = createFractalRenderer(els.mainCanvas);
 const juliaRenderer = createFractalRenderer(els.juliaCanvas);
 const kochView = createKochView(els.kochCanvas);
 const treeView = createPythagorasTreeView(els.treeCanvas);
+const dragonView = createDragonView(els.dragonCanvas);
+const fernView = createFernView(els.fernCanvas);
 
 if (!mainRenderer) reportError("WebGL context creation failed on mainCanvas — this browser/device may not support WebGL.");
 if (!juliaRenderer) reportError("WebGL context creation failed on juliaCanvas.");
@@ -429,6 +444,8 @@ let juliaHistory = [];
 
 const kochState = { depth: 4, fill: true, animating: false, timer: null };
 const treeState = { depth: 9 };
+const dragonState = { depth: 13 };
+const fernState = { count: 60000, colorIndex: 0 };
 
 function pushHistory(pane) {
   const st = pane === "julia" ? juliaState : mainState;
@@ -492,9 +509,15 @@ function renderAll() {
   } else if (mode === "koch") {
     kochView.render({ depth: kochState.depth, fill: kochState.fill, colormapIndex });
     updateKochHud();
-  } else {
+  } else if (mode === "tree") {
     treeView.render({ depth: treeState.depth, colormapIndex });
     updateTreeHud();
+  } else if (mode === "dragon") {
+    dragonView.render({ depth: dragonState.depth, colormapIndex });
+    updateDragonHud();
+  } else {
+    fernView.render({ count: fernState.count, colorIndex: fernState.colorIndex });
+    updateFernHud();
   }
 }
 
@@ -543,6 +566,14 @@ function updateKochHud() {
 
 function updateTreeHud() {
   els.hud.textContent = `Pythagoras Tree   depth: ${treeState.depth}`;
+}
+
+function updateDragonHud() {
+  els.hud.textContent = `Dragon Curve   depth: ${dragonState.depth}`;
+}
+
+function updateFernHud() {
+  els.hud.textContent = `Barnsley Fern   points: ${fernState.count.toLocaleString()}`;
 }
 
 function positionCrosshair() {
@@ -670,10 +701,14 @@ function setMode(next) {
   els.fractalControls.classList.toggle("hidden", mode !== "fractal");
   els.kochControls.classList.toggle("hidden", mode !== "koch");
   els.treeControls.classList.toggle("hidden", mode !== "tree");
+  els.dragonControls.classList.toggle("hidden", mode !== "dragon");
+  els.fernControls.classList.toggle("hidden", mode !== "fern");
   els.mainCanvas.classList.toggle("hidden", mode !== "fractal");
   els.juliaCanvas.classList.toggle("hidden", mode !== "fractal" || !dualActive);
   els.kochCanvas.classList.toggle("hidden", mode !== "koch");
   els.treeCanvas.classList.toggle("hidden", mode !== "tree");
+  els.dragonCanvas.classList.toggle("hidden", mode !== "dragon");
+  els.fernCanvas.classList.toggle("hidden", mode !== "fern");
   updateMenuActiveState();
   requestRender();
 }
@@ -988,6 +1023,8 @@ function attachVectorViewInteraction(canvas, vectorView) {
 
 attachVectorViewInteraction(els.kochCanvas, kochView);
 attachVectorViewInteraction(els.treeCanvas, treeView);
+attachVectorViewInteraction(els.dragonCanvas, dragonView);
+attachVectorViewInteraction(els.fernCanvas, fernView);
 
 // ---------------------------------------------------------------- UI wiring
 
@@ -1109,6 +1146,38 @@ els.treeColormapBtn.addEventListener("click", () => {
 
 els.treeResetBtn.addEventListener("click", () => {
   treeView.view.cx = 0; treeView.view.cy = 2.3; treeView.view.halfHeight = 2.9;
+  requestRender();
+});
+
+els.dragonDepthSlider.addEventListener("input", () => {
+  dragonState.depth = parseInt(els.dragonDepthSlider.value, 10);
+  requestRender();
+});
+
+els.dragonColormapBtn.addEventListener("click", () => {
+  colormapIndex = (colormapIndex + 1) % COLORMAPS.length;
+  requestRender();
+});
+
+els.dragonResetBtn.addEventListener("click", () => {
+  dragonView.view.cx = -0.35; dragonView.view.cy = -0.24; dragonView.view.halfHeight = 1.0;
+  requestRender();
+});
+
+els.fernPointsSlider.addEventListener("input", () => {
+  fernState.count = parseInt(els.fernPointsSlider.value, 10);
+  requestRender();
+});
+
+els.fernColorBtn.addEventListener("click", () => {
+  fernState.colorIndex = (fernState.colorIndex + 1) % FERN_COLORS.length;
+  const [r, g, b] = FERN_COLORS[fernState.colorIndex].rgb;
+  els.fernColorSwatch.setAttribute("fill", `rgb(${r}, ${g}, ${b})`);
+  requestRender();
+});
+
+els.fernResetBtn.addEventListener("click", () => {
+  fernView.view.cx = 0.24; fernView.view.cy = 5.0; fernView.view.halfHeight = 5.3;
   requestRender();
 });
 

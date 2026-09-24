@@ -20,6 +20,8 @@ const APP_SHELL = [
   "./colormaps.js",
   "./koch.js",
   "./pythagoras.js",
+  "./dragon.js",
+  "./fern.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
