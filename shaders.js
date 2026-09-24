@@ -40,10 +40,10 @@ void main() {
 // ordinary float32, which stays accurate because the delta itself stays
 // small (this is the same "small deltas are fine in float32 regardless of
 // absolute zoom depth" property the dc offset already relied on). Covers
-// Mandelbrot, Multibrot^3 and Tricorn in parameter-space mode (see
-// perturbStep). Burning Ship's abs() creases and Julia mode need their own
-// delta formula / reference setup and aren't covered yet, so those still
-// hit the plain float32 ceiling at deep zoom. A cheap "reset the delta once it
+// Mandelbrot, Multibrot^3 and Tricorn, in parameter-space and Julia mode
+// (see perturbStep and renderEscapePerturbation). Burning Ship's abs()
+// creases need their own delta formula and aren't covered yet, so it still
+// hits the plain float32 ceiling at deep zoom. A cheap "reset the delta once it
 // grows too large" heuristic was tried and didn't meaningfully help — the
 // worst glitches happen when the reference orbit passes very close to zero
 // (common exactly where people zoom, near mini-Mandelbrot structures), and
@@ -85,8 +85,16 @@ uniform int   u_digitMaxDepth; // Carpet 16, Gasket 22 (DIGIT_MAX_DEPTH in app.j
 uniform vec2  u_jitter;
 
 uniform bool  u_usePerturbation;
-uniform sampler2D u_refOrbitTex; // reference orbit Z[0..len-1] — width = u_refOrbitLen
+// Reference orbit texture. Parameter mode: one orbit, Z[0] = 0. Julia mode:
+// the view-point orbit (texels 0..u_refOrbitLen-1) followed by the critical
+// orbit (texels u_critOffset..u_critOffset+u_critLen-1, starting at 0) --
+// see renderEscapePerturbation. In parameter mode u_critOffset = 0 and
+// u_critLen = u_refOrbitLen, so both "orbits" are the same one.
+uniform sampler2D u_refOrbitTex;
 uniform int   u_refOrbitLen;
+uniform int   u_critOffset;
+uniform int   u_critLen;
+uniform float u_refTexWidth;
 // World-space offset of the reference orbit's own point from u_center --
 // chooseReference in app.js doesn't always use the view center. See
 // renderEscapePerturbation.
@@ -298,17 +306,33 @@ vec2 perturbStep(vec2 Z, vec2 dz, vec2 dc) {
   return cMul(2.0 * Z, dz) + cMul(dz, dz) + dc;
 }
 
-// dc is the pixel's offset from the reference orbit's own point:
-// uv*u_scale*2.0 is always the offset from u_center, so u_refOffset
-// (reference minus u_center, see app.js) is subtracted to correct it. A
-// small value regardless of absolute zoom depth, so plain float32 is exact
-// enough with no splitting needed (see comment above FRAG_SRC).
+vec2 refOrbitAt(int index) {
+  return texture2D(u_refOrbitTex, vec2((float(index) + 0.5) / u_refTexWidth, 0.5)).xy;
+}
+
+// The pixel's offset from the reference point (uv*u_scale*2.0 is always the
+// offset from u_center, so u_refOffset -- reference minus u_center, see
+// app.js -- is subtracted) is a small value regardless of absolute zoom
+// depth, so plain float32 is exact enough with no splitting needed (see
+// comment above FRAG_SRC).
+//
+// Parameter mode: the offset is in c (dc), z starts at 0 like the reference.
+// Julia mode: c is fixed (dc = 0) and the offset is in the STARTING z, so
+// the first reference is the orbit of the view point itself. Its Z[0] is
+// that point, not 0, so the first rebase can't return to it -- instead it
+// switches to the critical orbit (z0 = 0, same c). The pixel's value is
+// near zero at that moment, so as an offset from the critical orbit's
+// Z[0] = 0 it's still small and float32 keeps its precision. Every later
+// rebase returns to the critical orbit's start, exactly like parameter
+// mode. (Ported from how deep-zoom renderers handle Julia sets.)
 vec3 renderEscapePerturbation(vec2 uv) {
-  vec2 dc = uv * u_scale * 2.0 - u_refOffset;
-  vec2 dz = vec2(0.0);
-  vec2 Zm = vec2(0.0); // Z[m]; every reference orbit's Z[0] is 0
+  vec2 offset = uv * u_scale * 2.0 - u_refOffset;
+  vec2 dc = u_isJulia ? vec2(0.0) : offset;
+  vec2 dz = u_isJulia ? offset : vec2(0.0);
+  int base = 0;                 // texel index of the current orbit's Z[0]
+  int len = u_refOrbitLen;      // current orbit's length
   int m = 0;
-  float orbitLen = float(u_refOrbitLen);
+  vec2 Zm = refOrbitAt(0);      // Z[m]: 0 in parameter mode, the view point in Julia mode
 
   int iter = 0;
   bool escaped = false;
@@ -320,7 +344,7 @@ vec3 renderEscapePerturbation(vec2 uv) {
     dz = perturbStep(Zm, dz, dc);
 
     m++;
-    Zm = texture2D(u_refOrbitTex, vec2((float(m) + 0.5) / orbitLen, 0.5)).xy;
+    Zm = refOrbitAt(base + m);
     vec2 full = Zm + dz;
     iter = i;
 
@@ -332,8 +356,11 @@ vec3 renderEscapePerturbation(vec2 uv) {
 
     // Rebase (see comment above FRAG_SRC): the pixel's value is now closer
     // to zero than its delta, or the reference has no Z[m+1] to step to.
-    if (dot(full, full) < dot(dz, dz) || m >= u_refOrbitLen - 1) {
+    // Always onto the critical orbit, whose Z[0] is 0.
+    if (dot(full, full) < dot(dz, dz) || m >= len - 1) {
       dz = full;
+      base = u_critOffset;
+      len = u_critLen;
       m = 0;
       Zm = vec2(0.0);
     }
