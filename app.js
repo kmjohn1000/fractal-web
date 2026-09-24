@@ -89,10 +89,10 @@ function viewFromBounds(b) {
 const DEEP_ZOOM_THRESHOLD = 1e-3;
 
 // Which fractal types have a perturbation (deep zoom) path -- see
-// perturbStep in shaders.js for the per-type delta formulas. Julia mode and
-// Burning Ship aren't covered yet.
+// perturbStep in shaders.js for the per-type delta formulas. Covers both
+// parameter-space and Julia mode; Burning Ship isn't covered yet.
 function perturbationEligibleType(state) {
-  return !state.isJulia && (state.ftype === FTYPE.ESCAPE || state.ftype === FTYPE.TRICORN);
+  return state.ftype === FTYPE.ESCAPE || state.ftype === FTYPE.TRICORN;
 }
 
 // One float64 step of the escape-family map, z <- f(z) + c, in place on the
@@ -114,22 +114,25 @@ function stepOrbit(ftype, power, z, cr, ci) {
   }
 }
 
-// Computes the reference orbit Z[0..n] for perturbation rendering: Z[0]=0,
-// Z[n+1] = f(Z[n]) + (cx,cy), stopping early if it escapes. Runs in plain
+// Computes a reference orbit Z[0..n] for perturbation rendering: Z[0] =
+// (z0r,z0i), Z[n+1] = f(Z[n]) + (cr,ci), stopping early if it escapes.
+// Parameter mode uses z0 = 0 and c = the reference point; Julia mode uses
+// both the view-point orbit (z0 = point, c fixed) and the critical orbit
+// (z0 = 0, c fixed) -- see renderEscapePerturbation in shaders.js. Runs in plain
 // JS (float64) — no bignum needed at this target depth, and this is the one
 // place genuine extended precision matters; everything the GPU touches
 // afterward (the reference values once read back, and the per-pixel delta)
 // only ever needs float32. Returns a Float32Array laid out as RGBA texels
 // (re, im, 0, 1) so it can be uploaded directly as a texture.
-function computeReferenceOrbit(state, cx, cy) {
+function computeReferenceOrbit(state, z0r, z0i, cr, ci) {
   const maxIter = state.maxIter;
   const cap = maxIter + 1;
   const data = new Float32Array(cap * 4);
-  data[3] = 1.0; // Z[0] = (0,0)
-  const z = [0, 0];
+  data[0] = z0r; data[1] = z0i; data[3] = 1.0;
+  const z = [z0r, z0i];
   let len = 1;
   for (let n = 0; n < maxIter; n++) {
-    stepOrbit(state.ftype, state.power, z, cx, cy);
+    stepOrbit(state.ftype, state.power, z, cr, ci);
     const zr = z[0], zi = z[1];
     data[len * 4] = zr;
     data[len * 4 + 1] = zi;
@@ -151,9 +154,11 @@ function computeReferenceOrbit(state, cx, cy) {
 // point's offset from the view center (the shader's u_refOffset).
 const REFERENCE_GRID = 32;
 function chooseReference(state, widthPx, heightPx) {
+  // A candidate point is c in parameter mode, the starting z in Julia mode.
   const z = [0, 0];
-  const escapeIter = (cr, ci) => {
-    z[0] = 0; z[1] = 0;
+  const escapeIter = (pr, pi) => {
+    const cr = state.isJulia ? state.juliaC[0] : pr, ci = state.isJulia ? state.juliaC[1] : pi;
+    z[0] = state.isJulia ? pr : 0; z[1] = state.isJulia ? pi : 0;
     for (let n = 0; n < state.maxIter; n++) {
       stepOrbit(state.ftype, state.power, z, cr, ci);
       if (z[0] * z[0] + z[1] * z[1] > 16.0) return n;
@@ -260,6 +265,9 @@ function createFractalRenderer(canvas) {
     usePerturbation: gl.getUniformLocation(prog, "u_usePerturbation"),
     refOrbitTex: gl.getUniformLocation(prog, "u_refOrbitTex"),
     refOrbitLen: gl.getUniformLocation(prog, "u_refOrbitLen"),
+    critOffset: gl.getUniformLocation(prog, "u_critOffset"),
+    critLen: gl.getUniformLocation(prog, "u_critLen"),
+    refTexWidth: gl.getUniformLocation(prog, "u_refTexWidth"),
     refOffset: gl.getUniformLocation(prog, "u_refOffset"),
   };
 
@@ -365,18 +373,41 @@ function createFractalRenderer(canvas) {
     }
 
     const key = [state.ftype, state.cx, state.cy, state.scale, state.rotation || 0,
-      state.power, state.maxIter, canvas.width, canvas.height].join(",");
+      state.power, state.maxIter, state.isJulia, state.juliaC[0], state.juliaC[1],
+      canvas.width, canvas.height].join(",");
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, refOrbitTex);
     if (key !== refCacheKey) {
       const ref = chooseReference(state, canvas.width, canvas.height);
-      const orbit = computeReferenceOrbit(state, state.cx + ref.dx, state.cy + ref.dy);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, orbit.length, 1, 0, gl.RGBA, gl.FLOAT, orbit.data);
-      refCache = { dx: ref.dx, dy: ref.dy, length: orbit.length };
+      const rx = state.cx + ref.dx, ry = state.cy + ref.dy;
+      let data, refLen, critOffset, critLen;
+      if (state.isJulia) {
+        // [view-point orbit | critical orbit] in one texture, see
+        // renderEscapePerturbation. At most 2*(maxIter+1) = 4002 texels,
+        // within every WebGL device's MAX_TEXTURE_SIZE (4096 minimum in
+        // practice).
+        const [jr, ji] = state.juliaC;
+        const view = computeReferenceOrbit(state, rx, ry, jr, ji);
+        const crit = computeReferenceOrbit(state, 0, 0, jr, ji);
+        data = new Float32Array(view.data.length + crit.data.length);
+        data.set(view.data, 0);
+        data.set(crit.data, view.data.length);
+        refLen = view.length; critOffset = view.length; critLen = crit.length;
+      } else {
+        const orbit = computeReferenceOrbit(state, 0, 0, rx, ry);
+        data = orbit.data;
+        refLen = orbit.length; critOffset = 0; critLen = orbit.length;
+      }
+      const width = data.length / 4;
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, 1, 0, gl.RGBA, gl.FLOAT, data);
+      refCache = { dx: ref.dx, dy: ref.dy, refLen, critOffset, critLen, width };
       refCacheKey = key;
     }
     gl.uniform1i(u.refOrbitTex, 1);
-    gl.uniform1i(u.refOrbitLen, refCache.length);
+    gl.uniform1i(u.refOrbitLen, refCache.refLen);
+    gl.uniform1i(u.critOffset, refCache.critOffset);
+    gl.uniform1i(u.critLen, refCache.critLen);
+    gl.uniform1f(u.refTexWidth, refCache.width);
     gl.uniform2f(u.refOffset, refCache.dx, refCache.dy);
     drawToCanvas(sampleIndex);
     return true;
@@ -544,18 +575,24 @@ let lastMainUsedPerturbation = false;
 // this just freezes the main canvas (touches nothing) while interacting at
 // deep zoom, and only renders once the gesture settles. Less live feedback,
 // but nothing left to get subtly wrong.
+function deepZoomEligible(renderer, state) {
+  return renderer.perturbationSupported
+    && perturbationEligibleType(state)
+    && state.scale < DEEP_ZOOM_THRESHOLD;
+}
+
 function renderAll() {
   if (mode === "fractal") {
-    const deepZoomEligible = mainRenderer.perturbationSupported
-      && perturbationEligibleType(mainState)
-      && mainState.scale < DEEP_ZOOM_THRESHOLD;
-
-    if (!(isInteracting && deepZoomEligible)) {
+    if (!(isInteracting && deepZoomEligible(mainRenderer, mainState))) {
       lastMainUsedPerturbation = mainRenderer.render(mainState);
     }
 
+    // The dual-mode Julia pane can be deep-zoomed too (perturbation covers
+    // Julia mode), so it gets the same freeze while interacting.
     if (dualActive && juliaState) {
-      juliaRenderer.render(juliaState);
+      if (!(isInteracting && deepZoomEligible(juliaRenderer, juliaState))) {
+        juliaRenderer.render(juliaState);
+      }
       positionCrosshair();
     }
     updateHud();
