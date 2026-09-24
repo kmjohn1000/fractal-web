@@ -22,6 +22,7 @@ const APP_SHELL = [
   "./pythagoras.js",
   "./dragon.js",
   "./fern.js",
+  "./lsystem.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",

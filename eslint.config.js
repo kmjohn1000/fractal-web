@@ -16,8 +16,16 @@ const sharedGlobals = {
   // koch.js / pythagoras.js / dragon.js / fern.js
   createKochView: "readonly",
   createPythagorasTreeView: "readonly",
-  createDragonView: "readonly",
-  dragonCurve: "readonly",
+  createCurveView: "readonly",
+  LINE_CURVES: "readonly",
+  // lsystem.js
+  KOCH_SNOWFLAKE: "readonly",
+  DRAGON_CURVE: "readonly",
+  HILBERT_CURVE: "readonly",
+  GOSPER_CURVE: "readonly",
+  SIERPINSKI_ARROWHEAD: "readonly",
+  lsystemPolylines: "readonly",
+  normalizePolylines: "readonly",
   createIfsView: "readonly",
   IFS_SYSTEMS: "readonly",
   IFS_COLORS: "readonly",
