@@ -1376,10 +1376,12 @@ attachFractalInteraction(els.juliaCanvas, () => juliaState, "julia", juliaRender
 // the shared #boxZoomRect and zooms to it on release instead of panning --
 // the vector-view analog of the WebGL panes' box zoom (commitBoxZoom).
 //
-// Returns { back, clearHistory }: each vector view keeps its own pan/zoom
-// history stack, checkpointed at the same moments attachFractalInteraction
-// pushes for the WebGL panes (one-finger drag start, pinch start, wheel
-// zoom throttled to one checkpoint per 400ms burst, box-zoom commit).
+// Returns { back, clearHistory, checkpoint }: each vector view keeps its own
+// pan/zoom history stack, checkpointed at the same moments
+// attachFractalInteraction pushes for the WebGL panes (one-finger drag
+// start, pinch start, wheel zoom throttled to one checkpoint per 400ms
+// burst, box-zoom commit). checkpoint() is that same throttled push, for
+// keyboard navigation.
 function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive = () => false) {
   const pointers = new Map();
   const history = [];
@@ -1546,11 +1548,15 @@ function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive = () =>
   canvas.addEventListener("pointerup", release);
   canvas.addEventListener("pointercancel", release);
 
+  function checkpoint() {
+    const now = performance.now();
+    if (now - lastWheelPush > 400) { pushViewHistory(); lastWheelPush = now; }
+  }
+
   canvas.addEventListener("wheel", (e) => {
     e.preventDefault();
     if (isBoxZoomActive()) return;
-    const now = performance.now();
-    if (now - lastWheelPush > 400) { pushViewHistory(); lastWheelPush = now; }
+    checkpoint();
     const rect = canvas.getBoundingClientRect();
     const sx = (e.clientX - rect.left) * vectorView.dpr;
     const sy = (e.clientY - rect.top) * vectorView.dpr;
@@ -1562,7 +1568,7 @@ function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive = () =>
     requestRender();
   }, { passive: false });
 
-  return { back, clearHistory: () => { history.length = 0; } };
+  return { back, checkpoint, clearHistory: () => { history.length = 0; } };
 }
 
 // The region each vector view shows in full when its mode first opens and
@@ -1615,6 +1621,102 @@ els.kochBackBtn.addEventListener("click", () => kochNav.back());
 els.treeBackBtn.addEventListener("click", () => treeNav.back());
 els.dragonBackBtn.addEventListener("click", () => dragonNav.back());
 els.fernBackBtn.addEventListener("click", () => fernNav.back());
+
+// ---------------------------------------------------------------- interaction: keyboard
+
+// Desktop keyboard navigation for every mode: arrows pan, Shift+Left/Right
+// rotate (Google Maps' convention; Ctrl+arrows switch Spaces on macOS),
+// +/- zoom about the center, R resets. Everything is expressed in screen
+// terms and mapped through the view's own screen-to-world function, so
+// "up" is always screen-up however the view is rotated. Held keys
+// auto-repeat; history is checkpointed once per 400ms burst, like the
+// wheel, so one Back undoes a whole held-key move.
+const KEY_PAN_FRACTION = 0.1;              // of the canvas's shorter side
+const KEY_ZOOM_FACTOR = 1.25;
+const KEY_ROTATE_STEP = 5 * Math.PI / 180; // + is clockwise, like the twist
+
+function keyAction(e) {
+  const k = e.key;
+  if (e.shiftKey && (k === "ArrowLeft" || k === "ArrowRight")) {
+    return { rotate: k === "ArrowRight" ? KEY_ROTATE_STEP : -KEY_ROTATE_STEP };
+  }
+  if (e.shiftKey && (k === "ArrowUp" || k === "ArrowDown")) return null;
+  if (k === "ArrowLeft") return { pan: [-1, 0] };
+  if (k === "ArrowRight") return { pan: [1, 0] };
+  if (k === "ArrowUp") return { pan: [0, -1] };   // screen y grows downward
+  if (k === "ArrowDown") return { pan: [0, 1] };
+  if (k === "+" || k === "=") return { zoom: 1 / KEY_ZOOM_FACTOR };
+  if (k === "-" || k === "_") return { zoom: KEY_ZOOM_FACTOR };
+  if ((k === "r" || k === "R") && !e.shiftKey) return { reset: true };
+  return null;
+}
+
+// The vector view, its canvas, nav (history) and Reset button for the
+// active non-fractal mode.
+function activeVectorTarget() {
+  if (mode === "koch") return { v: kochView, canvas: els.kochCanvas, nav: kochNav, resetBtn: els.kochResetBtn };
+  if (mode === "tree") return { v: treeView, canvas: els.treeCanvas, nav: treeNav, resetBtn: els.treeResetBtn };
+  if (isCurveMode(mode)) return { v: dragonView, canvas: els.dragonCanvas, nav: dragonNav, resetBtn: els.dragonResetBtn };
+  if (isIfsMode(mode)) return { v: fernView, canvas: els.fernCanvas, nav: fernNav, resetBtn: els.fernResetBtn };
+  return null;
+}
+
+let lastKeyHistoryPush = 0;
+
+document.addEventListener("keydown", (e) => {
+  // Leave browser/OS shortcuts (Cmd+arrows, Cmd +/-) alone, and let
+  // focused form controls (sliders take arrow keys) keep their keys.
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const t = e.target;
+  if (t && (t.isContentEditable || /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName))) return;
+  const action = keyAction(e);
+  if (!action) return;
+  e.preventDefault();
+
+  if (mode === "fractal") {
+    if (action.reset) { els.resetBtn.click(); return; }
+    // In dual mode, keys drive whichever pane was last touched.
+    const pane = dualActive && activePane === "julia" && juliaState ? "julia" : "main";
+    const st = pane === "julia" ? juliaState : mainState;
+    const renderer = pane === "julia" ? juliaRenderer : mainRenderer;
+    cancelTeleport();
+    const now = performance.now();
+    if (now - lastKeyHistoryPush > 400) { pushHistory(pane); lastKeyHistoryPush = now; }
+    const w = renderer.canvas.width / renderer.dpr, h = renderer.canvas.height / renderer.dpr;
+    if (action.pan) {
+      const step = KEY_PAN_FRACTION * Math.min(w, h);
+      const c = screenToComplex(renderer, st, w / 2 + action.pan[0] * step, h / 2 + action.pan[1] * step);
+      st.cx = c.x;
+      st.cy = c.y;
+    } else if (action.zoom) {
+      st.scale *= action.zoom;
+    } else if (action.rotate) {
+      st.rotation = normalizeAngle((st.rotation || 0) + action.rotate);
+    }
+    markInteracting();
+    requestRender();
+    return;
+  }
+
+  const target = activeVectorTarget();
+  if (!target) return;
+  if (action.reset) { target.resetBtn.click(); return; }
+  const { v, canvas, nav } = target;
+  nav.checkpoint();
+  if (action.pan) {
+    // screenToWorld works in device pixels (canvas.width/height), so the
+    // step is measured in them too.
+    const step = KEY_PAN_FRACTION * Math.min(canvas.width, canvas.height);
+    const [x, y] = v.screenToWorld(canvas.width / 2 + action.pan[0] * step, canvas.height / 2 + action.pan[1] * step);
+    v.view.cx = x;
+    v.view.cy = y;
+  } else if (action.zoom) {
+    v.view.halfHeight *= action.zoom;
+  } else if (action.rotate) {
+    v.view.rotation = normalizeAngle((v.view.rotation || 0) + action.rotate);
+  }
+  requestRender();
+});
 
 function applyHudVisibility() {
   els.hud.classList.toggle("hidden", !hudVisible);

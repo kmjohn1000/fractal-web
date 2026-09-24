@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.4.0 — 2026-09-24
+- Keyboard navigation on desktop, in every fractal and pattern: arrow keys pan, Shift + Left/Right rotates, + and − zoom, R resets the view. Up always means up on screen, even when the view is rotated. Back undoes keyboard moves too.
+
 ## 1.3.4 — 2026-09-24
 - The info overlay now floats over the top-left corner of the image instead of sitting above it, so showing or hiding it no longer resizes or shifts the fractal. Pans and pinches that start on the overlay still reach the image.
 
