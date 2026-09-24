@@ -47,6 +47,16 @@ const FRACTAL_FAMILIES = [
   { key: "other",  label: "Other constructions" },
 ];
 
+// Menu entries that switch the whole app mode (Canvas2D vector views, not a
+// WebGL shader ftype) rather than selecting a FRACTAL_CONFIGS entry — same
+// "structurally unrelated construction" logic that puts Newton/Carpet/Gasket
+// in "other" applies to Koch (an IFS boundary curve, not escape-time), so it
+// belongs in the same section of the same menu instead of its own top-level
+// mode button.
+const EXTRA_MODES = [
+  { key: "koch", label: "Koch Snowflake", family: "other" },
+];
+
 function viewFromBounds(b) {
   return { cx: (b[0] + b[1]) / 2, cy: (b[2] + b[3]) / 2, scale: (b[3] - b[2]) / 2 };
 }
@@ -328,9 +338,6 @@ const els = {
   kochCanvas: document.getElementById("kochCanvas"),
   boxRect: document.getElementById("boxZoomRect"),
   crosshair: document.getElementById("crosshair"),
-  modeFractalBtn: document.getElementById("modeFractalBtn"),
-  modeKochBtn: document.getElementById("modeKochBtn"),
-  fractalMenuBtn: document.getElementById("fractalMenuBtn"),
   fractalTypeRow: document.getElementById("fractalTypeRow"),
   fractalControls: document.getElementById("fractalControls"),
   kochControls: document.getElementById("kochControls"),
@@ -609,14 +616,10 @@ function selectFractal(name) {
   // before that was caught and fixed.
   const usesFixedDepth = config.ftype === FTYPE.CARPET || config.ftype === FTYPE.GASKET;
   els.iterSlider.disabled = usesFixedDepth;
-  els.fractalTypeRow.querySelectorAll("button").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.name === name);
-  });
-  els.fractalTypeRow.classList.remove("open");
   els.juliaCanvas.classList.toggle("hidden", !dualActive);
   if (!dualActive) els.crosshair.classList.add("hidden");
   layoutCanvasArea();
-  requestRender();
+  setMode("fractal");
 }
 
 function enterDual() {
@@ -646,16 +649,26 @@ function exitDual() {
 
 function setMode(next) {
   mode = next;
-  els.modeFractalBtn.classList.toggle("active", mode === "fractal");
-  els.modeKochBtn.classList.toggle("active", mode === "koch");
-  els.fractalMenuBtn.classList.toggle("hidden", mode !== "fractal");
   els.fractalTypeRow.classList.remove("open"); // collapse the picker on any mode switch
   els.fractalControls.classList.toggle("hidden", mode !== "fractal");
   els.kochControls.classList.toggle("hidden", mode !== "koch");
   els.mainCanvas.classList.toggle("hidden", mode !== "fractal");
   els.juliaCanvas.classList.toggle("hidden", mode !== "fractal" || !dualActive);
   els.kochCanvas.classList.toggle("hidden", mode !== "koch");
+  updateMenuActiveState();
   requestRender();
+}
+
+// Highlights whichever hamburger-menu entry matches the current mode/
+// selection — a FRACTAL_CONFIGS entry (dataset.name) only counts while in
+// fractal mode, an EXTRA_MODES entry (dataset.mode) whenever mode matches it.
+function updateMenuActiveState() {
+  els.fractalTypeRow.querySelectorAll("button").forEach((btn) => {
+    const isActive = btn.dataset.mode
+      ? btn.dataset.mode === mode
+      : mode === "fractal" && btn.dataset.name === currentName;
+    btn.classList.toggle("active", isActive);
+  });
 }
 
 // ---------------------------------------------------------------- interaction: fractal canvases
@@ -876,8 +889,13 @@ attachFractalInteraction(els.juliaCanvas, () => juliaState, "julia", juliaRender
 
 // ---------------------------------------------------------------- interaction: Koch canvas
 
-(function attachKochInteraction() {
-  const canvas = els.kochCanvas;
+// Shared pan/pinch-zoom/wheel-zoom for any Canvas2D vector view (Koch,
+// Pythagoras tree) — both createKochView() and createPythagorasTreeView()
+// return the same shape ({view, dpr, screenToWorld, ...}), so this one
+// function covers both instead of duplicating the gesture logic per mode,
+// the way attachFractalInteraction is the single shared handler for the
+// two WebGL canvases.
+function attachVectorViewInteraction(canvas, vectorView) {
   const pointers = new Map();
   let panStart = null;
   let pinchStartDist = null;
@@ -887,12 +905,12 @@ attachFractalInteraction(els.juliaCanvas, () => juliaState, "julia", juliaRender
     canvas.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pointers.size === 1) {
-      panStart = { sx: e.clientX, sy: e.clientY, cx: kochView.view.cx, cy: kochView.view.cy };
+      panStart = { sx: e.clientX, sy: e.clientY, cx: vectorView.view.cx, cy: vectorView.view.cy };
     } else if (pointers.size === 2) {
       panStart = null;
       const pts = [...pointers.values()];
       pinchStartDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-      pinchStartHalfHeight = kochView.view.halfHeight;
+      pinchStartHalfHeight = vectorView.view.halfHeight;
     }
   });
 
@@ -900,10 +918,10 @@ attachFractalInteraction(els.juliaCanvas, () => juliaState, "julia", juliaRender
     if (!pointers.has(e.pointerId)) return;
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pointers.size === 1 && panStart) {
-      const dpr = kochView.dpr;
+      const dpr = vectorView.dpr;
       const dxScreen = e.clientX - panStart.sx;
       const dyScreen = e.clientY - panStart.sy;
-      const v = kochView.view;
+      const v = vectorView.view;
       v.cx = panStart.cx - (dxScreen * dpr / canvas.height) * v.halfHeight * 2.0;
       v.cy = panStart.cy + (dyScreen * dpr / canvas.height) * v.halfHeight * 2.0;
       requestRender();
@@ -911,13 +929,13 @@ attachFractalInteraction(els.juliaCanvas, () => juliaState, "julia", juliaRender
       const pts = [...pointers.values()];
       const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
       const rect = canvas.getBoundingClientRect();
-      const midX = ((pts[0].x + pts[1].x) / 2 - rect.left) * kochView.dpr;
-      const midY = ((pts[0].y + pts[1].y) / 2 - rect.top) * kochView.dpr;
-      const before = kochView.screenToWorld(midX, midY);
-      kochView.view.halfHeight = pinchStartHalfHeight * (pinchStartDist / Math.max(dist, 1));
-      const after = kochView.screenToWorld(midX, midY);
-      kochView.view.cx += before[0] - after[0];
-      kochView.view.cy += before[1] - after[1];
+      const midX = ((pts[0].x + pts[1].x) / 2 - rect.left) * vectorView.dpr;
+      const midY = ((pts[0].y + pts[1].y) / 2 - rect.top) * vectorView.dpr;
+      const before = vectorView.screenToWorld(midX, midY);
+      vectorView.view.halfHeight = pinchStartHalfHeight * (pinchStartDist / Math.max(dist, 1));
+      const after = vectorView.screenToWorld(midX, midY);
+      vectorView.view.cx += before[0] - after[0];
+      vectorView.view.cy += before[1] - after[1];
       requestRender();
     }
   });
@@ -926,7 +944,7 @@ attachFractalInteraction(els.juliaCanvas, () => juliaState, "julia", juliaRender
     pointers.delete(e.pointerId);
     if (pointers.size === 1) {
       const [p] = pointers.values();
-      panStart = { sx: p.x, sy: p.y, cx: kochView.view.cx, cy: kochView.view.cy };
+      panStart = { sx: p.x, sy: p.y, cx: vectorView.view.cx, cy: vectorView.view.cy };
     } else {
       panStart = null;
     }
@@ -938,22 +956,25 @@ attachFractalInteraction(els.juliaCanvas, () => juliaState, "julia", juliaRender
   canvas.addEventListener("wheel", (e) => {
     e.preventDefault();
     const rect = canvas.getBoundingClientRect();
-    const sx = (e.clientX - rect.left) * kochView.dpr;
-    const sy = (e.clientY - rect.top) * kochView.dpr;
-    const before = kochView.screenToWorld(sx, sy);
-    kochView.view.halfHeight *= Math.exp(e.deltaY * 0.0015);
-    const after = kochView.screenToWorld(sx, sy);
-    kochView.view.cx += before[0] - after[0];
-    kochView.view.cy += before[1] - after[1];
+    const sx = (e.clientX - rect.left) * vectorView.dpr;
+    const sy = (e.clientY - rect.top) * vectorView.dpr;
+    const before = vectorView.screenToWorld(sx, sy);
+    vectorView.view.halfHeight *= Math.exp(e.deltaY * 0.0015);
+    const after = vectorView.screenToWorld(sx, sy);
+    vectorView.view.cx += before[0] - after[0];
+    vectorView.view.cy += before[1] - after[1];
     requestRender();
   }, { passive: false });
-})();
+}
+
+attachVectorViewInteraction(els.kochCanvas, kochView);
 
 // ---------------------------------------------------------------- UI wiring
 
 FRACTAL_FAMILIES.forEach((fam) => {
   const names = FRACTAL_NAMES.filter((n) => FRACTAL_CONFIGS[n].family === fam.key);
-  if (names.length === 0) return;
+  const extraModes = EXTRA_MODES.filter((m) => m.family === fam.key);
+  if (names.length === 0 && extraModes.length === 0) return;
   const header = document.createElement("div");
   header.className = "menuSectionHeader";
   header.textContent = fam.label;
@@ -965,25 +986,33 @@ FRACTAL_FAMILIES.forEach((fam) => {
     btn.addEventListener("click", () => selectFractal(name));
     els.fractalTypeRow.appendChild(btn);
   });
+  extraModes.forEach((m) => {
+    const btn = document.createElement("button");
+    btn.textContent = m.label;
+    btn.dataset.mode = m.key;
+    btn.addEventListener("click", () => setMode(m.key));
+    els.fractalTypeRow.appendChild(btn);
+  });
 });
-els.fractalTypeRow.querySelectorAll("button").forEach((btn) => {
-  btn.classList.toggle("active", btn.dataset.name === currentName);
-});
+updateMenuActiveState();
 
-els.fractalMenuBtn.addEventListener("click", (e) => {
-  e.stopPropagation(); // don't let the outside-click closer below fire on this same tap
-  els.fractalTypeRow.classList.toggle("open");
+// Two hamburger buttons exist (one in #fractalControls, one in #kochControls
+// — see index.html) so the menu stays reachable regardless of mode, since
+// selecting Koch/a fractal type from it is now the only way to switch modes
+// at all. Both share the .fractalMenuBtn class rather than an id.
+document.querySelectorAll(".fractalMenuBtn").forEach((btn) => {
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation(); // don't let the outside-click closer below fire on this same tap
+    els.fractalTypeRow.classList.toggle("open");
+  });
 });
-// Tap anywhere outside the open picker (or its own button) to dismiss it —
-// standard dropdown/hamburger-menu behavior.
+// Tap anywhere outside the open picker (or a hamburger button) to dismiss
+// it — standard dropdown/hamburger-menu behavior.
 document.addEventListener("pointerdown", (e) => {
   if (!els.fractalTypeRow.classList.contains("open")) return;
-  if (els.fractalTypeRow.contains(e.target) || e.target === els.fractalMenuBtn) return;
+  if (els.fractalTypeRow.contains(e.target) || e.target.closest(".fractalMenuBtn")) return;
   els.fractalTypeRow.classList.remove("open");
 });
-
-els.modeFractalBtn.addEventListener("click", () => setMode("fractal"));
-els.modeKochBtn.addEventListener("click", () => setMode("koch"));
 
 els.iterSlider.addEventListener("input", () => {
   const v = parseInt(els.iterSlider.value, 10);
@@ -1052,8 +1081,6 @@ window.addEventListener("resize", () => { layoutCanvasArea(); requestRender(); }
 
 // ---------------------------------------------------------------- init
 
-els.fractalControls.classList.remove("hidden");
-els.kochControls.classList.add("hidden");
 selectFractal(currentName);
 updateLUT();
 requestRender();
