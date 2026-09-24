@@ -118,3 +118,4 @@
 - Rotation cos/sin on the CPU — `7a3e717`
 - Auto maxIter from zoom (until the slider is touched) — `68cdab6`
 - Colormap end color reachable (t = 1.0) + colormap name in the HUD — `a738a20`
+- Colormaps Viridis/Turbo/Glacier/Ember/Grayscale + HUD lines wrap on phones — `899a803`
