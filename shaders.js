@@ -40,10 +40,10 @@ void main() {
 // ordinary float32, which stays accurate because the delta itself stays
 // small (this is the same "small deltas are fine in float32 regardless of
 // absolute zoom depth" property the dc offset already relied on). Covers
-// Mandelbrot, Multibrot^3 and Tricorn, in parameter-space and Julia mode
-// (see perturbStep and renderEscapePerturbation). Burning Ship's abs()
-// creases need their own delta formula and aren't covered yet, so it still
-// hits the plain float32 ceiling at deep zoom. A cheap "reset the delta once it
+// Mandelbrot, Multibrot^3, Tricorn and Burning Ship, in parameter-space and
+// Julia mode (see perturbStep and renderEscapePerturbation). Newton and the
+// Carpet/Gasket digit tests aren't escape-time iterations and still hit the
+// plain float32 ceiling at deep zoom. A cheap "reset the delta once it
 // grows too large" heuristic was tried and didn't meaningfully help — the
 // worst glitches happen when the reference orbit passes very close to zero
 // (common exactly where people zoom, near mini-Mandelbrot structures), and
@@ -290,7 +290,26 @@ vec3 renderEscapeFast(vec2 p) {
 // perturbation path (perturbationEligibleType in app.js). Each is expanded
 // so no term is a difference of two large nearly-equal values, which is
 // what keeps the delta accurate in float32.
+// |c+d| - |c|, by sign cases so it's never computed as a difference of two
+// nearly-equal magnitudes (Heiland-Allen's "diffabs"). Which case applies
+// is still decided in float32, so pixels whose orbit passes within float32
+// rounding of an axis can pick the wrong fold -- Burning Ship's residual
+// error concentrates there.
+float diffabs(float c, float d) {
+  float cd = c + d;
+  if (c >= 0.0) return cd >= 0.0 ? d : -(2.0 * c + d);
+  return cd > 0.0 ? 2.0 * c + d : -d;
+}
+
 vec2 perturbStep(vec2 Z, vec2 dz, vec2 dc) {
+  if (u_ftype == FTYPE_SHIP) {
+    // f(z) = (|x| + i|y|)^2 = (x^2 - y^2) + 2|xy| i. Real part: squares
+    // don't care about abs, so (X+dx)^2 - X^2 = (2X+dx)*dx. Imag part:
+    // 2*(|(X+dx)(Y+dy)| - |XY|) = 2*diffabs(XY, X*dy + dx*Y + dx*dy).
+    float re = (2.0 * Z.x + dz.x) * dz.x - (2.0 * Z.y + dz.y) * dz.y;
+    float im = 2.0 * diffabs(Z.x * Z.y, Z.x * dz.y + dz.x * Z.y + dz.x * dz.y);
+    return vec2(re, im) + dc;
+  }
   if (u_ftype == FTYPE_TRICORN) {
     // conj(Z+dz)^2 - conj(Z)^2 = conj(2*Z*dz + dz^2)
     vec2 d = cMul(2.0 * Z, dz) + cMul(dz, dz);
