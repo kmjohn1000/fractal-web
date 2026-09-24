@@ -95,13 +95,6 @@
       colormap's stops, like kochAnimateBtn cycles depth; new toggle, not
       a repurposed "cycle colormap" button)
 
-- [ ] Keyboard navigation on desktop: arrow keys pan (a fixed fraction
-      of the view, rotation-aware so "up" is screen-up), +/- zoom about
-      the center, maybe R to reset. One window keydown listener routed
-      to the active mode (WebGL fractal or Canvas2D vector view); skip
-      when focus is in an input/slider so arrows still move sliders.
-      Nothing listens for keys today — only mouse drag + wheel zoom
-
 ## Deferred indefinitely
 - Menger Sponge / other 3D fractals (real 3D rendering project, not a
   slot-in)
@@ -116,6 +109,7 @@
   deeper Gasket zoom, not this.
 
 ## Done
+- Keyboard navigation: arrows pan, Shift+Left/Right rotate, +/- zoom, R reset — `64ecba2`
 - Picker split into "Infinite Zoom" / "Beautiful Patterns" sections; zoom-only buttons gated on category — `3157bb6`
 - Generic L-system engine; Koch/Dragon migrated; Hilbert, Gosper, Sierpinski Arrowhead added — `ff5a58f`
 - Sierpinski Triangle, Lévy C Curve and Vicsek Fractal as IFS modes on the fern engine — `023d2fc`
