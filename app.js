@@ -92,6 +92,20 @@ function digitFractalDepth(ftype, scale, heightPx) {
   return Math.max(1, Math.min(digitMaxDepth(ftype), d));
 }
 
+// Suggested maxIter for a view: the slider's 300 default at the fractal's
+// own opening scale, plus K per halving of scale past it (deeper views need
+// more iterations before boundary points escape). Never below the default
+// when zoomed out past the opening view. Rounded to the iter slider's step
+// of 10 so the slider can show the exact value. Used while a pane's
+// iterAutoLocked is false -- see applyAutoIter.
+function suggestedMaxIter(baseScale, currentScale) {
+  const DEFAULT_ITER = 300; // matches iterSlider's default
+  const K = 60;
+  const extraLevels = Math.max(0, Math.log2(baseScale / currentScale));
+  const v = DEFAULT_ITER + K * extraLevels;
+  return Math.max(50, Math.min(2000, Math.round(v / 10) * 10));
+}
+
 // Fits the whole box on screen: scale is the view's half-height, and the
 // visible half-width is scale * aspect, so the box's half-width needs
 // scale >= halfW / aspect. Fitting the height alone (the old behavior) cut
@@ -590,6 +604,7 @@ function markInteracting() {
   settleTimer = setTimeout(() => {
     isInteracting = false;
     settleTimer = null;
+    applyAutoIter();
     requestRender();
   }, 200);
 }
@@ -633,8 +648,28 @@ function freshState(config) {
     ftype: config.ftype, power: config.power,
     isJulia: config.juliaC !== null,
     juliaC: config.juliaC || [0, 0],
-    maxIter: parseInt(els.iterSlider.value, 10),
+    // Auto iter mode (see applyAutoIter): baseScale is this fractal's
+    // opening scale, the zero point of suggestedMaxIter.
+    maxIter: suggestedMaxIter(v.scale, v.scale),
+    baseScale: v.scale,
+    iterAutoLocked: false,
   };
+}
+
+// For each pane still in auto iter mode, set maxIter from its zoom level,
+// and keep the (single, shared) iter slider showing the active pane's
+// value. Called on discrete view changes only -- gesture settle, box zoom,
+// Back, fractal select/Reset -- never per frame, so it can't fight a live
+// pinch. The slider writes both panes and locks both (see its handler).
+// Carpet/Gasket ignore maxIter entirely (usesFixedDepth) and are skipped.
+function applyAutoIter() {
+  for (const st of [mainState, dualActive ? juliaState : null]) {
+    if (!st || st.iterAutoLocked) continue;
+    if (st.ftype === FTYPE.CARPET || st.ftype === FTYPE.GASKET) continue;
+    st.maxIter = suggestedMaxIter(st.baseScale, st.scale);
+  }
+  const shown = activePane === "julia" && dualActive && juliaState ? juliaState : mainState;
+  els.iterSlider.value = shown.maxIter;
 }
 
 let mainState = freshState(FRACTAL_CONFIGS[currentName]);
@@ -661,6 +696,7 @@ function popHistory(pane) {
   if (!snap) return;
   const st = pane === "julia" ? juliaState : mainState;
   st.cx = snap.cx; st.cy = snap.cy; st.scale = snap.scale; st.rotation = snap.rotation ?? 0;
+  applyAutoIter();
   renderAll();
 }
 
@@ -796,7 +832,7 @@ function updateHud() {
   const usesFixedDepth = s.ftype === FTYPE.CARPET || s.ftype === FTYPE.GASKET;
   const iterText = usesFixedDepth
     ? `depth: ${digitFractalDepth(s.ftype, s.scale, mainRenderer.canvas.height)} (auto)`
-    : `maxIter: ${s.maxIter}`;
+    : `maxIter: ${s.maxIter}${s.iterAutoLocked ? "" : " (auto)"}`;
   let text =
     `${currentName}   center: ${s.cx.toExponential(5)} + ${s.cy.toExponential(5)}i\n` +
     `scale: ${s.scale.toExponential(3)}   ${iterText}   precision: ${precision}${rotText}` +
@@ -921,7 +957,10 @@ function selectFractal(name) {
   // could still be hidden (coming from a vector mode) or about to change
   // size (Julia pane / iter slider shown or hidden). setMode only schedules
   // the render, so it picks this up.
-  Object.assign(mainState, viewFromBounds(config.view, mainCanvasAspect()));
+  const fitted = viewFromBounds(config.view, mainCanvasAspect());
+  Object.assign(mainState, fitted, { baseScale: fitted.scale });
+  // Fresh fractal (or Reset, which is selectFractal) = fresh auto iter mode.
+  applyAutoIter();
 }
 
 function enterDual() {
@@ -933,6 +972,10 @@ function enterDual() {
     ftype: mainState.ftype, power: mainState.power,
     isJulia: true, juliaC: [mainState.cx, mainState.cy],
     maxIter: mainState.maxIter,
+    // The slider drives both panes, so a manual lock carries over; auto
+    // mode counts zoom from this pane's own opening scale.
+    baseScale: mainState.scale,
+    iterAutoLocked: mainState.iterAutoLocked,
   };
   mainState.juliaC = [juliaState.juliaC[0], juliaState.juliaC[1]];
   juliaHistory = [];
@@ -1220,6 +1263,7 @@ function commitBoxZoom(paneName, state, renderer, canvas) {
   // rotation is intentionally left unchanged — box-zoom reframes, it
   // doesn't reorient
   state.cx = cx; state.cy = cy; state.scale = newScale;
+  applyAutoIter();
   requestRender();
 }
 
@@ -1529,6 +1573,11 @@ els.iterSlider.addEventListener("input", () => {
   const v = parseInt(els.iterSlider.value, 10);
   mainState.maxIter = v;
   if (juliaState) juliaState.maxIter = v;
+  // Manual interaction is the only thing that turns auto iter mode off
+  // (for both panes, since this slider drives both); selectFractal/Reset
+  // turn it back on.
+  mainState.iterAutoLocked = true;
+  if (juliaState) juliaState.iterAutoLocked = true;
   requestRender();
 });
 
