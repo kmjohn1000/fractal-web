@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.3.1 — 2026-09-24
+- The fractal picker has two labeled parts, "Infinite Zoom" and "Beautiful Patterns", instead of three technical groups (escape-time, Julia sets, other). The box between sections is gone; it's one menu.
+
 ## 1.3.0 — 2026-09-24
 - Three new curves in the picker: Hilbert Curve, Gosper Curve (the "flowsnake") and Sierpinski Arrowhead. They share the Dragon Curve's controls; each has its own depth slider range and keeps its own depth and pan/zoom.
 - Koch Snowflake and Dragon Curve now use the same shared curve engine; they look exactly as before.

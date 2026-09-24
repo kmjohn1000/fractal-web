@@ -13,46 +13,38 @@ const FTYPE = { ESCAPE: 0, SHIP: 1, TRICORN: 2, NEWTON: 3, CARPET: 4, GASKET: 5,
 // tilted lobe in either mode. A constant for the fractal, not view state.
 const PHOENIX_P = [-0.5, 0];
 
-// family groups the hamburger menu into sections, by actual mathematical
-// relationship rather than just "looks similar":
-//   "escape"  - the z^n+c iteration in parameter-space (c varies, z starts
-//               at 0) — Mandelbrot itself and its direct variants. These
-//               all render the characteristic "bug"-shaped boundary.
-//   "julia"   - the SAME z^n+c iteration, just in the dual mode (c is
-//               fixed, z starts at the pixel) — mathematically the same
-//               family as "escape" (a Julia set is literally a cross-
-//               section of the Mandelbrot construction), split into its
-//               own section because fixed-c renderings look nothing like
-//               parameter-space ones (dust/lightning/spirals, not bugs) —
-//               grouping by literal visual family is more useful for
-//               browsing than collapsing them under one giant "Mandelbrot"
-//               label just because the underlying math matches.
-//   "other"   - structurally unrelated constructions: Newton's method
-//               (root-finding, not escape-time), and the digit-test
-//               carpet/gasket (self-similar IFS constructions).
+// category splits the fractal picker into its two labeled parts (see
+// FRACTAL_CATEGORIES), and gates the zoom-only toolbar buttons (box zoom,
+// Surprise me):
+//   "zoom"    - fractals you explore by zooming: every escape-time type
+//               (Mandelbrot and its variants, the Julia presets, Newton)
+//               and the digit-test Carpet/Gasket. Everything in
+//               FRACTAL_CONFIGS is "zoom"; any future escape-time or
+//               digit-extraction type belongs here too.
+//   "pattern" - the Canvas2D curves and chaos-game IFS shapes (EXTRA_MODES).
 const FRACTAL_CONFIGS = {
   // The escape-time and Julia boxes are the sets' measured extents
   // (antenna/tips included; for dust-like Julia sets, points surviving 60+
   // iterations) plus a ~0.1 margin, so each opens filling the screen.
   // Tricorn's tips reach y = +-1.54, which its old +-1.25 box clipped even
   // before aspect fitting.
-  "Mandelbrot":   { ftype: FTYPE.ESCAPE,  power: 2, juliaC: null,               view: [-2.15, 0.65, -1.25, 1.25], dual: true,  family: "escape" },
-  "Burn. Ship":   { ftype: FTYPE.SHIP,    power: 2, juliaC: null,               view: [-2.15, 1.25, -1.85, 0.65], dual: true,  family: "escape" },
-  "Tricorn":      { ftype: FTYPE.TRICORN, power: 2, juliaC: null,               view: [-2.1,  1.15, -1.7,  1.7],  dual: true,  family: "escape" },
-  "Multibrot³": { ftype: FTYPE.ESCAPE, power: 3, juliaC: null,             view: [-0.82, 0.82, -1.45, 1.45], dual: true,  family: "escape" },
+  "Mandelbrot":   { ftype: FTYPE.ESCAPE,  power: 2, juliaC: null,               view: [-2.15, 0.65, -1.25, 1.25], dual: true,  category: "zoom" },
+  "Burn. Ship":   { ftype: FTYPE.SHIP,    power: 2, juliaC: null,               view: [-2.15, 1.25, -1.85, 0.65], dual: true,  category: "zoom" },
+  "Tricorn":      { ftype: FTYPE.TRICORN, power: 2, juliaC: null,               view: [-2.1,  1.15, -1.7,  1.7],  dual: true,  category: "zoom" },
+  "Multibrot³": { ftype: FTYPE.ESCAPE, power: 3, juliaC: null,             view: [-0.82, 0.82, -1.45, 1.45], dual: true,  category: "zoom" },
   // Needs the previous iterate as state, so no perturbation (deep zoom) path
   // -- see perturbationEligibleType.
-  "Phoenix":      { ftype: FTYPE.PHOENIX, power: 2, juliaC: null,               view: [-2.0, 0.65, -0.78, 0.78], dual: true,  family: "escape" },
-  "Julia:Rabbit": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.12256, 0.74486], view: [-1.42, 1.42, -1.2, 1.2], dual: false, family: "julia" },
-  "Julia:Dragon": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.4, 0.6],         view: [-1.5, 1.5, -1.1, 1.1],   dual: false, family: "julia" },
-  "Julia:Spiral": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [0.285, 0.01],       view: [-0.95, 0.95, -1.2, 1.2], dual: false, family: "julia" },
-  "Julia:Phoenix": { ftype: FTYPE.PHOENIX, power: 2, juliaC: [0.5667, 0],        view: [-0.8, 0.88, -1.38, 1.38], dual: false, family: "julia" },
-  "Newton z³": { ftype: FTYPE.NEWTON, power: 3, juliaC: null,              view: [-2.0, 2.0, -1.5, 1.5],   dual: false, family: "other" },
+  "Phoenix":      { ftype: FTYPE.PHOENIX, power: 2, juliaC: null,               view: [-2.0, 0.65, -0.78, 0.78], dual: true,  category: "zoom" },
+  "Julia:Rabbit": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.12256, 0.74486], view: [-1.42, 1.42, -1.2, 1.2], dual: false, category: "zoom" },
+  "Julia:Dragon": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.4, 0.6],         view: [-1.5, 1.5, -1.1, 1.1],   dual: false, category: "zoom" },
+  "Julia:Spiral": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [0.285, 0.01],       view: [-0.95, 0.95, -1.2, 1.2], dual: false, category: "zoom" },
+  "Julia:Phoenix": { ftype: FTYPE.PHOENIX, power: 2, juliaC: [0.5667, 0],        view: [-0.8, 0.88, -1.38, 1.38], dual: false, category: "zoom" },
+  "Newton z³": { ftype: FTYPE.NEWTON, power: 3, juliaC: null,              view: [-2.0, 2.0, -1.5, 1.5],   dual: false, category: "zoom" },
   // Digit-test fractals (see FRAG_SRC's renderDigitFractal) — defined on
   // the unit square, so centered there with a little margin. power is
   // unused by these but kept non-null for consistency with the others.
-  "Carpet":       { ftype: FTYPE.CARPET,  power: 2, juliaC: null,               view: [-0.15, 1.15, -0.15, 1.15], dual: false, family: "other" },
-  "Gasket":       { ftype: FTYPE.GASKET,  power: 2, juliaC: null,               view: [-0.15, 1.15, -0.15, 1.15], dual: false, family: "other" },
+  "Carpet":       { ftype: FTYPE.CARPET,  power: 2, juliaC: null,               view: [-0.15, 1.15, -0.15, 1.15], dual: false, category: "zoom" },
+  "Gasket":       { ftype: FTYPE.GASKET,  power: 2, juliaC: null,               view: [-0.15, 1.15, -0.15, 1.15], dual: false, category: "zoom" },
 };
 const FRACTAL_NAMES = Object.keys(FRACTAL_CONFIGS);
 
@@ -70,29 +62,26 @@ const TELEPORT_DESTINATIONS = [
   { fractal: "Mandelbrot", label: "Feather Valley", re: "-0.774931606245356", im: "-0.13706041474587047", scale: 1e-8 },
   { fractal: "Mandelbrot", label: "Double Spiral", re: "-0.16070135", im: "1.0375665", scale: 5e-7 },
 ];
-const FRACTAL_FAMILIES = [
-  { key: "escape", label: "Escape-time (parameter space)" },
-  { key: "julia",  label: "Julia sets" },
-  { key: "other",  label: "Other constructions" },
+// Picker sections, in display order.
+const FRACTAL_CATEGORIES = [
+  { key: "zoom",    label: "Infinite Zoom" },
+  { key: "pattern", label: "Beautiful Patterns" },
 ];
 
 // Menu entries that switch the whole app mode (Canvas2D vector views, not a
-// WebGL shader ftype) rather than selecting a FRACTAL_CONFIGS entry — same
-// "structurally unrelated construction" logic that puts Newton/Carpet/Gasket
-// in "other" applies to Koch (an IFS boundary curve, not escape-time), so it
-// belongs in the same section of the same menu instead of its own top-level
-// mode button.
+// WebGL shader ftype) rather than selecting a FRACTAL_CONFIGS entry. All are
+// in the picker's "pattern" section.
 const EXTRA_MODES = [
-  { key: "koch", label: "Koch Snowflake", family: "other" },
-  { key: "tree", label: "Pythagoras Tree", family: "other" },
-  { key: "dragon", label: "Dragon Curve", family: "other" },
-  { key: "hilbert", label: "Hilbert Curve", family: "other" },
-  { key: "gosper", label: "Gosper Curve", family: "other" },
-  { key: "arrowhead", label: "Sierpinski Arrowhead", family: "other" },
-  { key: "fern", label: "Barnsley Fern", family: "other" },
-  { key: "sierpinski", label: "Sierpinski Triangle", family: "other" },
-  { key: "levy", label: "Lévy C Curve", family: "other" },
-  { key: "vicsek", label: "Vicsek Fractal", family: "other" },
+  { key: "koch", label: "Koch Snowflake", category: "pattern" },
+  { key: "tree", label: "Pythagoras Tree", category: "pattern" },
+  { key: "dragon", label: "Dragon Curve", category: "pattern" },
+  { key: "hilbert", label: "Hilbert Curve", category: "pattern" },
+  { key: "gosper", label: "Gosper Curve", category: "pattern" },
+  { key: "arrowhead", label: "Sierpinski Arrowhead", category: "pattern" },
+  { key: "fern", label: "Barnsley Fern", category: "pattern" },
+  { key: "sierpinski", label: "Sierpinski Triangle", category: "pattern" },
+  { key: "levy", label: "Lévy C Curve", category: "pattern" },
+  { key: "vicsek", label: "Vicsek Fractal", category: "pattern" },
 ];
 
 // The chaos-game IFS modes (fern.js's IFS_SYSTEMS). They all share one
@@ -989,7 +978,12 @@ function selectFractal(name) {
   if (dualActive) enterDual();
   els.dualBtn.disabled = !config.dual;
   els.dualBtn.classList.toggle("active", dualActive);
-  els.teleportBtn.classList.toggle("hidden", !TELEPORT_DESTINATIONS.some((d) => d.fractal === name));
+  // Zoom-only tools. Everything in FRACTAL_CONFIGS is "zoom" today, but the
+  // category is the rule; teleport also needs curated destinations, which
+  // a new zoom fractal may not have yet.
+  const isZoom = config.category === "zoom";
+  els.boxZoomBtn.classList.toggle("hidden", !isZoom);
+  els.teleportBtn.classList.toggle("hidden", !isZoom || !TELEPORT_DESTINATIONS.some((d) => d.fractal === name));
   // Carpet/Gasket use a zoom-derived depth (see FRAG_SRC) — the iter slider does
   // nothing for them, and leaving it enabled implied otherwise, which is
   // exactly the mismatch that made them render as almost solid black
@@ -1603,9 +1597,9 @@ applyHudVisibility();
 
 // ---------------------------------------------------------------- UI wiring
 
-FRACTAL_FAMILIES.forEach((fam) => {
-  const names = FRACTAL_NAMES.filter((n) => FRACTAL_CONFIGS[n].family === fam.key);
-  const extraModes = EXTRA_MODES.filter((m) => m.family === fam.key);
+FRACTAL_CATEGORIES.forEach((fam) => {
+  const names = FRACTAL_NAMES.filter((n) => FRACTAL_CONFIGS[n].category === fam.key);
+  const extraModes = EXTRA_MODES.filter((m) => m.category === fam.key);
   if (names.length === 0 && extraModes.length === 0) return;
   const header = document.createElement("div");
   header.className = "menuSectionHeader";

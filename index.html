@@ -139,9 +139,11 @@
   #shareMenu button { text-align: left; }
   .fractalMenuBtn { max-width: 60vw; overflow: hidden; text-overflow: ellipsis; }
 
-  /* Section headers grouping the menu into fractal families — flex:1 1 100%
-     forces each onto its own line within the wrapping flex panel, same
-     trick used for label.field earlier. */
+  /* Section headers labeling the picker's two parts (Infinite Zoom,
+     Beautiful Patterns) — flex:1 1 100% forces each onto its own line
+     within the wrapping flex panel, same trick used for label.field
+     earlier. Spacing only, no rule line: one menu with two labeled parts,
+     not two menus. */
   #fractalTypeRow .menuSectionHeader {
     flex: 1 1 100%;
     font: 11px -apple-system, system-ui, sans-serif;
@@ -149,8 +151,7 @@
     color: #888; padding: 4px 2px;
   }
   #fractalTypeRow .menuSectionHeader:not(:first-child) {
-    margin-top: 6px; padding-top: 12px;
-    border-top: 1px solid rgba(255,255,255,0.1);
+    margin-top: 10px;
   }
 
   /* Sliders get a row to themselves — cramming them alongside 4-5 buttons
