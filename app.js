@@ -1776,7 +1776,34 @@ document.addEventListener("pointerdown", (e) => {
   els.fractalTypeRow.classList.remove("open");
 });
 
+// Sliders: keep each one's filled-track position (--fill, read by the
+// track's gradient in index.html) in sync with its value. Dragging fires
+// "input" (each listener below calls syncSliderFill); everything app.js
+// sets from code (URL restore, fractal switches, Koch's depth animation,
+// a curve's max depth changing) goes through the value/max setters, which
+// are wrapped here once per slider instead of patched at every call site.
+const SLIDERS = [els.iterSlider, els.kochDepthSlider, els.treeDepthSlider, els.dragonDepthSlider, els.fernPointsSlider];
+
+function syncSliderFill(slider) {
+  const min = parseFloat(slider.min), max = parseFloat(slider.max);
+  const pct = max > min ? (parseFloat(slider.value) - min) / (max - min) * 100 : 0;
+  slider.style.setProperty("--fill", `${Math.min(100, Math.max(0, pct))}%`);
+}
+
+for (const slider of SLIDERS) {
+  for (const prop of ["value", "max", "min"]) {
+    const desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, prop);
+    Object.defineProperty(slider, prop, {
+      configurable: true,
+      get() { return desc.get.call(this); },
+      set(v) { desc.set.call(this, v); syncSliderFill(this); },
+    });
+  }
+  syncSliderFill(slider);
+}
+
 els.iterSlider.addEventListener("input", () => {
+  syncSliderFill(els.iterSlider);
   const v = parseInt(els.iterSlider.value, 10);
   mainState.maxIter = v;
   if (juliaState) juliaState.maxIter = v;
@@ -1902,6 +1929,7 @@ els.teleportBtn.addEventListener("click", teleport);
 els.resetBtn.addEventListener("click", () => selectFractal(currentName));
 
 els.kochDepthSlider.addEventListener("input", () => {
+  syncSliderFill(els.kochDepthSlider);
   kochState.depth = parseInt(els.kochDepthSlider.value, 10);
   requestRender();
 });
@@ -1934,6 +1962,7 @@ els.kochResetBtn.addEventListener("click", () => {
 });
 
 els.treeDepthSlider.addEventListener("input", () => {
+  syncSliderFill(els.treeDepthSlider);
   treeState.depth = parseInt(els.treeDepthSlider.value, 10);
   requestRender();
 });
@@ -1946,6 +1975,7 @@ els.treeResetBtn.addEventListener("click", () => {
 });
 
 els.dragonDepthSlider.addEventListener("input", () => {
+  syncSliderFill(els.dragonDepthSlider);
   dragonState.depth = parseInt(els.dragonDepthSlider.value, 10);
   requestRender();
 });
@@ -1958,6 +1988,7 @@ els.dragonResetBtn.addEventListener("click", () => {
 });
 
 els.fernPointsSlider.addEventListener("input", () => {
+  syncSliderFill(els.fernPointsSlider);
   fernState.count = parseInt(els.fernPointsSlider.value, 10);
   requestRender();
 });
