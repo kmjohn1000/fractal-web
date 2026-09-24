@@ -1,13 +1,16 @@
 "use strict";
 
-// Cache-first app-shell service worker. This app has no backend/API — every
-// asset is static and versioned by this cache name, so offline support is
-// close to "free": precache the shell on install, serve from cache first,
-// and fall back to network only for anything not yet cached (then cache it).
-//
-// Bump CACHE_NAME on any release to invalidate old caches; activate() cleans
-// up stale versions automatically.
-const CACHE_NAME = "fractal-explorer-v1";
+// Network-first app-shell service worker. This app has no backend/API, and
+// gets pushed to GitHub Pages on every change (see ../CLAUDE.md) — a
+// cache-first strategy was tried initially but meant an already-installed
+// phone PWA would silently keep serving whatever was cached at first
+// install forever, since the browser only re-checks a service worker when
+// sw.js's own bytes change, and this file went untouched across many
+// feature commits. Network-first fixes that: every load fetches fresh code
+// when online (so "open the app" == "get the latest push"), and only falls
+// back to the cache when there's no network, which is still enough for
+// real offline support since every asset here is static.
+const CACHE_NAME = "fractal-explorer-v2";
 
 const APP_SHELL = [
   "./",
@@ -16,6 +19,7 @@ const APP_SHELL = [
   "./shaders.js",
   "./colormaps.js",
   "./koch.js",
+  "./pythagoras.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
@@ -47,17 +51,14 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request)
-        .then((response) => {
-          if (response.ok && response.type === "basic") {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-          }
-          return response;
-        })
-        .catch(() => cached);
-    })
+    fetch(event.request)
+      .then((response) => {
+        if (response.ok && response.type === "basic") {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        }
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
