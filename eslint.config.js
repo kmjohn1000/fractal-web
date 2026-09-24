@@ -17,6 +17,7 @@ const sharedGlobals = {
   createKochView: "readonly",
   createPythagorasTreeView: "readonly",
   createDragonView: "readonly",
+  dragonCurve: "readonly",
   createFernView: "readonly",
   FERN_COLORS: "readonly",
 };
