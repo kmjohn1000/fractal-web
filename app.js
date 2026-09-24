@@ -90,9 +90,9 @@ const DEEP_ZOOM_THRESHOLD = 1e-3;
 
 // Which fractal types have a perturbation (deep zoom) path -- see
 // perturbStep in shaders.js for the per-type delta formulas. Covers both
-// parameter-space and Julia mode; Burning Ship isn't covered yet.
+// parameter-space and Julia mode.
 function perturbationEligibleType(state) {
-  return state.ftype === FTYPE.ESCAPE || state.ftype === FTYPE.TRICORN;
+  return state.ftype === FTYPE.ESCAPE || state.ftype === FTYPE.TRICORN || state.ftype === FTYPE.SHIP;
 }
 
 // One float64 step of the escape-family map, z <- f(z) + c, in place on the
@@ -100,7 +100,12 @@ function perturbationEligibleType(state) {
 // loop). Must match renderEscapeFast in shaders.js.
 function stepOrbit(ftype, power, z, cr, ci) {
   const zr = z[0], zi = z[1];
-  if (ftype === FTYPE.TRICORN) {
+  if (ftype === FTYPE.SHIP) {
+    // (|zr| + i|zi|)^2
+    const ar = Math.abs(zr), ai = Math.abs(zi);
+    z[0] = ar * ar - ai * ai + cr;
+    z[1] = 2 * ar * ai + ci;
+  } else if (ftype === FTYPE.TRICORN) {
     // conj(z)^2 = (zr^2 - zi^2) - 2*zr*zi*i
     z[0] = zr * zr - zi * zi + cr;
     z[1] = -2 * zr * zi + ci;
