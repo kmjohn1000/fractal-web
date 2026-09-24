@@ -303,6 +303,8 @@ const els = {
   crosshair: document.getElementById("crosshair"),
   modeFractalBtn: document.getElementById("modeFractalBtn"),
   modeKochBtn: document.getElementById("modeKochBtn"),
+  fractalMenuBtn: document.getElementById("fractalMenuBtn"),
+  fractalMenuLabel: document.getElementById("fractalMenuLabel"),
   fractalTypeRow: document.getElementById("fractalTypeRow"),
   fractalControls: document.getElementById("fractalControls"),
   kochControls: document.getElementById("kochControls"),
@@ -561,6 +563,8 @@ function selectFractal(name) {
   [...els.fractalTypeRow.children].forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.name === name);
   });
+  els.fractalMenuLabel.textContent = name;
+  els.fractalTypeRow.classList.remove("open");
   els.juliaCanvas.classList.toggle("hidden", !dualActive);
   if (!dualActive) els.crosshair.classList.add("hidden");
   layoutCanvasArea();
@@ -596,7 +600,8 @@ function setMode(next) {
   mode = next;
   els.modeFractalBtn.classList.toggle("active", mode === "fractal");
   els.modeKochBtn.classList.toggle("active", mode === "koch");
-  els.fractalTypeRow.classList.toggle("hidden", mode !== "fractal");
+  els.fractalMenuBtn.classList.toggle("hidden", mode !== "fractal");
+  els.fractalTypeRow.classList.remove("open"); // collapse the picker on any mode switch
   els.fractalControls.classList.toggle("hidden", mode !== "fractal");
   els.kochControls.classList.toggle("hidden", mode !== "koch");
   els.mainCanvas.classList.toggle("hidden", mode !== "fractal");
@@ -904,6 +909,22 @@ FRACTAL_NAMES.forEach((name) => {
   btn.dataset.name = name;
   btn.addEventListener("click", () => selectFractal(name));
   els.fractalTypeRow.appendChild(btn);
+});
+els.fractalMenuLabel.textContent = currentName;
+[...els.fractalTypeRow.children].forEach((btn) => {
+  btn.classList.toggle("active", btn.dataset.name === currentName);
+});
+
+els.fractalMenuBtn.addEventListener("click", (e) => {
+  e.stopPropagation(); // don't let the outside-click closer below fire on this same tap
+  els.fractalTypeRow.classList.toggle("open");
+});
+// Tap anywhere outside the open picker (or its own button) to dismiss it —
+// standard dropdown/hamburger-menu behavior.
+document.addEventListener("pointerdown", (e) => {
+  if (!els.fractalTypeRow.classList.contains("open")) return;
+  if (els.fractalTypeRow.contains(e.target) || e.target === els.fractalMenuBtn) return;
+  els.fractalTypeRow.classList.remove("open");
 });
 
 els.modeFractalBtn.addEventListener("click", () => setMode("fractal"));
