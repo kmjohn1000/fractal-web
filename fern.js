@@ -26,11 +26,11 @@ const LEVY_C_TRANSFORMS = [
 ];
 
 const VICSEK_TRANSFORMS = [
-  { a: 1 / 3, b: 0, c: 0, d: 1 / 3, e: 1 / 3, f: 1 / 3, p: 0.2 },
-  { a: 1 / 3, b: 0, c: 0, d: 1 / 3, e: 0,     f: 0,     p: 0.2 },
-  { a: 1 / 3, b: 0, c: 0, d: 1 / 3, e: 2 / 3, f: 0,     p: 0.2 },
-  { a: 1 / 3, b: 0, c: 0, d: 1 / 3, e: 0,     f: 2 / 3, p: 0.2 },
-  { a: 1 / 3, b: 0, c: 0, d: 1 / 3, e: 2 / 3, f: 2 / 3, p: 0.2 },
+  { a: 1 / 3, b: 0, c: 0, d: 1 / 3, e: 1 / 3, f: 1 / 3, p: 0.2 }, // center
+  { a: 1 / 3, b: 0, c: 0, d: 1 / 3, e: 1 / 3, f: 0,     p: 0.2 }, // bottom-mid
+  { a: 1 / 3, b: 0, c: 0, d: 1 / 3, e: 1 / 3, f: 2 / 3, p: 0.2 }, // top-mid
+  { a: 1 / 3, b: 0, c: 0, d: 1 / 3, e: 0,     f: 1 / 3, p: 0.2 }, // left-mid
+  { a: 1 / 3, b: 0, c: 0, d: 1 / 3, e: 2 / 3, f: 1 / 3, p: 0.2 }, // right-mid
 ];
 
 // Every IFS the view can show, keyed by app.js mode name (EXTRA_MODES
