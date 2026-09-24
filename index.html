@@ -109,6 +109,16 @@
     z-index: 30;
   }
   #fractalTypeRow.open { display: flex; }
+  /* Share popover: same open-class pattern and out-of-flow positioning as
+     #fractalTypeRow, so opening it never reflows the control rows. */
+  #shareMenu {
+    position: absolute; right: 10px; bottom: 100%; margin-bottom: 8px;
+    padding: 8px; display: none; flex-direction: column; gap: 6px;
+    background: #1c1c1c; border: 1px solid #444; border-radius: 10px;
+    box-shadow: 0 -6px 20px rgba(0,0,0,0.5); z-index: 30;
+  }
+  #shareMenu.open { display: flex; }
+  #shareMenu button { text-align: left; }
   .fractalMenuBtn { max-width: 60vw; overflow: hidden; text-overflow: ellipsis; }
 
   /* Section headers grouping the menu into fractal families — flex:1 1 100%
@@ -170,6 +180,15 @@
     background: #6cf; border: 2px solid #1a1a1a;
     margin-top: -11px; /* (28 - 6) / 2, centers thumb on the 6px track */
   }
+  /* Must stay the last rule in this sheet: it overrides .control-row and
+     .iconBtn at equal specificity. The fractal and Koch rows have 8 icon
+     buttons: at 44px + 6px gaps + 8px padding they need 410px, so below
+     that the buttons shrink to keep one line down to 360px:
+     8*40 + 7*4 = 348 = 360 - 2*6. */
+  @media (max-width: 410px) {
+    .control-row { gap: 4px; padding: 8px 6px; }
+    .iconBtn { width: 40px; height: 40px; min-width: 40px; min-height: 40px; flex: 0 0 40px; }
+  }
 </style>
 </head>
 <body>
@@ -206,6 +225,11 @@
 
 <div id="controls">
   <div id="fractalTypeRow"></div>
+  <div id="shareMenu" role="menu">
+    <button id="shareSaveBtn" role="menuitem">Save image</button>
+    <button id="shareCopyBtn" role="menuitem">Copy link</button>
+    <button id="shareNativeBtn" role="menuitem" class="hidden">Share…</button>
+  </div>
   <div id="fractalControls" class="control-row">
     <label id="iterField" class="field">iter <input id="iterSlider" type="range" min="50" max="2000" step="10" value="300"></label>
     <button class="iconBtn fractalMenuBtn" aria-haspopup="true" aria-label="Choose fractal type" title="Choose fractal type">
@@ -239,6 +263,11 @@
     <button id="backBtn" class="iconBtn" aria-label="Back" title="Back">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M19 12 H5"/><path d="M11 6 L5 12 L11 18"/>
+      </svg>
+    </button>
+    <button id="shareBtn" class="iconBtn shareBtn" aria-label="Share" title="Share" aria-haspopup="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3 V15"/><path d="M7 8 L12 3 L17 8"/><path d="M5 13 V20 H19 V13"/>
       </svg>
     </button>
     <button id="resetBtn" class="iconBtn" aria-label="Reset view" title="Reset view">
@@ -277,6 +306,11 @@
         <path d="M19 12 H5"/><path d="M11 6 L5 12 L11 18"/>
       </svg>
     </button>
+    <button id="kochShareBtn" class="iconBtn shareBtn" aria-label="Share" title="Share" aria-haspopup="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3 V15"/><path d="M7 8 L12 3 L17 8"/><path d="M5 13 V20 H19 V13"/>
+      </svg>
+    </button>
     <button id="kochResetBtn" class="iconBtn" aria-label="Reset view" title="Reset view">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 12 a9 9 0 1 0 3 -6.7"/><polyline points="3 3 3 8 8 8"/>
@@ -307,6 +341,11 @@
         <path d="M19 12 H5"/><path d="M11 6 L5 12 L11 18"/>
       </svg>
     </button>
+    <button id="treeShareBtn" class="iconBtn shareBtn" aria-label="Share" title="Share" aria-haspopup="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3 V15"/><path d="M7 8 L12 3 L17 8"/><path d="M5 13 V20 H19 V13"/>
+      </svg>
+    </button>
     <button id="treeResetBtn" class="iconBtn" aria-label="Reset view" title="Reset view">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 12 a9 9 0 1 0 3 -6.7"/><polyline points="3 3 3 8 8 8"/>
@@ -335,6 +374,11 @@
     <button id="dragonBackBtn" class="iconBtn" aria-label="Back" title="Back">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M19 12 H5"/><path d="M11 6 L5 12 L11 18"/>
+      </svg>
+    </button>
+    <button id="dragonShareBtn" class="iconBtn shareBtn" aria-label="Share" title="Share" aria-haspopup="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3 V15"/><path d="M7 8 L12 3 L17 8"/><path d="M5 13 V20 H19 V13"/>
       </svg>
     </button>
     <button id="dragonResetBtn" class="iconBtn" aria-label="Reset view" title="Reset view">
@@ -373,6 +417,11 @@
     <button id="fernBackBtn" class="iconBtn" aria-label="Back" title="Back">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M19 12 H5"/><path d="M11 6 L5 12 L11 18"/>
+      </svg>
+    </button>
+    <button id="fernShareBtn" class="iconBtn shareBtn" aria-label="Share" title="Share" aria-haspopup="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3 V15"/><path d="M7 8 L12 3 L17 8"/><path d="M5 13 V20 H19 V13"/>
       </svg>
     </button>
     <button id="fernResetBtn" class="iconBtn" aria-label="Reset view" title="Reset view">

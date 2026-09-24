@@ -577,6 +577,10 @@ const els = {
   treeBackBtn: document.getElementById("treeBackBtn"),
   dragonBackBtn: document.getElementById("dragonBackBtn"),
   fernBackBtn: document.getElementById("fernBackBtn"),
+  shareMenu: document.getElementById("shareMenu"),
+  shareSaveBtn: document.getElementById("shareSaveBtn"),
+  shareCopyBtn: document.getElementById("shareCopyBtn"),
+  shareNativeBtn: document.getElementById("shareNativeBtn"),
 };
 
 let mode = "fractal"; // "fractal" | "koch" | "tree" | "dragon" | "fern"
@@ -780,8 +784,12 @@ function renderAll() {
 // gestures stay at full frame rate; the settle timer's requestRender then
 // starts a fresh chain once the view stops moving.
 let refineGeneration = 0;
+// False from the moment a render starts a refinement chain until that chain
+// draws its last sample; share capture waits on it (captureShareBlob).
+let refineDone = true;
 function scheduleRefinement() {
   const gen = ++refineGeneration;
+  refineDone = false;
   if (isInteracting) return;
   let k = 1;
   const step = () => {
@@ -789,6 +797,7 @@ function scheduleRefinement() {
     mainRenderer.render(mainState, k);
     if (dualActive && juliaState) juliaRenderer.render(juliaState, k);
     if (++k < SAMPLE_OFFSETS.length) requestAnimationFrame(step);
+    else refineDone = true;
   };
   requestAnimationFrame(step);
 }
@@ -1001,6 +1010,7 @@ function exitDual() {
 function setMode(next) {
   mode = next;
   els.fractalTypeRow.classList.remove("open"); // collapse the picker on any mode switch
+  els.shareMenu.classList.remove("open");
   els.fractalControls.classList.toggle("hidden", mode !== "fractal");
   els.kochControls.classList.toggle("hidden", mode !== "koch");
   els.treeControls.classList.toggle("hidden", mode !== "tree");
@@ -1697,11 +1707,293 @@ els.fernResetBtn.addEventListener("click", () => {
 
 window.addEventListener("resize", () => { layoutCanvasArea(); requestRender(); });
 
+// ---------------------------------------------------------------- share: links
+
+// A share link is the page URL plus a hash encoding the current view, e.g.
+// #v=1&m=fractal&f=Mandelbrot&x=...&y=...&s=...  Numbers use String(),
+// the shortest decimal that round-trips to the exact same double -- the
+// HUD's rounded display would move deep-zoom views. Julia c is encoded
+// explicitly: enterDual only seeds it from the main center; tapping the
+// main pane moves it independently afterward.
+function buildShareHash() {
+  const p = new URLSearchParams();
+  p.set("v", "1");
+  p.set("m", mode);
+  const put = (k, v) => p.set(k, String(v));
+  if (mode === "fractal") {
+    const s = mainState;
+    p.set("f", currentName);
+    put("x", s.cx); put("y", s.cy); put("s", s.scale); put("r", s.rotation || 0);
+    put("i", s.maxIter); if (s.iterAutoLocked) p.set("il", "1");
+    put("cm", colormapIndex);
+    if (dualActive && juliaState) {
+      const j = juliaState;
+      p.set("d", "1");
+      put("jcx", j.juliaC[0]); put("jcy", j.juliaC[1]);
+      put("jx", j.cx); put("jy", j.cy); put("js", j.scale); put("jr", j.rotation || 0);
+      put("ji", j.maxIter); put("jb", j.baseScale);
+    }
+  } else {
+    const v = VECTOR_VIEWS[mode][0].view;
+    put("x", v.cx); put("y", v.cy); put("s", v.halfHeight); put("r", v.rotation || 0);
+    if (mode === "fern") {
+      put("n", fernState.count); put("c", fernState.colorIndex);
+    } else {
+      put("cm", colormapIndex);
+      put("dp", { koch: kochState, tree: treeState, dragon: dragonState }[mode].depth);
+      if (mode === "koch") p.set("fl", kochState.fill ? "1" : "0");
+    }
+  }
+  return "#" + p.toString();
+}
+
+function buildShareUrl() {
+  return location.origin + location.pathname + location.search + buildShareHash();
+}
+
+// Parses a share hash into a plain state object, or null if it isn't a
+// valid v1 link -- any missing/out-of-range field rejects the whole link,
+// so a malformed one falls back to the normal default view.
+function parseShareHash(hash) {
+  try {
+    if (!hash || hash.length < 2) return null;
+    const p = new URLSearchParams(hash.slice(1));
+    if (p.get("v") !== "1") return null;
+    const num = (k, test = () => true) => {
+      const raw = p.get(k);
+      const v = raw === null || raw === "" ? NaN : Number(raw);
+      if (!Number.isFinite(v) || !test(v)) throw new Error(`bad share field ${k}`);
+      return v;
+    };
+    const int = (k, lo, hi) => num(k, (v) => Number.isInteger(v) && v >= lo && v <= hi);
+    const pos = (v) => v > 0;
+    const m = p.get("m");
+    const view = { cx: num("x"), cy: num("y"), scale: num("s", pos), rotation: num("r") };
+    if (m === "fractal") {
+      const name = p.get("f");
+      if (!Object.prototype.hasOwnProperty.call(FRACTAL_CONFIGS, name)) return null;
+      const st = { mode: m, name, ...view, maxIter: int("i", 50, 2000), iterAutoLocked: p.get("il") === "1",
+        cm: int("cm", 0, COLORMAPS.length - 1), dual: false };
+      if (p.get("d") === "1" && FRACTAL_CONFIGS[name].dual) {
+        st.dual = true;
+        st.julia = { juliaC: [num("jcx"), num("jcy")], cx: num("jx"), cy: num("jy"), scale: num("js", pos),
+          rotation: num("jr"), maxIter: int("ji", 50, 2000), baseScale: num("jb", pos) };
+      }
+      return st;
+    }
+    if (m === "fern") return { mode: m, ...view, count: int("n", 100000, 4000000), colorIndex: int("c", 0, FERN_COLORS.length - 1) };
+    const maxDepth = { koch: 8, tree: 12, dragon: 16 }[m];
+    if (maxDepth === undefined) return null;
+    return { mode: m, ...view, cm: int("cm", 0, COLORMAPS.length - 1), depth: int("dp", 0, maxDepth), fill: p.get("fl") !== "0" };
+  } catch {
+    return null;
+  }
+}
+
+function applyShareState(st) {
+  if (st.mode === "fractal") {
+    colormapIndex = st.cm;
+    if (dualActive) exitDual();
+    selectFractal(st.name);
+    Object.assign(mainState, { cx: st.cx, cy: st.cy, scale: st.scale, rotation: st.rotation,
+      maxIter: st.maxIter, iterAutoLocked: st.iterAutoLocked });
+    if (st.dual) {
+      enterDual();
+      Object.assign(juliaState, st.julia, { juliaC: st.julia.juliaC.slice(), iterAutoLocked: st.iterAutoLocked });
+      mainState.juliaC = st.julia.juliaC.slice();
+    }
+    els.dualBtn.classList.toggle("active", dualActive);
+    els.iterSlider.value = mainState.maxIter;
+  } else {
+    if (st.mode === "fern") {
+      fernState.count = st.count;
+      els.fernPointsSlider.value = st.count;
+      fernState.colorIndex = st.colorIndex;
+      const [r, g, b] = FERN_COLORS[st.colorIndex].rgb;
+      els.fernColorSwatch.setAttribute("fill", `rgb(${r}, ${g}, ${b})`);
+    } else {
+      colormapIndex = st.cm;
+      const depthState = { koch: kochState, tree: treeState, dragon: dragonState }[st.mode];
+      depthState.depth = st.depth;
+      els[`${st.mode}DepthSlider`].value = st.depth;
+      if (st.mode === "koch") {
+        kochState.fill = st.fill;
+        els.kochFillBtn.classList.toggle("active", st.fill);
+      }
+    }
+    // Mark as fitted first: setMode's first-visit fit would otherwise
+    // replace the linked view with the default one.
+    fittedVectorModes.add(st.mode);
+    Object.assign(VECTOR_VIEWS[st.mode][0].view, { cx: st.cx, cy: st.cy, halfHeight: st.scale, rotation: st.rotation });
+    setMode(st.mode);
+  }
+  updateLUT();
+  requestRender();
+}
+
+// Applies a share link from the URL, then strips the hash so a reload
+// returns to the app's normal start rather than re-pinning the link.
+function applyShareHashFromUrl() {
+  const st = parseShareHash(location.hash);
+  if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+  if (st) applyShareState(st);
+}
+
+// ---------------------------------------------------------------- share: image + menu
+
+function shareFileName() {
+  const label = mode === "fractal" ? currentName : EXTRA_MODES.find((e) => e.key === mode).label;
+  const slug = label.normalize("NFKD").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const d = new Date();
+  const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return `fractal-web-${slug}-${date}.png`;
+}
+
+function waitUntil(cond, timeoutMs) {
+  return new Promise((resolve) => {
+    const t0 = performance.now();
+    const tick = () => (cond() || performance.now() - t0 > timeoutMs ? resolve() : requestAnimationFrame(tick));
+    tick();
+  });
+}
+
+// Dual mode: both panes onto one canvas in the layout actually on screen
+// (layoutCanvasArea's "stacked" = main above Julia, otherwise side by side),
+// with #canvasArea's 2px black gap between them.
+function compositeDualCanvas() {
+  const a = els.mainCanvas, b = els.juliaCanvas;
+  const stacked = els.canvasArea.classList.contains("stacked");
+  const gap = Math.round(2 * mainRenderer.dpr);
+  const out = document.createElement("canvas");
+  out.width = stacked ? Math.max(a.width, b.width) : a.width + gap + b.width;
+  out.height = stacked ? a.height + gap + b.height : Math.max(a.height, b.height);
+  const ctx = out.getContext("2d");
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, out.width, out.height);
+  ctx.drawImage(a, 0, 0);
+  ctx.drawImage(b, stacked ? 0 : a.width + gap, stacked ? a.height + gap : 0);
+  return out;
+}
+
+// PNG of the current view, taken only once progressive refinement has
+// finished (fractal supersampling, fern point fill) -- or after 3s, so a
+// slow device or an ongoing gesture can't hang it. Koch/tree/dragon draw
+// synchronously and are captured immediately.
+async function captureShareBlob() {
+  if (mode === "fractal") await waitUntil(() => refineDone && !isInteracting, 3000);
+  else if (mode === "fern") await waitUntil(() => !fernView.refining, 3000);
+  const canvas = mode !== "fractal" ? VECTOR_VIEWS[mode][1] : dualActive ? compositeDualCanvas() : els.mainCanvas;
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("canvas.toBlob failed"))), "image/png");
+  });
+}
+
+// "Share..." appears only if the platform can share: with the image when
+// it can share files, else link-only (broader support); hidden otherwise.
+const canShareFiles = (() => {
+  try {
+    return !!(navigator.share && navigator.canShare
+      && navigator.canShare({ files: [new File([""], "probe.png", { type: "image/png" })] }));
+  } catch {
+    return false;
+  }
+})();
+els.shareNativeBtn.classList.toggle("hidden", !navigator.share);
+
+// Capture starts when the menu opens, not when an option is tapped: iOS
+// Safari only allows navigator.share() close to the user's tap, so the PNG
+// should already be ready by then.
+let pendingCapture = null;
+function closeShareMenu() { els.shareMenu.classList.remove("open"); }
+document.querySelectorAll(".shareBtn").forEach((btn) => {
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation(); // don't let the outside-click closer below fire on this same tap
+    els.fractalTypeRow.classList.remove("open");
+    const opening = !els.shareMenu.classList.contains("open");
+    els.shareMenu.classList.toggle("open", opening);
+    if (opening) {
+      pendingCapture = captureShareBlob();
+      pendingCapture.catch(() => {}); // surfaced when an option actually uses it
+    }
+  });
+});
+document.addEventListener("pointerdown", (e) => {
+  if (!els.shareMenu.classList.contains("open")) return;
+  if (els.shareMenu.contains(e.target) || e.target.closest(".shareBtn")) return;
+  closeShareMenu();
+});
+
+function flashLabel(btn, text) {
+  const original = btn.textContent;
+  btn.textContent = text;
+  setTimeout(() => { btn.textContent = original; closeShareMenu(); }, 1500);
+}
+
+els.shareSaveBtn.addEventListener("click", async () => {
+  closeShareMenu();
+  try {
+    const blob = await pendingCapture;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = shareFileName();
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // Revoke after the click has handed the blob to the download.
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  } catch (err) {
+    reportError(`Save image failed: ${err && err.message ? err.message : err}`);
+  }
+});
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    // navigator.clipboard needs a secure context (not the LAN dev server).
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    ta.remove();
+    return ok;
+  }
+}
+
+els.shareCopyBtn.addEventListener("click", async () => {
+  const ok = await copyText(buildShareUrl());
+  flashLabel(els.shareCopyBtn, ok ? "Copied!" : "Copy failed");
+});
+
+els.shareNativeBtn.addEventListener("click", async () => {
+  const url = buildShareUrl();
+  closeShareMenu();
+  try {
+    if (canShareFiles) {
+      const file = new File([await pendingCapture], shareFileName(), { type: "image/png" });
+      await navigator.share({ files: [file], title: "Fractal Explorer", text: url, url });
+    } else {
+      await navigator.share({ title: "Fractal Explorer", url });
+    }
+  } catch (err) {
+    if (err && err.name === "AbortError") return; // user dismissed the share sheet
+    reportError(`Share failed: ${err && err.message ? err.message : err}`);
+  }
+});
+
+// Pasting a different link into an open tab only changes the hash.
+window.addEventListener("hashchange", applyShareHashFromUrl);
+
 // ---------------------------------------------------------------- init
 
 selectFractal(currentName);
 updateLUT();
 requestRender();
+applyShareHashFromUrl();
 
 // One-shot layout diagnostic: if the canvas collapsed to near-zero size
 // (a CSS/flexbox bug) nothing will be visible even though no JS error
