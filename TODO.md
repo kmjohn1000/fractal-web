@@ -109,3 +109,4 @@
 - Canvas stays below the iOS status bar when the HUD is hidden — `bae8ff5`
 - Phoenix fractal (parameter-space + Julia:Phoenix) — `bbe2e4a`
 - Rotation cos/sin on the CPU — `7a3e717`
+- Auto maxIter from zoom (until the slider is touched) — `68cdab6`
