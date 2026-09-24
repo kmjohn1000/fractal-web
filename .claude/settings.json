@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // .tool_response.filePath'); case \"$f\" in \"$CLAUDE_PROJECT_DIR\"/*.js) cd \"$CLAUDE_PROJECT_DIR\" && npx --no-install eslint --no-warn-ignored \"$f\" >&2 || exit 2;; esac",
+            "timeout": 30,
+            "statusMessage": "Linting..."
+          }
+        ]
+      }
+    ]
+  }
+}
