@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.1.0 — 2026-09-24
+- New "Surprise me" button (sparkle icon, Mandelbrot only): flies to a random hand-picked spot — Seahorse Valley, Elephant Valley, a mini Mandelbrot, and more — never the same one twice in a row. Back returns to where you were.
+
 ## 1.0.3 — 2026-09-24
 - Ember colormap retuned to copper/bronze tones so it no longer looks like Inferno and Magma.
 
