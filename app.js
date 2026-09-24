@@ -1,10 +1,9 @@
 "use strict";
 
 // ---------------------------------------------------------------- fractal configs
-// Ported from mandelbrot.py's FRACTAL_CONFIGS. view is [xmin, xmax, ymin, ymax];
-// we only use the y-extent as the half-height (see viewFromBounds) since the
-// canvas's own aspect ratio determines the visible x-extent, same convention
-// used throughout the WebGL renderer.
+// Ported from mandelbrot.py's FRACTAL_CONFIGS. view is [xmin, xmax, ymin, ymax],
+// the region that must be fully visible when the fractal first opens;
+// viewFromBounds fits it to the canvas's aspect ratio (see there).
 
 const FTYPE = { ESCAPE: 0, SHIP: 1, TRICORN: 2, NEWTON: 3, CARPET: 4, GASKET: 5 };
 
@@ -26,9 +25,12 @@ const FTYPE = { ESCAPE: 0, SHIP: 1, TRICORN: 2, NEWTON: 3, CARPET: 4, GASKET: 5 
 //               (root-finding, not escape-time), and the digit-test
 //               carpet/gasket (self-similar IFS constructions).
 const FRACTAL_CONFIGS = {
-  "Mandelbrot":   { ftype: FTYPE.ESCAPE,  power: 2, juliaC: null,               view: [-2.5, 1.0, -1.25, 1.25], dual: true,  family: "escape" },
-  "Burn. Ship":   { ftype: FTYPE.SHIP,    power: 2, juliaC: null,               view: [-2.5, 1.5, -2.0,  0.5],  dual: true,  family: "escape" },
-  "Tricorn":      { ftype: FTYPE.TRICORN, power: 2, juliaC: null,               view: [-2.5, 1.0, -1.25, 1.25], dual: true,  family: "escape" },
+  // These three boxes are the sets' measured extents (antenna/tips
+  // included) plus a small margin; Tricorn's tips reach y = +-1.54, which
+  // the old +-1.25 box clipped even before aspect fitting.
+  "Mandelbrot":   { ftype: FTYPE.ESCAPE,  power: 2, juliaC: null,               view: [-2.15, 0.65, -1.25, 1.25], dual: true,  family: "escape" },
+  "Burn. Ship":   { ftype: FTYPE.SHIP,    power: 2, juliaC: null,               view: [-2.15, 1.25, -1.85, 0.65], dual: true,  family: "escape" },
+  "Tricorn":      { ftype: FTYPE.TRICORN, power: 2, juliaC: null,               view: [-2.1,  1.15, -1.7,  1.7],  dual: true,  family: "escape" },
   "Multibrot³": { ftype: FTYPE.ESCAPE, power: 3, juliaC: null,             view: [-2.0, 2.0, -1.5,  1.5],  dual: true,  family: "escape" },
   "Julia:Rabbit": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.12256, 0.74486], view: [-1.8, 1.8, -1.35, 1.35], dual: false, family: "julia" },
   "Julia:Dragon": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.4, 0.6],         view: [-1.8, 1.8, -1.35, 1.35], dual: false, family: "julia" },
@@ -78,8 +80,13 @@ function digitFractalDepth(ftype, scale, heightPx) {
   return Math.max(1, Math.min(digitMaxDepth(ftype), d));
 }
 
-function viewFromBounds(b) {
-  return { cx: (b[0] + b[1]) / 2, cy: (b[2] + b[3]) / 2, scale: (b[3] - b[2]) / 2 };
+// Fits the whole box on screen: scale is the view's half-height, and the
+// visible half-width is scale * aspect, so the box's half-width needs
+// scale >= halfW / aspect. Fitting the height alone (the old behavior) cut
+// off the sides of every wide box on a portrait phone.
+function viewFromBounds(b, aspect) {
+  const halfW = (b[1] - b[0]) / 2, halfH = (b[3] - b[2]) / 2;
+  return { cx: (b[0] + b[1]) / 2, cy: (b[2] + b[3]) / 2, scale: Math.max(halfH, halfW / aspect) };
 }
 
 // ---------------------------------------------------------------- Phase 3: deep zoom
@@ -597,8 +604,13 @@ if (!juliaRenderer) reportError("WebGL context creation failed on juliaCanvas.")
   });
 });
 
+function mainCanvasAspect() {
+  const c = els.mainCanvas;
+  return c.clientWidth > 0 && c.clientHeight > 0 ? c.clientWidth / c.clientHeight : 1;
+}
+
 function freshState(config) {
-  const v = viewFromBounds(config.view);
+  const v = viewFromBounds(config.view, mainCanvasAspect());
   return {
     cx: v.cx, cy: v.cy, scale: v.scale, rotation: 0,
     ftype: config.ftype, power: config.power,
@@ -889,6 +901,11 @@ function selectFractal(name) {
   if (!dualActive) els.crosshair.classList.add("hidden");
   layoutCanvasArea();
   setMode("fractal");
+  // Refit now that layout is final: freshState ran above while the canvas
+  // could still be hidden (coming from a vector mode) or about to change
+  // size (Julia pane / iter slider shown or hidden). setMode only schedules
+  // the render, so it picks this up.
+  Object.assign(mainState, viewFromBounds(config.view, mainCanvasAspect()));
 }
 
 function enterDual() {
