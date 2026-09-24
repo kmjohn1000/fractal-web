@@ -38,13 +38,25 @@
     word-break: break-word; max-height: 40vh; overflow-y: auto; z-index: 100;
   }
 
+  /* A card rather than a full-width strip: its own dark background keeps
+     the text legible no matter what's rendered around it. align-self keeps
+     it hugging its content in the top-left instead of stretching across
+     the body's flex column; the top margin does the safe-area clearing
+     the old padding-top did (see #errorBanner above). */
   #hud {
-    flex: none; padding: 8px 12px; padding-top: calc(8px + env(safe-area-inset-top));
-    font: 12px/1.4 -apple-system, system-ui, monospace;
-    /* pre-wrap, not pre: keep the explicit line breaks and column spacing,
-       but wrap a long line instead of running it off a phone's right edge
-       (the second line is ~540px wide with colormap + rotation). */
-    background: rgba(0,0,0,0.45); white-space: pre-wrap;
+    flex: none; align-self: flex-start; max-width: calc(100% - 16px); box-sizing: border-box;
+    margin: 6px 8px 4px; margin-top: calc(6px + env(safe-area-inset-top));
+    padding: 6px 10px; border-radius: 8px; /* matches button radius */
+    background: rgba(0,0,0,0.7);
+  }
+  #hud .hudName {
+    font: 600 14px/1.3 -apple-system, system-ui, sans-serif; color: #fff;
+  }
+  /* pre-wrap, not pre: keep the explicit line breaks and column spacing,
+     but wrap a long line instead of running it off a phone's right edge. */
+  #hud .hudStats {
+    font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: #9a9a9a; white-space: pre-wrap;
   }
 
   #canvasArea {
@@ -229,7 +241,7 @@
     reportError(`Unhandled rejection: ${r && r.message ? r.message : r}`);
   });
 </script>
-<div id="hud" class="hidden"></div>
+<div id="hud" class="hidden"><div class="hudName"></div><div class="hudStats"></div></div>
 
 <div id="canvasArea">
   <canvas id="mainCanvas"></canvas>
