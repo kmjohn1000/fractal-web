@@ -109,6 +109,7 @@
   deeper Gasket zoom, not this.
 
 ## Done
+- "Surprise me" teleport to curated Mandelbrot locations — `7e2c606`
 - Box-zoom (zoom selector) for Barnsley Fern — `0a3ad53`
 - Show the last frame while dragging at deep zoom — `f0f0e98`
 - UI consistency: canonical control order, fern palette icon, Back for vector views, HUD hidden by default with a toggle — `05ebfaf`
