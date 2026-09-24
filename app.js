@@ -8,22 +8,44 @@
 
 const FTYPE = { ESCAPE: 0, SHIP: 1, TRICORN: 2, NEWTON: 3, CARPET: 4, GASKET: 5 };
 
+// family groups the hamburger menu into sections, by actual mathematical
+// relationship rather than just "looks similar":
+//   "escape"  - the z^n+c iteration in parameter-space (c varies, z starts
+//               at 0) — Mandelbrot itself and its direct variants. These
+//               all render the characteristic "bug"-shaped boundary.
+//   "julia"   - the SAME z^n+c iteration, just in the dual mode (c is
+//               fixed, z starts at the pixel) — mathematically the same
+//               family as "escape" (a Julia set is literally a cross-
+//               section of the Mandelbrot construction), split into its
+//               own section because fixed-c renderings look nothing like
+//               parameter-space ones (dust/lightning/spirals, not bugs) —
+//               grouping by literal visual family is more useful for
+//               browsing than collapsing them under one giant "Mandelbrot"
+//               label just because the underlying math matches.
+//   "other"   - structurally unrelated constructions: Newton's method
+//               (root-finding, not escape-time), and the digit-test
+//               carpet/gasket (self-similar IFS constructions).
 const FRACTAL_CONFIGS = {
-  "Mandelbrot":   { ftype: FTYPE.ESCAPE,  power: 2, juliaC: null,               view: [-2.5, 1.0, -1.25, 1.25], dual: true },
-  "Burn. Ship":   { ftype: FTYPE.SHIP,    power: 2, juliaC: null,               view: [-2.5, 1.5, -2.0,  0.5],  dual: true },
-  "Tricorn":      { ftype: FTYPE.TRICORN, power: 2, juliaC: null,               view: [-2.5, 1.0, -1.25, 1.25], dual: true },
-  "Multibrot³": { ftype: FTYPE.ESCAPE, power: 3, juliaC: null,             view: [-2.0, 2.0, -1.5,  1.5],  dual: true },
-  "Julia:Rabbit": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.12256, 0.74486], view: [-1.8, 1.8, -1.35, 1.35], dual: false },
-  "Julia:Dragon": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.4, 0.6],         view: [-1.8, 1.8, -1.35, 1.35], dual: false },
-  "Julia:Spiral": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [0.285, 0.01],       view: [-1.8, 1.8, -1.35, 1.35], dual: false },
-  "Newton z³": { ftype: FTYPE.NEWTON, power: 3, juliaC: null,              view: [-2.0, 2.0, -1.5, 1.5],   dual: false },
+  "Mandelbrot":   { ftype: FTYPE.ESCAPE,  power: 2, juliaC: null,               view: [-2.5, 1.0, -1.25, 1.25], dual: true,  family: "escape" },
+  "Burn. Ship":   { ftype: FTYPE.SHIP,    power: 2, juliaC: null,               view: [-2.5, 1.5, -2.0,  0.5],  dual: true,  family: "escape" },
+  "Tricorn":      { ftype: FTYPE.TRICORN, power: 2, juliaC: null,               view: [-2.5, 1.0, -1.25, 1.25], dual: true,  family: "escape" },
+  "Multibrot³": { ftype: FTYPE.ESCAPE, power: 3, juliaC: null,             view: [-2.0, 2.0, -1.5,  1.5],  dual: true,  family: "escape" },
+  "Julia:Rabbit": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.12256, 0.74486], view: [-1.8, 1.8, -1.35, 1.35], dual: false, family: "julia" },
+  "Julia:Dragon": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.4, 0.6],         view: [-1.8, 1.8, -1.35, 1.35], dual: false, family: "julia" },
+  "Julia:Spiral": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [0.285, 0.01],       view: [-1.8, 1.8, -1.35, 1.35], dual: false, family: "julia" },
+  "Newton z³": { ftype: FTYPE.NEWTON, power: 3, juliaC: null,              view: [-2.0, 2.0, -1.5, 1.5],   dual: false, family: "other" },
   // Digit-test fractals (see FRAG_SRC's renderDigitFractal) — defined on
   // the unit square, so centered there with a little margin. power is
   // unused by these but kept non-null for consistency with the others.
-  "Carpet":       { ftype: FTYPE.CARPET,  power: 2, juliaC: null,               view: [-0.15, 1.15, -0.15, 1.15], dual: false },
-  "Gasket":       { ftype: FTYPE.GASKET,  power: 2, juliaC: null,               view: [-0.15, 1.15, -0.15, 1.15], dual: false },
+  "Carpet":       { ftype: FTYPE.CARPET,  power: 2, juliaC: null,               view: [-0.15, 1.15, -0.15, 1.15], dual: false, family: "other" },
+  "Gasket":       { ftype: FTYPE.GASKET,  power: 2, juliaC: null,               view: [-0.15, 1.15, -0.15, 1.15], dual: false, family: "other" },
 };
 const FRACTAL_NAMES = Object.keys(FRACTAL_CONFIGS);
+const FRACTAL_FAMILIES = [
+  { key: "escape", label: "Escape-time (parameter space)" },
+  { key: "julia",  label: "Julia sets" },
+  { key: "other",  label: "Other constructions" },
+];
 
 function viewFromBounds(b) {
   return { cx: (b[0] + b[1]) / 2, cy: (b[2] + b[3]) / 2, scale: (b[3] - b[2]) / 2 };
@@ -309,7 +331,6 @@ const els = {
   modeFractalBtn: document.getElementById("modeFractalBtn"),
   modeKochBtn: document.getElementById("modeKochBtn"),
   fractalMenuBtn: document.getElementById("fractalMenuBtn"),
-  fractalMenuLabel: document.getElementById("fractalMenuLabel"),
   fractalTypeRow: document.getElementById("fractalTypeRow"),
   fractalControls: document.getElementById("fractalControls"),
   kochControls: document.getElementById("kochControls"),
@@ -541,6 +562,18 @@ function screenToComplex(renderer, state, sx, sy) {
   return { x: state.cx + wx * state.scale * 2.0, y: state.cy + wy * state.scale * 2.0 };
 }
 
+// Wraps an angle to (-PI, PI]. cos/sin are periodic, so this never changes
+// what's rendered (rotation=720deg looks identical to 0deg either way) —
+// it's purely for the HUD display, which otherwise showed "720deg" instead
+// of wrapping back toward 0deg after a couple of full spins, and to keep
+// the GPU shader's cos(u_rotation)/sin(u_rotation) operating on a bounded
+// input rather than one that grows without limit over a long session
+// (float32 trig on a very large argument loses precision reducing it back
+// into range internally).
+function normalizeAngle(a) {
+  return ((a + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+}
+
 // Inverse of screenToComplex, solved for (cx, cy): the center a view would
 // need so that local screen point (sx, sy) maps exactly to world point
 // (targetX, targetY) at the view's current scale/rotation. This is the
@@ -576,10 +609,9 @@ function selectFractal(name) {
   // before that was caught and fixed.
   const usesFixedDepth = config.ftype === FTYPE.CARPET || config.ftype === FTYPE.GASKET;
   els.iterSlider.disabled = usesFixedDepth;
-  [...els.fractalTypeRow.children].forEach((btn) => {
+  els.fractalTypeRow.querySelectorAll("button").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.name === name);
   });
-  els.fractalMenuLabel.textContent = name;
   els.fractalTypeRow.classList.remove("open");
   els.juliaCanvas.classList.toggle("hidden", !dualActive);
   if (!dualActive) els.crosshair.classList.add("hidden");
@@ -742,7 +774,7 @@ function attachFractalInteraction(canvas, getState, paneName, renderer) {
       // below keeps the midpoint under the fingers stable under combined
       // pinch+rotate, exactly like it already does for pinch+pan.
       const angle = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
-      st.rotation = pinchStartRotation + (angle - pinchStartAngle);
+      st.rotation = normalizeAngle(pinchStartRotation + (angle - pinchStartAngle));
       const after = screenToWorldHere(mid.x, mid.y);
       st.cx += before.x - after.x;
       st.cy += before.y - after.y;
@@ -919,15 +951,22 @@ attachFractalInteraction(els.juliaCanvas, () => juliaState, "julia", juliaRender
 
 // ---------------------------------------------------------------- UI wiring
 
-FRACTAL_NAMES.forEach((name) => {
-  const btn = document.createElement("button");
-  btn.textContent = name;
-  btn.dataset.name = name;
-  btn.addEventListener("click", () => selectFractal(name));
-  els.fractalTypeRow.appendChild(btn);
+FRACTAL_FAMILIES.forEach((fam) => {
+  const names = FRACTAL_NAMES.filter((n) => FRACTAL_CONFIGS[n].family === fam.key);
+  if (names.length === 0) return;
+  const header = document.createElement("div");
+  header.className = "menuSectionHeader";
+  header.textContent = fam.label;
+  els.fractalTypeRow.appendChild(header);
+  names.forEach((name) => {
+    const btn = document.createElement("button");
+    btn.textContent = name;
+    btn.dataset.name = name;
+    btn.addEventListener("click", () => selectFractal(name));
+    els.fractalTypeRow.appendChild(btn);
+  });
 });
-els.fractalMenuLabel.textContent = currentName;
-[...els.fractalTypeRow.children].forEach((btn) => {
+els.fractalTypeRow.querySelectorAll("button").forEach((btn) => {
   btn.classList.toggle("active", btn.dataset.name === currentName);
 });
 
