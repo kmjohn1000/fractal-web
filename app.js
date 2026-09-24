@@ -297,7 +297,8 @@ function createFractalRenderer(canvas) {
     resolution: gl.getUniformLocation(prog, "u_resolution"),
     center: gl.getUniformLocation(prog, "u_center"),
     scale: gl.getUniformLocation(prog, "u_scale"),
-    rotation: gl.getUniformLocation(prog, "u_rotation"),
+    rotCos: gl.getUniformLocation(prog, "u_rotCos"),
+    rotSin: gl.getUniformLocation(prog, "u_rotSin"),
     maxIter: gl.getUniformLocation(prog, "u_maxIter"),
     ftype: gl.getUniformLocation(prog, "u_ftype"),
     power: gl.getUniformLocation(prog, "u_power"),
@@ -400,7 +401,9 @@ function createFractalRenderer(canvas) {
     gl.uniform2f(u.resolution, canvas.width, canvas.height);
     gl.uniform2f(u.center, state.cx, state.cy);
     gl.uniform1f(u.scale, state.scale);
-    gl.uniform1f(u.rotation, state.rotation || 0);
+    const rot = state.rotation || 0;
+    gl.uniform1f(u.rotCos, Math.cos(rot));
+    gl.uniform1f(u.rotSin, Math.sin(rot));
     gl.uniform1i(u.maxIter, state.maxIter | 0);
     gl.uniform1i(u.ftype, state.ftype);
     gl.uniform1f(u.power, state.power);
@@ -863,10 +866,9 @@ function screenToComplex(renderer, state, sx, sy) {
 // what's rendered (rotation=720deg looks identical to 0deg either way) —
 // it's purely for the HUD display, which otherwise showed "720deg" instead
 // of wrapping back toward 0deg after a couple of full spins, and to keep
-// the GPU shader's cos(u_rotation)/sin(u_rotation) operating on a bounded
-// input rather than one that grows without limit over a long session
-// (float32 trig on a very large argument loses precision reducing it back
-// into range internally).
+// the rotation's cos/sin (computed on the CPU for the shader's
+// u_rotCos/u_rotSin) operating on a bounded input rather than one that
+// grows without limit over a long session.
 function normalizeAngle(a) {
   return ((a + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
 }
