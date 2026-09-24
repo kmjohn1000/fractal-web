@@ -7,22 +7,34 @@
 
 ## Tier 1 — growth mechanism, ship together
 - [ ] Screenshot/save button (preserveDrawingBuffer is already set,
-      canvas.toDataURL()/toBlob() should work as-is)
-- [ ] Shareable links (HUD already serializes full view state as text;
-      needs a URL query/hash format + parser on load)
+      canvas.toDataURL()/toBlob() should work as-is; fractal control row
+      is full at 7 buttons for one line at 360px — an 8th wraps and costs
+      ~54px of canvas, so share one button with shareable links)
+- [ ] Shareable links (needs a URL query/hash format + parser on load;
+      serialize from mainState, not HUD text — the HUD prints ~6
+      significant digits, deep-zoom links need full float64 / 17 digits;
+      include type, center, scale, rotation, maxIter, colormap, Julia c;
+      share via copy or Web Share API, same encoding doubles as bookmarks)
 
 ## Tier 2 — close gaps in existing systems
 - [ ] Viewport-adaptive recursion for Koch/Dragon/Tree (currently the
       only fractal family that doesn't adapt detail to zoom — Carpet/
       Gasket compute depth from pixel size, Fern regenerates from
-      viewport, these three don't)
+      viewport, these three don't; subdivide only parts whose bounding box
+      touches the viewport, down to ~1px — detail runs out today at ~13×
+      Koch, ~1–2× Tree, ~1× Dragon; filled Koch stays correct since
+      off-screen chords lie inside their bounding triangles; Dragon moves
+      from the L-system string to its two-map IFS form)
 - [ ] New escape-time types: Celtic Mandelbrot, Buffalo, Lambda
       (single-state iteration, reuse existing shader/perturbation/
       supersampling pipeline with no structural changes)
 - [ ] Cell rebasing for Carpet/Gasket (real fix for the depth-16/22
       precision ceiling — track cell address separately from a small
       per-cell delta, refreshed at each subdivision, same principle as
-      the escape-time perturbation rebasing already implemented)
+      the escape-time perturbation rebasing already implemented; CPU
+      resolves the ≤4 level-k cells the view overlaps and whether each is
+      already a hole; exact, no glitches; ~1e15× with float64 cell math,
+      more with BigInt — today Carpet ~3.5e4×, Gasket ~3,000×)
 
 ## Tier 3 — differentiation
 - [ ] AI-curated "find something beautiful" auto-discovery
@@ -43,16 +55,27 @@
 - [x] Phoenix fractal (needs two-state iteration support — z_(n-1) as
       running state — not a drop-in like Tier 2's new types) — done in `bbe2e4a`
 - [ ] Newton perturbation (rational-function deltas near root
-      singularities; harder than Phoenix, do after it)
+      singularities; harder than Phoenix, do after it; the difference
+      factors without cancellation as
+      N(Z+δ) − N(Z) = δ(2Z⁴ + 4Z³δ + 2Z²δ² − 2Z − δ) / (3Z²(Z+δ)²);
+      less established than escape-time perturbation — prototype first)
 - [ ] Arbitrary-precision reference orbit for zoom past ~1e13
       (computeReferenceOrbit is float64-limited to ~15-16 significant
-      digits; CPU/JS-only work, shader unaffected — do this if/when deep
-      zoom becomes an actual marketed feature)
+      digits — do this if/when deep zoom becomes an actual marketed
+      feature; the reference orbit is CPU/JS work (BigInt fixed-point),
+      but past ~1e-35 the shader's float32 deltas also underflow, so it
+      also needs extended-exponent deltas, plus BLA iteration skipping and
+      2D reference-orbit textures past MAX_TEXTURE_SIZE)
 
 ## Tier 6 — do when actually needed
-- [ ] maxIter past 2000 (blocked on checking gl.getParameter(MAX_TEXTURE_SIZE)
-      at runtime first — Julia-mode reference orbit texture width is
-      2*(maxIter+1) texels, currently safely under the 4096 minimum)
+- [ ] maxIter past 2000 (real blockers: the shader loops are compiled
+      with a constant 2000 bound, and one draw that loops 10⁴–10⁶ times
+      risks a GPU watchdog timeout/context loss — needs multi-pass
+      iteration, saving per-pixel state (z, dz, reference index) in float
+      textures between passes; also check gl.getParameter(MAX_TEXTURE_SIZE)
+      at runtime — Julia-mode reference orbit texture width is
+      2*(maxIter+1) texels, safely under 4096 today; without this, deeper
+      views show growing false-black interiors)
 
 ## Business layer (parallel track, not blocked on the above)
 - [ ] Watermark on free-tier exports
@@ -60,7 +83,10 @@
       watermark removal/palettes/extra fractal families
 
 ## Polish (whenever)
-- [ ] Colormap animation
+- [ ] Colormap animation (WebGL: a u_colorPhase uniform shifting the LUT
+      lookup over time via requestAnimationFrame; Koch/Tree: cycle the
+      colormap's stops, like kochAnimateBtn cycles depth; new toggle, not
+      a repurposed "cycle colormap" button)
 
 ## Deferred indefinitely
 - Menger Sponge / other 3D fractals (real 3D rendering project, not a
