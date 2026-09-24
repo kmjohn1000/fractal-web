@@ -109,6 +109,7 @@
   deeper Gasket zoom, not this.
 
 ## Done
+- Sierpinski Triangle, Lévy C Curve and Vicsek Fractal as IFS modes on the fern engine — `023d2fc`
 - "Surprise me" teleport to curated Mandelbrot locations — `7e2c606`
 - Box-zoom (zoom selector) for Barnsley Fern — `0a3ad53`
 - Show the last frame while dragging at deep zoom — `f0f0e98`
