@@ -120,3 +120,4 @@
 - Colormap end color reachable (t = 1.0) + colormap name in the HUD — `a738a20`
 - Colormaps Viridis/Turbo/Glacier/Ember/Grayscale + HUD lines wrap on phones — `899a803`
 - Share: save image, copy link, native share (Tier 1) — `9f94472`
+- Colormap picker popover (replaces cycling) + stale-LUT fix — `1603858`
