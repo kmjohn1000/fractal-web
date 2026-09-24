@@ -1,45 +1,25 @@
 "use strict";
 
-// Direct port of koch.py's koch_segment()/koch_snowflake() geometry, plus a
-// Canvas2D view with the same pan/zoom/animate/fill/colormap feature set —
-// pure vector geometry at these depths, so it needs no shader.
+// Koch snowflake: a Canvas2D view with the same pan/zoom/animate/fill/
+// colormap feature set as the original koch.py port -- pure vector
+// geometry at these depths, so it needs no shader.
 
-function kochSegment(p1, p2) {
-  const dx = p2[0] - p1[0], dy = p2[1] - p1[1];
-  const ax = p1[0] + dx / 3, ay = p1[1] + dy / 3;
-  const bx = p1[0] + (2 * dx) / 3, by = p1[1] + (2 * dy) / 3;
-  // The starting triangle ([90,210,330] degrees) winds counter-clockwise,
-  // so the outward direction at each edge is to the RIGHT of travel, i.e. a
-  // negative (clockwise) rotation of the forward vector -- +60 degrees was
-  // shipped here and rotated every bump inward instead, producing the Koch
-  // ANTI-snowflake (area converges to 2/5 of the base triangle, not 8/5).
-  // Verified numerically via the shoelace formula before fixing: +60deg
-  // gives area ratio 0.42 at depth 4, -60deg gives 1.58, matching the
-  // textbook 8/5 growth of a real snowflake.
-  const angle = -Math.PI / 3;
-  const cos = Math.cos(angle), sin = Math.sin(angle);
-  const rx = dx / 3, ry = dy / 3;
-  const peak = [ax + (cos * rx - sin * ry), ay + (sin * rx + cos * ry)];
-  return [p1, [ax, ay], peak, [bx, by], p2];
-}
-
+// Geometry comes from the shared L-system engine (lsystem.js,
+// KOCH_SNOWFLAKE). The turtle is placed so the result is exactly the old
+// koch.py port's snowflake -- a triangle on the unit circle with vertices at
+// 90/210/330 degrees, spanning x +-0.866, y -0.5..1 at depth 0 -- which
+// app.js's vectorViewBox("koch") is fitted to: start at the top vertex
+// heading -60 degrees, one step = edge length sqrt(3) / 3^depth.
+// KOCH_SNOWFLAKE turns right at the corners (clockwise), so bumps go out
+// to the left; the old code walked the triangle counter-clockwise, so
+// the list is reversed to keep the same vertex order. Checked point for
+// point against the old kochSegment/kochSnowflake at depths 0-8 (max
+// difference 1.6e-13) before they were removed.
 function kochSnowflake(depth) {
-  const angles = [90, 210, 330].map((d) => (d * Math.PI) / 180);
-  const pts = angles.map((a) => [Math.cos(a), Math.sin(a)]);
-  let segments = [[pts[0], pts[1]], [pts[1], pts[2]], [pts[2], pts[0]]];
-
-  for (let d = 0; d < depth; d++) {
-    const next = [];
-    for (const [p1, p2] of segments) {
-      const chain = kochSegment(p1, p2);
-      for (let i = 0; i < chain.length - 1; i++) next.push([chain[i], chain[i + 1]]);
-    }
-    segments = next;
-  }
-
-  const verts = segments.map((s) => s[0]);
-  verts.push(segments[segments.length - 1][1]);
-  return verts;
+  const [verts] = lsystemPolylines(KOCH_SNOWFLAKE, depth, {
+    start: [0, 1], startHeadingDeg: -60, step: Math.sqrt(3) / Math.pow(3, depth),
+  });
+  return verts.reverse();
 }
 
 function createKochView(canvas) {

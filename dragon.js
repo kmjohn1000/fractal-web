@@ -1,21 +1,9 @@
 "use strict";
 
-// Heighway dragon curve via its standard L-system (axiom FX, rules
-// X->X+YF+, Y->-FX-Y, 90-degree turns). Non-F characters are bookkeeping
-// only; walking the F/+/- string with a turtle draws the curve.
-function dragonLSystemString(depth) {
-  let s = "FX";
-  for (let i = 0; i < depth; i++) {
-    let next = "";
-    for (const c of s) {
-      if (c === "X") next += "X+YF+";
-      else if (c === "Y") next += "-FX-Y";
-      else next += c;
-    }
-    s = next;
-  }
-  return s;
-}
+// The line-turtle curves that share one Canvas2D view (and one control
+// row in the app): the Heighway dragon plus Hilbert, Gosper and the
+// Sierpinski arrowhead. Geometry for all of them comes from the shared
+// L-system engine in lsystem.js.
 
 // Each forward step is scaled by (1/sqrt2)^depth so the curve's overall
 // bounding box stays bounded as depth increases instead of growing without
@@ -24,34 +12,64 @@ function dragonLSystemString(depth) {
 // dividing into thirds. Verified numerically before shipping: with raw
 // unit-length steps the bbox grew from ~30 units wide at depth 10 to ~380
 // at depth 16; with this scaling it converges to roughly
-// x:[-1.2,1.2] y:[-1.2,0.5] regardless of depth.
+// x:[-1.2,1.2] y:[-1.2,0.5] regardless of depth. (Checked point for point
+// against the pre-lsystem.js generator at depths 0-16: identical.)
 function dragonCurve(depth) {
-  const s = dragonLSystemString(depth);
-  const step = Math.pow(Math.SQRT1_2, depth);
-  let x = 0, y = 0, heading = 0;
-  const pts = [[x, y]];
-  for (const c of s) {
-    if (c === "F") {
-      x += Math.cos(heading) * step;
-      y += Math.sin(heading) * step;
-      pts.push([x, y]);
-    } else if (c === "+") {
-      heading += Math.PI / 2;
-    } else if (c === "-") {
-      heading -= Math.PI / 2;
-    }
-  }
-  return pts;
+  return lsystemPolylines(DRAGON_CURVE, depth, { step: Math.pow(Math.SQRT1_2, depth) })[0];
 }
 
+// The newer curves don't need hand-tuned scaling: normalizePolylines fits
+// each depth into [-1, 1]. All three are single connected paths.
+function normalizedCurve(def, depth, turtleOpts) {
+  return normalizePolylines(lsystemPolylines(def, depth, turtleOpts))[0];
+}
+
+// maxDepth caps are per curve, from measured growth (segments per level:
+// Hilbert x4, Gosper x7, arrowhead x3, dragon x2), kept at or under the
+// ~200k segments of Koch's existing depth-8 cap, the heaviest line
+// drawing the app already ships: Hilbert 8 = 65,535 (9 = 262,143);
+// Gosper 6 = 117,649 (7 = 823,543); arrowhead 11 = 177,147
+// (12 = 531,441). Each extra level also takes 3-7x longer to generate.
+const LINE_CURVES = {
+  dragon: { label: "Dragon Curve", maxDepth: 16, defaultDepth: 13, points: dragonCurve },
+  hilbert: {
+    label: "Hilbert Curve", maxDepth: 8, defaultDepth: 5,
+    points: (depth) => normalizedCurve(HILBERT_CURVE, depth),
+  },
+  gosper: {
+    label: "Gosper Curve", maxDepth: 6, defaultDepth: 4,
+    points: (depth) => normalizedCurve(GOSPER_CURVE, depth),
+  },
+  // The arrowhead's triangle points down at odd depths when started
+  // heading +x; starting odd depths at 60 degrees keeps it pointing up.
+  arrowhead: {
+    label: "Sierpinski Arrowhead", maxDepth: 11, defaultDepth: 7,
+    points: (depth) => normalizedCurve(SIERPINSKI_ARROWHEAD, depth, { startHeadingDeg: depth % 2 ? 60 : 0 }),
+  },
+};
+
 // Same Canvas2D view shape as createKochView/createPythagorasTreeView, so
-// attachVectorViewInteraction in app.js works on this unmodified.
-function createDragonView(canvas) {
+// attachVectorViewInteraction in app.js works on this unmodified. One view
+// serves every LINE_CURVES entry; setCurve switches which one it draws,
+// keeping each curve's pan/zoom separately.
+function createCurveView(canvas) {
   const ctx = canvas.getContext("2d");
   const view = { cx: -0.35, cy: -0.24, halfHeight: 1.0, rotation: 0 };
   let dpr = Math.min(window.devicePixelRatio || 1, 2);
-  let cachedDepth = -1;
+  let curve = "dragon";
+  const savedViews = new Map(); // curve key -> its view while another is shown
+  let cachedKey = "";
   let cachedPts = null;
+
+  // view is shared with attachVectorViewInteraction by reference, so it's
+  // swapped in place rather than replaced.
+  function setCurve(key) {
+    if (key === curve) return;
+    savedViews.set(curve, { ...view });
+    curve = key;
+    const saved = savedViews.get(key);
+    if (saved) Object.assign(view, saved);
+  }
 
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -90,14 +108,15 @@ function createDragonView(canvas) {
 
   function render(opts) {
     resize();
-    if (cachedDepth !== opts.depth) {
-      cachedPts = dragonCurve(opts.depth);
-      cachedDepth = opts.depth;
+    const key = `${curve},${opts.depth}`;
+    if (cachedKey !== key) {
+      cachedPts = LINE_CURVES[curve].points(opts.depth);
+      cachedKey = key;
     }
     ctx.fillStyle = "#111";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    const [r, g, b] = sampleColor(COLORMAPS[opts.colormapIndex].stops, opts.depth / 16);
+    const [r, g, b] = sampleColor(COLORMAPS[opts.colormapIndex].stops, opts.depth / LINE_CURVES[curve].maxDepth);
     ctx.strokeStyle = `rgb(${r | 0}, ${g | 0}, ${b | 0})`;
     ctx.lineWidth = 1.5;
     ctx.lineJoin = "round";
@@ -110,5 +129,9 @@ function createDragonView(canvas) {
     ctx.stroke();
   }
 
-  return { view, resize, render, worldToScreen, screenToWorld, get dpr() { return dpr; } };
+  return {
+    view, resize, render, worldToScreen, screenToWorld, setCurve,
+    get curve() { return curve; },
+    get dpr() { return dpr; },
+  };
 }

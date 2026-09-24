@@ -86,6 +86,9 @@ const EXTRA_MODES = [
   { key: "koch", label: "Koch Snowflake", family: "other" },
   { key: "tree", label: "Pythagoras Tree", family: "other" },
   { key: "dragon", label: "Dragon Curve", family: "other" },
+  { key: "hilbert", label: "Hilbert Curve", family: "other" },
+  { key: "gosper", label: "Gosper Curve", family: "other" },
+  { key: "arrowhead", label: "Sierpinski Arrowhead", family: "other" },
   { key: "fern", label: "Barnsley Fern", family: "other" },
   { key: "sierpinski", label: "Sierpinski Triangle", family: "other" },
   { key: "levy", label: "Lévy C Curve", family: "other" },
@@ -96,6 +99,9 @@ const EXTRA_MODES = [
 // view, canvas and control row -- the fern's -- and differ only in which
 // transform table that view runs.
 const isIfsMode = (m) => Object.prototype.hasOwnProperty.call(IFS_SYSTEMS, m);
+// Likewise the L-system line curves (dragon.js's LINE_CURVES) share the
+// dragon's view, canvas and control row.
+const isCurveMode = (m) => Object.prototype.hasOwnProperty.call(LINE_CURVES, m);
 
 // Deepest level float32 digit extraction stays accurate for, per base --
 // see renderDigitFractal in shaders.js for how these were measured.
@@ -608,7 +614,7 @@ const els = {
   shareNativeBtn: document.getElementById("shareNativeBtn"),
 };
 
-let mode = "fractal"; // "fractal" | "koch" | "tree" | "dragon" | an IFS_SYSTEMS key ("fern", ...)
+let mode = "fractal"; // "fractal" | "koch" | "tree" | a LINE_CURVES key ("dragon", ...) | an IFS_SYSTEMS key ("fern", ...)
 let colormapIndex = 0;
 let currentName = "Mandelbrot";
 let dualActive = false;
@@ -642,7 +648,7 @@ const mainRenderer = createFractalRenderer(els.mainCanvas);
 const juliaRenderer = createFractalRenderer(els.juliaCanvas);
 const kochView = createKochView(els.kochCanvas);
 const treeView = createPythagorasTreeView(els.treeCanvas);
-const dragonView = createDragonView(els.dragonCanvas);
+const dragonView = createCurveView(els.dragonCanvas);
 const fernView = createIfsView(els.fernCanvas);
 
 if (!mainRenderer) reportError("WebGL context creation failed on mainCanvas — this browser/device may not support WebGL.");
@@ -708,7 +714,13 @@ let juliaHistory = [];
 
 const kochState = { depth: 4, fill: true, animating: false, timer: null };
 const treeState = { depth: 9 };
-const dragonState = { depth: 13 };
+// Each line curve keeps its own depth; dragonState.depth reads/writes the
+// one currently shown, so code written for the dragon alone still works.
+const curveDepths = Object.fromEntries(Object.entries(LINE_CURVES).map(([k, c]) => [k, c.defaultDepth]));
+const dragonState = {
+  get depth() { return curveDepths[dragonView.curve]; },
+  set depth(v) { curveDepths[dragonView.curve] = v; },
+};
 const fernState = { count: 1000000, colorIndex: 0 };
 
 function pushHistory(pane) {
@@ -787,7 +799,7 @@ function renderAll() {
   } else if (mode === "tree") {
     treeView.render({ depth: treeState.depth, colormapIndex });
     updateTreeHud();
-  } else if (mode === "dragon") {
+  } else if (isCurveMode(mode)) {
     dragonView.render({ depth: dragonState.depth, colormapIndex });
     updateDragonHud();
   } else {
@@ -883,7 +895,7 @@ function updateTreeHud() {
 }
 
 function updateDragonHud() {
-  els.hud.textContent = `Dragon Curve   depth: ${dragonState.depth}${rotationHudText(dragonView.view.rotation)}`;
+  els.hud.textContent = `${LINE_CURVES[dragonView.curve].label}   depth: ${dragonState.depth}${rotationHudText(dragonView.view.rotation)}`;
 }
 
 function updateFernHud() {
@@ -1041,13 +1053,23 @@ function setMode(next) {
   els.fractalControls.classList.toggle("hidden", mode !== "fractal");
   els.kochControls.classList.toggle("hidden", mode !== "koch");
   els.treeControls.classList.toggle("hidden", mode !== "tree");
-  els.dragonControls.classList.toggle("hidden", mode !== "dragon");
+  els.dragonControls.classList.toggle("hidden", !isCurveMode(mode));
   els.fernControls.classList.toggle("hidden", !isIfsMode(mode));
   els.mainCanvas.classList.toggle("hidden", mode !== "fractal");
   els.juliaCanvas.classList.toggle("hidden", mode !== "fractal" || !dualActive);
   els.kochCanvas.classList.toggle("hidden", mode !== "koch");
   els.treeCanvas.classList.toggle("hidden", mode !== "tree");
-  els.dragonCanvas.classList.toggle("hidden", mode !== "dragon");
+  els.dragonCanvas.classList.toggle("hidden", !isCurveMode(mode));
+  if (isCurveMode(mode)) {
+    // Same sharing as the IFS modes below, plus the depth slider, whose
+    // range is per curve.
+    if (dragonView.curve !== mode) {
+      dragonView.setCurve(mode);
+      dragonNav.clearHistory();
+    }
+    els.dragonDepthSlider.max = LINE_CURVES[mode].maxDepth;
+    els.dragonDepthSlider.value = dragonState.depth;
+  }
   els.fernCanvas.classList.toggle("hidden", !isIfsMode(mode));
   // The IFS modes share fernView: point it at this mode's transforms (it
   // keeps each one's pan/zoom). Back history belongs to the previous one.
@@ -1535,7 +1557,7 @@ function vectorViewBox(modeKey) {
     return [x0 - m, x1 + m, y0 - m, y1 + m];
   }
   let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
-  for (const [x, y] of dragonCurve(dragonState.depth)) {
+  for (const [x, y] of LINE_CURVES[modeKey].points(dragonState.depth)) {
     x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
   }
   const m = 0.06 * Math.max(x1 - x0, y1 - y0);
@@ -1547,6 +1569,8 @@ const VECTOR_VIEWS = {
   dragon: [dragonView, els.dragonCanvas], fern: [fernView, els.fernCanvas],
   sierpinski: [fernView, els.fernCanvas], levy: [fernView, els.fernCanvas],
   vicsek: [fernView, els.fernCanvas],
+  hilbert: [dragonView, els.dragonCanvas], gosper: [dragonView, els.dragonCanvas],
+  arrowhead: [dragonView, els.dragonCanvas],
 };
 const fittedVectorModes = new Set();
 function fitVectorView(modeKey) {
@@ -1801,7 +1825,7 @@ els.dragonDepthSlider.addEventListener("input", () => {
 
 els.dragonResetBtn.addEventListener("click", () => {
   dragonNav.clearHistory();
-  fitVectorView("dragon");
+  fitVectorView(mode);
   requestRender();
 });
 
@@ -1896,6 +1920,10 @@ window.addEventListener("resize", () => { layoutCanvasArea(); requestRender(); }
 // HUD's rounded display would move deep-zoom views. Julia c is encoded
 // explicitly: enterDual only seeds it from the main center; tapping the
 // main pane moves it independently afterward.
+function depthStateFor(m) {
+  return isCurveMode(m) ? dragonState : { koch: kochState, tree: treeState }[m];
+}
+
 function buildShareHash() {
   const p = new URLSearchParams();
   p.set("v", "1");
@@ -1921,7 +1949,7 @@ function buildShareHash() {
       put("n", fernState.count); put("c", fernState.colorIndex);
     } else {
       put("cm", colormapIndex);
-      put("dp", { koch: kochState, tree: treeState, dragon: dragonState }[mode].depth);
+      put("dp", depthStateFor(mode).depth);
       if (mode === "koch") p.set("fl", kochState.fill ? "1" : "0");
     }
   }
@@ -1963,7 +1991,7 @@ function parseShareHash(hash) {
       return st;
     }
     if (isIfsMode(m)) return { mode: m, ...view, count: int("n", 100000, 4000000), colorIndex: int("c", 0, IFS_COLORS.length - 1) };
-    const maxDepth = { koch: 8, tree: 12, dragon: 16 }[m];
+    const maxDepth = isCurveMode(m) ? LINE_CURVES[m].maxDepth : { koch: 8, tree: 12 }[m];
     if (maxDepth === undefined) return null;
     return { mode: m, ...view, cm: int("cm", 0, COLORMAPS.length - 1), depth: int("dp", 0, maxDepth), fill: p.get("fl") !== "0" };
   } catch {
@@ -1993,9 +2021,9 @@ function applyShareState(st) {
       setFernColor(st.colorIndex);
     } else {
       colormapIndex = st.cm;
-      const depthState = { koch: kochState, tree: treeState, dragon: dragonState }[st.mode];
-      depthState.depth = st.depth;
-      els[`${st.mode}DepthSlider`].value = st.depth;
+      if (isCurveMode(st.mode)) dragonView.setCurve(st.mode); // before depth/view are written
+      depthStateFor(st.mode).depth = st.depth;
+      els[`${isCurveMode(st.mode) ? "dragon" : st.mode}DepthSlider`].value = st.depth;
       if (st.mode === "koch") {
         kochState.fill = st.fill;
         els.kochFillBtn.classList.toggle("active", st.fill);
