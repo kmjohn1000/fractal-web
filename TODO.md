@@ -6,15 +6,15 @@
       no visual change) — done in `7a3e717`
 
 ## Tier 1 — growth mechanism, ship together
-- [ ] Screenshot/save button (preserveDrawingBuffer is already set,
+- [x] Screenshot/save button (preserveDrawingBuffer is already set,
       canvas.toDataURL()/toBlob() should work as-is; fractal control row
       is full at 7 buttons for one line at 360px — an 8th wraps and costs
-      ~54px of canvas, so share one button with shareable links)
-- [ ] Shareable links (needs a URL query/hash format + parser on load;
+      ~54px of canvas, so share one button with shareable links) — done in `9f94472`
+- [x] Shareable links (needs a URL query/hash format + parser on load;
       serialize from mainState, not HUD text — the HUD prints ~6
       significant digits, deep-zoom links need full float64 / 17 digits;
       include type, center, scale, rotation, maxIter, colormap, Julia c;
-      share via copy or Web Share API, same encoding doubles as bookmarks)
+      share via copy or Web Share API, same encoding doubles as bookmarks) — done in `9f94472`
 
 ## Tier 2 — close gaps in existing systems
 - [ ] Viewport-adaptive recursion for Koch/Dragon/Tree (currently the
@@ -119,3 +119,4 @@
 - Auto maxIter from zoom (until the slider is touched) — `68cdab6`
 - Colormap end color reachable (t = 1.0) + colormap name in the HUD — `a738a20`
 - Colormaps Viridis/Turbo/Glacier/Ember/Grayscale + HUD lines wrap on phones — `899a803`
+- Share: save image, copy link, native share (Tier 1) — `9f94472`
