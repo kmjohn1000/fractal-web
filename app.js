@@ -55,6 +55,7 @@ const FRACTAL_FAMILIES = [
 // mode button.
 const EXTRA_MODES = [
   { key: "koch", label: "Koch Snowflake", family: "other" },
+  { key: "tree", label: "Pythagoras Tree", family: "other" },
 ];
 
 function viewFromBounds(b) {
@@ -336,11 +337,14 @@ const els = {
   mainCanvas: document.getElementById("mainCanvas"),
   juliaCanvas: document.getElementById("juliaCanvas"),
   kochCanvas: document.getElementById("kochCanvas"),
+  treeCanvas: document.getElementById("treeCanvas"),
   boxRect: document.getElementById("boxZoomRect"),
   crosshair: document.getElementById("crosshair"),
   fractalTypeRow: document.getElementById("fractalTypeRow"),
   fractalControls: document.getElementById("fractalControls"),
   kochControls: document.getElementById("kochControls"),
+  treeControls: document.getElementById("treeControls"),
+  iterField: document.getElementById("iterField"),
   iterSlider: document.getElementById("iterSlider"),
   colormapBtn: document.getElementById("colormapBtn"),
   dualBtn: document.getElementById("dualBtn"),
@@ -352,9 +356,12 @@ const els = {
   kochFillBtn: document.getElementById("kochFillBtn"),
   kochColormapBtn: document.getElementById("kochColormapBtn"),
   kochResetBtn: document.getElementById("kochResetBtn"),
+  treeDepthSlider: document.getElementById("treeDepthSlider"),
+  treeColormapBtn: document.getElementById("treeColormapBtn"),
+  treeResetBtn: document.getElementById("treeResetBtn"),
 };
 
-let mode = "fractal"; // "fractal" | "koch"
+let mode = "fractal"; // "fractal" | "koch" | "tree"
 let colormapIndex = 0;
 let currentName = "Mandelbrot";
 let dualActive = false;
@@ -382,6 +389,7 @@ function markInteracting() {
 const mainRenderer = createFractalRenderer(els.mainCanvas);
 const juliaRenderer = createFractalRenderer(els.juliaCanvas);
 const kochView = createKochView(els.kochCanvas);
+const treeView = createPythagorasTreeView(els.treeCanvas);
 
 if (!mainRenderer) reportError("WebGL context creation failed on mainCanvas — this browser/device may not support WebGL.");
 if (!juliaRenderer) reportError("WebGL context creation failed on juliaCanvas.");
@@ -420,6 +428,7 @@ let mainHistory = [];
 let juliaHistory = [];
 
 const kochState = { depth: 4, fill: true, animating: false, timer: null };
+const treeState = { depth: 9 };
 
 function pushHistory(pane) {
   const st = pane === "julia" ? juliaState : mainState;
@@ -480,9 +489,12 @@ function renderAll() {
       positionCrosshair();
     }
     updateHud();
-  } else {
+  } else if (mode === "koch") {
     kochView.render({ depth: kochState.depth, fill: kochState.fill, colormapIndex });
     updateKochHud();
+  } else {
+    treeView.render({ depth: treeState.depth, colormapIndex });
+    updateTreeHud();
   }
 }
 
@@ -527,6 +539,10 @@ function updateHud() {
 
 function updateKochHud() {
   els.hud.textContent = `Koch Snowflake   depth: ${kochState.depth}   ${kochState.fill ? "filled" : "outline"}`;
+}
+
+function updateTreeHud() {
+  els.hud.textContent = `Pythagoras Tree   depth: ${treeState.depth}`;
 }
 
 function positionCrosshair() {
@@ -616,6 +632,7 @@ function selectFractal(name) {
   // before that was caught and fixed.
   const usesFixedDepth = config.ftype === FTYPE.CARPET || config.ftype === FTYPE.GASKET;
   els.iterSlider.disabled = usesFixedDepth;
+  els.iterField.classList.toggle("hidden", usesFixedDepth);
   els.juliaCanvas.classList.toggle("hidden", !dualActive);
   if (!dualActive) els.crosshair.classList.add("hidden");
   layoutCanvasArea();
@@ -652,9 +669,11 @@ function setMode(next) {
   els.fractalTypeRow.classList.remove("open"); // collapse the picker on any mode switch
   els.fractalControls.classList.toggle("hidden", mode !== "fractal");
   els.kochControls.classList.toggle("hidden", mode !== "koch");
+  els.treeControls.classList.toggle("hidden", mode !== "tree");
   els.mainCanvas.classList.toggle("hidden", mode !== "fractal");
   els.juliaCanvas.classList.toggle("hidden", mode !== "fractal" || !dualActive);
   els.kochCanvas.classList.toggle("hidden", mode !== "koch");
+  els.treeCanvas.classList.toggle("hidden", mode !== "tree");
   updateMenuActiveState();
   requestRender();
 }
@@ -968,6 +987,7 @@ function attachVectorViewInteraction(canvas, vectorView) {
 }
 
 attachVectorViewInteraction(els.kochCanvas, kochView);
+attachVectorViewInteraction(els.treeCanvas, treeView);
 
 // ---------------------------------------------------------------- UI wiring
 
@@ -1074,6 +1094,21 @@ els.kochAnimateBtn.addEventListener("click", () => {
 
 els.kochResetBtn.addEventListener("click", () => {
   kochView.view.cx = 0; kochView.view.cy = 0; kochView.view.halfHeight = 1.4;
+  requestRender();
+});
+
+els.treeDepthSlider.addEventListener("input", () => {
+  treeState.depth = parseInt(els.treeDepthSlider.value, 10);
+  requestRender();
+});
+
+els.treeColormapBtn.addEventListener("click", () => {
+  colormapIndex = (colormapIndex + 1) % COLORMAPS.length;
+  requestRender();
+});
+
+els.treeResetBtn.addEventListener("click", () => {
+  treeView.view.cx = 0; treeView.view.cy = 2.3; treeView.view.halfHeight = 2.9;
   requestRender();
 });
 
