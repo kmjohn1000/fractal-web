@@ -53,11 +53,22 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   event.respondWith(
-    fetch(event.request)
+    // {cache: "no-cache"} forces revalidation with the server instead of
+    // silently accepting the browser's own HTTP cache — GitHub Pages sends
+    // Cache-Control: max-age=600, so a plain fetch(event.request) here
+    // could still return a stale app.js alongside a fresh index.html (or
+    // the reverse) for up to 10 minutes after a push, which breaks startup
+    // whenever a commit changes element IDs between the two files (as one
+    // already did). Revalidation is cheap: GitHub Pages returns 304s with
+    // ETags, so this doesn't cost a full re-download when nothing changed.
+    fetch(event.request.url, { cache: "no-cache" })
       .then((response) => {
         if (response.ok && response.type === "basic") {
           const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          // Without waitUntil, the worker can be torn down right after
+          // respondWith's promise resolves, before this un-awaited write
+          // finishes — silently skipping the offline copy.
+          event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy)));
         }
         return response;
       })

@@ -87,6 +87,9 @@ uniform sampler2D u_pass1Tex;    // pass 2 only: pass 1's result (rgb=color, a=1
 uniform bool  u_hasOrbitB;       // pass 2 only: whether a glitch was found and orbit B computed
 uniform sampler2D u_refOrbitTexB;
 uniform int   u_refOrbitLenB;
+// World-space offset of orbit B's own reference point from u_center (0 for
+// orbit A, which IS u_center by construction). See renderEscapePerturbationWith.
+uniform vec2  u_refOffset;
 
 const int FTYPE_ESCAPE  = 0;
 const int FTYPE_SHIP    = 1;
@@ -235,15 +238,25 @@ vec3 renderEscapeFast(vec2 p) {
 
 // ---------------------------------------------------------------- perturbation
 
-// dc is the pixel's offset from orbitTex's own reference c — computed the
-// same way the fast path's pixel offset always has been, a small value
-// regardless of absolute zoom depth, so plain float32 is exact enough for
-// it with no splitting needed (see comment above FRAG_SRC). Returns
-// (color.rgb, cleanFlag): cleanFlag is 0.0 if the Pauldelbrot glitch
-// criterion tripped, 1.0 otherwise (including interior/non-escaped points,
-// which aren't glitch-prone the same way).
-vec4 renderEscapePerturbationWith(vec2 uv, sampler2D orbitTex, int orbitLen) {
-  vec2 dc = vec2(uv.x * u_scale * 2.0, uv.y * u_scale * 2.0);
+// dc is the pixel's offset from orbitTex's own reference point — for orbit
+// A that's u_center (refOffset=0), but orbit B's reference point is
+// wherever the glitched pixel that spawned it lives, which is NOT
+// u_center. uv*u_scale*2.0 is always the pixel's offset from u_center, so
+// refOffset (orbit's reference minus u_center, see app.js) is subtracted
+// to correct it back to an offset from the orbit actually being used. This
+// was missing entirely before: every orbit-B retry used dc relative to the
+// wrong point, silently producing wrong values instead of fixing glitches
+// (confirmed by hand: even the one pixel that DEFINED orbit B computed a
+// nonzero dc for itself, when the correct value is exactly zero, since
+// that's where the orbit starts).
+//
+// A small value regardless of absolute zoom depth either way, so plain
+// float32 is exact enough with no splitting needed (see comment above
+// FRAG_SRC). Returns (color.rgb, cleanFlag): cleanFlag is 0.0 if the
+// Pauldelbrot glitch criterion tripped, 1.0 otherwise (including
+// interior/non-escaped points, which aren't glitch-prone the same way).
+vec4 renderEscapePerturbationWith(vec2 uv, sampler2D orbitTex, int orbitLen, vec2 refOffset) {
+  vec2 dc = vec2(uv.x * u_scale * 2.0, uv.y * u_scale * 2.0) - refOffset;
   vec2 dz = vec2(0.0);
   vec2 Zcur = vec2(0.0); // reference orbit's Z[0] is always 0 by construction
 
@@ -253,7 +266,25 @@ vec4 renderEscapePerturbationWith(vec2 uv, sampler2D orbitTex, int orbitLen) {
   vec2 fullAtEscape = vec2(0.0);
 
   for (int i = 0; i < 2000; i++) {
-    if (i >= u_maxIter || i + 1 >= orbitLen) break;
+    if (i >= u_maxIter) break;
+    if (i + 1 >= orbitLen) {
+      // The reference orbit escaped/ended before this pixel could be
+      // resolved against it -- its true state (does it also escape, does
+      // it need more iterations, etc.) is simply unknown from this
+      // reference alone. This used to fall through to "ran out of loop,
+      // never escaped" i.e. treated as solid interior, which was a real,
+      // measured bug: 16% of pixels that genuinely escape (measured near
+      // (-0.75,0.02) at scale 5e-4) were painted black because the
+      // view-center reference happened to escape early. Only flag this
+      // when the orbit stopped due to an actual escape rather than
+      // legitimately reaching u_maxIter unescaped (see computeReferenceOrbit
+      // in app.js: a non-escaping orbit has length maxIter+1, so
+      // orbitLen-1 == u_maxIter exactly in that case, not less than it) --
+      // otherwise a genuinely-interior reference would wrongly flag every
+      // pixel around it as glitched.
+      if (orbitLen - 1 < u_maxIter) glitched = true;
+      break;
+    }
 
     if (u_power > 2.5) {
       // (Z+dz)^3 - Z^3 = 3*Z^2*dz + 3*Z*dz^2 + dz^3
@@ -324,13 +355,13 @@ void main() {
 
   if (u_usePerturbation) {
     if (u_passNum == 1) {
-      gl_FragColor = renderEscapePerturbationWith(uv, u_refOrbitTex, u_refOrbitLen);
+      gl_FragColor = renderEscapePerturbationWith(uv, u_refOrbitTex, u_refOrbitLen, vec2(0.0));
     } else {
       vec4 p1 = texture2D(u_pass1Tex, gl_FragCoord.xy / u_resolution);
       if (p1.a > 0.5) {
         gl_FragColor = vec4(p1.rgb, 1.0);
       } else if (u_hasOrbitB) {
-        vec4 r = renderEscapePerturbationWith(uv, u_refOrbitTexB, u_refOrbitLenB);
+        vec4 r = renderEscapePerturbationWith(uv, u_refOrbitTexB, u_refOrbitLenB, u_refOffset);
         gl_FragColor = vec4(r.rgb, 1.0); // accept as-is even if still glitched — bounded to one retry
       } else {
         gl_FragColor = vec4(p1.rgb, 1.0);
