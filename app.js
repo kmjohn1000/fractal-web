@@ -5,7 +5,13 @@
 // the region that must be fully visible when the fractal first opens;
 // viewFromBounds fits it to the canvas's aspect ratio (see there).
 
-const FTYPE = { ESCAPE: 0, SHIP: 1, TRICORN: 2, NEWTON: 3, CARPET: 4, GASKET: 5 };
+const FTYPE = { ESCAPE: 0, SHIP: 1, TRICORN: 2, NEWTON: 3, CARPET: 4, GASKET: 5, PHOENIX: 6 };
+
+// Phoenix's fixed p in z' = z^2 + c + p*z_prev: the classic real -0.5
+// (Ushiki). With c = 0.5667 in Julia mode that gives the well-known twin-lobe
+// image (Julia:Phoenix); p = -0.5+0.5i was tried first and gives only a single
+// tilted lobe in either mode. A constant for the fractal, not view state.
+const PHOENIX_P = [-0.5, 0];
 
 // family groups the hamburger menu into sections, by actual mathematical
 // relationship rather than just "looks similar":
@@ -34,9 +40,13 @@ const FRACTAL_CONFIGS = {
   "Burn. Ship":   { ftype: FTYPE.SHIP,    power: 2, juliaC: null,               view: [-2.15, 1.25, -1.85, 0.65], dual: true,  family: "escape" },
   "Tricorn":      { ftype: FTYPE.TRICORN, power: 2, juliaC: null,               view: [-2.1,  1.15, -1.7,  1.7],  dual: true,  family: "escape" },
   "Multibrot³": { ftype: FTYPE.ESCAPE, power: 3, juliaC: null,             view: [-0.82, 0.82, -1.45, 1.45], dual: true,  family: "escape" },
+  // Needs the previous iterate as state, so no perturbation (deep zoom) path
+  // -- see perturbationEligibleType.
+  "Phoenix":      { ftype: FTYPE.PHOENIX, power: 2, juliaC: null,               view: [-2.0, 0.65, -0.78, 0.78], dual: true,  family: "escape" },
   "Julia:Rabbit": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.12256, 0.74486], view: [-1.42, 1.42, -1.2, 1.2], dual: false, family: "julia" },
   "Julia:Dragon": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.4, 0.6],         view: [-1.5, 1.5, -1.1, 1.1],   dual: false, family: "julia" },
   "Julia:Spiral": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [0.285, 0.01],       view: [-0.95, 0.95, -1.2, 1.2], dual: false, family: "julia" },
+  "Julia:Phoenix": { ftype: FTYPE.PHOENIX, power: 2, juliaC: [0.5667, 0],        view: [-0.8, 0.88, -1.38, 1.38], dual: false, family: "julia" },
   "Newton z³": { ftype: FTYPE.NEWTON, power: 3, juliaC: null,              view: [-2.0, 2.0, -1.5, 1.5],   dual: false, family: "other" },
   // Digit-test fractals (see FRAG_SRC's renderDigitFractal) — defined on
   // the unit square, so centered there with a little margin. power is
@@ -293,6 +303,7 @@ function createFractalRenderer(canvas) {
     power: gl.getUniformLocation(prog, "u_power"),
     isJulia: gl.getUniformLocation(prog, "u_isJulia"),
     juliaC: gl.getUniformLocation(prog, "u_juliaC"),
+    phoenixP: gl.getUniformLocation(prog, "u_phoenixP"),
     lut: gl.getUniformLocation(prog, "u_lut"),
     digitDepth: gl.getUniformLocation(prog, "u_digitDepth"),
     digitMaxDepth: gl.getUniformLocation(prog, "u_digitMaxDepth"),
@@ -395,6 +406,7 @@ function createFractalRenderer(canvas) {
     gl.uniform1f(u.power, state.power);
     gl.uniform1i(u.isJulia, state.isJulia ? 1 : 0);
     gl.uniform2f(u.juliaC, state.juliaC[0], state.juliaC[1]);
+    gl.uniform2f(u.phoenixP, PHOENIX_P[0], PHOENIX_P[1]);
     gl.uniform1i(u.digitDepth, digitFractalDepth(state.ftype, state.scale, canvas.height));
     gl.uniform1i(u.digitMaxDepth, digitMaxDepth(state.ftype));
 

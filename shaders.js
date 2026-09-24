@@ -102,6 +102,7 @@ uniform int   u_ftype;   // 0=escape 1=ship 2=tricorn 3=newton
 uniform float u_power;   // 2.0 or 3.0 (escape family only)
 uniform bool  u_isJulia;
 uniform vec2  u_juliaC;
+uniform vec2  u_phoenixP; // Phoenix only: fixed p in z' = z^2 + c + p*z_prev
 uniform sampler2D u_lut;
 uniform int   u_digitDepth;    // Carpet/Gasket only, see renderDigitFractal
 uniform int   u_digitMaxDepth; // Carpet 16, Gasket 22 (DIGIT_MAX_DEPTH in app.js)
@@ -132,6 +133,7 @@ const int FTYPE_TRICORN = 2;
 const int FTYPE_NEWTON  = 3;
 const int FTYPE_CARPET  = 4;
 const int FTYPE_GASKET  = 5;
+const int FTYPE_PHOENIX = 6;
 
 const vec2 NEWTON_ROOT0 = vec2( 1.0,  0.0);
 const vec2 NEWTON_ROOT1 = vec2(-0.5,  0.8660254037844386);
@@ -283,6 +285,9 @@ vec3 renderEscapeFast(vec2 p) {
 
   int iter = 0;
   bool escaped = false;
+  // Phoenix is the one type whose recurrence needs the previous iterate
+  // (z' = z^2 + c + p*z_prev, z_(-1) = 0); everything else ignores zPrev.
+  vec2 zPrev = vec2(0.0);
 
   for (int i = 0; i < 2000; i++) {
     if (i >= u_maxIter) break;
@@ -297,7 +302,14 @@ vec3 renderEscapeFast(vec2 p) {
       zsq = cMul(z, z);
       if (u_power > 2.5) zsq = cMul(zsq, z); // power 3 (Multibrot^3)
     }
-    z = zsq + c;
+    vec2 zNext = zsq + c;
+    // Branch on a uniform, so every pixel takes the same side: the extra
+    // term and bookkeeping cost nothing for the other types.
+    if (u_ftype == FTYPE_PHOENIX) {
+      zNext += cMul(u_phoenixP, zPrev);
+      zPrev = z;
+    }
+    z = zNext;
     iter = i;
     if (dot(z, z) > 16.0) { escaped = true; break; }
   }
