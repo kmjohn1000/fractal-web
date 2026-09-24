@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Fractal Explorer — WebGL Prototype</title>
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#111111">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+
+<!-- iOS Safari ignores the manifest entirely for install/homescreen purposes
+     and needs its own meta tags + a dedicated (non-transparent) icon. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fractal">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+  html, body {
+    margin: 0; padding: 0; background: #111; height: 100%;
+    overflow: hidden; touch-action: none;
+    font: 12px/1.4 -apple-system, system-ui, sans-serif; color: #ddd;
+  }
+  body { display: flex; flex-direction: column; }
+
+  #errorBanner {
+    flex: none; padding: 10px 12px; background: #6b1414; color: #fff;
+    font: 12px/1.5 -apple-system, system-ui, monospace; white-space: pre-wrap;
+    word-break: break-word; max-height: 40vh; overflow-y: auto; z-index: 100;
+  }
+
+  #hud {
+    flex: none; padding: 8px 12px;
+    font: 12px/1.4 -apple-system, system-ui, monospace;
+    background: rgba(0,0,0,0.45); white-space: pre;
+  }
+
+  #canvasArea {
+    flex: 1 1 auto; min-height: 0; display: flex; flex-direction: row;
+    background: #000; position: relative; gap: 2px;
+  }
+  #canvasArea.stacked { flex-direction: column; }
+  #mainCanvas, #juliaCanvas, #kochCanvas {
+    flex: 1 1 0; min-width: 0; min-height: 0; width: 100%; height: 100%;
+    touch-action: none; display: block;
+  }
+  .hidden { display: none !important; }
+
+  #boxZoomRect {
+    position: fixed; border: 1px dashed #6cf; background: rgba(100,200,255,0.15);
+    pointer-events: none; z-index: 20;
+  }
+  #crosshair {
+    position: fixed; width: 14px; height: 14px; margin: -7px 0 0 -7px;
+    border: 2px solid #fff; border-radius: 50%;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.6);
+    pointer-events: none; z-index: 20;
+  }
+
+  #controls { flex: none; background: rgba(0,0,0,0.45); }
+  .control-row {
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    padding: 6px 10px;
+  }
+  .control-row:not(:last-child) { border-bottom: 1px solid rgba(255,255,255,0.08); }
+  #fractalTypeRow.hidden, #fractalControls.hidden, #kochControls.hidden { display: none; }
+
+  button {
+    font: 12px -apple-system, system-ui, sans-serif; padding: 6px 10px;
+    background: #2a2a2a; color: #eee; border: 1px solid #555; border-radius: 6px;
+    white-space: nowrap;
+  }
+  button.active { background: #3a6ea5; border-color: #6cf; }
+  button:disabled { opacity: 0.35; }
+  input[type=range] { flex: 1 1 80px; min-width: 60px; }
+  label.field { display: flex; align-items: center; gap: 6px; }
+</style>
+</head>
+<body>
+<div id="errorBanner" class="hidden"></div>
+<script>
+  // Surfaces otherwise-silent JS errors directly on the page — there's no
+  // remote devtools access available while testing this on a phone, so
+  // errors need to be visible on-device rather than only in a console.
+  function reportError(text) {
+    const el = document.getElementById("errorBanner");
+    el.textContent = (el.classList.contains("hidden") ? "" : el.textContent + "\n---\n") + text;
+    el.classList.remove("hidden");
+  }
+  window.addEventListener("error", (e) => {
+    reportError(`JS Error: ${e.message}\n  at ${e.filename}:${e.lineno}:${e.colno}`);
+  });
+  window.addEventListener("unhandledrejection", (e) => {
+    const r = e.reason;
+    reportError(`Unhandled rejection: ${r && r.message ? r.message : r}`);
+  });
+</script>
+<div id="hud"></div>
+
+<div id="canvasArea">
+  <canvas id="mainCanvas"></canvas>
+  <canvas id="juliaCanvas" class="hidden"></canvas>
+  <canvas id="kochCanvas" class="hidden"></canvas>
+</div>
+<div id="boxZoomRect" class="hidden"></div>
+<div id="crosshair" class="hidden"></div>
+
+<div id="controls">
+  <div class="control-row">
+    <button id="modeFractalBtn" class="active">Fractals</button>
+    <button id="modeKochBtn">Koch Snowflake</button>
+  </div>
+  <div id="fractalTypeRow" class="control-row"></div>
+  <div id="fractalControls" class="control-row">
+    <label class="field">iter <input id="iterSlider" type="range" min="50" max="2000" step="10" value="300"></label>
+    <button id="colormapBtn">Colormap</button>
+    <button id="dualBtn">Dual</button>
+    <button id="boxZoomBtn">Box Zoom</button>
+    <button id="backBtn">&larr; Back</button>
+    <button id="resetBtn">Reset</button>
+  </div>
+  <div id="kochControls" class="control-row hidden">
+    <label class="field">depth <input id="kochDepthSlider" type="range" min="0" max="8" step="1" value="4"></label>
+    <button id="kochAnimateBtn">Animate</button>
+    <button id="kochFillBtn" class="active">Fill</button>
+    <button id="kochColormapBtn">Colormap</button>
+    <button id="kochResetBtn">Reset</button>
+  </div>
+</div>
+
+<script src="colormaps.js"></script>
+<script src="shaders.js"></script>
+<script src="koch.js"></script>
+<script src="app.js"></script>
+<script>
+  // Service workers only register on secure origins or localhost, so this is
+  // a silent no-op during phone-over-LAN dev testing (plain http://<lan-ip>)
+  // and only takes effect once this is actually deployed behind HTTPS.
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch((err) => {
+        reportError(`Service worker registration failed: ${err.message}`);
+      });
+    });
+  }
+</script>
+</body>
+</html>
