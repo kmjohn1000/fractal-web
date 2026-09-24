@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.0.3 — 2026-09-24
+- Ember colormap retuned to copper/bronze tones so it no longer looks like Inferno and Magma.
+
 ## 1.0.2 — 2026-09-24
 - New toolbar icons: a 2×2 grid for the fractal menu and a circled "i" for the info overlay.
 
