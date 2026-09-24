@@ -116,11 +116,41 @@ function computeReferenceOrbit(cx, cy, power, maxIter) {
   return { data: data.subarray(0, len * 4), length: len };
 }
 
+// ---------------------------------------------------------------- supersampling
+// Sub-pixel sample offsets (in pixels) for progressive supersampling. One
+// sample per pixel aliases badly wherever the fractal varies faster than the
+// pixel grid -- worst on Burning Ship, whose abs() creases make the boundary
+// rougher than Mandelbrot's. Sample 0 is the pixel center (what a plain
+// render shows, so interaction looks the same as before); the rest are
+// Halton(2,3) points shifted into [-0.5, 0.5), which spread evenly over the
+// pixel for any prefix length. Each sample is a separate full-frame draw
+// averaged into the canvas by blending (see render()), not a loop inside the
+// shader: a single draw costs the same as an unsupersampled one, so heavy
+// deep-zoom frames don't risk a GPU watchdog timeout / context loss, and
+// refinement can be abandoned the moment the view changes.
+// 16 samples cuts per-pixel noise ~4x; in Burning Ship's chaotic regions 8
+// still left visible grain.
+function halton(index, base) {
+  let f = 1, r = 0;
+  for (let i = index; i > 0; i = Math.floor(i / base)) {
+    f /= base;
+    r += f * (i % base);
+  }
+  return r;
+}
+const SAMPLE_COUNT = 16;
+const SAMPLE_OFFSETS = Array.from({ length: SAMPLE_COUNT }, (_, i) =>
+  i === 0 ? [0, 0] : [halton(i, 2) - 0.5, halton(i, 3) - 0.5]);
+
 // ---------------------------------------------------------------- WebGL renderer factory
 
 function createFractalRenderer(canvas) {
-  const gl = canvas.getContext("webgl", { antialias: false, alpha: false })
-          || canvas.getContext("experimental-webgl", { antialias: false, alpha: false });
+  // preserveDrawingBuffer: supersampling blends each new sample into the
+  // previous frame's canvas contents, which the browser would otherwise be
+  // free to discard after compositing.
+  const ctxOpts = { antialias: false, alpha: false, preserveDrawingBuffer: true };
+  const gl = canvas.getContext("webgl", ctxOpts)
+          || canvas.getContext("experimental-webgl", ctxOpts);
   if (!gl) return null;
 
   function compile(type, src) {
@@ -158,6 +188,7 @@ function createFractalRenderer(canvas) {
     juliaC: gl.getUniformLocation(prog, "u_juliaC"),
     lut: gl.getUniformLocation(prog, "u_lut"),
     digitDepth: gl.getUniformLocation(prog, "u_digitDepth"),
+    jitter: gl.getUniformLocation(prog, "u_jitter"),
     usePerturbation: gl.getUniformLocation(prog, "u_usePerturbation"),
     passNum: gl.getUniformLocation(prog, "u_passNum"),
     refOrbitTex: gl.getUniformLocation(prog, "u_refOrbitTex"),
@@ -256,12 +287,40 @@ function createFractalRenderer(canvas) {
       canvas.width = w;
       canvas.height = h;
       gl.viewport(0, 0, w, h);
+      return true;
     }
+    return false;
   }
 
-  function render(state) {
-    resize();
+  // Final draw to the canvas. Sample 0 overwrites; sample k>0 blends in
+  // with weight 1/(k+1), which keeps the canvas equal to the running mean of
+  // samples 0..k.
+  function drawToCanvas(sampleIndex) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    if (sampleIndex > 0) {
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.CONSTANT_ALPHA, gl.ONE_MINUS_CONSTANT_ALPHA);
+      gl.blendColor(0, 0, 0, 1 / (sampleIndex + 1));
+    }
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    gl.disable(gl.BLEND);
+  }
+
+  // Orbit B from the last sample-0 perturbation render, reused by that same
+  // view's later supersampling passes so they don't each pay for a
+  // full-frame readPixels glitch search. Only valid for the view it came
+  // from -- the caller guarantees any view change re-renders sample 0 first.
+  let orbitBCache = { has: false, length: 0, offsetX: 0, offsetY: 0 };
+
+  // sampleIndex selects the sub-pixel offset from SAMPLE_OFFSETS; see there
+  // and drawToCanvas for how successive samples accumulate.
+  function render(state, sampleIndex = 0) {
+    // A resize clears the canvas, so there's nothing left to blend into.
+    if (resize()) sampleIndex = 0;
     gl.useProgram(prog);
+    const jitter = SAMPLE_OFFSETS[sampleIndex];
+    gl.uniform2f(u.jitter, jitter[0], jitter[1]);
     gl.uniform2f(u.resolution, canvas.width, canvas.height);
     gl.uniform2f(u.center, state.cx, state.cy);
     gl.uniform1f(u.scale, state.scale);
@@ -290,9 +349,7 @@ function createFractalRenderer(canvas) {
     gl.uniform1i(u.lut, 0);
 
     if (!usePerturbation) {
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      gl.viewport(0, 0, canvas.width, canvas.height);
-      gl.drawArrays(gl.TRIANGLES, 0, 6);
+      drawToCanvas(sampleIndex);
       return false;
     }
 
@@ -320,6 +377,25 @@ function createFractalRenderer(canvas) {
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
+    if (sampleIndex > 0) {
+      // Supersampling pass: reuse sample 0's orbit B (still uploaded on
+      // unit 3) instead of searching this pass's glitches again. Pass 2
+      // still consults THIS pass's own glitch flags, so it only substitutes
+      // orbit B where this jittered sample actually glitched.
+      gl.activeTexture(gl.TEXTURE3);
+      gl.bindTexture(gl.TEXTURE_2D, refOrbitTexB);
+      gl.uniform1i(u.refOrbitTexB, 3);
+      gl.uniform1i(u.refOrbitLenB, orbitBCache.length);
+      gl.uniform1i(u.hasOrbitB, orbitBCache.has ? 1 : 0);
+      gl.uniform2f(u.refOffset, orbitBCache.offsetX, orbitBCache.offsetY);
+      gl.uniform1i(u.passNum, 2);
+      gl.activeTexture(gl.TEXTURE2);
+      gl.bindTexture(gl.TEXTURE_2D, pass1Tex);
+      gl.uniform1i(u.pass1Tex, 2);
+      drawToCanvas(sampleIndex);
+      return true;
+    }
+
     // Read back the alpha channel to find whether anything glitched, and
     // where — that location becomes reference orbit B. Bounded to a single
     // retry: only the first glitched pixel found is used, not a search for
@@ -333,7 +409,7 @@ function createFractalRenderer(canvas) {
     }
 
     let hasOrbitB = false;
-    let refOffsetX = 0, refOffsetY = 0;
+    let refOffsetX = 0, refOffsetY = 0, orbitBLength = 0;
     if (glitchIdx >= 0) {
       const px = glitchIdx % canvas.width;
       const py = Math.floor(glitchIdx / canvas.width);
@@ -357,6 +433,7 @@ function createFractalRenderer(canvas) {
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, orbitB.length, 1, 0, gl.RGBA, gl.FLOAT, orbitB.data);
       gl.uniform1i(u.refOrbitTexB, 3);
       gl.uniform1i(u.refOrbitLenB, orbitB.length);
+      orbitBLength = orbitB.length;
       hasOrbitB = true;
       // Orbit B's own reference point isn't u_center, so the shader's dc
       // (always computed as an offset from u_center) needs this correction
@@ -366,6 +443,7 @@ function createFractalRenderer(canvas) {
     }
     gl.uniform1i(u.hasOrbitB, hasOrbitB ? 1 : 0);
     gl.uniform2f(u.refOffset, refOffsetX, refOffsetY);
+    orbitBCache = { has: hasOrbitB, length: orbitBLength, offsetX: refOffsetX, offsetY: refOffsetY };
 
     // --- Pass 2: render to the real canvas, reusing pass 1's clean pixels
     // and recomputing glitched ones from orbit B.
@@ -374,9 +452,7 @@ function createFractalRenderer(canvas) {
     gl.bindTexture(gl.TEXTURE_2D, pass1Tex);
     gl.uniform1i(u.pass1Tex, 2);
 
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    drawToCanvas(0);
 
     return true;
   }
@@ -559,6 +635,7 @@ function renderAll() {
       positionCrosshair();
     }
     updateHud();
+    scheduleRefinement();
   } else if (mode === "koch") {
     kochView.render({ depth: kochState.depth, fill: kochState.fill, colormapIndex });
     updateKochHud();
@@ -572,6 +649,27 @@ function renderAll() {
     fernView.render({ count: fernState.count, colorIndex: fernState.colorIndex });
     updateFernHud();
   }
+}
+
+// Progressive supersampling: after renderAll draws sample 0, add the rest of
+// SAMPLE_OFFSETS one per animation frame. Any later renderAll (every gesture
+// frame, colormap change, etc.) bumps refineGeneration, which abandons the
+// in-flight chain -- the canvas it was blending into was just overwritten
+// by a fresh sample 0 for the new view. Skipped while interacting so
+// gestures stay at full frame rate; the settle timer's requestRender then
+// starts a fresh chain once the view stops moving.
+let refineGeneration = 0;
+function scheduleRefinement() {
+  const gen = ++refineGeneration;
+  if (isInteracting) return;
+  let k = 1;
+  const step = () => {
+    if (gen !== refineGeneration || mode !== "fractal" || isInteracting) return;
+    mainRenderer.render(mainState, k);
+    if (dualActive && juliaState) juliaRenderer.render(juliaState, k);
+    if (++k < SAMPLE_OFFSETS.length) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
 }
 
 let renderPending = false;
