@@ -40,7 +40,11 @@ const COLORMAPS = [
 ];
 
 function sampleColor(stops, t) {
-  t = ((t % 1) + 1) % 1;
+  // Wrap into [0, 1) -- except exactly 1.0, which is the colormap's end
+  // color, not its start: plain % made every palette's final stop
+  // unreachable (depth-max Koch/tree/dragon, and index 255 of the LUT
+  // buildLUTBytes bakes for the shader).
+  t = t === 1 ? 1 : ((t % 1) + 1) % 1;
   for (let i = 0; i < stops.length - 1; i++) {
     const [p0, r0, g0, b0] = stops[i];
     const [p1, r1, g1, b1] = stops[i + 1];

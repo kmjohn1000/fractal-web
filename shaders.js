@@ -152,8 +152,16 @@ vec2 cDiv(vec2 a, vec2 b) {
   return vec2(a.x * b.x + a.y * b.y, a.y * b.x - a.x * b.y) / max(d, 1e-20);
 }
 
+// t cycles through the colormap (escape-time coloring passes values well
+// past 1.0 on purpose), so fract() wraps it -- except t == 1.0 itself, the
+// end of a bounded [0,1] range (the deepest Carpet/Gasket level, Newton's
+// last root band), which fract() would send to the START color. The LUT
+// texture wraps with REPEAT, so a coordinate of 1.0 would too; the end
+// color is sampled at the last texel's center instead. The tolerance
+// covers GPU division rounding (e.g. 15.0/15.0 -> 0.99999994).
 vec3 lutColor(float t) {
-  return texture2D(u_lut, vec2(fract(t), 0.5)).rgb;
+  float u = abs(t - 1.0) < 1e-5 ? 255.5 / 256.0 : fract(t);
+  return texture2D(u_lut, vec2(u, 0.5)).rgb;
 }
 
 // Sierpinski carpet and Sierpinski gasket are the same construction at two

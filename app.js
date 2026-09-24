@@ -835,27 +835,28 @@ function updateHud() {
     : `maxIter: ${s.maxIter}${s.iterAutoLocked ? "" : " (auto)"}`;
   let text =
     `${currentName}   center: ${s.cx.toExponential(5)} + ${s.cy.toExponential(5)}i\n` +
-    `scale: ${s.scale.toExponential(3)}   ${iterText}   precision: ${precision}${rotText}` +
+    `scale: ${s.scale.toExponential(3)}   ${iterText}   precision: ${precision}   colormap: ${COLORMAPS[colormapIndex].name}${rotText}` +
     `${dualActive ? "   [dual mode — tap left pane to set Julia c]" : ""}`;
   els.hud.textContent = text;
 }
 
 function updateKochHud() {
-  els.hud.textContent = `Koch Snowflake   depth: ${kochState.depth}   ${kochState.fill ? "filled" : "outline"}${rotationHudText(kochView.view.rotation)}`;
+  els.hud.textContent = `Koch Snowflake   depth: ${kochState.depth}   ${kochState.fill ? "filled" : "outline"}   colormap: ${COLORMAPS[colormapIndex].name}${rotationHudText(kochView.view.rotation)}`;
 }
 
 function updateTreeHud() {
-  els.hud.textContent = `Pythagoras Tree   depth: ${treeState.depth}${rotationHudText(treeView.view.rotation)}`;
+  els.hud.textContent = `Pythagoras Tree   depth: ${treeState.depth}   colormap: ${COLORMAPS[colormapIndex].name}${rotationHudText(treeView.view.rotation)}`;
 }
 
 function updateDragonHud() {
-  els.hud.textContent = `Dragon Curve   depth: ${dragonState.depth}${rotationHudText(dragonView.view.rotation)}`;
+  els.hud.textContent = `Dragon Curve   depth: ${dragonState.depth}   colormap: ${COLORMAPS[colormapIndex].name}${rotationHudText(dragonView.view.rotation)}`;
 }
 
 function updateFernHud() {
   // accepted = points actually on screen so far; it climbs toward the
-  // target as refinement runs, and resets on every pan/zoom.
-  els.hud.textContent = `Barnsley Fern   points: ${fernView.accepted.toLocaleString()} / ${fernState.count.toLocaleString()}${rotationHudText(fernView.view.rotation)}`;
+  // target as refinement runs, and resets on every pan/zoom. The fern has
+  // its own FERN_COLORS palette, independent of COLORMAPS/colormapIndex.
+  els.hud.textContent = `Barnsley Fern   points: ${fernView.accepted.toLocaleString()} / ${fernState.count.toLocaleString()}   color: ${FERN_COLORS[fernState.colorIndex].name}${rotationHudText(fernView.view.rotation)}`;
 }
 
 function positionCrosshair() {
