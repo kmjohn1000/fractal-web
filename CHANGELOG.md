@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.3.4 — 2026-09-24
+- The info overlay now floats over the top-left corner of the image instead of sitting above it, so showing or hiding it no longer resizes or shifts the fractal. Pans and pinches that start on the overlay still reach the image.
+
 ## 1.3.3 — 2026-09-24
 - The info overlay is now a rounded dark card, so it stays readable over any colors. The fractal name is larger and bold; the stats underneath are smaller and dimmer.
 - Center and scale show as plain decimals (e.g. -0.75 + 0.00i, scale 1.25) until you zoom past 1e-3. From there they switch to full-precision scientific notation, as before.
