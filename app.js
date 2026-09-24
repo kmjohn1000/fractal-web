@@ -98,6 +98,7 @@ function createFractalRenderer(canvas) {
     resolution: gl.getUniformLocation(prog, "u_resolution"),
     center: gl.getUniformLocation(prog, "u_center"),
     scale: gl.getUniformLocation(prog, "u_scale"),
+    rotation: gl.getUniformLocation(prog, "u_rotation"),
     maxIter: gl.getUniformLocation(prog, "u_maxIter"),
     ftype: gl.getUniformLocation(prog, "u_ftype"),
     power: gl.getUniformLocation(prog, "u_power"),
@@ -196,6 +197,7 @@ function createFractalRenderer(canvas) {
     gl.uniform2f(u.resolution, canvas.width, canvas.height);
     gl.uniform2f(u.center, state.cx, state.cy);
     gl.uniform1f(u.scale, state.scale);
+    gl.uniform1f(u.rotation, state.rotation || 0);
     gl.uniform1i(u.maxIter, state.maxIter | 0);
     gl.uniform1i(u.ftype, state.ftype);
     gl.uniform1f(u.power, state.power);
@@ -369,7 +371,7 @@ if (!juliaRenderer) reportError("WebGL context creation failed on juliaCanvas.")
 function freshState(config) {
   const v = viewFromBounds(config.view);
   return {
-    cx: v.cx, cy: v.cy, scale: v.scale,
+    cx: v.cx, cy: v.cy, scale: v.scale, rotation: 0,
     ftype: config.ftype, power: config.power,
     isJulia: config.juliaC !== null,
     juliaC: config.juliaC || [0, 0],
@@ -388,7 +390,7 @@ function pushHistory(pane) {
   const st = pane === "julia" ? juliaState : mainState;
   const hist = pane === "julia" ? juliaHistory : mainHistory;
   if (!st) return;
-  hist.push({ cx: st.cx, cy: st.cy, scale: st.scale });
+  hist.push({ cx: st.cx, cy: st.cy, scale: st.scale, rotation: st.rotation || 0 });
   if (hist.length > 50) hist.shift();
 }
 
@@ -397,7 +399,7 @@ function popHistory(pane) {
   const snap = hist.pop();
   if (!snap) return;
   const st = pane === "julia" ? juliaState : mainState;
-  st.cx = snap.cx; st.cy = snap.cy; st.scale = snap.scale;
+  st.cx = snap.cx; st.cy = snap.cy; st.scale = snap.scale; st.rotation = snap.rotation ?? 0;
   renderAll();
 }
 
@@ -472,9 +474,13 @@ function updateHud() {
       precision = "float32 (deep zoom unsupported for this fractal type)";
     }
   }
+  const rotDeg = ((s.rotation || 0) * 180 / Math.PI);
+  // Only shown when non-zero — no reset-to-north button, so this is the
+  // only feedback that a two-finger twist has rotated the view at all.
+  const rotText = Math.abs(rotDeg) > 0.5 ? `   rotation: ${rotDeg.toFixed(0)}°` : "";
   let text =
     `${currentName}   center: ${s.cx.toExponential(5)} + ${s.cy.toExponential(5)}i\n` +
-    `scale: ${s.scale.toExponential(3)}   maxIter: ${s.maxIter}   precision: ${precision}` +
+    `scale: ${s.scale.toExponential(3)}   maxIter: ${s.maxIter}   precision: ${precision}${rotText}` +
     `${dualActive ? "   [dual mode — tap left pane to set Julia c]" : ""}`;
   els.hud.textContent = text;
 }
@@ -496,8 +502,12 @@ function positionCrosshair() {
 function screenToComplexInverse(renderer, state, world) {
   const canvas = renderer.canvas;
   const dpr = renderer.dpr;
-  const uvx = (world[0] - state.cx) / (state.scale * 2.0);
-  const uvy = (world[1] - state.cy) / (state.scale * 2.0);
+  const wx = (world[0] - state.cx) / (state.scale * 2.0);
+  const wy = (world[1] - state.cy) / (state.scale * 2.0);
+  const rot = -(state.rotation || 0); // inverse of screenToComplex's rotation
+  const cos = Math.cos(rot), sin = Math.sin(rot);
+  const uvx = wx * cos - wy * sin;
+  const uvy = wx * sin + wy * cos;
   const sx = (uvx * canvas.height + 0.5 * canvas.width) / dpr;
   const sy = (0.5 * canvas.height - uvy * canvas.height) / dpr;
   return [sx, sy];
@@ -508,7 +518,32 @@ function screenToComplex(renderer, state, sx, sy) {
   const dpr = renderer.dpr;
   const uvx = (sx * dpr - 0.5 * canvas.width) / canvas.height;
   const uvy = (0.5 * canvas.height - sy * dpr) / canvas.height;
-  return { x: state.cx + uvx * state.scale * 2.0, y: state.cy + uvy * state.scale * 2.0 };
+  const rot = state.rotation || 0;
+  const cos = Math.cos(rot), sin = Math.sin(rot);
+  // Rotate the screen-space offset into world axes before scaling — must
+  // stay in sync with FRAG_SRC's identical rotation of uv, or the rendered
+  // fractal and every pointer/gesture computation that goes through this
+  // function (pan, box-zoom, the Julia-c crosshair) disagree about "up".
+  const wx = uvx * cos - uvy * sin;
+  const wy = uvx * sin + uvy * cos;
+  return { x: state.cx + wx * state.scale * 2.0, y: state.cy + wy * state.scale * 2.0 };
+}
+
+// Inverse of screenToComplex, solved for (cx, cy): the center a view would
+// need so that local screen point (sx, sy) maps exactly to world point
+// (targetX, targetY) at the view's current scale/rotation. This is the
+// "grab a point and drag it" primitive — pan uses it directly, and it's
+// what the pinch/wheel zoom's before/after-diff anchoring is equivalent to.
+function centerForAnchor(renderer, state, sx, sy, targetX, targetY) {
+  const canvas = renderer.canvas;
+  const dpr = renderer.dpr;
+  const uvx = (sx * dpr - 0.5 * canvas.width) / canvas.height;
+  const uvy = (0.5 * canvas.height - sy * dpr) / canvas.height;
+  const rot = state.rotation || 0;
+  const cos = Math.cos(rot), sin = Math.sin(rot);
+  const wx = uvx * cos - uvy * sin;
+  const wy = uvx * sin + uvy * cos;
+  return { cx: targetX - wx * state.scale * 2.0, cy: targetY - wy * state.scale * 2.0 };
 }
 
 // ---------------------------------------------------------------- fractal-type / mode switching
@@ -537,7 +572,7 @@ function enterDual() {
   if (!config.dual) return;
   dualActive = true;
   juliaState = {
-    cx: 0, cy: 0, scale: mainState.scale,
+    cx: 0, cy: 0, scale: mainState.scale, rotation: 0,
     ftype: mainState.ftype, power: mainState.power,
     isJulia: true, juliaC: [mainState.cx, mainState.cy],
     maxIter: mainState.maxIter,
@@ -577,6 +612,8 @@ function attachFractalInteraction(canvas, getState, paneName, renderer) {
   let panStart = null;
   let pinchStartDist = null;
   let pinchStartScale = null;
+  let pinchStartAngle = null;
+  let pinchStartRotation = null;
   let downPos = null;
   let lastZoomPush = 0;
 
@@ -629,13 +666,20 @@ function attachFractalInteraction(canvas, getState, paneName, renderer) {
     }
 
     if (pointers.size === 1) {
-      const st = getState();
-      panStart = { sx: e.clientX, sy: e.clientY, cx: st.cx, cy: st.cy };
+      // Anchor on the world point under the finger, not a screen-space
+      // delta from it — a delta-based pan doesn't generalize to a rotated
+      // view (see centerForAnchor), and this is exact regardless of
+      // rotation.
+      const local = toLocal(e.clientX, e.clientY);
+      const world = screenToWorldHere(local.x, local.y);
+      panStart = { worldX: world.x, worldY: world.y };
     } else if (pointers.size === 2) {
       panStart = null;
       const pts = [...pointers.values()];
       pinchStartDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
       pinchStartScale = getState().scale;
+      pinchStartAngle = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
+      pinchStartRotation = getState().rotation || 0;
       pushHistory(paneName);
     }
   });
@@ -658,13 +702,10 @@ function attachFractalInteraction(canvas, getState, paneName, renderer) {
 
     const st = getState();
     if (pointers.size === 1 && panStart) {
-      const dpr = renderer.dpr;
-      const dxScreen = e.clientX - panStart.sx;
-      const dyScreen = e.clientY - panStart.sy;
-      const dxComplex = (dxScreen * dpr / canvas.height) * st.scale * 2.0;
-      const dyComplex = (dyScreen * dpr / canvas.height) * st.scale * 2.0;
-      st.cx = panStart.cx - dxComplex;
-      st.cy = panStart.cy + dyComplex;
+      const local = toLocal(e.clientX, e.clientY);
+      const anchored = centerForAnchor(renderer, st, local.x, local.y, panStart.worldX, panStart.worldY);
+      st.cx = anchored.cx;
+      st.cy = anchored.cy;
       markInteracting();
       requestRender();
     } else if (pointers.size === 2 && pinchStartDist) {
@@ -674,6 +715,13 @@ function attachFractalInteraction(canvas, getState, paneName, renderer) {
       const mid = toLocal(midClient.x, midClient.y);
       const before = screenToWorldHere(mid.x, mid.y);
       st.scale = pinchStartScale * (pinchStartDist / Math.max(dist, 1));
+      // Two-finger twist: rotate by however much the finger-pair's angle has
+      // changed since the gesture started. Setting rotation here, before
+      // recomputing `after`, means the existing before/after anchor trick
+      // below keeps the midpoint under the fingers stable under combined
+      // pinch+rotate, exactly like it already does for pinch+pan.
+      const angle = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
+      st.rotation = pinchStartRotation + (angle - pinchStartAngle);
       const after = screenToWorldHere(mid.x, mid.y);
       st.cx += before.x - after.x;
       st.cy += before.y - after.y;
@@ -707,11 +755,14 @@ function attachFractalInteraction(canvas, getState, paneName, renderer) {
     pointers.delete(e.pointerId);
     if (pointers.size === 1) {
       const [p] = pointers.values();
-      panStart = { sx: p.x, sy: p.y, cx: getState().cx, cy: getState().cy };
+      const local = toLocal(p.x, p.y);
+      const world = screenToWorldHere(local.x, local.y);
+      panStart = { worldX: world.x, worldY: world.y };
     } else {
       panStart = null;
     }
     pinchStartDist = null;
+    pinchStartAngle = null;
   }
   canvas.addEventListener("pointerup", release);
   canvas.addEventListener("pointercancel", release);
@@ -742,28 +793,27 @@ function commitBoxZoom(paneName, state, renderer, canvas) {
   const h = parseFloat(els.boxRect.style.height);
   if (w < 4 || h < 4) return;
 
-  const c1 = screenToComplex(renderer, state, left, top);
-  const c2 = screenToComplex(renderer, state, left + w, top + h);
-  const cx = (c1.x + c2.x) / 2;
-  const cy = (c1.y + c2.y) / 2;
-  const halfW = Math.abs(c2.x - c1.x) / 2;
-  const halfH = Math.abs(c2.y - c1.y) / 2;
+  // Center: the world point under the box's screen-center. A single-point
+  // query through screenToComplex is exact at any rotation.
+  const centerPoint = screenToComplex(renderer, state, left + w / 2, top + h / 2);
+
+  // Half-extents: derived from the box's on-screen size and the current
+  // scale directly, NOT from subtracting two rotated corners (c2 - c1) —
+  // rotation is a rigid transform, so it doesn't change how many world
+  // units a screen pixel spans, but it does rotate the corner-difference
+  // vector, which would silently distort this if rotation is nonzero.
+  // (Reduces to the exact previous corner-difference formula at rotation=0,
+  // verified by hand before this was shipped.)
+  const dpr = renderer.dpr;
+  const halfW = (w / 2) * dpr / canvas.height * state.scale * 2.0;
+  const halfH = (h / 2) * dpr / canvas.height * state.scale * 2.0;
   const aspect = canvas.clientWidth / canvas.clientHeight;
   const newScale = Math.max(halfH, halfW / Math.max(aspect, 1e-6));
 
-  // Kept for future box-zoom debugging — uncomment to see the geometry
-  // math on-device (no remote devtools access while testing on the phone).
-  // reportError(
-  //   "Box-zoom debug (not an error) —\n" +
-  //   `canvas: ${canvas.clientWidth}x${canvas.clientHeight} CSS px, dpr=${renderer.dpr}\n` +
-  //   `box (canvas-relative CSS px): left=${left.toFixed(1)} top=${top.toFixed(1)} w=${w.toFixed(1)} h=${h.toFixed(1)}\n` +
-  //   `before: cx=${state.cx.toExponential(6)} cy=${state.cy.toExponential(6)} scale=${state.scale.toExponential(6)}\n` +
-  //   `c1=(${c1.x.toExponential(6)}, ${c1.y.toExponential(6)})  c2=(${c2.x.toExponential(6)}, ${c2.y.toExponential(6)})\n` +
-  //   `after: cx=${cx.toExponential(6)} cy=${cy.toExponential(6)} newScale=${newScale.toExponential(6)}\n` +
-  //   `ratio old/new scale = ${(state.scale / newScale).toFixed(3)}   box w/canvas w = ${(w / canvas.clientWidth).toFixed(4)}   box h/canvas h = ${(h / canvas.clientHeight).toFixed(4)}`
-  // );
-
   pushHistory(paneName);
+  const cx = centerPoint.x, cy = centerPoint.y;
+  // rotation is intentionally left unchanged — box-zoom reframes, it
+  // doesn't reorient
   state.cx = cx; state.cy = cy; state.scale = newScale;
   requestRender();
 }

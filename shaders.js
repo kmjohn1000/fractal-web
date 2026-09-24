@@ -71,6 +71,7 @@ precision highp float;
 uniform vec2  u_resolution;
 uniform vec2  u_center;
 uniform float u_scale;
+uniform float u_rotation; // radians; two-finger twist gesture, see app.js
 uniform int   u_maxIter;
 uniform int   u_ftype;   // 0=escape 1=ship 2=tricorn 3=newton
 uniform float u_power;   // 2.0 or 3.0 (escape family only)
@@ -243,6 +244,16 @@ vec4 renderEscapePerturbationWith(vec2 uv, sampler2D orbitTex, int orbitLen) {
 
 void main() {
   vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution) / u_resolution.y;
+
+  // Rotate the screen-space offset once, up front — every downstream use of
+  // uv (Newton's p, the fast-path p, and the perturbation delta dc inside
+  // renderEscapePerturbationWith) derives from it, so this single rotation
+  // covers all of them. Must match app.js's screenToComplex/centerForAnchor
+  // rotation convention exactly, or the rendered fractal and the pointer/
+  // gesture math (panning, box-zoom, the Julia-c crosshair) disagree about
+  // which way is "up".
+  float rc = cos(u_rotation), rs = sin(u_rotation);
+  uv = vec2(uv.x * rc - uv.y * rs, uv.x * rs + uv.y * rc);
 
   if (u_ftype == FTYPE_NEWTON) {
     vec2 p = u_center + uv * u_scale * 2.0;
