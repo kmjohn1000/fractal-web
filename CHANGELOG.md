@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.3.2 — 2026-09-24
+- Vicsek Fractal now draws the cross (plus-sign) form: center plus the four edge midpoints, instead of center plus the four corners.
+
 ## 1.3.1 — 2026-09-24
 - The fractal picker has two labeled parts, "Infinite Zoom" and "Beautiful Patterns", instead of three technical groups (escape-time, Julia sets, other). The dividing line between sections is gone, so it reads as one menu.
 
