@@ -51,7 +51,7 @@
     box-sizing: border-box;
   }
   #canvasArea.stacked { flex-direction: column; }
-  #mainCanvas, #juliaCanvas, #kochCanvas {
+  #mainCanvas, #juliaCanvas, #kochCanvas, #treeCanvas {
     flex: 1 1 0; min-width: 0; min-height: 0; width: 100%; height: 100%;
     touch-action: none; display: block;
   }
@@ -77,7 +77,7 @@
     padding: 8px 10px;
   }
   .control-row:not(:last-child) { border-bottom: 1px solid rgba(255,255,255,0.08); }
-  #fractalControls.hidden, #kochControls.hidden { display: none; }
+  #fractalControls.hidden, #kochControls.hidden, #treeControls.hidden { display: none; }
 
   /* Fractal-type picker: a dropdown panel opened by the hamburger button,
      not a permanently-visible row — the row (even scrollable) still ate
@@ -185,6 +185,7 @@
   <canvas id="mainCanvas"></canvas>
   <canvas id="juliaCanvas" class="hidden"></canvas>
   <canvas id="kochCanvas" class="hidden"></canvas>
+  <canvas id="treeCanvas" class="hidden"></canvas>
 </div>
 <div id="boxZoomRect" class="hidden"></div>
 <div id="crosshair" class="hidden"></div>
@@ -192,12 +193,12 @@
 <div id="controls">
   <div id="fractalTypeRow"></div>
   <div id="fractalControls" class="control-row">
+    <label id="iterField" class="field">iter <input id="iterSlider" type="range" min="50" max="2000" step="10" value="300"></label>
     <button class="iconBtn fractalMenuBtn" aria-haspopup="true" aria-label="Choose fractal type" title="Choose fractal type">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
       </svg>
     </button>
-    <label class="field">iter <input id="iterSlider" type="range" min="50" max="2000" step="10" value="300"></label>
     <button id="colormapBtn" class="iconBtn" aria-label="Cycle colormap" title="Cycle colormap">
       <svg viewBox="0 0 24 24">
         <circle cx="9" cy="9" r="6" fill="#e33" fill-opacity="0.75"/>
@@ -228,22 +229,33 @@
     </button>
   </div>
   <div id="kochControls" class="control-row hidden">
+    <label class="field">depth <input id="kochDepthSlider" type="range" min="0" max="8" step="1" value="4"></label>
     <button class="iconBtn fractalMenuBtn" aria-haspopup="true" aria-label="Choose fractal type" title="Choose fractal type">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
       </svg>
     </button>
-    <label class="field">depth <input id="kochDepthSlider" type="range" min="0" max="8" step="1" value="4"></label>
     <button id="kochAnimateBtn">Animate</button>
     <button id="kochFillBtn" class="active">Fill</button>
     <button id="kochColormapBtn">Colormap</button>
     <button id="kochResetBtn">Reset</button>
+  </div>
+  <div id="treeControls" class="control-row hidden">
+    <label class="field">depth <input id="treeDepthSlider" type="range" min="0" max="12" step="1" value="9"></label>
+    <button class="iconBtn fractalMenuBtn" aria-haspopup="true" aria-label="Choose fractal type" title="Choose fractal type">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <button id="treeColormapBtn">Colormap</button>
+    <button id="treeResetBtn">Reset</button>
   </div>
 </div>
 
 <script src="colormaps.js"></script>
 <script src="shaders.js"></script>
 <script src="koch.js"></script>
+<script src="pythagoras.js"></script>
 <script src="app.js"></script>
 <script>
   // Service workers only register on secure origins or localhost, so this is
