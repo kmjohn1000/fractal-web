@@ -238,20 +238,41 @@ function createFractalRenderer(canvas) {
     return s;
   }
 
-  const prog = gl.createProgram();
-  gl.attachShader(prog, compile(gl.VERTEX_SHADER, VERT_SRC));
-  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FRAG_SRC));
-  gl.linkProgram(prog);
-  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+  // a_pos is pinned to attribute 0 in both programs so they share the
+  // quad's vertex-attribute setup below without re-pointing it per draw.
+  function link(fragSrc) {
+    const p = gl.createProgram();
+    gl.attachShader(p, compile(gl.VERTEX_SHADER, VERT_SRC));
+    gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fragSrc));
+    gl.bindAttribLocation(p, 0, "a_pos");
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    return p;
+  }
+  const prog = link(FRAG_SRC);
+  const previewProg = link(PREVIEW_FRAG_SRC);
   gl.useProgram(prog);
 
   const quad = new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]);
   const buf = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, buf);
   gl.bufferData(gl.ARRAY_BUFFER, quad, gl.STATIC_DRAW);
-  const aPos = gl.getAttribLocation(prog, "a_pos");
-  gl.enableVertexAttribArray(aPos);
-  gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+  const pu = {
+    resolution: gl.getUniformLocation(previewProg, "u_resolution"),
+    snap: gl.getUniformLocation(previewProg, "u_snap"),
+    snapRes: gl.getUniformLocation(previewProg, "u_snapRes"),
+    toSnap: gl.getUniformLocation(previewProg, "u_toSnap"),
+    snapOffset: gl.getUniformLocation(previewProg, "u_snapOffset"),
+  };
+  const snapTex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, snapTex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
   const u = {
     resolution: gl.getUniformLocation(prog, "u_resolution"),
@@ -340,9 +361,19 @@ function createFractalRenderer(canvas) {
 
   // sampleIndex selects the sub-pixel offset from SAMPLE_OFFSETS; see there
   // and drawToCanvas for how successive samples accumulate.
+  // The view the canvas's current accurate frame was drawn for, and whether
+  // the next renderPreview should capture it as a fresh snapshot.
+  let lastView = null;
+  let snapView = null;
+  let needSnapshot = false;
+
   function render(state, sampleIndex = 0) {
     // A resize clears the canvas, so there's nothing left to blend into.
     if (resize()) sampleIndex = 0;
+    if (sampleIndex === 0) {
+      lastView = { cx: state.cx, cy: state.cy, scale: state.scale, rotation: state.rotation || 0 };
+      needSnapshot = true;
+    }
     gl.useProgram(prog);
     const jitter = SAMPLE_OFFSETS[sampleIndex];
     gl.uniform2f(u.jitter, jitter[0], jitter[1]);
@@ -418,7 +449,48 @@ function createFractalRenderer(canvas) {
     return true;
   }
 
-  return { canvas, render, setLUT, resize, perturbationSupported, get dpr() { return dpr; } };
+  // Deep-zoom gesture preview (see renderAll): on the first call after an
+  // accurate render, copy the canvas -- still showing that frame, thanks to
+  // preserveDrawingBuffer -- into snapTex, then redraw it mapped onto the
+  // current view. The mapping is one similarity transform, snapshot uv =
+  // k*R(dRot)*uv + offset, with k, dRot and offset computed here in float64
+  // from the two views' difference, so it stays exact at any depth.
+  function renderPreview(state) {
+    if (resize()) needSnapshot = false; // a resize cleared the canvas
+    gl.activeTexture(gl.TEXTURE4);
+    gl.bindTexture(gl.TEXTURE_2D, snapTex);
+    if (needSnapshot && lastView) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      // RGB, not RGBA: the context has alpha:false, and WebGL rejects
+      // copying components the framebuffer doesn't have.
+      gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGB, 0, 0, canvas.width, canvas.height, 0);
+      snapView = { ...lastView, width: canvas.width, height: canvas.height };
+      needSnapshot = false;
+    }
+    if (!snapView) return;
+
+    const k = state.scale / snapView.scale;
+    const dRot = (state.rotation || 0) - snapView.rotation;
+    const c = Math.cos(dRot) * k, s = Math.sin(dRot) * k;
+    const rc = Math.cos(snapView.rotation), rs = Math.sin(snapView.rotation);
+    const dx = state.cx - snapView.cx, dy = state.cy - snapView.cy;
+    const inv = 1 / (2 * snapView.scale);
+
+    gl.useProgram(previewProg);
+    gl.uniform2f(pu.resolution, canvas.width, canvas.height);
+    gl.uniform1i(pu.snap, 4);
+    gl.uniform2f(pu.snapRes, snapView.width, snapView.height);
+    // Column-major: columns (c, s) and (-s, c) = k * rotation by dRot.
+    gl.uniformMatrix2fv(pu.toSnap, false, [c, s, -s, c]);
+    // R(-snapRotation) * (center - snapCenter) / (2 * snapScale)
+    gl.uniform2f(pu.snapOffset, (dx * rc + dy * rs) * inv, (-dx * rs + dy * rc) * inv);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.disable(gl.BLEND);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+  }
+
+  return { canvas, render, renderPreview, setLUT, resize, perturbationSupported, get dpr() { return dpr; } };
 }
 
 // ---------------------------------------------------------------- app state
@@ -475,7 +547,7 @@ let activePane = "main"; // "main" | "julia" — which pane Back/box-zoom target
 
 // Perturbation rendering runs a CPU reference search (chooseReference) plus
 // a heavy full-frame GPU pass — slow on mobile, often 100s of ms at high
-// maxIter. The main canvas is frozen (see renderAll) for the whole time
+// maxIter. The main canvas shows a moving preview (see renderAll) for the whole time
 // isInteracting is true, so this delay only affects how soon it snaps back
 // to an accurate render after you stop — no correctness risk either way,
 // just responsiveness.
@@ -575,13 +647,13 @@ let lastMainUsedPerturbation = false;
 // Below the deep-zoom threshold, a live float32 re-render during an active
 // gesture isn't a lower-quality version of the same view — the per-pixel
 // offset rounds away entirely against the view center at that scale, so it
-// shows what's effectively unrelated content. A CSS-transform-based live
-// preview of the last accurate frame was tried as a fix and, after several
-// rounds, still produced jumpy/inconsistent results that got worse rather
-// than better with tuning — rather than keep guessing at that math blind,
-// this just freezes the main canvas (touches nothing) while interacting at
-// deep zoom, and only renders once the gesture settles. Less live feedback,
-// but nothing left to get subtly wrong.
+// shows what's effectively unrelated content — and a full perturbation
+// render per gesture frame is too slow. So while interacting at deep zoom,
+// each pane shows its last accurate frame moved with the gesture
+// (renderPreview), and renders for real once the gesture settles. A
+// CSS-transform version of this preview was tried first and was jumpy; this
+// one draws the snapshot through the same float64 view math the renderer
+// uses, so it can't drift from where the real render will land.
 function deepZoomEligible(renderer, state) {
   return renderer.perturbationSupported
     && perturbationEligibleType(state)
@@ -590,14 +662,18 @@ function deepZoomEligible(renderer, state) {
 
 function renderAll() {
   if (mode === "fractal") {
-    if (!(isInteracting && deepZoomEligible(mainRenderer, mainState))) {
+    if (isInteracting && deepZoomEligible(mainRenderer, mainState)) {
+      mainRenderer.renderPreview(mainState);
+    } else {
       lastMainUsedPerturbation = mainRenderer.render(mainState);
     }
 
     // The dual-mode Julia pane can be deep-zoomed too (perturbation covers
-    // Julia mode), so it gets the same freeze while interacting.
+    // Julia mode), so it gets the same preview while interacting.
     if (dualActive && juliaState) {
-      if (!(isInteracting && deepZoomEligible(juliaRenderer, juliaState))) {
+      if (isInteracting && deepZoomEligible(juliaRenderer, juliaState)) {
+        juliaRenderer.renderPreview(juliaState);
+      } else {
         juliaRenderer.render(juliaState);
       }
       positionCrosshair();
@@ -667,7 +743,7 @@ function updateHud() {
   const deepZoomEligible = mainRenderer.perturbationSupported && eligibleType && s.scale < DEEP_ZOOM_THRESHOLD;
   let precision = "float32";
   if (isInteracting && deepZoomEligible) {
-    precision = "frozen (will render at deep zoom once you stop)";
+    precision = "preview (renders at deep zoom once you stop)";
   } else if (lastMainUsedPerturbation) {
     precision = "perturbation (deep zoom)";
   } else if (s.scale < DEEP_ZOOM_THRESHOLD) {
