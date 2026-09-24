@@ -114,9 +114,7 @@ vec3 lutColor(float t) {
 
 // Sierpinski carpet and Sierpinski gasket are the same construction at two
 // different bases: repeatedly scale the point by "base" and exclude it the
-// first time both axes' current digit equal 1, up to u_maxIter levels
-// (reused as "recursion depth" — there's no escape condition here, so it
-// plays the same role u_maxIter plays for the escape-time families).
+// first time both axes' current digit equal 1.
 //   base=3: removes the center cell of a 3x3 grid at every scale — the
 //   classic Sierpinski carpet.
 //   base=2: a point survives only if, written in binary, no bit position
@@ -132,17 +130,34 @@ vec3 lutColor(float t) {
 // p never grows unbounded since it's re-fract()ed back into [0,1) after
 // every level, regardless of how many levels run.
 //
-// No perturbation/deep-zoom support: this only reuses the existing float32
-// fast path (see FRAG_SRC's top comment), so like Ship/Tricorn/Julia it
-// hits the same ~1e-5 float32 zoom ceiling rather than perturbation's
-// effectively unlimited depth.
+// Depth is a fixed constant, deliberately NOT u_maxIter: u_maxIter's
+// range (50-2000, from the iter slider) is calibrated for escape-time
+// iteration counts, but this recursion only has ~15-24 meaningful levels
+// in float32 before the repeated *base/re-fract() accumulates enough
+// rounding error to be numerically meaningless regardless of how many more
+// levels run (each level consumes ~log2(base) bits of the ~24-bit float32
+// mantissa). Using u_maxIter directly here shipped as a real bug: at its
+// default of 300, the actual exclusion depth (rarely above ~30) divided by
+// 299 crushed nearly the whole image into the first few percent of the
+// colormap, which for the default colormap is nearly black — it looked
+// broken ("doesn't show") even though the fractal itself was rendering
+// correctly underneath. Fixed depth of 16 was verified by rendering both
+// patterns with the real colormap LUT before shipping, same as everything
+// else here that touches float precision.
+// No perturbation/deep-zoom support either way: this only reuses the
+// existing float32 fast path (see FRAG_SRC's top comment), so like
+// Ship/Tricorn/Julia it hits the same ~1e-5 float32 zoom ceiling rather
+// than perturbation's effectively unlimited depth.
 vec3 renderDigitFractal(vec2 p, float base) {
-  for (int i = 0; i < 2000; i++) {
-    if (i >= u_maxIter) break;
+  // Literal loop bound (not a uniform, not even a named constant) to match
+  // the exact pattern already proven safe on this device/browser elsewhere
+  // in this file — see the comment above this function for why 16 and not
+  // u_maxIter.
+  for (int i = 0; i < 16; i++) {
     p *= base;
     vec2 cell = mod(floor(p), base);
     if (cell.x == 1.0 && cell.y == 1.0) {
-      return lutColor(float(i) / max(float(u_maxIter - 1), 1.0));
+      return lutColor(float(i) / 15.0);
     }
     p -= floor(p);
   }

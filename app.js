@@ -485,9 +485,14 @@ function updateHud() {
   // Only shown when non-zero — no reset-to-north button, so this is the
   // only feedback that a two-finger twist has rotated the view at all.
   const rotText = Math.abs(rotDeg) > 0.5 ? `   rotation: ${rotDeg.toFixed(0)}°` : "";
+  // Carpet/Gasket ignore the iter slider entirely (fixed depth in the
+  // shader) — showing "maxIter: 300" would misleadingly imply it still
+  // does something, the same mismatch that caused the coloring bug.
+  const usesFixedDepth = s.ftype === FTYPE.CARPET || s.ftype === FTYPE.GASKET;
+  const iterText = usesFixedDepth ? "depth: 16 (fixed)" : `maxIter: ${s.maxIter}`;
   let text =
     `${currentName}   center: ${s.cx.toExponential(5)} + ${s.cy.toExponential(5)}i\n` +
-    `scale: ${s.scale.toExponential(3)}   maxIter: ${s.maxIter}   precision: ${precision}${rotText}` +
+    `scale: ${s.scale.toExponential(3)}   ${iterText}   precision: ${precision}${rotText}` +
     `${dualActive ? "   [dual mode — tap left pane to set Julia c]" : ""}`;
   els.hud.textContent = text;
 }
@@ -565,6 +570,12 @@ function selectFractal(name) {
   if (dualActive) enterDual();
   els.dualBtn.disabled = !config.dual;
   els.dualBtn.classList.toggle("active", dualActive);
+  // Carpet/Gasket use a fixed depth (see FRAG_SRC) — the iter slider does
+  // nothing for them, and leaving it enabled implied otherwise, which is
+  // exactly the mismatch that made them render as almost solid black
+  // before that was caught and fixed.
+  const usesFixedDepth = config.ftype === FTYPE.CARPET || config.ftype === FTYPE.GASKET;
+  els.iterSlider.disabled = usesFixedDepth;
   [...els.fractalTypeRow.children].forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.name === name);
   });
