@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.1.1 — 2026-09-24
+- Surprise me flights are slower: about 1 second for short hops, up to 2.5 seconds for the deepest dives.
+
 ## 1.1.0 — 2026-09-24
 - New "Surprise me" button (sparkle icon, Mandelbrot only): flies to a random hand-picked spot — Seahorse Valley, Elephant Valley, a mini Mandelbrot, and more — never the same one twice in a row. Back returns to where you were.
 
