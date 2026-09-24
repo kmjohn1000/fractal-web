@@ -8,7 +8,15 @@ function kochSegment(p1, p2) {
   const dx = p2[0] - p1[0], dy = p2[1] - p1[1];
   const ax = p1[0] + dx / 3, ay = p1[1] + dy / 3;
   const bx = p1[0] + (2 * dx) / 3, by = p1[1] + (2 * dy) / 3;
-  const angle = Math.PI / 3;
+  // The starting triangle ([90,210,330] degrees) winds counter-clockwise,
+  // so the outward direction at each edge is to the RIGHT of travel, i.e. a
+  // negative (clockwise) rotation of the forward vector -- +60 degrees was
+  // shipped here and rotated every bump inward instead, producing the Koch
+  // ANTI-snowflake (area converges to 2/5 of the base triangle, not 8/5).
+  // Verified numerically via the shoelace formula before fixing: +60deg
+  // gives area ratio 0.42 at depth 4, -60deg gives 1.58, matching the
+  // textbook 8/5 growth of a real snowflake.
+  const angle = -Math.PI / 3;
   const cos = Math.cos(angle), sin = Math.sin(angle);
   const rx = dx / 3, ry = dy / 3;
   const peak = [ax + (cos * rx - sin * ry), ay + (sin * rx + cos * ry)];

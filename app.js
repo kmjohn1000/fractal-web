@@ -153,6 +153,7 @@ function createFractalRenderer(canvas) {
     hasOrbitB: gl.getUniformLocation(prog, "u_hasOrbitB"),
     refOrbitTexB: gl.getUniformLocation(prog, "u_refOrbitTexB"),
     refOrbitLenB: gl.getUniformLocation(prog, "u_refOrbitLenB"),
+    refOffset: gl.getUniformLocation(prog, "u_refOffset"),
   };
 
   const lutTex = gl.createTexture();
@@ -208,6 +209,19 @@ function createFractalRenderer(canvas) {
   function ensureFbo(w, h) {
     if (fboWidth === w && fboHeight === h) return;
     fboWidth = w; fboHeight = h;
+    // pass1Tex is sampled on texture unit 2 (see render()'s pass 2 setup) —
+    // bind it there explicitly rather than on whatever unit happened to be
+    // active (unit 0, the LUT's unit, right after render()'s own setup),
+    // which was silently overwriting the LUT binding with pass1Tex on every
+    // resize. Unbind afterward too: this texture is also the pass-1 FBO's
+    // color attachment, and leaving it bound on unit 2 while pass 1 renders
+    // into it is a render-to-your-own-input feedback loop, which WebGL
+    // rejects outright (confirmed via gl.getError() === 1282,
+    // GL_INVALID_OPERATION, on every perturbation draw from the second
+    // frame onward) -- see the matching unbind right before the pass-1
+    // draw call in render(), which handles the case where a PREVIOUS
+    // frame's pass 2 left it bound instead of this resize path.
+    gl.activeTexture(gl.TEXTURE2);
     gl.bindTexture(gl.TEXTURE_2D, pass1Tex);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
     gl.bindFramebuffer(gl.FRAMEBUFFER, pass1Fbo);
@@ -217,6 +231,7 @@ function createFractalRenderer(canvas) {
       reportError(`Perturbation glitch-detection framebuffer incomplete (status ${status}) — deep zoom will fall back to single-pass rendering.`);
     }
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.bindTexture(gl.TEXTURE_2D, null);
   }
 
   let dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -278,6 +293,15 @@ function createFractalRenderer(canvas) {
     gl.uniform1i(u.refOrbitLen, orbitA.length);
     gl.uniform1i(u.passNum, 1);
 
+    // Break the render-to-your-own-input feedback loop for the pass-1 draw:
+    // pass1Tex may still be bound on unit 2 from a PREVIOUS frame's pass 2
+    // (see below), and it's about to be rendered into via the FBO — WebGL
+    // rejects a draw where the target of an FBO's color attachment is also
+    // bound as an active sampler input, even though pass 1's shader branch
+    // never actually samples u_pass1Tex.
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+
     gl.bindFramebuffer(gl.FRAMEBUFFER, pass1Fbo);
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -295,6 +319,7 @@ function createFractalRenderer(canvas) {
     }
 
     let hasOrbitB = false;
+    let refOffsetX = 0, refOffsetY = 0;
     if (glitchIdx >= 0) {
       const px = glitchIdx % canvas.width;
       const py = Math.floor(glitchIdx / canvas.width);
@@ -302,8 +327,16 @@ function createFractalRenderer(canvas) {
       // rows run bottom-to-top, matching gl_FragCoord.y's convention.
       const uvx = (px + 0.5 - 0.5 * canvas.width) / canvas.height;
       const uvy = (py + 0.5 - 0.5 * canvas.height) / canvas.height;
-      const cxB = state.cx + uvx * state.scale * 2.0;
-      const cyB = state.cy + uvy * state.scale * 2.0;
+      // Must apply the same rotation FRAG_SRC applies to uv before ANY use
+      // (see its top-of-main comment) -- this was missing, so with a
+      // nonzero rotation orbit B was centered on the wrong world point
+      // entirely, not just offset by the (separately-fixed) refOffset.
+      const rot = state.rotation || 0;
+      const rc = Math.cos(rot), rs = Math.sin(rot);
+      const wx = uvx * rc - uvy * rs;
+      const wy = uvx * rs + uvy * rc;
+      const cxB = state.cx + wx * state.scale * 2.0;
+      const cyB = state.cy + wy * state.scale * 2.0;
       const orbitB = computeReferenceOrbit(cxB, cyB, state.power, state.maxIter);
       gl.activeTexture(gl.TEXTURE3);
       gl.bindTexture(gl.TEXTURE_2D, refOrbitTexB);
@@ -311,8 +344,14 @@ function createFractalRenderer(canvas) {
       gl.uniform1i(u.refOrbitTexB, 3);
       gl.uniform1i(u.refOrbitLenB, orbitB.length);
       hasOrbitB = true;
+      // Orbit B's own reference point isn't u_center, so the shader's dc
+      // (always computed as an offset from u_center) needs this correction
+      // — see renderEscapePerturbationWith's comment in shaders.js.
+      refOffsetX = cxB - state.cx;
+      refOffsetY = cyB - state.cy;
     }
     gl.uniform1i(u.hasOrbitB, hasOrbitB ? 1 : 0);
+    gl.uniform2f(u.refOffset, refOffsetX, refOffsetY);
 
     // --- Pass 2: render to the real canvas, reusing pass 1's clean pixels
     // and recomputing glitched ones from orbit B.
@@ -653,6 +692,10 @@ function selectFractal(name) {
   mainState = freshState(config);
   mainHistory = [];
   juliaHistory = [];
+  // Same reasoning as exitDual(): juliaHistory was just cleared above, so
+  // if activePane was left on "julia" from before this switch, Back would
+  // try to pop an empty array and silently do nothing.
+  activePane = "main";
   if (dualActive && !config.dual) dualActive = false;
   if (dualActive) enterDual();
   els.dualBtn.disabled = !config.dual;
@@ -689,6 +732,11 @@ function enterDual() {
 
 function exitDual() {
   dualActive = false;
+  // Without this, Back (popHistory(activePane)) silently pops the now-
+  // hidden juliaState/juliaHistory if the julia pane was the last one
+  // touched -- nothing visibly changes, so Back appears dead until the
+  // main canvas is tapped again (which resets activePane itself).
+  activePane = "main";
   els.juliaCanvas.classList.add("hidden");
   els.crosshair.classList.add("hidden");
   layoutCanvasArea();
@@ -736,6 +784,16 @@ function attachFractalInteraction(canvas, getState, paneName, renderer) {
   let pinchStartRotation = null;
   let downPos = null;
   let lastZoomPush = 0;
+  // True for the whole span from a second finger touching down until every
+  // finger has lifted — guards the tap-to-set-Julia-c check below, which
+  // otherwise fires on the LAST finger of a pinch/rotate to release: downPos
+  // gets overwritten by every pointerdown (not tracked per-pointer), so once
+  // the first finger lifts, the remaining (second) finger's release is
+  // checked against ITS OWN down position, and a finger that acted as a
+  // relatively stationary pinch/rotate anchor can easily stay under the 6px
+  // tap threshold from where IT went down, even though a real two-finger
+  // gesture happened.
+  let multiTouch = false;
 
   function screenToWorldHere(sx, sy) {
     return screenToComplex(renderer, getState(), sx, sy);
@@ -754,6 +812,7 @@ function attachFractalInteraction(canvas, getState, paneName, renderer) {
   canvas.addEventListener("pointerdown", (e) => {
     canvas.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size >= 2) multiTouch = true;
     activePane = paneName;
     downPos = { x: e.clientX, y: e.clientY };
 
@@ -793,6 +852,12 @@ function attachFractalInteraction(canvas, getState, paneName, renderer) {
       const local = toLocal(e.clientX, e.clientY);
       const world = screenToWorldHere(local.x, local.y);
       panStart = { worldX: world.x, worldY: world.y };
+      // Pinch/wheel/box-zoom all push a history checkpoint before they
+      // change the view; a plain one-finger drag never did, so Back after
+      // zoom -> drag skipped straight past the drag to the pre-zoom state,
+      // silently discarding the pan. Matches the pinch branch below exactly
+      // (push immediately at gesture start, before any movement).
+      pushHistory(paneName);
     } else if (pointers.size === 2) {
       panStart = null;
       const pts = [...pointers.values()];
@@ -859,8 +924,13 @@ function attachFractalInteraction(canvas, getState, paneName, renderer) {
     }
 
     // Tap-to-set-Julia-c: only on the main pane while dual mode is active,
-    // and only if the pointer barely moved (a click, not a drag).
-    if (paneName === "main" && dualActive && downPos && pointers.size === 1) {
+    // only if the pointer barely moved (a click, not a drag), and only
+    // outside a multi-touch gesture -- downPos isn't tracked per-pointer,
+    // so without the multiTouch guard the last finger to lift from a
+    // pinch/rotate gets checked against its OWN down position and can read
+    // as a "tap" even though two fingers were down (see multiTouch's
+    // comment above).
+    if (paneName === "main" && dualActive && downPos && pointers.size === 1 && !multiTouch) {
       const moved = Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y);
       if (moved < 6) {
         const local = toLocal(e.clientX, e.clientY);
@@ -873,6 +943,7 @@ function attachFractalInteraction(canvas, getState, paneName, renderer) {
     }
 
     pointers.delete(e.pointerId);
+    if (pointers.size === 0) multiTouch = false;
     if (pointers.size === 1) {
       const [p] = pointers.values();
       const local = toLocal(p.x, p.y);
