@@ -79,6 +79,10 @@ uniform bool  u_isJulia;
 uniform vec2  u_juliaC;
 uniform sampler2D u_lut;
 uniform int   u_digitDepth; // Carpet/Gasket only, see renderDigitFractal
+// Sub-pixel sample offset in pixels, (0,0) = pixel center. Supersampling
+// accumulates several jittered renders on the CPU side -- see
+// SAMPLE_OFFSETS in app.js.
+uniform vec2  u_jitter;
 
 uniform bool  u_usePerturbation;
 uniform int   u_passNum;         // 1 or 2, only meaningful when u_usePerturbation
@@ -352,7 +356,7 @@ vec4 renderEscapePerturbationWith(vec2 uv, sampler2D orbitTex, int orbitLen, vec
 }
 
 void main() {
-  vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution) / u_resolution.y;
+  vec2 uv = (gl_FragCoord.xy + u_jitter - 0.5 * u_resolution) / u_resolution.y;
 
   // Rotate the screen-space offset once, up front — every downstream use of
   // uv (Newton's p, the fast-path p, and the perturbation delta dc inside
