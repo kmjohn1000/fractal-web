@@ -578,6 +578,7 @@ const els = {
   dragonBackBtn: document.getElementById("dragonBackBtn"),
   fernBackBtn: document.getElementById("fernBackBtn"),
   shareMenu: document.getElementById("shareMenu"),
+  colormapMenu: document.getElementById("colormapMenu"),
   shareSaveBtn: document.getElementById("shareSaveBtn"),
   shareCopyBtn: document.getElementById("shareCopyBtn"),
   shareNativeBtn: document.getElementById("shareNativeBtn"),
@@ -1011,6 +1012,7 @@ function setMode(next) {
   mode = next;
   els.fractalTypeRow.classList.remove("open"); // collapse the picker on any mode switch
   els.shareMenu.classList.remove("open");
+  els.colormapMenu.classList.remove("open");
   els.fractalControls.classList.toggle("hidden", mode !== "fractal");
   els.kochControls.classList.toggle("hidden", mode !== "koch");
   els.treeControls.classList.toggle("hidden", mode !== "tree");
@@ -1569,6 +1571,8 @@ updateMenuActiveState();
 document.querySelectorAll(".fractalMenuBtn").forEach((btn) => {
   btn.addEventListener("click", (e) => {
     e.stopPropagation(); // don't let the outside-click closer below fire on this same tap
+    els.colormapMenu.classList.remove("open");
+    els.shareMenu.classList.remove("open");
     els.fractalTypeRow.classList.toggle("open");
   });
 });
@@ -1592,11 +1596,6 @@ els.iterSlider.addEventListener("input", () => {
   requestRender();
 });
 
-els.colormapBtn.addEventListener("click", () => {
-  colormapIndex = (colormapIndex + 1) % COLORMAPS.length;
-  updateLUT();
-  requestRender();
-});
 
 els.dualBtn.addEventListener("click", () => {
   if (dualActive) exitDual(); else enterDual();
@@ -1624,10 +1623,6 @@ els.kochFillBtn.addEventListener("click", () => {
   requestRender();
 });
 
-els.kochColormapBtn.addEventListener("click", () => {
-  colormapIndex = (colormapIndex + 1) % COLORMAPS.length;
-  requestRender();
-});
 
 els.kochAnimateBtn.addEventListener("click", () => {
   kochState.animating = !kochState.animating;
@@ -1654,10 +1649,6 @@ els.treeDepthSlider.addEventListener("input", () => {
   requestRender();
 });
 
-els.treeColormapBtn.addEventListener("click", () => {
-  colormapIndex = (colormapIndex + 1) % COLORMAPS.length;
-  requestRender();
-});
 
 els.treeResetBtn.addEventListener("click", () => {
   treeNav.clearHistory();
@@ -1670,10 +1661,6 @@ els.dragonDepthSlider.addEventListener("input", () => {
   requestRender();
 });
 
-els.dragonColormapBtn.addEventListener("click", () => {
-  colormapIndex = (colormapIndex + 1) % COLORMAPS.length;
-  requestRender();
-});
 
 els.dragonResetBtn.addEventListener("click", () => {
   dragonNav.clearHistory();
@@ -1686,11 +1673,68 @@ els.fernPointsSlider.addEventListener("input", () => {
   requestRender();
 });
 
-els.fernColorBtn.addEventListener("click", () => {
-  fernState.colorIndex = (fernState.colorIndex + 1) % FERN_COLORS.length;
-  const [r, g, b] = FERN_COLORS[fernState.colorIndex].rgb;
+// ---------------------------------------------------------------- colormap picker
+
+// The palette button in every row opens this picker (same popover pattern as
+// the share menu) instead of cycling blindly. Koch/tree/dragon/fractal pick
+// from the shared COLORMAPS; the fern picks from its own FERN_COLORS.
+function cmGradient(stops) {
+  return `linear-gradient(to right, ${stops.map(([t, r, g, b]) => `rgb(${r},${g},${b}) ${t * 100}%`).join(", ")})`;
+}
+
+function setFernColor(i) {
+  fernState.colorIndex = i;
+  const [r, g, b] = FERN_COLORS[i].rgb;
   els.fernColorSwatch.setAttribute("fill", `rgb(${r}, ${g}, ${b})`);
-  requestRender();
+}
+
+function openColormapMenu(forFern) {
+  const items = forFern
+    ? FERN_COLORS.map((c) => ({ name: c.name, bg: `rgb(${c.rgb.join(",")})` }))
+    : COLORMAPS.map((c) => ({ name: c.name, bg: cmGradient(c.stops) }));
+  const current = forFern ? fernState.colorIndex : colormapIndex;
+  els.colormapMenu.replaceChildren(...items.map((item, i) => {
+    const btn = document.createElement("button");
+    btn.setAttribute("role", "menuitemradio");
+    btn.setAttribute("aria-checked", String(i === current));
+    btn.classList.toggle("active", i === current);
+    const swatch = document.createElement("span");
+    swatch.className = "cmSwatch";
+    swatch.style.background = item.bg;
+    btn.append(swatch, item.name);
+    btn.addEventListener("click", () => {
+      if (forFern) {
+        setFernColor(i);
+      } else {
+        colormapIndex = i;
+        // Always refresh the shader's LUT, whichever mode picked it: the
+        // old koch/tree/dragon cycle handlers skipped this, leaving the
+        // fractal on a stale colormap after switching back.
+        updateLUT();
+      }
+      els.colormapMenu.classList.remove("open");
+      requestRender();
+    });
+    return btn;
+  }));
+  els.colormapMenu.classList.add("open");
+  els.colormapMenu.querySelector(".active")?.scrollIntoView({ block: "nearest" });
+}
+
+[els.colormapBtn, els.kochColormapBtn, els.treeColormapBtn, els.dragonColormapBtn, els.fernColorBtn].forEach((btn) => {
+  btn.setAttribute("aria-haspopup", "true");
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation(); // don't let the outside-tap closer below fire on this same tap
+    els.fractalTypeRow.classList.remove("open");
+    els.shareMenu.classList.remove("open");
+    if (els.colormapMenu.classList.contains("open")) els.colormapMenu.classList.remove("open");
+    else openColormapMenu(btn === els.fernColorBtn);
+  });
+});
+document.addEventListener("pointerdown", (e) => {
+  if (!els.colormapMenu.classList.contains("open")) return;
+  if (els.colormapMenu.contains(e.target) || e.target.closest("[aria-haspopup]")) return;
+  els.colormapMenu.classList.remove("open");
 });
 
 els.fernBoxZoomBtn.addEventListener("click", () => {
@@ -1808,9 +1852,7 @@ function applyShareState(st) {
     if (st.mode === "fern") {
       fernState.count = st.count;
       els.fernPointsSlider.value = st.count;
-      fernState.colorIndex = st.colorIndex;
-      const [r, g, b] = FERN_COLORS[st.colorIndex].rgb;
-      els.fernColorSwatch.setAttribute("fill", `rgb(${r}, ${g}, ${b})`);
+      setFernColor(st.colorIndex);
     } else {
       colormapIndex = st.cm;
       const depthState = { koch: kochState, tree: treeState, dragon: dragonState }[st.mode];
@@ -1909,6 +1951,7 @@ document.querySelectorAll(".shareBtn").forEach((btn) => {
   btn.addEventListener("click", (e) => {
     e.stopPropagation(); // don't let the outside-click closer below fire on this same tap
     els.fractalTypeRow.classList.remove("open");
+    els.colormapMenu.classList.remove("open");
     const opening = !els.shareMenu.classList.contains("open");
     els.shareMenu.classList.toggle("open", opening);
     if (opening) {

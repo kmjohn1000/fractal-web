@@ -118,6 +118,24 @@
     box-shadow: 0 -6px 20px rgba(0,0,0,0.5); z-index: 30;
   }
   #shareMenu.open { display: flex; }
+  /* Colormap picker: same popover pattern, anchored left like the fractal
+     picker. Each item is a name plus a gradient strip of the colormap. */
+  #colormapMenu {
+    position: absolute; left: 10px; bottom: 100%; margin-bottom: 8px;
+    padding: 8px; display: none; flex-direction: column; gap: 6px;
+    max-height: 55vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    background: #1c1c1c; border: 1px solid #444; border-radius: 10px;
+    box-shadow: 0 -6px 20px rgba(0,0,0,0.5); z-index: 30;
+  }
+  #colormapMenu.open { display: flex; }
+  #colormapMenu button {
+    display: flex; align-items: center; gap: 10px; text-align: left;
+    min-width: 200px;
+  }
+  #colormapMenu .cmSwatch {
+    flex: 0 0 90px; height: 16px; border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
   #shareMenu button { text-align: left; }
   .fractalMenuBtn { max-width: 60vw; overflow: hidden; text-overflow: ellipsis; }
 
@@ -225,6 +243,7 @@
 
 <div id="controls">
   <div id="fractalTypeRow"></div>
+  <div id="colormapMenu" role="menu" aria-label="Choose colormap"></div>
   <div id="shareMenu" role="menu">
     <button id="shareSaveBtn" role="menuitem">Save image</button>
     <button id="shareCopyBtn" role="menuitem">Copy link</button>
@@ -242,7 +261,7 @@
         <rect x="2" y="4" width="8.5" height="16" rx="1.5"/><rect x="13.5" y="4" width="8.5" height="16" rx="1.5"/>
       </svg>
     </button>
-    <button id="colormapBtn" class="iconBtn" aria-label="Cycle colormap" title="Cycle colormap">
+    <button id="colormapBtn" class="iconBtn" aria-label="Choose colormap" title="Choose colormap">
       <svg viewBox="0 0 24 24">
         <circle cx="9" cy="9" r="6" fill="#e33" fill-opacity="0.75"/>
         <circle cx="15" cy="9" r="6" fill="#3c3" fill-opacity="0.75"/>
@@ -289,7 +308,7 @@
     <button id="kochFillBtn" class="iconBtn active" aria-label="Toggle fill" title="Toggle fill">
       <svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
     </button>
-    <button id="kochColormapBtn" class="iconBtn" aria-label="Cycle colormap" title="Cycle colormap">
+    <button id="kochColormapBtn" class="iconBtn" aria-label="Choose colormap" title="Choose colormap">
       <svg viewBox="0 0 24 24">
         <circle cx="9" cy="9" r="6" fill="#e33" fill-opacity="0.75"/>
         <circle cx="15" cy="9" r="6" fill="#3c3" fill-opacity="0.75"/>
@@ -324,7 +343,7 @@
         <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
       </svg>
     </button>
-    <button id="treeColormapBtn" class="iconBtn" aria-label="Cycle colormap" title="Cycle colormap">
+    <button id="treeColormapBtn" class="iconBtn" aria-label="Choose colormap" title="Choose colormap">
       <svg viewBox="0 0 24 24">
         <circle cx="9" cy="9" r="6" fill="#e33" fill-opacity="0.75"/>
         <circle cx="15" cy="9" r="6" fill="#3c3" fill-opacity="0.75"/>
@@ -359,7 +378,7 @@
         <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
       </svg>
     </button>
-    <button id="dragonColormapBtn" class="iconBtn" aria-label="Cycle colormap" title="Cycle colormap">
+    <button id="dragonColormapBtn" class="iconBtn" aria-label="Choose colormap" title="Choose colormap">
       <svg viewBox="0 0 24 24">
         <circle cx="9" cy="9" r="6" fill="#e33" fill-opacity="0.75"/>
         <circle cx="15" cy="9" r="6" fill="#3c3" fill-opacity="0.75"/>
@@ -394,7 +413,7 @@
         <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
       </svg>
     </button>
-    <button id="fernColorBtn" class="iconBtn" aria-label="Cycle color" title="Cycle color">
+    <button id="fernColorBtn" class="iconBtn" aria-label="Choose color" title="Choose color">
       <svg viewBox="0 0 24 24">
         <circle cx="9" cy="9" r="6" fill="#e33" fill-opacity="0.75"/>
         <circle cx="15" cy="9" r="6" fill="#3c3" fill-opacity="0.75"/>
