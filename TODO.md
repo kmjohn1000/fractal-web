@@ -54,6 +54,13 @@
 ## Tier 5 — larger engineering projects
 - [x] Phoenix fractal (needs two-state iteration support — z_(n-1) as
       running state — not a drop-in like Tier 2's new types) — done in `bbe2e4a`
+- [ ] Phoenix deep zoom (perturbation) — the delta step itself is easy
+      (dz' = 2Z·dz + dz² + dc + p·dz_prev, carrying dz_prev and reading
+      Z[m-1] from the orbit), but rebasing isn't: restarting at Z[0] = 0
+      needs the pixel's z AND z_prev near the reference's (0, 0), and
+      z_prev usually isn't, so dz_prev enters as an O(1) term and float32
+      loses the pixel offset. Needs a two-state rebase condition or
+      multi-reference fallback; prototype against a float64 reference
 - [ ] Newton perturbation (rational-function deltas near root
       singularities; harder than Phoenix, do after it; the difference
       factors without cancellation as
@@ -110,3 +117,4 @@
 - Phoenix fractal (parameter-space + Julia:Phoenix) — `bbe2e4a`
 - Rotation cos/sin on the CPU — `7a3e717`
 - Auto maxIter from zoom (until the slider is touched) — `68cdab6`
+- Colormap end color reachable (t = 1.0) + colormap name in the HUD — `a738a20`
