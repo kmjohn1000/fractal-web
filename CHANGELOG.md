@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.0.1 — 2026-09-24
+- Box zoom button now uses a dashed-rectangle icon.
+
 ## 1.0.0 — 2026-09-24
 - Baseline version for the changelog. Latest changes up to this point:
   - Colormap picker: the palette button opens a menu instead of cycling through colormaps.
