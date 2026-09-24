@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.0.2 — 2026-09-24
+- New toolbar icons: a 2×2 grid for the fractal menu and a circled "i" for the info overlay.
+
 ## 1.0.1 — 2026-09-24
 - Box zoom button now uses a dashed-rectangle icon.
 
