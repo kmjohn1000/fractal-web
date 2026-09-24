@@ -64,6 +64,32 @@ void main() {
 // It also rebases when it runs off the end of a reference that escaped
 // early. One reference, one draw, no readback. See
 // renderEscapePerturbation and chooseReference in app.js.
+// Gesture preview at deep zoom (see renderPreview in app.js): redraws the
+// last accurate frame, captured into u_snap, moved/scaled/rotated to the
+// current view. u_toSnap/u_snapOffset map this frame's uv (same convention
+// as FRAG_SRC's main()) to the snapshot's uv; they're computed on the CPU
+// in float64 from the two views' relative offset, so they're O(1) numbers
+// and the preview is exact at any zoom depth. Anything the snapshot didn't
+// cover is filled with the page background.
+const PREVIEW_FRAG_SRC = `
+precision highp float;
+uniform vec2  u_resolution;
+uniform sampler2D u_snap;
+uniform vec2  u_snapRes;
+uniform mat2  u_toSnap;
+uniform vec2  u_snapOffset;
+void main() {
+  vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution) / u_resolution.y;
+  vec2 s = u_toSnap * uv + u_snapOffset;
+  vec2 t = vec2(s.x * u_snapRes.y / u_snapRes.x + 0.5, s.y + 0.5);
+  if (t.x < 0.0 || t.x > 1.0 || t.y < 0.0 || t.y > 1.0) {
+    gl_FragColor = vec4(0.067, 0.067, 0.067, 1.0);
+    return;
+  }
+  gl_FragColor = vec4(texture2D(u_snap, t).rgb, 1.0);
+}
+`;
+
 const FRAG_SRC = `
 precision highp float;
 
