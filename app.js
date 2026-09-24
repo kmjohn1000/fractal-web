@@ -462,6 +462,7 @@ const els = {
   fernColorBtn: document.getElementById("fernColorBtn"),
   fernColorSwatch: document.getElementById("fernColorSwatch"),
   fernResetBtn: document.getElementById("fernResetBtn"),
+  fernBoxZoomBtn: document.getElementById("fernBoxZoomBtn"),
 };
 
 let mode = "fractal"; // "fractal" | "koch" | "tree" | "dragon" | "fern"
@@ -469,6 +470,7 @@ let colormapIndex = 0;
 let currentName = "Mandelbrot";
 let dualActive = false;
 let boxZoomActive = false;
+let fernBoxZoomActive = false; // separate toggle: the fern has its own control row
 let activePane = "main"; // "main" | "julia" — which pane Back/box-zoom targets
 
 // Perturbation rendering runs a CPU reference search (chooseReference) plus
@@ -1113,8 +1115,39 @@ attachFractalInteraction(els.juliaCanvas, () => juliaState, "julia", juliaRender
 // function covers both instead of duplicating the gesture logic per mode,
 // the way attachFractalInteraction is the single shared handler for the
 // two WebGL canvases.
-function attachVectorViewInteraction(canvas, vectorView) {
+// isBoxZoomActive (optional): when it returns true, a one-finger drag draws
+// the shared #boxZoomRect and zooms to it on release instead of panning --
+// the vector-view analog of the WebGL panes' box zoom (commitBoxZoom).
+function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive = () => false) {
   const pointers = new Map();
+  const boxPane = `vector:${canvas.id}`;
+  const boxDragging = () => isBoxZoomActive()
+    && els.boxRect.dataset.pane === boxPane && !els.boxRect.classList.contains("hidden");
+
+  // Same rotation-safe construction as commitBoxZoom: the new center is the
+  // world point under the box's screen-center (one screenToWorld query,
+  // exact at any rotation), and the new half-height comes from the box's
+  // on-screen size, never from differencing two rotated corners. Rotation
+  // is left unchanged -- box zoom reframes, it doesn't reorient.
+  function commitVectorBoxZoom() {
+    const rect = canvas.getBoundingClientRect();
+    const w = parseFloat(els.boxRect.style.width);
+    const h = parseFloat(els.boxRect.style.height);
+    if (w < 4 || h < 4) return;
+    const dpr = vectorView.dpr;
+    const sx = (parseFloat(els.boxRect.style.left) - rect.left + w / 2) * dpr;
+    const sy = (parseFloat(els.boxRect.style.top) - rect.top + h / 2) * dpr;
+    const [cx, cy] = vectorView.screenToWorld(sx, sy);
+    // halfHeight world units span canvas.height/2 device pixels.
+    const unitsPerPx = vectorView.view.halfHeight / (canvas.height / 2);
+    const halfH = (h / 2) * dpr * unitsPerPx;
+    const halfW = (w / 2) * dpr * unitsPerPx;
+    const aspect = canvas.width / canvas.height;
+    vectorView.view.cx = cx;
+    vectorView.view.cy = cy;
+    vectorView.view.halfHeight = Math.max(halfH, halfW / Math.max(aspect, 1e-6));
+    requestRender();
+  }
   let panStart = null;
   let pinchStartDist = null;
   let pinchStartHalfHeight = null;
@@ -1148,6 +1181,19 @@ function attachVectorViewInteraction(canvas, vectorView) {
   canvas.addEventListener("pointerdown", (e) => {
     canvas.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (isBoxZoomActive() && pointers.size === 1) {
+      // Same viewport-coordinate bookkeeping as the WebGL panes' box zoom
+      // (see attachFractalInteraction's pointerdown for why).
+      els.boxRect.classList.remove("hidden");
+      els.boxRect.dataset.pane = boxPane;
+      els.boxRect.dataset.startClientX = e.clientX;
+      els.boxRect.dataset.startClientY = e.clientY;
+      els.boxRect.style.left = `${e.clientX}px`;
+      els.boxRect.style.top = `${e.clientY}px`;
+      els.boxRect.style.width = "0px";
+      els.boxRect.style.height = "0px";
+      return;
+    }
     if (pointers.size === 1) {
       const p = localPixel(e.clientX, e.clientY);
       const world = vectorView.screenToWorld(p.x, p.y);
@@ -1165,6 +1211,15 @@ function attachVectorViewInteraction(canvas, vectorView) {
   canvas.addEventListener("pointermove", (e) => {
     if (!pointers.has(e.pointerId)) return;
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (boxDragging()) {
+      const startClientX = parseFloat(els.boxRect.dataset.startClientX);
+      const startClientY = parseFloat(els.boxRect.dataset.startClientY);
+      els.boxRect.style.left = `${Math.min(startClientX, e.clientX)}px`;
+      els.boxRect.style.top = `${Math.min(startClientY, e.clientY)}px`;
+      els.boxRect.style.width = `${Math.abs(e.clientX - startClientX)}px`;
+      els.boxRect.style.height = `${Math.abs(e.clientY - startClientY)}px`;
+      return;
+    }
     if (pointers.size === 1 && panStart) {
       const p = localPixel(e.clientX, e.clientY);
       const anchored = centerForVectorAnchor(p.x, p.y, panStart.worldX, panStart.worldY);
@@ -1192,6 +1247,12 @@ function attachVectorViewInteraction(canvas, vectorView) {
   });
 
   function release(e) {
+    if (boxDragging()) {
+      commitVectorBoxZoom();
+      els.boxRect.classList.add("hidden");
+      pointers.delete(e.pointerId);
+      return;
+    }
     pointers.delete(e.pointerId);
     if (pointers.size === 1) {
       const [p] = pointers.values();
@@ -1209,6 +1270,7 @@ function attachVectorViewInteraction(canvas, vectorView) {
 
   canvas.addEventListener("wheel", (e) => {
     e.preventDefault();
+    if (isBoxZoomActive()) return;
     const rect = canvas.getBoundingClientRect();
     const sx = (e.clientX - rect.left) * vectorView.dpr;
     const sy = (e.clientY - rect.top) * vectorView.dpr;
@@ -1224,7 +1286,7 @@ function attachVectorViewInteraction(canvas, vectorView) {
 attachVectorViewInteraction(els.kochCanvas, kochView);
 attachVectorViewInteraction(els.treeCanvas, treeView);
 attachVectorViewInteraction(els.dragonCanvas, dragonView);
-attachVectorViewInteraction(els.fernCanvas, fernView);
+attachVectorViewInteraction(els.fernCanvas, fernView, () => fernBoxZoomActive);
 
 // ---------------------------------------------------------------- UI wiring
 
@@ -1374,6 +1436,12 @@ els.fernColorBtn.addEventListener("click", () => {
   const [r, g, b] = FERN_COLORS[fernState.colorIndex].rgb;
   els.fernColorSwatch.setAttribute("fill", `rgb(${r}, ${g}, ${b})`);
   requestRender();
+});
+
+els.fernBoxZoomBtn.addEventListener("click", () => {
+  fernBoxZoomActive = !fernBoxZoomActive;
+  els.fernBoxZoomBtn.classList.toggle("active", fernBoxZoomActive);
+  if (!fernBoxZoomActive) els.boxRect.classList.add("hidden");
 });
 
 els.fernResetBtn.addEventListener("click", () => {
