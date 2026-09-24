@@ -11,24 +11,27 @@ const FERN_TRANSFORMS = [
   { p: 0.07, a: -0.15, b: 0.28,  c: 0.26, d: 0.24, e: 0, f: 0.44 },
 ];
 
-// Depth doesn't apply to a random point cloud -- density (point count) is
-// the equivalent "more detail" control. Returns a flat [x0,y0,x1,y1,...]
-// array (not point pairs) so the hot loop in render() avoids allocating a
-// sub-array per point.
+function pickFernTransform() {
+  const r = Math.random();
+  let cum = 0;
+  for (const tr of FERN_TRANSFORMS) {
+    cum += tr.p;
+    if (r < cum) return tr;
+  }
+  return FERN_TRANSFORMS[FERN_TRANSFORMS.length - 1];
+}
+
+// Plain chaos game from the origin. Returns a flat [x0,y0,x1,y1,...] array
+// (not point pairs) so hot loops avoid allocating a sub-array per point.
 function fernPoints(n) {
   let x = 0, y = 0;
-  const pts = new Float32Array(n * 2);
+  const pts = new Float64Array(n * 2);
   let len = 0;
   // First 20 steps are a burn-in transient before the chaos game settles
   // onto the attractor -- skipped so a stray early point near the origin
   // doesn't show up as an outlier.
   for (let i = 0; i < n + 20; i++) {
-    const r = Math.random();
-    let cum = 0, t = FERN_TRANSFORMS[FERN_TRANSFORMS.length - 1];
-    for (const tr of FERN_TRANSFORMS) {
-      cum += tr.p;
-      if (r < cum) { t = tr; break; }
-    }
+    const t = pickFernTransform();
     const nx = t.a * x + t.b * y + t.e;
     const ny = t.c * x + t.d * y + t.f;
     x = nx; y = ny;
@@ -52,6 +55,93 @@ const FERN_COLORS = [
   { name: "Ice",    rgb: [92, 176, 214] },
   { name: "Rose",   rgb: [214, 92, 140] },
 ];
+const FERN_BG = [17, 17, 17];
+
+// --- Viewport-adaptive sampling --------------------------------------------
+// A single global point cloud (the original approach) goes sparse on zoom:
+// the same fixed sample just spreads over more pixels, and plain rejection
+// sampling ("run the chaos game, keep what lands in view") doesn't scale
+// either -- at 100x zoom only ~1e-4 of points land in view.
+//
+// Instead this uses the IFS's own self-similarity. The fern's invariant
+// measure satisfies mu = sum_i p_i * (f_i pushes mu forward), and expanding
+// that recursively along any "cut" of the address tree stays exact:
+// mu = sum over cut nodes of (product of p along the address) * (the
+// composed map pushes mu forward). So buildLeaves() walks the address tree,
+// prunes every node whose image of the attractor's bounding box misses the
+// viewport (it contributes nothing visible), and stops expanding once a
+// node's image is no bigger than the viewport. Sampling a leaf by weight,
+// then pushing a fresh attractor point through its composed map, draws
+// exactly from mu restricted near the view -- at any zoom, with most
+// samples landing on screen. Any unexpanded node is still a valid cut
+// member, so the node cap only costs acceptance rate, never correctness.
+const FERN_LEAF_CAP = 20000;
+// Chaos-game steps applied to each reused base point before mapping it
+// through a leaf: mu is invariant under a random f_i, so the result is still
+// mu-distributed, but no longer one of a fixed finite set of points.
+const FERN_FRESHEN_STEPS = 4;
+const FERN_SLICE_MS = 10;
+// Give up on a view once this many samples per target point have been tried
+// (e.g. zoomed into empty space) rather than spinning forever.
+const FERN_MAX_ATTEMPTS_PER_POINT = 40;
+
+const FERN_BASE = fernPoints(50000);
+const FERN_BOUNDS = (() => {
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (let i = 0; i < FERN_BASE.length; i += 2) {
+    x0 = Math.min(x0, FERN_BASE[i]); x1 = Math.max(x1, FERN_BASE[i]);
+    y0 = Math.min(y0, FERN_BASE[i + 1]); y1 = Math.max(y1, FERN_BASE[i + 1]);
+  }
+  const m = 0.02 * (y1 - y0); // margin for points the base run didn't reach
+  return [x0 - m, x1 + m, y0 - m, y1 + m];
+})();
+
+// Affine map as [a, b, c, d, e, f]: x' = a*x + b*y + e, y' = c*x + d*y + f.
+// Returns m after t (m(t(p))), i.e. extending an address by one transform.
+function composeAffine(m, t) {
+  return [
+    m[0] * t.a + m[1] * t.c, m[0] * t.b + m[1] * t.d,
+    m[2] * t.a + m[3] * t.c, m[2] * t.b + m[3] * t.d,
+    m[0] * t.e + m[1] * t.f + m[4], m[2] * t.e + m[3] * t.f + m[5],
+  ];
+}
+
+function affineBoxImage(m, box) {
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (const x of [box[0], box[1]]) {
+    for (const y of [box[2], box[3]]) {
+      const tx = m[0] * x + m[1] * y + m[4];
+      const ty = m[2] * x + m[3] * y + m[5];
+      x0 = Math.min(x0, tx); x1 = Math.max(x1, tx);
+      y0 = Math.min(y0, ty); y1 = Math.max(y1, ty);
+    }
+  }
+  return [x0, x1, y0, y1];
+}
+
+// viewBox is the world-space bounding box of the (possibly rotated) screen.
+// Returns { maps, cumWeights } for weighted leaf selection; empty if the
+// fern doesn't intersect the view at all.
+function buildLeaves(viewBox) {
+  const viewDiag = Math.hypot(viewBox[1] - viewBox[0], viewBox[3] - viewBox[2]);
+  const maps = [], weights = [];
+  const stack = [{ m: [1, 0, 0, 1, 0, 0], w: 1 }];
+  while (stack.length) {
+    const node = stack.pop();
+    const img = affineBoxImage(node.m, FERN_BOUNDS);
+    if (img[1] < viewBox[0] || img[0] > viewBox[1] || img[3] < viewBox[2] || img[2] > viewBox[3]) continue;
+    const diag = Math.hypot(img[1] - img[0], img[3] - img[2]);
+    if (diag <= viewDiag || maps.length + stack.length >= FERN_LEAF_CAP) {
+      maps.push(node.m); weights.push(node.w);
+      continue;
+    }
+    for (const t of FERN_TRANSFORMS) stack.push({ m: composeAffine(node.m, t), w: node.w * t.p });
+  }
+  const cumWeights = new Float64Array(weights.length);
+  let sum = 0;
+  weights.forEach((w, i) => { sum += w; cumWeights[i] = sum; });
+  return { maps, cumWeights };
+}
 
 // Same Canvas2D view shape as createKochView/createPythagorasTreeView, so
 // attachVectorViewInteraction in app.js works on this unmodified.
@@ -59,8 +149,6 @@ function createFernView(canvas) {
   const ctx = canvas.getContext("2d");
   const view = { cx: 0.24, cy: 5.0, halfHeight: 5.3, rotation: 0 };
   let dpr = Math.min(window.devicePixelRatio || 1, 2);
-  let cachedCount = -1;
-  let cachedPts = null;
 
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -97,29 +185,139 @@ function createFernView(canvas) {
     return [view.cx + wx * view.halfHeight, view.cy + wy * view.halfHeight];
   }
 
-  function render(opts) {
-    resize();
-    if (cachedCount !== opts.count) {
-      cachedPts = fernPoints(opts.count);
-      cachedCount = opts.count;
-    }
-    ctx.fillStyle = "#111";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // Per-view accumulation state, reset whenever the view or canvas changes.
+  let viewKey = "";
+  let counts = null;     // hits per device pixel
+  let nonzero = 0;       // pixels with count > 0, for density normalization
+  let accepted = 0;      // samples that landed on screen
+  let attempts = 0;
+  let leaves = null;
+  let imageData = null;
+  let pendingFrame = 0;
 
-    const color = FERN_COLORS[opts.colorIndex % FERN_COLORS.length];
-    ctx.fillStyle = `rgb(${color.rgb[0]}, ${color.rgb[1]}, ${color.rgb[2]})`;
-    // One Path2D + one fill() call for the whole point cloud, not a
-    // separate fillRect per point -- tens of thousands of individual draw
-    // calls per frame visibly janks Canvas2D on mobile, and this is a
-    // standard point-cloud batching optimization.
-    const path = new Path2D();
-    const n = cachedPts.length / 2;
-    for (let i = 0; i < n; i++) {
-      const [sx, sy] = worldToScreen(cachedPts[i * 2], cachedPts[i * 2 + 1]);
-      path.rect(sx, sy, 1, 1);
+  function resetForView() {
+    const W = canvas.width, H = canvas.height;
+    const key = `${view.cx},${view.cy},${view.halfHeight},${view.rotation},${W},${H}`;
+    if (key === viewKey) return;
+    viewKey = key;
+    if (!counts || counts.length !== W * H) {
+      counts = new Uint32Array(W * H);
+      imageData = ctx.createImageData(W, H);
+    } else {
+      counts.fill(0);
     }
-    ctx.fill(path);
+    nonzero = 0; accepted = 0; attempts = 0;
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (const [sx, sy] of [[0, 0], [W, 0], [0, H], [W, H]]) {
+      const [x, y] = screenToWorld(sx, sy);
+      x0 = Math.min(x0, x); x1 = Math.max(x1, x);
+      y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+    }
+    leaves = buildLeaves([x0, x1, y0, y1]);
   }
 
-  return { view, resize, render, worldToScreen, screenToWorld, get dpr() { return dpr; } };
+  function isDone(target) {
+    return accepted >= target
+      || leaves.maps.length === 0
+      || attempts >= target * FERN_MAX_ATTEMPTS_PER_POINT;
+  }
+
+  // Runs the sampler for about FERN_SLICE_MS, binning on-screen hits.
+  function runSlice(target) {
+    const W = canvas.width, H = canvas.height;
+    const { maps, cumWeights } = leaves;
+    const total = cumWeights[cumWeights.length - 1];
+    const nBase = FERN_BASE.length / 2;
+    // worldToScreen, inlined with its constants hoisted for the hot loop.
+    const rot = -(view.rotation || 0);
+    const k = (H / 2) / view.halfHeight;
+    const kc = Math.cos(rot) * k, ks = Math.sin(rot) * k;
+    const deadline = performance.now() + FERN_SLICE_MS;
+    while (!isDone(target)) {
+      for (let batch = 0; batch < 2000; batch++) {
+        attempts++;
+        const r = Math.random() * total;
+        let lo = 0, hi = cumWeights.length - 1;
+        while (lo < hi) {
+          const mid = (lo + hi) >> 1;
+          if (cumWeights[mid] < r) lo = mid + 1; else hi = mid;
+        }
+        const m = maps[lo];
+        const bi = (Math.random() * nBase) | 0;
+        let x = FERN_BASE[bi * 2], y = FERN_BASE[bi * 2 + 1];
+        for (let s = 0; s < FERN_FRESHEN_STEPS; s++) {
+          const t = pickFernTransform();
+          const nx = t.a * x + t.b * y + t.e;
+          y = t.c * x + t.d * y + t.f;
+          x = nx;
+        }
+        const wx = m[0] * x + m[1] * y + m[4] - view.cx;
+        const wy = m[2] * x + m[3] * y + m[5] - view.cy;
+        const px = Math.floor(W / 2 + wx * kc - wy * ks);
+        const py = Math.floor(H / 2 - (wx * ks + wy * kc));
+        if (px < 0 || px >= W || py < 0 || py >= H) continue;
+        const idx = py * W + px;
+        if (counts[idx]++ === 0) nonzero++;
+        accepted++;
+      }
+      if (performance.now() > deadline) break;
+    }
+  }
+
+  // Log-density shading: a pixel's brightness grows with log(hits),
+  // normalized against 1.5x the mean hits per lit pixel, so sparse
+  // regions render as a soft, dim haze rather than isolated hard dots and
+  // the dense rachis doesn't blow everything else out.
+  function draw(colorIndex) {
+    const fg = FERN_COLORS[colorIndex % FERN_COLORS.length].rgb;
+    const palette = new Uint32Array(256);
+    for (let i = 0; i < 256; i++) {
+      const t = i / 255;
+      const r = Math.round(FERN_BG[0] + (fg[0] - FERN_BG[0]) * t);
+      const g = Math.round(FERN_BG[1] + (fg[1] - FERN_BG[1]) * t);
+      const b = Math.round(FERN_BG[2] + (fg[2] - FERN_BG[2]) * t);
+      palette[i] = (255 << 24) | (b << 16) | (g << 8) | r; // little-endian RGBA
+    }
+    const out = new Uint32Array(imageData.data.buffer);
+    const ref = Math.log1p(Math.max(1, 1.5 * accepted / Math.max(1, nonzero)));
+    const lut = new Uint32Array(64); // counts are small; cache the common ones
+    for (let c = 0; c < lut.length; c++) {
+      lut[c] = palette[Math.min(255, Math.round(255 * Math.log1p(c) / ref))];
+    }
+    for (let i = 0; i < counts.length; i++) {
+      const c = counts[i];
+      out[i] = c < 64 ? lut[c] : palette[Math.min(255, Math.round(255 * Math.log1p(c) / ref))];
+    }
+    ctx.putImageData(imageData, 0, 0);
+  }
+
+  // opts: { count (target on-screen samples), colorIndex, isActive(),
+  // onProgress() }. Keeps refining on later animation frames until count is
+  // reached; isActive lets the caller stop that when the mode switches away.
+  let lastOpts = null;
+  function render(opts) {
+    lastOpts = opts; // a pending refinement frame picks up the newest opts
+    resize();
+    resetForView();
+    if (accepted > opts.count) { // slider lowered: start over
+      viewKey = "";
+      resetForView();
+    }
+    runSlice(opts.count);
+    draw(opts.colorIndex);
+    if (!isDone(opts.count) && !pendingFrame) {
+      pendingFrame = requestAnimationFrame(() => {
+        pendingFrame = 0;
+        if (!lastOpts.isActive()) return;
+        render(lastOpts);
+        lastOpts.onProgress();
+      });
+    }
+  }
+
+  return {
+    view, resize, render, worldToScreen, screenToWorld,
+    get dpr() { return dpr; },
+    get accepted() { return accepted; },
+  };
 }
