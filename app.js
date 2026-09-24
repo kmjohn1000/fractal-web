@@ -6,7 +6,7 @@
 // canvas's own aspect ratio determines the visible x-extent, same convention
 // used throughout the WebGL renderer.
 
-const FTYPE = { ESCAPE: 0, SHIP: 1, TRICORN: 2, NEWTON: 3 };
+const FTYPE = { ESCAPE: 0, SHIP: 1, TRICORN: 2, NEWTON: 3, CARPET: 4, GASKET: 5 };
 
 const FRACTAL_CONFIGS = {
   "Mandelbrot":   { ftype: FTYPE.ESCAPE,  power: 2, juliaC: null,               view: [-2.5, 1.0, -1.25, 1.25], dual: true },
@@ -17,6 +17,11 @@ const FRACTAL_CONFIGS = {
   "Julia:Dragon": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.4, 0.6],         view: [-1.8, 1.8, -1.35, 1.35], dual: false },
   "Julia:Spiral": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [0.285, 0.01],       view: [-1.8, 1.8, -1.35, 1.35], dual: false },
   "Newton z³": { ftype: FTYPE.NEWTON, power: 3, juliaC: null,              view: [-2.0, 2.0, -1.5, 1.5],   dual: false },
+  // Digit-test fractals (see FRAG_SRC's renderDigitFractal) — defined on
+  // the unit square, so centered there with a little margin. power is
+  // unused by these but kept non-null for consistency with the others.
+  "Carpet":       { ftype: FTYPE.CARPET,  power: 2, juliaC: null,               view: [-0.15, 1.15, -0.15, 1.15], dual: false },
+  "Gasket":       { ftype: FTYPE.GASKET,  power: 2, juliaC: null,               view: [-0.15, 1.15, -0.15, 1.15], dual: false },
 };
 const FRACTAL_NAMES = Object.keys(FRACTAL_CONFIGS);
 

@@ -92,6 +92,8 @@ const int FTYPE_ESCAPE  = 0;
 const int FTYPE_SHIP    = 1;
 const int FTYPE_TRICORN = 2;
 const int FTYPE_NEWTON  = 3;
+const int FTYPE_CARPET  = 4;
+const int FTYPE_GASKET  = 5;
 
 const vec2 NEWTON_ROOT0 = vec2( 1.0,  0.0);
 const vec2 NEWTON_ROOT1 = vec2(-0.5,  0.8660254037844386);
@@ -108,6 +110,43 @@ vec2 cDiv(vec2 a, vec2 b) {
 
 vec3 lutColor(float t) {
   return texture2D(u_lut, vec2(fract(t), 0.5)).rgb;
+}
+
+// Sierpinski carpet and Sierpinski gasket are the same construction at two
+// different bases: repeatedly scale the point by "base" and exclude it the
+// first time both axes' current digit equal 1, up to u_maxIter levels
+// (reused as "recursion depth" — there's no escape condition here, so it
+// plays the same role u_maxIter plays for the escape-time families).
+//   base=3: removes the center cell of a 3x3 grid at every scale — the
+//   classic Sierpinski carpet.
+//   base=2: a point survives only if, written in binary, no bit position
+//   has both axes' bit set to 1 simultaneously (equivalently: the point's
+//   two binary-digit-sequences bitwise-AND to zero at every level). This is
+//   the well-known construction that produces the Sierpinski
+//   gasket/triangle pattern — it's the same statement as "Pascal's
+//   triangle mod 2", just expressed as a digit test instead of binomial
+//   coefficients.
+// A point excluded at depth d is colored by d (same idea as escape-time
+// iteration-count coloring); a point that survives every level tested is
+// the fractal's interior, rendered black like the other types' interior.
+// p never grows unbounded since it's re-fract()ed back into [0,1) after
+// every level, regardless of how many levels run.
+//
+// No perturbation/deep-zoom support: this only reuses the existing float32
+// fast path (see FRAG_SRC's top comment), so like Ship/Tricorn/Julia it
+// hits the same ~1e-5 float32 zoom ceiling rather than perturbation's
+// effectively unlimited depth.
+vec3 renderDigitFractal(vec2 p, float base) {
+  for (int i = 0; i < 2000; i++) {
+    if (i >= u_maxIter) break;
+    p *= base;
+    vec2 cell = mod(floor(p), base);
+    if (cell.x == 1.0 && cell.y == 1.0) {
+      return lutColor(float(i) / max(float(u_maxIter - 1), 1.0));
+    }
+    p -= floor(p);
+  }
+  return vec3(0.0);
 }
 
 vec3 renderNewton(vec2 p) {
@@ -258,6 +297,13 @@ void main() {
   if (u_ftype == FTYPE_NEWTON) {
     vec2 p = u_center + uv * u_scale * 2.0;
     gl_FragColor = vec4(renderNewton(p), 1.0);
+    return;
+  }
+
+  if (u_ftype == FTYPE_CARPET || u_ftype == FTYPE_GASKET) {
+    vec2 p = u_center + uv * u_scale * 2.0;
+    float base = (u_ftype == FTYPE_CARPET) ? 3.0 : 2.0;
+    gl_FragColor = vec4(renderDigitFractal(p, base), 1.0);
     return;
   }
 
