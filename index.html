@@ -235,10 +235,24 @@
         <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
       </svg>
     </button>
-    <button id="kochAnimateBtn">Animate</button>
-    <button id="kochFillBtn" class="active">Fill</button>
-    <button id="kochColormapBtn">Colormap</button>
-    <button id="kochResetBtn">Reset</button>
+    <button id="kochAnimateBtn" class="iconBtn" aria-label="Animate depth" title="Animate depth">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4 L20 12 L6 20 Z"/></svg>
+    </button>
+    <button id="kochFillBtn" class="iconBtn active" aria-label="Toggle fill" title="Toggle fill">
+      <svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+    </button>
+    <button id="kochColormapBtn" class="iconBtn" aria-label="Cycle colormap" title="Cycle colormap">
+      <svg viewBox="0 0 24 24">
+        <circle cx="9" cy="9" r="6" fill="#e33" fill-opacity="0.75"/>
+        <circle cx="15" cy="9" r="6" fill="#3c3" fill-opacity="0.75"/>
+        <circle cx="12" cy="15" r="6" fill="#33e" fill-opacity="0.75"/>
+      </svg>
+    </button>
+    <button id="kochResetBtn" class="iconBtn" aria-label="Reset view" title="Reset view">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12 a9 9 0 1 0 3 -6.7"/><polyline points="3 3 3 8 8 8"/>
+      </svg>
+    </button>
   </div>
   <div id="treeControls" class="control-row hidden">
     <label class="field">depth <input id="treeDepthSlider" type="range" min="0" max="12" step="1" value="9"></label>
@@ -247,8 +261,18 @@
         <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
       </svg>
     </button>
-    <button id="treeColormapBtn">Colormap</button>
-    <button id="treeResetBtn">Reset</button>
+    <button id="treeColormapBtn" class="iconBtn" aria-label="Cycle colormap" title="Cycle colormap">
+      <svg viewBox="0 0 24 24">
+        <circle cx="9" cy="9" r="6" fill="#e33" fill-opacity="0.75"/>
+        <circle cx="15" cy="9" r="6" fill="#3c3" fill-opacity="0.75"/>
+        <circle cx="12" cy="15" r="6" fill="#33e" fill-opacity="0.75"/>
+      </svg>
+    </button>
+    <button id="treeResetBtn" class="iconBtn" aria-label="Reset view" title="Reset view">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12 a9 9 0 1 0 3 -6.7"/><polyline points="3 3 3 8 8 8"/>
+      </svg>
+    </button>
   </div>
 </div>
 
