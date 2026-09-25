@@ -2,6 +2,10 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.7.1 — 2026-09-24
+- Fractals are centered in the visible area above the toolbar instead of partly behind it, and split view's lower pane is no longer covered by the toolbar.
+- Shorter toolbar: thinner slider row and less empty space below the buttons.
+
 ## 1.7.0 — 2026-09-24
 - New iOS app version (Capacitor), built from the same code as the website.
 - In the iOS app, "Save to Photos" saves the image straight to your photo library, and "Share…" opens the iPhone share sheet with the image and a link to the website.
