@@ -95,7 +95,10 @@
       haptics, native share sheet, offline by default; sw.js goes unused
       inside the wrapper; needs the $99/yr developer account, a 1024px
       icon, iPhone/iPad screenshots, and a privacy policy URL; any paid
-      unlock has to use StoreKit IAP)
+      unlock has to use StoreKit IAP) — app shell, Save to Photos, share
+      sheet, icon, launch screen done in `deb3efd`; left: on-device
+      testing, signing, more haptics, screenshots, privacy policy page,
+      App Store Connect submission
 
 ## Polish (whenever)
 - [ ] Colormap animation (WebGL: a u_colorPhase uniform shifting the LUT
