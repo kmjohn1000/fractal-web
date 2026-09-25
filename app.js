@@ -2070,6 +2070,12 @@ els.fernResetBtn.addEventListener("click", () => {
 });
 
 window.addEventListener("resize", () => { layoutCanvasArea(); requestRender(); });
+// The toolbar is in flow under the canvas, so the canvas area also changes
+// size without a window resize (e.g. a mode's control row wrapping
+// differently); re-lay out and re-render then too.
+if (typeof ResizeObserver !== "undefined") {
+  new ResizeObserver(() => { layoutCanvasArea(); requestRender(); }).observe(els.canvasArea);
+}
 
 // ---------------------------------------------------------------- share: links
 
