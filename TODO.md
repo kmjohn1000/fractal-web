@@ -88,6 +88,14 @@
 - [ ] Watermark on free-tier exports
 - [ ] Freemium structure: free explore, paid unlock for high-res export/
       watermark removal/palettes/extra fractal families
+- [ ] App Store release via Capacitor (wrap the existing static files in
+      a WKWebView shell, assets bundled locally rather than loading the
+      GitHub Pages URL; guideline 4.2 "minimum functionality" is the
+      main rejection risk, so add native value first: save to Photos,
+      haptics, native share sheet, offline by default; sw.js goes unused
+      inside the wrapper; needs the $99/yr developer account, a 1024px
+      icon, iPhone/iPad screenshots, and a privacy policy URL; any paid
+      unlock has to use StoreKit IAP)
 
 ## Polish (whenever)
 - [ ] Colormap animation (WebGL: a u_colorPhase uniform shifting the LUT
