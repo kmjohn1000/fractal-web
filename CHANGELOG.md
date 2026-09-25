@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.7.2 — 2026-09-25
+- Fixed an error when dragging the Hilbert Curve's depth slider all the way down. Its lowest depth is now 1, the first depth that draws anything.
+
 ## 1.7.1 — 2026-09-24
 - Fractals are centered in the visible area above the toolbar instead of partly behind it, and split view's lower pane is no longer covered by the toolbar.
 - Shorter toolbar: thinner slider row and less empty space below the buttons.
