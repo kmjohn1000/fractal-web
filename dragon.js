@@ -30,10 +30,13 @@ function normalizedCurve(def, depth, turtleOpts) {
 // drawing the app already ships: Hilbert 8 = 65,535 (9 = 262,143);
 // Gosper 6 = 117,649 (7 = 823,543); arrowhead 11 = 177,147
 // (12 = 531,441). Each extra level also takes 3-7x longer to generate.
+// minDepth (default 0): Hilbert's axiom "A" has no F, so depth 0 draws
+// nothing at all -- an empty point list that the renderer and the
+// view-fitting bounds can't handle. Its first real shape is depth 1.
 const LINE_CURVES = {
   dragon: { label: "Dragon Curve", maxDepth: 16, defaultDepth: 13, points: dragonCurve },
   hilbert: {
-    label: "Hilbert Curve", maxDepth: 8, defaultDepth: 5,
+    label: "Hilbert Curve", minDepth: 1, maxDepth: 8, defaultDepth: 5,
     points: (depth) => normalizedCurve(HILBERT_CURVE, depth),
   },
   gosper: {

@@ -1093,6 +1093,7 @@ function setMode(next) {
       dragonView.setCurve(mode);
       dragonNav.clearHistory();
     }
+    els.dragonDepthSlider.min = LINE_CURVES[mode].minDepth || 0;
     els.dragonDepthSlider.max = LINE_CURVES[mode].maxDepth;
     els.dragonDepthSlider.value = dragonState.depth;
   }
@@ -2158,7 +2159,8 @@ function parseShareHash(hash) {
     if (isIfsMode(m)) return { mode: m, ...view, count: int("n", 100000, 4000000), colorIndex: int("c", 0, IFS_COLORS.length - 1) };
     const maxDepth = isCurveMode(m) ? LINE_CURVES[m].maxDepth : { koch: 8, tree: 12 }[m];
     if (maxDepth === undefined) return null;
-    return { mode: m, ...view, cm: int("cm", 0, COLORMAPS.length - 1), depth: int("dp", 0, maxDepth), fill: p.get("fl") !== "0" };
+    const minDepth = isCurveMode(m) ? LINE_CURVES[m].minDepth || 0 : 0;
+    return { mode: m, ...view, cm: int("cm", 0, COLORMAPS.length - 1), depth: int("dp", minDepth, maxDepth), fill: p.get("fl") !== "0" };
   } catch {
     return null;
   }
