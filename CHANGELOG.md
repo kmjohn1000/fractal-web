@@ -2,6 +2,10 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.7.0 — 2026-09-24
+- New iOS app version (Capacitor), built from the same code as the website.
+- In the iOS app, "Save to Photos" saves the image straight to your photo library, and "Share…" opens the iPhone share sheet with the image and a link to the website.
+
 ## 1.6.0 — 2026-09-24
 - Sliders look like native iOS sliders: the track fills in blue up to the thumb and stays gray after it, and the thumb is plain white.
 - All text sizes (info card, buttons, labels, menu headers) now scale together from one setting. Nothing looks different yet; this prepares for following the iPhone's text-size setting in the app version.

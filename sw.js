@@ -23,6 +23,7 @@ const APP_SHELL = [
   "./dragon.js",
   "./fern.js",
   "./lsystem.js",
+  "./platform.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",

@@ -2116,7 +2116,7 @@ function buildShareHash() {
 }
 
 function buildShareUrl() {
-  return location.origin + location.pathname + location.search + buildShareHash();
+  return Platform.shareBaseUrl() + buildShareHash();
 }
 
 // Parses a share hash into a plain state object, or null if it isn't a
@@ -2255,17 +2255,7 @@ async function captureShareBlob() {
   });
 }
 
-// "Share..." appears only if the platform can share: with the image when
-// it can share files, else link-only (broader support); hidden otherwise.
-const canShareFiles = (() => {
-  try {
-    return !!(navigator.share && navigator.canShare
-      && navigator.canShare({ files: [new File([""], "probe.png", { type: "image/png" })] }));
-  } catch {
-    return false;
-  }
-})();
-els.shareNativeBtn.classList.toggle("hidden", !navigator.share);
+els.shareNativeBtn.classList.toggle("hidden", !Platform.canShare);
 
 // Capture starts when the menu opens, not when an option is tapped: iOS
 // Safari only allows navigator.share() close to the user's tap, so the PNG
@@ -2297,19 +2287,14 @@ function flashLabel(btn, text) {
   setTimeout(() => { btn.textContent = original; closeShareMenu(); }, 1500);
 }
 
+els.shareSaveBtn.textContent = Platform.saveImageLabel;
 els.shareSaveBtn.addEventListener("click", async () => {
-  closeShareMenu();
   try {
-    const blob = await pendingCapture;
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = shareFileName();
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    // Revoke after the click has handed the blob to the download.
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    const saved = await Platform.saveImage(await pendingCapture, shareFileName());
+    if (saved) flashLabel(els.shareSaveBtn, "Saved!");
+    else closeShareMenu();
   } catch (err) {
+    closeShareMenu();
     reportError(`Save image failed: ${err && err.message ? err.message : err}`);
   }
 });
@@ -2341,14 +2326,8 @@ els.shareNativeBtn.addEventListener("click", async () => {
   const url = buildShareUrl();
   closeShareMenu();
   try {
-    if (canShareFiles) {
-      const file = new File([await pendingCapture], shareFileName(), { type: "image/png" });
-      await navigator.share({ files: [file], title: "Fractal Explorer", text: url, url });
-    } else {
-      await navigator.share({ title: "Fractal Explorer", url });
-    }
+    await Platform.share({ blob: await pendingCapture, fileName: shareFileName(), url, title: "Fractal Explorer" });
   } catch (err) {
-    if (err && err.name === "AbortError") return; // user dismissed the share sheet
     reportError(`Share failed: ${err && err.message ? err.message : err}`);
   }
 });
