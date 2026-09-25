@@ -112,19 +112,6 @@
       below ~400px, or fold a button (e.g. dual view) into a menu. Also
       below 410px the buttons are 40px, under the 44px touch-target min
 
-- [ ] Default Mandelbrot view isn't centered on iPhone (seen in the
-      Capacitor app on the iPhone 17 Pro simulator): the set renders
-      shifted right/down, partly off-screen, instead of centered in the
-      canvas above the toolbar. Check the default center/scale against
-      the tall portrait aspect and the canvas size vs. safe-area/toolbar
-
-- [ ] Split (dual) view on iPhone: the translucent toolbar (iter slider +
-      button row) overlaps the lower (Julia) pane, hiding its bottom
-      part. The Julia set is cut off at the toolbar's top edge. Seen on a
-      real iPhone in the Capacitor app. Size the two panes to the space
-      above the toolbar (or center the lower pane's view in its visible
-      part) so neither pane runs underneath the controls
-
 - [ ] Follow the iOS Larger Text / Dynamic Type setting in the Capacitor
       app. All UI font sizes are rem off `:root { font-size:
       calc(16px * var(--text-scale)) }`, but --text-scale is fixed at 1:
@@ -148,6 +135,7 @@
   deeper Gasket zoom, not this.
 
 ## Done
+- Fractals centered above the toolbar (canvas ends at it; split view's lower pane no longer covered); shorter toolbar — `47dd1c7`
 - Keyboard navigation: arrows pan, Shift+Left/Right rotate, +/- zoom, R reset — `64ecba2`
 - Picker split into "Infinite Zoom" / "Beautiful Patterns" sections; zoom-only buttons gated on category — `3157bb6`
 - Generic L-system engine; Koch/Dragon migrated; Hilbert, Gosper, Sierpinski Arrowhead added — `ff5a58f`
