@@ -118,6 +118,13 @@
       canvas above the toolbar. Check the default center/scale against
       the tall portrait aspect and the canvas size vs. safe-area/toolbar
 
+- [ ] Split (dual) view on iPhone: the translucent toolbar (iter slider +
+      button row) overlaps the lower (Julia) pane, hiding its bottom
+      part. The Julia set is cut off at the toolbar's top edge. Seen on a
+      real iPhone in the Capacitor app. Size the two panes to the space
+      above the toolbar (or center the lower pane's view in its visible
+      part) so neither pane runs underneath the controls
+
 - [ ] Follow the iOS Larger Text / Dynamic Type setting in the Capacitor
       app. All UI font sizes are rem off `:root { font-size:
       calc(16px * var(--text-scale)) }`, but --text-scale is fixed at 1:
