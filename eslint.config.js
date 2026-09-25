@@ -30,14 +30,16 @@ const sharedGlobals = {
   IFS_SYSTEMS: "readonly",
   IFS_COLORS: "readonly",
   ifsData: "readonly",
+  // platform.js
+  Platform: "readonly",
 };
 
 export default [
-  { ignores: ["node_modules/"] },
+  { ignores: ["node_modules/", "www/", "ios/"] },
   js.configs.recommended,
   {
     files: ["**/*.js"],
-    ignores: ["eslint.config.js", "sw.js"],
+    ignores: ["eslint.config.js", "sw.js", "scripts/**"],
     languageOptions: {
       sourceType: "script",
       globals: { ...globals.browser, ...sharedGlobals },
@@ -49,6 +51,10 @@ export default [
       // expected, not a redeclaration.
       "no-redeclare": ["error", { builtinGlobals: false }],
     },
+  },
+  {
+    files: ["scripts/**/*.mjs"],
+    languageOptions: { globals: globals.node },
   },
   {
     files: ["sw.js"],

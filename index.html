@@ -536,12 +536,14 @@
 <script src="pythagoras.js"></script>
 <script src="dragon.js"></script>
 <script src="fern.js"></script>
+<script src="platform.js"></script>
 <script src="app.js"></script>
 <script>
   // Service workers only register on secure origins or localhost, so this is
   // a silent no-op during phone-over-LAN dev testing (plain http://<lan-ip>)
   // and only takes effect once this is actually deployed behind HTTPS.
-  if ("serviceWorker" in navigator) {
+  // The iOS app bundles its files, so it has no use for one.
+  if ("serviceWorker" in navigator && !Platform.isNative) {
     window.addEventListener("load", () => {
       navigator.serviceWorker.register("sw.js").catch((err) => {
         reportError(`Service worker registration failed: ${err.message}`);

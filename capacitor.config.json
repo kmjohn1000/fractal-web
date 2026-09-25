@@ -1,0 +1,11 @@
+{
+  "appId": "io.github.kmjohn1000.fractalexplorer",
+  "appName": "Fractal Explorer",
+  "webDir": "www",
+  "backgroundColor": "#111111",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#111111",
+    "scrollEnabled": false
+  }
+}
