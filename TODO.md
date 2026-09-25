@@ -112,6 +112,12 @@
       below ~400px, or fold a button (e.g. dual view) into a menu. Also
       below 410px the buttons are 40px, under the 44px touch-target min
 
+- [ ] Default Mandelbrot view isn't centered on iPhone (seen in the
+      Capacitor app on the iPhone 17 Pro simulator): the set renders
+      shifted right/down, partly off-screen, instead of centered in the
+      canvas above the toolbar. Check the default center/scale against
+      the tall portrait aspect and the canvas size vs. safe-area/toolbar
+
 - [ ] Follow the iOS Larger Text / Dynamic Type setting in the Capacitor
       app. All UI font sizes are rem off `:root { font-size:
       calc(16px * var(--text-scale)) }`, but --text-scale is fixed at 1:
