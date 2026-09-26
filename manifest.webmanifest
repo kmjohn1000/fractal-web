@@ -1,5 +1,5 @@
 {
-  "name": "Fractal Explorer",
+  "name": "Fractal Atlas",
   "short_name": "Fractal",
   "description": "Interactive Mandelbrot, Julia, Newton, and Koch snowflake explorer",
   "start_url": "./index.html",

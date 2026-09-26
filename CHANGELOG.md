@@ -2,6 +2,10 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.10.2 — 2026-09-26
+- The app is now called Fractal Atlas (app name, home-screen name, export watermark and privacy policy).
+- Privacy policy now accurately describes saving images to Photos (add-only permission).
+
 ## 1.10.1 — 2026-09-26
 - The iOS app's identifier is now com.kmjohn.fractalexplorer (was io.github.kmjohn1000.fractalexplorer), ahead of App Store registration.
 
