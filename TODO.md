@@ -93,7 +93,8 @@
       inside the wrapper; needs the $99/yr developer account, a 1024px
       icon, iPhone/iPad screenshots, and a privacy policy URL; any paid
       unlock has to use StoreKit IAP) — app shell, Save to Photos, share
-      sheet, icon, launch screen done in `deb3efd`; left: on-device
+      sheet, icon done in `deb3efd`; real launch screen (the `deb3efd` one
+      was a flat #111 image, invisible) in `a03c025`; left: on-device
       testing, signing, more haptics, screenshots, privacy policy page,
       App Store Connect submission
 
