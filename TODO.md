@@ -138,6 +138,7 @@
   deeper Gasket zoom, not this.
 
 ## Done
+- Single-color picker for Koch/Tree/Dragon/Hilbert/Gosper/Arrowhead; bolder early-depth strokes (were too faint on iPad) — `2127293`
 - Watermark on exports: sentence-case "Fractal Explorer" pill, bottom-right, always on — `bc4e05f`
 - Fractals centered above the toolbar (canvas ends at it; split view's lower pane no longer covered); shorter toolbar — `47dd1c7`
 - Keyboard navigation: arrows pan, Shift+Left/Right rotate, +/- zoom, R reset — `64ecba2`
