@@ -84,20 +84,6 @@
       2*(maxIter+1) texels, safely under 4096 today; without this, deeper
       views show growing false-black interiors)
 
-## Business layer (parallel track, not blocked on the above)
-- [ ] App Store release via Capacitor (wrap the existing static files in
-      a WKWebView shell, assets bundled locally rather than loading the
-      GitHub Pages URL; guideline 4.2 "minimum functionality" is the
-      main rejection risk, so add native value first: save to Photos,
-      haptics, native share sheet, offline by default; sw.js goes unused
-      inside the wrapper; needs the $99/yr developer account, a 1024px
-      icon, iPhone/iPad screenshots, and a privacy policy URL; any paid
-      unlock has to use StoreKit IAP) — app shell, Save to Photos, share
-      sheet, icon done in `deb3efd`; real launch screen (the `deb3efd` one
-      was a flat #111 image, invisible) in `a03c025`; left: on-device
-      testing, signing, more haptics, screenshots, privacy policy page,
-      App Store Connect submission
-
 ## Polish (whenever)
 - [ ] Colormap animation (WebGL: a u_colorPhase uniform shifting the LUT
       lookup over time via requestAnimationFrame; Koch/Tree: cycle the
@@ -119,15 +105,14 @@
       change notification), then evaluateJavaScript to set --text-scale
       on document.documentElement.style. Not possible in the plain web build
 
+- [ ] High-res export: saved/shared images use the live canvas, capped
+      at `Math.min(devicePixelRatio, 2)`. Render exports at a higher
+      resolution, decoupled from that cap
+
 ## Deferred indefinitely
 - Menger Sponge / other 3D fractals (real 3D rendering project, not a
   slot-in)
 - Real-time collaborative exploration
-- Monetization (2026-09-26: the app is a portfolio piece, not a revenue
-  product, until that changes): freemium structure — free explore, paid
-  unlock for high-res export/watermark removal/palettes/extra fractal
-  families (any paid unlock has to use StoreKit IAP); high-res export
-  decoupled from the live `Math.min(devicePixelRatio, 2)` canvas cap
 
 ## Explicitly rejected
 - Gasket depth cap 22 → 23: don't. The 22 cap was deliberately chosen
@@ -138,6 +123,7 @@
   deeper Gasket zoom, not this.
 
 ## Done
+- App Store release via Capacitor: app shell, Save to Photos, share sheet, icon, launch screen, privacy/support pages; 1.10.2 submitted for review 2026-09-26 — `e10c8f0`
 - Single-color picker for Koch/Tree/Dragon/Hilbert/Gosper/Arrowhead; bolder early-depth strokes (were too faint on iPad) — `2127293`
 - Watermark on exports: sentence-case "Fractal Explorer" pill, bottom-right, always on — `bc4e05f`
 - Fractals centered above the toolbar (canvas ends at it; split view's lower pane no longer covered); shorter toolbar — `47dd1c7`
