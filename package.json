@@ -1,6 +1,7 @@
 {
   "name": "fractal-web",
   "private": true,
+  "license": "UNLICENSED",
   "scripts": {
     "lint": "eslint .",
     "build:www": "node scripts/build-www.mjs",
