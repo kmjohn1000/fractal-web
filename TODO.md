@@ -85,9 +85,6 @@
       views show growing false-black interiors)
 
 ## Business layer (parallel track, not blocked on the above)
-- [ ] Watermark on exports (not tied to a free tier — no monetization
-      for now): dark translucent rounded pill, bottom-right, bold white
-      "Fractal Explorer" wordmark; chosen for contrast on any colormap
 - [ ] App Store release via Capacitor (wrap the existing static files in
       a WKWebView shell, assets bundled locally rather than loading the
       GitHub Pages URL; guideline 4.2 "minimum functionality" is the
@@ -140,6 +137,7 @@
   deeper Gasket zoom, not this.
 
 ## Done
+- Watermark on exports: sentence-case "Fractal Explorer" pill, bottom-right, always on — `bc4e05f`
 - Fractals centered above the toolbar (canvas ends at it; split view's lower pane no longer covered); shorter toolbar — `47dd1c7`
 - Keyboard navigation: arrows pan, Shift+Left/Right rotate, +/- zoom, R reset — `64ecba2`
 - Picker split into "Infinite Zoom" / "Beautiful Patterns" sections; zoom-only buttons gated on category — `3157bb6`
