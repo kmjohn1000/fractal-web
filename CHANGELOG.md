@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.10.1 — 2026-09-26
+- The iOS app's identifier is now com.kmjohn.fractalexplorer (was io.github.kmjohn1000.fractalexplorer), ahead of App Store registration.
+
 ## 1.10.0 — 2026-09-26
 - Koch Snowflake, Pythagoras Tree and the line curves (Dragon, Hilbert, Gosper, Arrowhead) now have a single-color picker instead of a colormap, each with its own default color. Early depths used to draw in the colormap's darkest color and were hard to see.
 - Line curves and the Koch outline draw with bolder lines at early depths, thinning out as the detail gets denser.
