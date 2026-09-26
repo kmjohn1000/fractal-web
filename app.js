@@ -138,6 +138,9 @@ function viewFromBounds(b, aspect) {
 // (measured on-device at ~5.7e-6 in Phase 1) — switch to perturbation-based
 // rendering (see shaders.js) with margin to spare before that point.
 const DEEP_ZOOM_THRESHOLD = 1e-3;
+// Squared escape radius (256), matching ESCAPE_RADIUS_SQ in shaders.js, so the
+// reference orbit runs as long as the pixels that are perturbed against it.
+const ESCAPE_RADIUS_SQ = 65536.0;
 
 // Which fractal types have a perturbation (deep zoom) path -- see
 // perturbStep in shaders.js for the per-type delta formulas. Covers both
@@ -194,7 +197,7 @@ function computeReferenceOrbit(state, z0r, z0i, cr, ci) {
     data[len * 4 + 1] = zi;
     data[len * 4 + 3] = 1.0;
     len++;
-    if (zr * zr + zi * zi > 16.0) break;
+    if (zr * zr + zi * zi > ESCAPE_RADIUS_SQ) break;
   }
   return { data: data.subarray(0, len * 4), length: len };
 }
@@ -217,7 +220,7 @@ function chooseReference(state, widthPx, heightPx) {
     z[0] = state.isJulia ? pr : 0; z[1] = state.isJulia ? pi : 0;
     for (let n = 0; n < state.maxIter; n++) {
       stepOrbit(state.ftype, state.power, z, cr, ci);
-      if (z[0] * z[0] + z[1] * z[1] > 16.0) return n;
+      if (z[0] * z[0] + z[1] * z[1] > ESCAPE_RADIUS_SQ) return n;
     }
     return Infinity;
   };

@@ -42,6 +42,21 @@
 - [ ] Orbit trap coloring as a style selector
 - [ ] "Zoom to nearest minibrot" guided action
 
+## Potential — from Wikipedia's "Plotting algorithms for the Mandelbrot set" (ranked)
+1. [ ] Exterior distance estimation as a coloring style: track dc' = 2·z·dc + 1
+      alongside z, color by b = 2|z|·ln|z| / |dc| (normalized by u_scale).
+      Draws thin filaments crisply instead of as speckle. Fits beside orbit
+      traps (Tier 3); the same estimate could steer "zoom to nearest
+      minibrot" and auto-discovery toward the boundary. Perturbation path
+      needs dc tracked from the full Z+dz; watch float32 overflow at high
+      iteration counts
+2. [ ] Periodicity checking (Brent-style: save z every so often, stop when
+      the orbit returns within eps) so interior pixels stop early instead of
+      running all of maxIter. Only real speedup where the cardioid/bulb skip
+      doesn't apply (Julia, Ship, Tricorn, Multibrot³, Phoenix, minibrot
+      interiors). Fast path only; eps must scale with zoom; GPU gain is capped
+      by warp divergence, so benchmark on a phone before keeping it
+
 ## Tier 4 — build once Tier 2's variety justifies it
 - [x] Generic L-system engine (unify Koch/Pythagoras Tree/Dragon Curve
       into one axiom+rules+turtle interpreter; do this before adding
@@ -115,6 +130,11 @@
 - Real-time collaborative exploration
 
 ## Explicitly rejected
+- Log-compressed coloring past ~100 iterations (to "de-noise" deep zooms):
+  tried 2026-09-26, reverted before commit. Deep views sit in a narrow
+  band of high iteration counts, so compression flattened Seahorse Valley
+  at 4e-10 to a single purple; the linear mapping wasn't noisy there. If
+  color density needs changing, make it a user control, not automatic.
 - Gasket depth cap 22 → 23: don't. The 22 cap was deliberately chosen
   with one level of safety margin below the simulated-safe 23, to
   absorb real GPUs rounding differently than the simulation did.
