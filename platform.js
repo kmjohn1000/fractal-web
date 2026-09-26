@@ -79,15 +79,18 @@ const Platform = (() => {
   // The app's launch screen (ios/App/App/Base.lproj/LaunchScreen.storyboard)
   // stays up until hideLaunchScreen() -- capacitor.config.json sets
   // launchAutoHide false -- so launch fades straight into a drawn fractal
-  // instead of a blank web view. The fallback timer guarantees it still
-  // goes away if app.js throws before its first frame.
+  // instead of a blank web view. The fallback timer only guarantees it still
+  // goes away if app.js throws before its first frame -- it's generous
+  // because a debug build under Xcode's debugger on the iPad simulator took
+  // ~4.6s to first paint, and a 3s fallback hid the launch screen too early
+  // (black screen until the fractal appeared).
   let launchScreenHidden = false;
   function hideLaunchScreen() {
     if (!isNative || launchScreenHidden) return;
     launchScreenHidden = true;
     plugins().then(({ SplashScreen }) => SplashScreen.hide({ fadeOutDuration: 200 })).catch(() => {});
   }
-  if (isNative) setTimeout(hideLaunchScreen, 3000);
+  if (isNative) setTimeout(hideLaunchScreen, 10000);
 
   // ------------------------------------------------------------ API
 
