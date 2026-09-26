@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.9.1 — 2026-09-26
+- The launch screen now waits longer for a slow first draw instead of briefly showing a black screen.
+
 ## 1.9.0 — 2026-09-26
 - The iOS app has a launch screen: it opens on the app's empty frame (dark canvas and toolbar strip) and fades straight into the drawn fractal, with no blank screen in between.
 
