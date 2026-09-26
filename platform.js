@@ -18,7 +18,7 @@ const Platform = (() => {
 
   // registerPlugin() lives in capacitor.js, which scripts/build-www.mjs
   // copies into the app bundle only -- the web never requests it. Loaded on
-  // first use; every native call comes from a tap, long after page load.
+  // first use: hiding the launch screen after the first frame, then taps.
   let pluginsPromise = null;
   function plugins() {
     if (!pluginsPromise) {
@@ -32,6 +32,7 @@ const Platform = (() => {
             Haptics: reg("Haptics"),
             Filesystem: reg("Filesystem"),
             SavePhoto: reg("SavePhoto"), // app-local, ios/App/App/FractalBridgeViewController.swift
+            SplashScreen: reg("SplashScreen"),
           });
         };
         s.onerror = () => reject(new Error("capacitor.js failed to load"));
@@ -75,11 +76,25 @@ const Platform = (() => {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
 
+  // The app's launch screen (ios/App/App/Base.lproj/LaunchScreen.storyboard)
+  // stays up until hideLaunchScreen() -- capacitor.config.json sets
+  // launchAutoHide false -- so launch fades straight into a drawn fractal
+  // instead of a blank web view. The fallback timer guarantees it still
+  // goes away if app.js throws before its first frame.
+  let launchScreenHidden = false;
+  function hideLaunchScreen() {
+    if (!isNative || launchScreenHidden) return;
+    launchScreenHidden = true;
+    plugins().then(({ SplashScreen }) => SplashScreen.hide({ fadeOutDuration: 200 })).catch(() => {});
+  }
+  if (isNative) setTimeout(hideLaunchScreen, 3000);
+
   // ------------------------------------------------------------ API
 
   return {
     isNative,
     shareBaseUrl,
+    hideLaunchScreen,
 
     saveImageLabel: isNative ? "Save to Photos" : "Save image",
 
