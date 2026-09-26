@@ -2553,10 +2553,12 @@ requestAnimationFrame(() => requestAnimationFrame(() => Platform.hideLaunchScree
 
 // One-shot layout diagnostic: if the canvas collapsed to near-zero size
 // (a CSS/flexbox bug) nothing will be visible even though no JS error
-// was thrown, so surface that case explicitly too.
+// was thrown, so surface that case explicitly too. Checks the canvas the
+// current mode shows: a share link that opens a vector mode hides
+// mainCanvas (display: none, so 0x0), which is correct, not a collapse.
 requestAnimationFrame(() => requestAnimationFrame(() => {
-  const c = els.mainCanvas;
+  const c = mode === "fractal" ? els.mainCanvas : VECTOR_VIEWS[mode][1];
   if (c.clientWidth < 4 || c.clientHeight < 4) {
-    reportError(`Diagnostic: mainCanvas has collapsed to ${c.clientWidth}x${c.clientHeight} CSS px (canvasArea: ${els.canvasArea.clientWidth}x${els.canvasArea.clientHeight}). This is a layout bug, not a rendering bug.`);
+    reportError(`Diagnostic: ${c.id} has collapsed to ${c.clientWidth}x${c.clientHeight} CSS px (canvasArea: ${els.canvasArea.clientWidth}x${els.canvasArea.clientHeight}). This is a layout bug, not a rendering bug.`);
   }
 }));
