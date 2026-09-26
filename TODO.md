@@ -69,13 +69,6 @@
       rectangle is sub-pixel, so draw a marker/crosshair at the center
       instead of the rectangle. Respect rotation. Decide show/hide rule
       (e.g. only when zoomed in past some scale)
-- [ ] Rotation compass that appears while rotating and fades out once the
-      view is stable (~1-2s after the gesture ends); shows the current
-      angle, tap to reset rotation to 0 (animated). Touch users have no
-      rotation-only reset today (keyboard R resets everything). Needs to
-      work for WebGL fractals and vector views (both carry view.rotation).
-      Open question: also show it briefly when a shared link/teleport lands
-      on a rotated view, so the reset is discoverable
 
 ## Tier 4 — build once Tier 2's variety justifies it
 - [x] Generic L-system engine (unify Koch/Pythagoras Tree/Dragon Curve
@@ -163,6 +156,7 @@
   deeper Gasket zoom, not this.
 
 ## Done
+- Rotation compass: appears while rotating, fades when still, tap to reset rotation — `ceb4236`
 - App Store release via Capacitor: app shell, Save to Photos, share sheet, icon, launch screen, privacy/support pages; 1.10.2 submitted for review 2026-09-26 — `e10c8f0`
 - Single-color picker for Koch/Tree/Dragon/Hilbert/Gosper/Arrowhead; bolder early-depth strokes (were too faint on iPad) — `2127293`
 - Watermark on exports: sentence-case "Fractal Explorer" pill, bottom-right, always on — `bc4e05f`
