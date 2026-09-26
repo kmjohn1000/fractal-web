@@ -329,8 +329,11 @@ vec3 renderEscapeFast(vec2 p) {
   if (!escaped) return vec3(0.0);
 
   // Smooth iteration count: i + 1 - log2(log2(|z|)) — same formula as
-  // mandelbrot.py's smooth coloring.
-  float smoothIter = float(iter) + 1.0 - log2(log2(sqrt(dot(z, z))));
+  // mandelbrot.py's smooth coloring. Clamped at 0: a pixel far outside the
+  // set escapes on the first step with |z| well past the bailout, which
+  // makes the formula negative, and lutColor's fract() would wrap that to
+  // the TOP of the colormap (inferno's pale yellow in the canvas corners).
+  float smoothIter = max(float(iter) + 1.0 - log2(log2(sqrt(dot(z, z)))), 0.0);
   return lutColor(smoothIter * 0.025);
 }
 
@@ -436,7 +439,8 @@ vec3 renderEscapePerturbation(vec2 uv) {
   }
 
   if (!escaped) return vec3(0.0);
-  float smoothIter = float(iter) + 1.0 - log2(log2(sqrt(dot(fullAtEscape, fullAtEscape))));
+  // Clamped at 0 for the same reason as renderEscapeFast.
+  float smoothIter = max(float(iter) + 1.0 - log2(log2(sqrt(dot(fullAtEscape, fullAtEscape)))), 0.0);
   return lutColor(smoothIter * 0.025);
 }
 
