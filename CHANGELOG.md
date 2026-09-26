@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.8.0 — 2026-09-26
+- Saved and shared images now carry a small "Fractal Explorer" label in the bottom-right corner. The on-screen view is unchanged.
+
 ## 1.7.3 — 2026-09-26
 - Fixed pale yellow patches in the corners of escape-time fractals (most visible in split view). Areas far outside the set are now the colormap's darkest color, as they should be.
 

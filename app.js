@@ -2254,14 +2254,55 @@ function compositeDualCanvas() {
   return out;
 }
 
+// A copy of src with the "Fractal Explorer" wordmark in a dark translucent
+// pill, bottom-right. Drawn on the export only, never the live canvas. The
+// pill (not bare or shadowed text) keeps it legible on any colormap,
+// including flat light or flat dark regions. Sized off the image's short
+// side so it looks the same on a phone and an iPad export.
+function watermarkedCopy(src) {
+  const out = document.createElement("canvas");
+  out.width = src.width;
+  out.height = src.height;
+  const ctx = out.getContext("2d");
+  ctx.drawImage(src, 0, 0);
+
+  const text = "Fractal Explorer";
+  const fontPx = Math.max(12, Math.round(Math.min(out.width, out.height) * 0.03));
+  ctx.font = `600 ${fontPx}px -apple-system, system-ui, "Helvetica Neue", sans-serif`;
+  const h = Math.round(fontPx * 1.9);
+  const w = Math.round(ctx.measureText(text).width + fontPx * 1.5);
+  const margin = Math.round(fontPx * 0.9);
+  const x = out.width - margin - w, y = out.height - margin - h, r = h / 2;
+
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arc(x + w - r, y + r, r, -Math.PI / 2, Math.PI / 2);
+  ctx.arc(x + r, y + r, r, Math.PI / 2, -Math.PI / 2);
+  ctx.closePath();
+  ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
+  ctx.fill();
+  // Hairline edge so the pill still reads against a flat black export.
+  ctx.lineWidth = Math.max(1, fontPx / 16);
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.18)";
+  ctx.stroke();
+
+  ctx.fillStyle = "#fff";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, x + w / 2, y + h / 2 + fontPx * 0.04);
+  return out;
+}
+
 // PNG of the current view, taken only once progressive refinement has
 // finished (fractal supersampling, fern point fill) -- or after 3s, so a
 // slow device or an ongoing gesture can't hang it. Koch/tree/dragon draw
-// synchronously and are captured immediately.
+// synchronously and are captured immediately. Every export path (Save
+// image, Save to Photos, Share…) goes through here, so all get the
+// watermark.
 async function captureShareBlob() {
   if (mode === "fractal") await waitUntil(() => refineDone && !isInteracting, 3000);
   else if (isIfsMode(mode)) await waitUntil(() => !fernView.refining, 3000);
-  const canvas = mode !== "fractal" ? VECTOR_VIEWS[mode][1] : dualActive ? compositeDualCanvas() : els.mainCanvas;
+  const canvas = watermarkedCopy(mode !== "fractal" ? VECTOR_VIEWS[mode][1] : dualActive ? compositeDualCanvas() : els.mainCanvas);
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("canvas.toBlob failed"))), "image/png");
   });
