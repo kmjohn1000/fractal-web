@@ -38,7 +38,12 @@
 
 ## Tier 3 — differentiation
 - [ ] AI-curated "find something beautiful" auto-discovery
-- [ ] Julia set live preview tied to touch position (Mandelbrot family)
+- [ ] Julia set follows the main pane's center live (Mandelbrot family,
+      dual view): as you pan, the Julia pane re-renders with c = the
+      crosshair point, instead of only on tap (app.js tap-to-set-c). Center
+      rather than touch position so the finger never hides the point being
+      previewed (Mandelbrot Maps does it this way). Probably a toggle; keep
+      tap-to-set working. Watch Julia-pane frame cost while dragging
 - [ ] Orbit trap coloring as a style selector
 - [ ] "Zoom to nearest minibrot" guided action
 
@@ -56,6 +61,21 @@
       doesn't apply (Julia, Ship, Tricorn, Multibrot³, Phoenix, minibrot
       interiors). Fast path only; eps must scale with zoom; GPU gain is capped
       by warp divergence, so benchmark on a phone before keeping it
+
+## Navigation aids (from Mandelbrot Maps, jmaio.github.io/mandelbrot-maps)
+- [ ] Minimap: small inset of the whole fractal with a marker for the
+      current view, so deep zooms keep their bearings. Render the overview
+      once per fractal/colormap into a small texture; at deep zoom the view
+      rectangle is sub-pixel, so draw a marker/crosshair at the center
+      instead of the rectangle. Respect rotation. Decide show/hide rule
+      (e.g. only when zoomed in past some scale)
+- [ ] Rotation compass that appears while rotating and fades out once the
+      view is stable (~1-2s after the gesture ends); shows the current
+      angle, tap to reset rotation to 0 (animated). Touch users have no
+      rotation-only reset today (keyboard R resets everything). Needs to
+      work for WebGL fractals and vector views (both carry view.rotation).
+      Open question: also show it briefly when a shared link/teleport lands
+      on a rotated view, so the reset is discoverable
 
 ## Tier 4 — build once Tier 2's variety justifies it
 - [x] Generic L-system engine (unify Koch/Pythagoras Tree/Dragon Curve
