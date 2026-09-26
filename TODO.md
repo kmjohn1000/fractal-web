@@ -85,9 +85,9 @@
       views show growing false-black interiors)
 
 ## Business layer (parallel track, not blocked on the above)
-- [ ] Watermark on free-tier exports
-- [ ] Freemium structure: free explore, paid unlock for high-res export/
-      watermark removal/palettes/extra fractal families
+- [ ] Watermark on exports (not tied to a free tier — no monetization
+      for now): dark translucent rounded pill, bottom-right, bold white
+      "Fractal Explorer" wordmark; chosen for contrast on any colormap
 - [ ] App Store release via Capacitor (wrap the existing static files in
       a WKWebView shell, assets bundled locally rather than loading the
       GitHub Pages URL; guideline 4.2 "minimum functionality" is the
@@ -125,6 +125,11 @@
 - Menger Sponge / other 3D fractals (real 3D rendering project, not a
   slot-in)
 - Real-time collaborative exploration
+- Monetization (2026-09-26: the app is a portfolio piece, not a revenue
+  product, until that changes): freemium structure — free explore, paid
+  unlock for high-res export/watermark removal/palettes/extra fractal
+  families (any paid unlock has to use StoreKit IAP); high-res export
+  decoupled from the live `Math.min(devicePixelRatio, 2)` canvas cap
 
 ## Explicitly rejected
 - Gasket depth cap 22 → 23: don't. The 22 cap was deliberately chosen
