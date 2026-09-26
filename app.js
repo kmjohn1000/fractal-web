@@ -2394,6 +2394,10 @@ selectFractal(currentName);
 updateLUT();
 requestRender();
 applyShareHashFromUrl();
+// requestRender draws on the next animation frame; one frame after that it
+// has been painted, so the app's launch screen can fade into it (no-op on
+// the web, see platform.js).
+requestAnimationFrame(() => requestAnimationFrame(() => Platform.hideLaunchScreen()));
 
 // One-shot layout diagnostic: if the canvas collapsed to near-zero size
 // (a CSS/flexbox bug) nothing will be visible even though no JS error

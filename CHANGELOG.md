@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.9.0 — 2026-09-26
+- The iOS app has a launch screen: it opens on the app's empty frame (dark canvas and toolbar strip) and fades straight into the drawn fractal, with no blank screen in between.
+
 ## 1.8.0 — 2026-09-26
 - Saved and shared images now carry a small "Fractal Explorer" label in the bottom-right corner. The on-screen view is unchanged.
 
