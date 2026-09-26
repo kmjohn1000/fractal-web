@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.10.3 — 2026-09-26
+- Smoother color gradients on the Mandelbrot-family fractals: faint ripple bands are gone, most visibly on Multibrot³.
+
 ## 1.10.2 — 2026-09-26
 - The app is now called Fractal Atlas (app name, home-screen name, export watermark and privacy policy).
 - Privacy policy now accurately describes saving images to Photos (add-only permission).

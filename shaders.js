@@ -164,6 +164,27 @@ vec3 lutColor(float t) {
   return texture2D(u_lut, vec2(u, 0.5)).rgb;
 }
 
+// Escape radius 256 (squared here), not the minimal 2: the smooth count below
+// assumes |z| is large enough that z^P + c ~ z^P, and with a small radius that
+// approximation shows up as faint ripples across each iteration band. A bigger
+// radius costs ~2 extra iterations and leaves the colors where they were --
+// the escape iteration and the log-log term both grow by the same amount.
+// Must match ESCAPE_RADIUS_SQ in app.js (reference orbit and its selection).
+const float ESCAPE_RADIUS_SQ = 65536.0;
+
+// Color for an escaped escape-time pixel. Smooth iteration count
+// i + 1 - log_P(log2|z|), where P is the map's power (2, or 3 for
+// Multibrot^3): each iteration raises |z| to the P-th power, so log base P
+// is what makes the count continuous across iteration bands. Clamped at 0:
+// a pixel far outside the set escapes on the first step with |z| well past
+// the bailout, which makes the formula negative, and lutColor's fract() would
+// wrap that to the TOP of the colormap (inferno's pale yellow in the corners).
+vec3 escapeColor(int iter, vec2 z) {
+  float logBase = u_power > 2.5 ? log2(3.0) : 1.0;
+  float n = max(float(iter) + 1.0 - log2(log2(sqrt(dot(z, z)))) / logBase, 0.0);
+  return lutColor(n * 0.025);
+}
+
 // Sierpinski carpet and Sierpinski gasket are the same construction at two
 // different bases: repeatedly scale the point by "base" and exclude it the
 // first time both axes' current digit equal 1.
@@ -323,18 +344,12 @@ vec3 renderEscapeFast(vec2 p) {
     }
     z = zNext;
     iter = i;
-    if (dot(z, z) > 16.0) { escaped = true; break; }
+    if (dot(z, z) > ESCAPE_RADIUS_SQ) { escaped = true; break; }
   }
 
   if (!escaped) return vec3(0.0);
 
-  // Smooth iteration count: i + 1 - log2(log2(|z|)) — same formula as
-  // mandelbrot.py's smooth coloring. Clamped at 0: a pixel far outside the
-  // set escapes on the first step with |z| well past the bailout, which
-  // makes the formula negative, and lutColor's fract() would wrap that to
-  // the TOP of the colormap (inferno's pale yellow in the canvas corners).
-  float smoothIter = max(float(iter) + 1.0 - log2(log2(sqrt(dot(z, z)))), 0.0);
-  return lutColor(smoothIter * 0.025);
+  return escapeColor(iter, z);
 }
 
 // ---------------------------------------------------------------- perturbation
@@ -420,7 +435,7 @@ vec3 renderEscapePerturbation(vec2 uv) {
     vec2 full = Zm + dz;
     iter = i;
 
-    if (dot(full, full) > 16.0) {
+    if (dot(full, full) > ESCAPE_RADIUS_SQ) {
       escaped = true;
       fullAtEscape = full;
       break;
@@ -439,9 +454,7 @@ vec3 renderEscapePerturbation(vec2 uv) {
   }
 
   if (!escaped) return vec3(0.0);
-  // Clamped at 0 for the same reason as renderEscapeFast.
-  float smoothIter = max(float(iter) + 1.0 - log2(log2(sqrt(dot(fullAtEscape, fullAtEscape)))), 0.0);
-  return lutColor(smoothIter * 0.025);
+  return escapeColor(iter, fullAtEscape);
 }
 
 void main() {
