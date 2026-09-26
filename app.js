@@ -594,6 +594,9 @@ const els = {
   fernPointsSlider: document.getElementById("fernPointsSlider"),
   fernColorBtn: document.getElementById("fernColorBtn"),
   fernColorSwatch: document.getElementById("fernColorSwatch"),
+  kochColorSwatch: document.getElementById("kochColorSwatch"),
+  treeColorSwatch: document.getElementById("treeColorSwatch"),
+  dragonColorSwatch: document.getElementById("dragonColorSwatch"),
   fernResetBtn: document.getElementById("fernResetBtn"),
   fernBoxZoomBtn: document.getElementById("fernBoxZoomBtn"),
   kochBackBtn: document.getElementById("kochBackBtn"),
@@ -715,6 +718,14 @@ const dragonState = {
   set depth(v) { curveDepths[dragonView.curve] = v; },
 };
 const fernState = { count: 1000000, colorIndex: 0 };
+// Solid color (a SOLID_COLORS index) per line/shape mode. The escape-time
+// fractals keep the gradient colormapIndex; these used to sample it by
+// depth, which left low depths near-black and hard to see.
+const solidIndex = (name) => SOLID_COLORS.findIndex((c) => c.name === name);
+const vectorColors = {
+  koch: solidIndex("Ice"), tree: solidIndex("Green"), dragon: solidIndex("Autumn"),
+  hilbert: solidIndex("Violet"), gosper: solidIndex("Rose"), arrowhead: solidIndex("Gold"),
+};
 
 function pushHistory(pane) {
   const st = pane === "julia" ? juliaState : mainState;
@@ -787,13 +798,13 @@ function renderAll() {
     updateHud();
     scheduleRefinement();
   } else if (mode === "koch") {
-    kochView.render({ depth: kochState.depth, fill: kochState.fill, colormapIndex });
+    kochView.render({ depth: kochState.depth, fill: kochState.fill, colorIndex: vectorColors.koch });
     updateKochHud();
   } else if (mode === "tree") {
-    treeView.render({ depth: treeState.depth, colormapIndex });
+    treeView.render({ depth: treeState.depth, colorIndex: vectorColors.tree });
     updateTreeHud();
   } else if (isCurveMode(mode)) {
-    dragonView.render({ depth: dragonState.depth, colormapIndex });
+    dragonView.render({ depth: dragonState.depth, colorIndex: vectorColors[dragonView.curve] });
     updateDragonHud();
   } else {
     fernView.render({
@@ -1097,6 +1108,7 @@ function setMode(next) {
       dragonView.setCurve(mode);
       dragonNav.clearHistory();
     }
+    updateColorSwatches();
     els.dragonDepthSlider.min = LINE_CURVES[mode].minDepth || 0;
     els.dragonDepthSlider.max = LINE_CURVES[mode].maxDepth;
     els.dragonDepthSlider.value = dragonState.depth;
@@ -2001,23 +2013,33 @@ els.fernPointsSlider.addEventListener("input", () => {
 // ---------------------------------------------------------------- colormap picker
 
 // The palette button in every row opens this picker (same popover pattern as
-// the share menu) instead of cycling blindly. Koch/tree/dragon/fractal pick
-// from the shared COLORMAPS; the fern picks from its own IFS_COLORS.
+// the share menu) instead of cycling blindly. The escape-time fractals pick
+// a gradient from COLORMAPS; the fern, Koch, tree and line curves each pick
+// one flat color from SOLID_COLORS.
 function cmGradient(stops) {
   return `linear-gradient(to right, ${stops.map(([t, r, g, b]) => `rgb(${r},${g},${b}) ${t * 100}%`).join(", ")})`;
 }
 
 function setFernColor(i) {
   fernState.colorIndex = i;
-  const [r, g, b] = IFS_COLORS[i].rgb;
-  els.fernColorSwatch.setAttribute("fill", `rgb(${r}, ${g}, ${b})`);
+  updateColorSwatches();
 }
 
-function openColormapMenu(forFern) {
-  const items = forFern
-    ? IFS_COLORS.map((c) => ({ name: c.name, bg: `rgb(${c.rgb.join(",")})` }))
+// The corner badge on each solid-color button shows that mode's color; the
+// curve row's badge follows whichever curve is shown.
+function updateColorSwatches() {
+  els.fernColorSwatch.setAttribute("fill", solidCss(fernState.colorIndex));
+  els.kochColorSwatch.setAttribute("fill", solidCss(vectorColors.koch));
+  els.treeColorSwatch.setAttribute("fill", solidCss(vectorColors.tree));
+  els.dragonColorSwatch.setAttribute("fill", solidCss(vectorColors[dragonView.curve]));
+}
+
+// solidKey: null for the escape-time colormap, "fern", or a vectorColors key.
+function openColormapMenu(solidKey) {
+  const items = solidKey
+    ? SOLID_COLORS.map((c, i) => ({ name: c.name, bg: solidCss(i) }))
     : COLORMAPS.map((c) => ({ name: c.name, bg: cmGradient(c.stops) }));
-  const current = forFern ? fernState.colorIndex : colormapIndex;
+  const current = !solidKey ? colormapIndex : solidKey === "fern" ? fernState.colorIndex : vectorColors[solidKey];
   els.colormapMenu.replaceChildren(...items.map((item, i) => {
     const btn = document.createElement("button");
     btn.setAttribute("role", "menuitemradio");
@@ -2028,8 +2050,11 @@ function openColormapMenu(forFern) {
     swatch.style.background = item.bg;
     btn.append(swatch, item.name);
     btn.addEventListener("click", () => {
-      if (forFern) {
+      if (solidKey === "fern") {
         setFernColor(i);
+      } else if (solidKey) {
+        vectorColors[solidKey] = i;
+        updateColorSwatches();
       } else {
         colormapIndex = i;
         // Always refresh the shader's LUT, whichever mode picked it: the
@@ -2053,7 +2078,10 @@ function openColormapMenu(forFern) {
     els.fractalTypeRow.classList.remove("open");
     els.shareMenu.classList.remove("open");
     if (els.colormapMenu.classList.contains("open")) els.colormapMenu.classList.remove("open");
-    else openColormapMenu(btn === els.fernColorBtn);
+    else openColormapMenu({
+      [els.fernColorBtn.id]: "fern", [els.kochColormapBtn.id]: "koch",
+      [els.treeColormapBtn.id]: "tree", [els.dragonColormapBtn.id]: dragonView.curve,
+    }[btn.id] || null);
   });
 });
 document.addEventListener("pointerdown", (e) => {
@@ -2119,6 +2147,7 @@ function buildShareHash() {
       put("n", fernState.count); put("c", fernState.colorIndex);
     } else {
       put("cm", colormapIndex);
+      put("c", vectorColors[mode]);
       put("dp", depthStateFor(mode).depth);
       if (mode === "koch") p.set("fl", kochState.fill ? "1" : "0");
     }
@@ -2160,11 +2189,13 @@ function parseShareHash(hash) {
       }
       return st;
     }
-    if (isIfsMode(m)) return { mode: m, ...view, count: int("n", 100000, 4000000), colorIndex: int("c", 0, IFS_COLORS.length - 1) };
+    if (isIfsMode(m)) return { mode: m, ...view, count: int("n", 100000, 4000000), colorIndex: int("c", 0, SOLID_COLORS.length - 1) };
     const maxDepth = isCurveMode(m) ? LINE_CURVES[m].maxDepth : { koch: 8, tree: 12 }[m];
     if (maxDepth === undefined) return null;
     const minDepth = isCurveMode(m) ? LINE_CURVES[m].minDepth || 0 : 0;
-    return { mode: m, ...view, cm: int("cm", 0, COLORMAPS.length - 1), depth: int("dp", minDepth, maxDepth), fill: p.get("fl") !== "0" };
+    // "c" (solid color) is optional: links made before 1.10.0 don't have it.
+    const colorIndex = p.has("c") ? int("c", 0, SOLID_COLORS.length - 1) : vectorColors[m];
+    return { mode: m, ...view, cm: int("cm", 0, COLORMAPS.length - 1), colorIndex, depth: int("dp", minDepth, maxDepth), fill: p.get("fl") !== "0" };
   } catch {
     return null;
   }
@@ -2192,7 +2223,9 @@ function applyShareState(st) {
       setFernColor(st.colorIndex);
     } else {
       colormapIndex = st.cm;
+      vectorColors[st.mode] = st.colorIndex;
       if (isCurveMode(st.mode)) dragonView.setCurve(st.mode); // before depth/view are written
+      updateColorSwatches();
       depthStateFor(st.mode).depth = st.depth;
       els[`${isCurveMode(st.mode) ? "dragon" : st.mode}DepthSlider`].value = st.depth;
       if (st.mode === "koch") {
@@ -2392,6 +2425,7 @@ window.addEventListener("hashchange", applyShareHashFromUrl);
 
 selectFractal(currentName);
 updateLUT();
+updateColorSwatches();
 requestRender();
 applyShareHashFromUrl();
 // requestRender draws on the next animation frame; one frame after that it

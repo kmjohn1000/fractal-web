@@ -59,6 +59,31 @@ const COLORMAPS = [
   { name: "Grayscale", stops: [[0.00, 0, 0, 0], [1.00, 255, 255, 255]] },
 ];
 
+// Flat colors for the modes that aren't depth-mapped escape-time images:
+// the fern/IFS point clouds and the Koch/tree/line-curve drawings. Those
+// used to sample COLORMAPS at depth/maxDepth, which puts low depths at the
+// colormap's dark end -- near-invisible on the #111 background. Index 0
+// (green) is the fern's default; each line mode has its own default in
+// app.js (vectorColors).
+const SOLID_COLORS = [
+  { name: "Green",  rgb: [70, 190, 90] },
+  { name: "Autumn", rgb: [214, 122, 47] },
+  { name: "Violet", rgb: [148, 100, 214] },
+  { name: "Ice",    rgb: [92, 176, 214] },
+  { name: "Rose",   rgb: [214, 92, 140] },
+  { name: "Gold",   rgb: [226, 186, 64] },
+  { name: "White",  rgb: [236, 236, 240] },
+];
+const solidCss = (i) => `rgb(${SOLID_COLORS[i].rgb.join(", ")})`;
+
+// Line width (canvas px) for a line drawing whose segments are segPx long
+// on screen: bold (2.5pt) while segments are long -- the early depths --
+// thinning to a 0.75pt hairline as they get dense, so deep levels don't
+// merge into a solid block. dpr converts points to canvas pixels.
+function strokeWidthFor(segPx, dpr) {
+  return Math.min(2.5 * dpr, Math.max(0.75 * dpr, 0.3 * segPx));
+}
+
 function sampleColor(stops, t) {
   // Wrap into [0, 1) -- except exactly 1.0, which is the colormap's end
   // color, not its start: plain % made every palette's final stop

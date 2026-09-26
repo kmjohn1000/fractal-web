@@ -82,16 +82,20 @@ function createKochView(canvas) {
     });
     ctx.closePath();
 
-    const [r, g, b] = sampleColor(COLORMAPS[opts.colormapIndex].stops, opts.depth / 8);
+    const color = solidCss(opts.colorIndex);
     if (opts.fill) {
-      ctx.fillStyle = `rgb(${r | 0}, ${g | 0}, ${b | 0})`;
+      ctx.fillStyle = color;
       ctx.fill();
       ctx.strokeStyle = "rgba(255,255,255,0.4)";
       ctx.lineWidth = 1;
       ctx.stroke();
     } else {
-      ctx.strokeStyle = `rgb(${r | 0}, ${g | 0}, ${b | 0})`;
-      ctx.lineWidth = 2;
+      // Every edge is the same length, so the first one sets the width.
+      const [ax, ay] = worldToScreen(cachedVerts[0][0], cachedVerts[0][1]);
+      const [bx, by] = worldToScreen(cachedVerts[1][0], cachedVerts[1][1]);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = strokeWidthFor(Math.hypot(bx - ax, by - ay), dpr);
+      ctx.lineJoin = "round";
       ctx.stroke();
     }
   }

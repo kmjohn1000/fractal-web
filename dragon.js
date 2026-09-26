@@ -119,9 +119,12 @@ function createCurveView(canvas) {
     ctx.fillStyle = "#111";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    const [r, g, b] = sampleColor(COLORMAPS[opts.colormapIndex].stops, opts.depth / LINE_CURVES[curve].maxDepth);
-    ctx.strokeStyle = `rgb(${r | 0}, ${g | 0}, ${b | 0})`;
-    ctx.lineWidth = 1.5;
+    // All of a curve's segments are the same length, so the first one sets
+    // the width (see strokeWidthFor).
+    const [ax, ay] = worldToScreen(cachedPts[0][0], cachedPts[0][1]);
+    const [bx, by] = worldToScreen(cachedPts[1][0], cachedPts[1][1]);
+    ctx.strokeStyle = solidCss(opts.colorIndex);
+    ctx.lineWidth = strokeWidthFor(Math.hypot(bx - ax, by - ay), dpr);
     ctx.lineJoin = "round";
     ctx.beginPath();
     cachedPts.forEach((p, i) => {

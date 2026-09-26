@@ -2,6 +2,11 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.10.0 — 2026-09-26
+- Koch Snowflake, Pythagoras Tree and the line curves (Dragon, Hilbert, Gosper, Arrowhead) now have a single-color picker instead of a colormap, each with its own default color. Early depths used to draw in the colormap's darkest color and were hard to see.
+- Line curves and the Koch outline draw with bolder lines at early depths, thinning out as the detail gets denser.
+- Added Gold and White to the color choices (also for the fern).
+
 ## 1.9.1 — 2026-09-26
 - The launch screen now waits longer for a slow first draw instead of briefly showing a black screen.
 
