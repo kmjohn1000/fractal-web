@@ -1,0 +1,2 @@
+// Written by `npm run ios:sync` (scripts/build-www.mjs); git-ignored.
+#include? "version.xcconfig"
