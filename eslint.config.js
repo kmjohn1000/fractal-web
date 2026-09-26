@@ -9,6 +9,9 @@ const sharedGlobals = {
   COLORMAPS: "readonly",
   buildLUTBytes: "readonly",
   sampleColor: "readonly",
+  SOLID_COLORS: "readonly",
+  solidCss: "readonly",
+  strokeWidthFor: "readonly",
   // shaders.js
   VERT_SRC: "readonly",
   FRAG_SRC: "readonly",
@@ -28,7 +31,6 @@ const sharedGlobals = {
   normalizePolylines: "readonly",
   createIfsView: "readonly",
   IFS_SYSTEMS: "readonly",
-  IFS_COLORS: "readonly",
   ifsData: "readonly",
   // platform.js
   Platform: "readonly",

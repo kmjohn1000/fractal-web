@@ -75,17 +75,7 @@ function ifsPoints(transforms, n) {
   return pts.subarray(0, len * 2);
 }
 
-// A small dedicated solid-color palette rather than the app's gradient
-// COLORMAPS (built for depth-mapped coloring, which doesn't apply to a flat
-// point cloud). Index 0 is green -- the natural fern color, and the
-// default -- with a few alternates to cycle through.
-const IFS_COLORS = [
-  { name: "Green",  rgb: [70, 190, 90] },
-  { name: "Autumn", rgb: [214, 122, 47] },
-  { name: "Violet", rgb: [148, 100, 214] },
-  { name: "Ice",    rgb: [92, 176, 214] },
-  { name: "Rose",   rgb: [214, 92, 140] },
-];
+// Background the fern fades its SOLID_COLORS color from (colormaps.js).
 const IFS_BG = [17, 17, 17];
 
 // --- Viewport-adaptive sampling --------------------------------------------
@@ -329,7 +319,7 @@ function createIfsView(canvas) {
   // regions render as a soft, dim haze rather than isolated hard dots and
   // the dense rachis doesn't blow everything else out.
   function draw(colorIndex) {
-    const fg = IFS_COLORS[colorIndex % IFS_COLORS.length].rgb;
+    const fg = SOLID_COLORS[colorIndex % SOLID_COLORS.length].rgb;
     const palette = new Uint32Array(256);
     for (let i = 0; i < 256; i++) {
       const t = i / 255;

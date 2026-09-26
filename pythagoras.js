@@ -99,8 +99,7 @@ function createPythagorasTreeView(canvas) {
     ctx.fillStyle = "#111";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    const [r, g, b] = sampleColor(COLORMAPS[opts.colormapIndex].stops, opts.depth / 12);
-    ctx.fillStyle = `rgb(${r | 0}, ${g | 0}, ${b | 0})`;
+    ctx.fillStyle = solidCss(opts.colorIndex);
     ctx.strokeStyle = "rgba(255,255,255,0.15)";
     ctx.lineWidth = 1;
 
