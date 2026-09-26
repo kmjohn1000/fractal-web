@@ -38,12 +38,6 @@
 
 ## Tier 3 — differentiation
 - [ ] AI-curated "find something beautiful" auto-discovery
-- [ ] Julia set follows the main pane's center live (Mandelbrot family,
-      dual view): as you pan, the Julia pane re-renders with c = the
-      crosshair point, instead of only on tap (app.js tap-to-set-c). Center
-      rather than touch position so the finger never hides the point being
-      previewed (Mandelbrot Maps does it this way). Probably a toggle; keep
-      tap-to-set working. Watch Julia-pane frame cost while dragging
 - [ ] Orbit trap coloring as a style selector
 - [ ] "Zoom to nearest minibrot" guided action
 
@@ -156,6 +150,7 @@
   deeper Gasket zoom, not this.
 
 ## Done
+- Dual view: Julia follows the main pane's center; flashing center crosshair; tap glides to center — `ab30998`
 - Rotation compass: appears while rotating, fades when still, tap to reset rotation — `ceb4236`
 - App Store release via Capacitor: app shell, Save to Photos, share sheet, icon, launch screen, privacy/support pages; 1.10.2 submitted for review 2026-09-26 — `e10c8f0`
 - Single-color picker for Koch/Tree/Dragon/Hilbert/Gosper/Arrowhead; bolder early-depth strokes (were too faint on iPad) — `2127293`
