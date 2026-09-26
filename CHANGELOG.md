@@ -2,6 +2,11 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.12.0 — 2026-09-26
+- Dual view: the Julia set now follows the center of the main fractal as you pan and zoom it, so the two panes stay in step.
+- The dual-view crosshair marks that center; it appears while the main view moves and fades when it's still.
+- Tapping the main pane glides that point to the center (it used to set the Julia point directly).
+
 ## 1.11.1 — 2026-09-26
 - Opening a shared link to a pattern (Koch, fern, curves…) no longer shows a false "layout bug" error banner.
 
