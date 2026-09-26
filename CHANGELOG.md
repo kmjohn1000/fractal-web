@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.7.3 — 2026-09-26
+- Fixed pale yellow patches in the corners of escape-time fractals (most visible in split view). Areas far outside the set are now the colormap's darkest color, as they should be.
+
 ## 1.7.2 — 2026-09-25
 - Fixed an error when dragging the Hilbert Curve's depth slider all the way down. Its lowest depth is now 1, the first depth that draws anything.
 
