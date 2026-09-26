@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.11.0 — 2026-09-26
+- A compass appears while you rotate a view and fades once it's still; tap it to turn the view back upright. Works on every fractal and pattern, including both panes of the dual view.
+
 ## 1.10.3 — 2026-09-26
 - Smoother color gradients on the Mandelbrot-family fractals: faint ripple bands are gone, most visibly on Multibrot³.
 

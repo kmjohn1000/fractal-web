@@ -818,6 +818,7 @@ function renderAll() {
     });
     updateFernHud();
   }
+  updateCompasses();
 }
 
 // Progressive supersampling: after renderAll draws sample 0, add the rest of
@@ -853,9 +854,7 @@ function requestRender() {
   requestAnimationFrame(() => { renderPending = false; renderAll(); });
 }
 
-// Only shown when non-zero — no reset-to-north button on any mode, so this
-// is the only feedback that a two-finger twist has rotated the view at all.
-// Shared by every mode's HUD (WebGL fractal + all four Canvas2D vector
+// Only shown when non-zero. Shared by every mode's HUD (WebGL fractal + all four Canvas2D vector
 // views) since they all support the same twist gesture.
 function rotationHudText(rotation) {
   const rotDeg = (rotation || 0) * 180 / Math.PI;
@@ -1679,6 +1678,122 @@ function activeVectorTarget() {
   if (isCurveMode(mode)) return { v: dragonView, canvas: els.dragonCanvas, nav: dragonNav, resetBtn: els.dragonResetBtn };
   if (isIfsMode(mode)) return { v: fernView, canvas: els.fernCanvas, nav: fernNav, resetBtn: els.fernResetBtn };
   return null;
+}
+
+// ---------------------------------------------------------------- compass
+// A compass per rotatable pane that fades in while the view rotates and out
+// once it's been still for COMPASS_HIDE_MS; tapping it animates the rotation
+// back to 0 (touch has no other rotation-only reset -- keyboard R resets the
+// whole view). It watches each pane's rotation from renderAll, so every
+// source of rotation (twist, Shift+arrows, Back, the reset animation itself)
+// shows it without hooking each one. Small twists are ignored: every pinch
+// changes the angle a little, so the compass only appears once the rotation
+// has moved COMPASS_SHOW_RAD from where it was when the compass last hid.
+const COMPASS_HIDE_MS = 1500;
+const COMPASS_SHOW_RAD = 3 * Math.PI / 180;
+const COMPASS_RESET_MS = 350;
+const compasses = {}; // pane key -> { el, needle, anchor, context, hideTimer }
+
+// The rotatable panes currently on screen: key, canvas, and get/set of the
+// view's rotation, plus a history checkpoint so Back undoes a reset.
+function rotatablePanes() {
+  if (mode === "fractal") {
+    const panes = [{ key: "main", canvas: els.mainCanvas, st: mainState, fractalPane: "main" }];
+    if (dualActive && juliaState) panes.push({ key: "julia", canvas: els.juliaCanvas, st: juliaState, fractalPane: "julia" });
+    return panes;
+  }
+  const target = activeVectorTarget();
+  return target ? [{ key: "vector", canvas: target.canvas, st: target.v.view, nav: target.nav }] : [];
+}
+
+function getCompass(key) {
+  if (compasses[key]) return compasses[key];
+  const el = document.createElement("button");
+  el.className = "compass";
+  el.setAttribute("aria-label", "Reset rotation");
+  el.title = "Reset rotation";
+  el.innerHTML = `<svg viewBox="0 0 40 40" aria-hidden="true"><g>
+    <polygon points="20,6 24.5,20 15.5,20" fill="#ff453a"/>
+    <polygon points="20,34 24.5,20 15.5,20" fill="#d8d8dc"/>
+    <circle cx="20" cy="20" r="2" fill="#1c1c1e"/></g></svg>`;
+  const c = { el, needle: el.querySelector("g"), anchor: null, lastRot: null, context: null, hideTimer: null };
+  el.addEventListener("click", () => resetRotation(key));
+  document.body.appendChild(el);
+  compasses[key] = c;
+  return c;
+}
+
+function hideCompass(c) {
+  c.el.classList.remove("shown");
+  if (c.hideTimer) { clearTimeout(c.hideTimer); c.hideTimer = null; }
+}
+
+function updateCompasses() {
+  const panes = rotatablePanes();
+  const context = `${mode}|${currentName}|${dualActive}`;
+  for (const key of Object.keys(compasses)) {
+    if (!panes.some((p) => p.key === key)) hideCompass(compasses[key]);
+  }
+  for (const p of panes) {
+    const c = getCompass(p.key);
+    const rot = p.st.rotation || 0;
+    // A different fractal/mode/layout starts fresh: no flash for the jump.
+    if (c.context !== context) {
+      c.context = context;
+      c.anchor = rot;
+      hideCompass(c);
+    }
+    const shown = c.el.classList.contains("shown");
+    if (!shown && Math.abs(normalizeAngle(rot - c.anchor)) < COMPASS_SHOW_RAD) continue;
+    if (shown && rot === c.lastRot) continue; // pan/zoom only: let it fade
+    c.lastRot = rot;
+    // Screen "up" is world up rotated by -rotation (screenToComplex rotates
+    // uv by +rotation into world axes), which is CSS rotate(+rotation).
+    c.needle.style.transform = `rotate(${rot}rad)`;
+    c.needle.style.transformOrigin = "20px 20px";
+    const rect = p.canvas.getBoundingClientRect();
+    c.el.style.left = `${rect.right - 40 - 10}px`;
+    c.el.style.top = `${rect.top + 10}px`;
+    c.el.classList.add("shown");
+    if (c.hideTimer) clearTimeout(c.hideTimer);
+    c.hideTimer = setTimeout(() => {
+      c.hideTimer = null;
+      c.el.classList.remove("shown");
+      c.anchor = rotatablePanes().find((q) => q.key === p.key)?.st.rotation || 0;
+    }, COMPASS_HIDE_MS);
+  }
+}
+
+function resetRotation(key) {
+  const p = rotatablePanes().find((q) => q.key === key);
+  if (!p) return;
+  const st = p.st;
+  const from = normalizeAngle(st.rotation || 0);
+  if (from === 0) return;
+  if (p.fractalPane) {
+    cancelTeleport();
+    pushHistory(p.fractalPane);
+    activePane = p.fractalPane;
+  } else {
+    p.nav.checkpoint();
+  }
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const durationMs = reduceMotion ? 0 : COMPASS_RESET_MS;
+  const ease = (t) => 1 - Math.pow(1 - t, 3);
+  const t0 = performance.now();
+  // Same per-frame path as teleport: markInteracting keeps deep-zoom panes on
+  // the cheap preview until the last frame, then the settle timer renders
+  // for real. Rotation turns about the view center, so cx/cy stay put.
+  const step = (now) => {
+    const cur = rotatablePanes().find((q) => q.key === key);
+    if (!cur || cur.st !== st) return; // mode/fractal changed mid-animation
+    const t = durationMs ? Math.min(1, (now - t0) / durationMs) : 1;
+    st.rotation = t < 1 ? from * (1 - ease(t)) : 0;
+    if (p.fractalPane) markInteracting();
+    renderAll();
+    if (t < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
 }
 
 let lastKeyHistoryPush = 0;
