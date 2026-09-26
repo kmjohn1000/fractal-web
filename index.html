@@ -98,7 +98,11 @@
     border: 2px solid #fff; border-radius: 50%;
     box-shadow: 0 0 0 1px rgba(0,0,0,0.6);
     pointer-events: none; z-index: 20;
+    /* Flashes like .compass: shown while the main view moves, then fades. */
+    opacity: 0; transition: opacity 0.35s ease;
   }
+  #crosshair.shown { opacity: 1; transition-duration: 0.15s; }
+  @media (prefers-reduced-motion: reduce) { #crosshair, #crosshair.shown { transition: none; } }
 
   /* Rotation compass, one per rotatable pane (created in app.js). Fades in
      while the view is being rotated and out once it's been still for a

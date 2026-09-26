@@ -791,6 +791,13 @@ function renderAll() {
     // The dual-mode Julia pane can be deep-zoomed too (perturbation covers
     // Julia mode), so it gets the same preview while interacting.
     if (dualActive && juliaState) {
+      // The Julia pane's c is always the main pane's center, synced here so
+      // every way the main view moves (drag, pinch, wheel, keys, Back,
+      // teleport, tap-to-glide, share links) carries the Julia set with it.
+      // A deep-zoomed Julia pane keeps its last-frame preview while c moves
+      // -- a live float32 frame at that depth would be unrelated content --
+      // and re-renders for the new c when the gesture settles.
+      juliaState.juliaC = [mainState.cx, mainState.cy];
       if (isInteracting && deepZoomEligible(juliaRenderer, juliaState)) {
         juliaRenderer.renderPreview(juliaState);
       } else {
@@ -921,7 +928,7 @@ function updateHud() {
   setHud(currentName,
     `center: ${f.center}\n` +
     `scale: ${f.scale}   ${iterText}   precision: ${precision}${rotText}` +
-    `${dualActive ? "   [dual mode — tap left pane to set Julia c]" : ""}`);
+    `${dualActive ? "   [dual — Julia c = center of main pane; tap to recenter]" : ""}`);
 }
 
 function updateKochHud() {
@@ -942,28 +949,22 @@ function updateFernHud() {
   setHud(IFS_SYSTEMS[fernView.system].label, `points: ${fernView.accepted.toLocaleString()} / ${fernState.count.toLocaleString()}${rotationHudText(fernView.view.rotation)}`);
 }
 
+// Dual view's crosshair marks the main pane's center -- the Julia pane's c.
+// Like the rotation compass, it shows while the main view moves (and once
+// when dual view opens) and fades once it's still.
+const crosshairFlash = { hideTimer: null, lastView: null };
 function positionCrosshair() {
   if (!dualActive) { els.crosshair.classList.add("hidden"); return; }
-  const [sx, sy] = screenToComplexInverse(mainRenderer, mainState, mainState.juliaC);
   const rect = els.mainCanvas.getBoundingClientRect();
   els.crosshair.classList.remove("hidden");
-  els.crosshair.style.left = `${rect.left + sx}px`;
-  els.crosshair.style.top = `${rect.top + sy}px`;
-}
-
-// world (complex) -> screen (CSS px, relative to canvas's own client rect)
-function screenToComplexInverse(renderer, state, world) {
-  const canvas = renderer.canvas;
-  const dpr = renderer.dpr;
-  const wx = (world[0] - state.cx) / (state.scale * 2.0);
-  const wy = (world[1] - state.cy) / (state.scale * 2.0);
-  const rot = -(state.rotation || 0); // inverse of screenToComplex's rotation
-  const cos = Math.cos(rot), sin = Math.sin(rot);
-  const uvx = wx * cos - wy * sin;
-  const uvy = wx * sin + wy * cos;
-  const sx = (uvx * canvas.height + 0.5 * canvas.width) / dpr;
-  const sy = (0.5 * canvas.height - uvy * canvas.height) / dpr;
-  return [sx, sy];
+  els.crosshair.style.left = `${rect.left + rect.width / 2}px`;
+  els.crosshair.style.top = `${rect.top + rect.height / 2}px`;
+  const v = crosshairFlash.lastView;
+  const s = mainState;
+  if (!v || v.cx !== s.cx || v.cy !== s.cy || v.scale !== s.scale || v.rotation !== s.rotation) {
+    crosshairFlash.lastView = { cx: s.cx, cy: s.cy, scale: s.scale, rotation: s.rotation };
+    flash(els.crosshair, crosshairFlash);
+  }
 }
 
 function screenToComplex(renderer, state, sx, sy) {
@@ -1068,7 +1069,7 @@ function enterDual() {
     baseScale: mainState.scale,
     iterAutoLocked: mainState.iterAutoLocked,
   };
-  mainState.juliaC = [juliaState.juliaC[0], juliaState.juliaC[1]];
+  crosshairFlash.lastView = null; // flash the crosshair as dual view opens
   juliaHistory = [];
   els.juliaCanvas.classList.remove("hidden");
   layoutCanvasArea();
@@ -1292,7 +1293,7 @@ function attachFractalInteraction(canvas, getState, paneName, renderer) {
       return;
     }
 
-    // Tap-to-set-Julia-c: only on the main pane while dual mode is active,
+    // Tap-to-recenter: only on the main pane while dual mode is active,
     // only if the pointer barely moved (a click, not a drag), and only
     // outside a multi-touch gesture -- downPos isn't tracked per-pointer,
     // so without the multiTouch guard the last finger to lift from a
@@ -1304,10 +1305,8 @@ function attachFractalInteraction(canvas, getState, paneName, renderer) {
       if (moved < 6) {
         const local = toLocal(e.clientX, e.clientY);
         const world = screenToWorldHere(local.x, local.y);
-        pushHistory("julia");
-        juliaState.juliaC = [world.x, world.y];
-        mainState.juliaC = [world.x, world.y];
-        requestRender();
+        glideMainTo(world.x, world.y); // the Julia pane follows the center
+
       }
     }
 
@@ -1681,15 +1680,33 @@ function activeVectorTarget() {
 }
 
 // ---------------------------------------------------------------- compass
+
+// Shows el (class "shown") and hides it FLASH_HIDE_MS after the last call;
+// holder keeps the pending timer. Shared by the compass and the dual-view
+// crosshair.
+const FLASH_HIDE_MS = 1500;
+function flash(el, holder, onHide) {
+  el.classList.add("shown");
+  if (holder.hideTimer) clearTimeout(holder.hideTimer);
+  holder.hideTimer = setTimeout(() => {
+    holder.hideTimer = null;
+    el.classList.remove("shown");
+    if (onHide) onHide();
+  }, FLASH_HIDE_MS);
+}
+
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 // A compass per rotatable pane that fades in while the view rotates and out
-// once it's been still for COMPASS_HIDE_MS; tapping it animates the rotation
+// once it's been still for FLASH_HIDE_MS; tapping it animates the rotation
 // back to 0 (touch has no other rotation-only reset -- keyboard R resets the
 // whole view). It watches each pane's rotation from renderAll, so every
 // source of rotation (twist, Shift+arrows, Back, the reset animation itself)
 // shows it without hooking each one. Small twists are ignored: every pinch
 // changes the angle a little, so the compass only appears once the rotation
 // has moved COMPASS_SHOW_RAD from where it was when the compass last hid.
-const COMPASS_HIDE_MS = 1500;
 const COMPASS_SHOW_RAD = 3 * Math.PI / 180;
 const COMPASS_RESET_MS = 350;
 const compasses = {}; // pane key -> { el, needle, anchor, context, hideTimer }
@@ -1754,13 +1771,9 @@ function updateCompasses() {
     const rect = p.canvas.getBoundingClientRect();
     c.el.style.left = `${rect.right - 40 - 10}px`;
     c.el.style.top = `${rect.top + 10}px`;
-    c.el.classList.add("shown");
-    if (c.hideTimer) clearTimeout(c.hideTimer);
-    c.hideTimer = setTimeout(() => {
-      c.hideTimer = null;
-      c.el.classList.remove("shown");
+    flash(c.el, c, () => {
       c.anchor = rotatablePanes().find((q) => q.key === p.key)?.st.rotation || 0;
-    }, COMPASS_HIDE_MS);
+    });
   }
 }
 
@@ -1777,8 +1790,7 @@ function resetRotation(key) {
   } else {
     p.nav.checkpoint();
   }
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const durationMs = reduceMotion ? 0 : COMPASS_RESET_MS;
+  const durationMs = prefersReducedMotion() ? 0 : COMPASS_RESET_MS;
   const ease = (t) => 1 - Math.pow(1 - t, 3);
   const t0 = performance.now();
   // Same per-frame path as teleport: markInteracting keeps deep-zoom panes on
@@ -2059,6 +2071,35 @@ function teleport() {
   requestAnimationFrame(step);
 }
 
+// Dual view's tap: glide the main view so (x, y) lands at the center, which
+// moves the Julia pane's c there (renderAll syncs c to the center). Shares
+// teleport's generation counter, so a new gesture/Back/teleport cancels it,
+// and its per-frame path (markInteracting + renderAll).
+const GLIDE_MS = 300;
+function glideMainTo(x, y) {
+  const st = mainState;
+  cancelTeleport();
+  pushHistory("main");
+  activePane = "main";
+  const x0 = st.cx, y0 = st.cy;
+  const durationMs = prefersReducedMotion() ? 0 : GLIDE_MS;
+  const ease = (t) => 1 - Math.pow(1 - t, 3);
+  const gen = ++teleportGeneration;
+  const t0 = performance.now();
+  const step = (now) => {
+    if (gen !== teleportGeneration || mode !== "fractal" || mainState !== st || !dualActive) return;
+    const t = durationMs ? Math.min(1, (now - t0) / durationMs) : 1;
+    const k = ease(t);
+    // Exact landing on the last frame (x0 + (x - x0) * 1 can be an ulp off).
+    st.cx = t < 1 ? x0 + (x - x0) * k : x;
+    st.cy = t < 1 ? y0 + (y - y0) * k : y;
+    markInteracting();
+    renderAll();
+    if (t < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
 els.teleportBtn.addEventListener("click", teleport);
 
 els.resetBtn.addEventListener("click", () => selectFractal(currentName));
@@ -2254,7 +2295,7 @@ function buildShareHash() {
     if (dualActive && juliaState) {
       const j = juliaState;
       p.set("d", "1");
-      put("jcx", j.juliaC[0]); put("jcy", j.juliaC[1]);
+      put("jcx", mainState.cx); put("jcy", mainState.cy); // = c; see applyShareState
       put("jx", j.cx); put("jy", j.cy); put("js", j.scale); put("jr", j.rotation || 0);
       put("ji", j.maxIter); put("jb", j.baseScale);
     }
@@ -2328,8 +2369,10 @@ function applyShareState(st) {
       maxIter: st.maxIter, iterAutoLocked: st.iterAutoLocked });
     if (st.dual) {
       enterDual();
-      Object.assign(juliaState, st.julia, { juliaC: st.julia.juliaC.slice(), iterAutoLocked: st.iterAutoLocked });
-      mainState.juliaC = st.julia.juliaC.slice();
+      // jcx/jcy are ignored: c is the main pane's center (synced in
+      // renderAll). Links still carry them so older builds, whose parser
+      // requires them, can open links from this one.
+      Object.assign(juliaState, st.julia, { juliaC: [mainState.cx, mainState.cy], iterAutoLocked: st.iterAutoLocked });
     }
     els.dualBtn.classList.toggle("active", dualActive);
     els.iterSlider.value = mainState.maxIter;
