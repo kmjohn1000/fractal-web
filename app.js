@@ -2412,6 +2412,18 @@ function applyShareHashFromUrl() {
   if (st) applyShareState(st);
 }
 
+// A share link that opened the iOS app (universal link, see platform.js):
+// same parse/apply as a link loaded on the web. Anything that isn't a valid
+// share hash is ignored, leaving the current view alone.
+function applyShareLink(url) {
+  const i = url.indexOf("#");
+  const st = i >= 0 ? parseShareHash(url.slice(i)) : null;
+  if (st) {
+    cancelTeleport();
+    applyShareState(st);
+  }
+}
+
 // ---------------------------------------------------------------- share: image + menu
 
 function shareFileName() {
@@ -2589,6 +2601,7 @@ updateLUT();
 updateColorSwatches();
 requestRender();
 applyShareHashFromUrl();
+Platform.onOpenUrl(applyShareLink); // before hideLaunchScreen, which waits on it
 // requestRender draws on the next animation frame; one frame after that it
 // has been painted, so the app's launch screen can fade into it (no-op on
 // the web, see platform.js).

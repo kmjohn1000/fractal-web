@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.13.0 — 2026-09-26
+- Shared links open straight in the Fractal Atlas app on iPhone and iPad when it's installed (universal links), landing on the shared view.
+
 ## 1.12.0 — 2026-09-26
 - Dual view: the Julia set now follows the center of the main fractal as you pan and zoom it, so the two panes stay in step.
 - The dual-view crosshair marks that center; it appears while the main view moves and fades when it's still.
