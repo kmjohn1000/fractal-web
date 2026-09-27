@@ -33,6 +33,7 @@ const Platform = (() => {
             Filesystem: reg("Filesystem"),
             SavePhoto: reg("SavePhoto"), // app-local, ios/App/App/FractalBridgeViewController.swift
             SplashScreen: reg("SplashScreen"),
+            App: reg("App"),
           });
         };
         s.onerror = () => reject(new Error("capacitor.js failed to load"));
@@ -84,11 +85,34 @@ const Platform = (() => {
   // because a debug build under Xcode's debugger on the iPad simulator took
   // ~4.6s to first paint, and a 3s fallback hid the launch screen too early
   // (black screen until the fractal appeared).
+  // It also waits for a launch link (see onOpenUrl) to be applied, so an app
+  // opened from a shared link fades into that view, not the default one.
   let launchScreenHidden = false;
+  let launchUrlHandled = Promise.resolve();
   function hideLaunchScreen() {
     if (!isNative || launchScreenHidden) return;
     launchScreenHidden = true;
-    plugins().then(({ SplashScreen }) => SplashScreen.hide({ fadeOutDuration: 200 })).catch(() => {});
+    launchUrlHandled
+      .then(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))))
+      .then(() => plugins())
+      .then(({ SplashScreen }) => SplashScreen.hide({ fadeOutDuration: 200 }))
+      .catch(() => {});
+  }
+
+  // Universal links: a tapped https://kmjohn1000.github.io/fractal-web/#...
+  // share link opens the app (ios/App/App/App.entitlements; the domain's
+  // apple-app-site-association lives in the kmjohn1000.github.io repo) and
+  // arrives here with its #hash intact. getLaunchUrl covers a cold start,
+  // appUrlOpen a link tapped while the app is already running. No-op on the
+  // web, where the link simply loads the page with its hash.
+  function onOpenUrl(handler) {
+    if (!isNative) return;
+    const p = plugins();
+    launchUrlHandled = p
+      .then(({ App }) => App.getLaunchUrl())
+      .then((res) => { if (res && res.url) handler(res.url); })
+      .catch(() => {});
+    p.then(({ App }) => App.addListener("appUrlOpen", (e) => handler(e.url))).catch(() => {});
   }
   if (isNative) setTimeout(hideLaunchScreen, 10000);
 
@@ -98,6 +122,7 @@ const Platform = (() => {
     isNative,
     shareBaseUrl,
     hideLaunchScreen,
+    onOpenUrl,
 
     saveImageLabel: isNative ? "Save to Photos" : "Save image",
 
