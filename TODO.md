@@ -70,6 +70,12 @@
       more vector fractals, not after) — done in `ff5a58f`
 - [ ] Make-your-own-fractal formula editor (needs the building blocks
       Celtic/Buffalo/Lambda introduce before the abstraction is clear)
+- [ ] Fractint PAR/FRM importer: paste a .par entry + its .frm formula and
+      render it. Parse Fractint's formula language (init `:` iterate `,`
+      bailout; note `|z|` there is modulus squared) into GLSL, map
+      center-mag (center, mag = 1/half-height, x-aspect, rotation, skew),
+      decode the `colors=` palette (3 chars/color, 6 bits/channel) and
+      logmap/inside. A superset of the formula editor, so build after it
 - [ ] Custom 3x3 keep/remove mask for Carpet (a preset of the L-system/
       mask idea, not standalone work)
 
@@ -83,6 +89,24 @@
       z_prev usually isn't, so dz_prev enters as an O(1) term and float32
       loses the pixel offset. Needs a two-state rebase condition or
       multi-reference fallback; prototype against a float64 reference
+- [ ] "Powers & Dominions" type (Jim Muth's Fractint MandAutoCritInZ):
+      z <- a·z^b + d·z^f + c, defaults a=1, b=2.005, d=2, f=1 (b=2 is
+      exactly Mandelbrot via w=z+1); z0 = critical point
+      (-d·f/(a·b))^(1/(b-f)), principal branch (≈ -0.9975-0.0156i);
+      Fractint bailout |z|² < 100. The principal-branch z^b jumps ~1.8°
+      across the negative real axis -- those seams are the point. Ship
+      the PAR's view as a preset/share link: center
+      -1.721155413111899+0.0576078992724704i, mag 6295098 (scale ~1.59e-7,
+      past the float32 wall), rotation -111.5° (check Fractint's rotation
+      sign and 4:3 aspect). Import its `colors=` palette as a colormap and
+      emulate logmap=125 banding, inside=0 black. Deep zoom: perturbation
+      with dz' = Z^b·expm1(b·log1p(dz/Z)) + 2dz + dc (scaled by a/d),
+      rebasing to the nonzero Z[0]; flag pixels where arg(Z)+arg(1+dz/Z)
+      leaves (-π, π] (pixel on a different branch than the reference ->
+      dz jumps to ~0.03 and float32 loses the ~3e-10 pixel offset) and
+      recompute those on the CPU in float64 (Web Workers). This view sits
+      on the antenna, where orbits run along the branch cut, so the
+      fixup matters
 - [ ] Newton perturbation (rational-function deltas near root
       singularities; harder than Phoenix, do after it; the difference
       factors without cancellation as
