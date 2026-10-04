@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.14.2 — 2026-10-04
+- Faster startup: picker previews load the first time the picker opens, and the info overlay does no work while it's hidden.
+
 ## 1.14.1 — 2026-10-04
 - The info overlay now leads with plain language (zoom, detail, rotation, and the place name after Surprise me), with the technical readout underneath.
 - The browser tab and home-screen name are now "Fractal Atlas".

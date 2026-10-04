@@ -582,6 +582,9 @@ const els = {
   fernCanvas: document.getElementById("fernCanvas"),
   boxRect: document.getElementById("boxZoomRect"),
   crosshair: document.getElementById("crosshair"),
+  hudName: document.querySelector("#hud .hudName"),
+  hudPlain: document.querySelector("#hud .hudPlain"),
+  hudStats: document.querySelector("#hud .hudStats"),
   fractalTypeRow: document.getElementById("fractalTypeRow"),
   fractalControls: document.getElementById("fractalControls"),
   kochControls: document.getElementById("kochControls"),
@@ -888,26 +891,31 @@ function formatZoom(baseScale, scale) {
   const z = baseScale / scale;
   if (z < 9.95) return `${Number(z.toFixed(1))}×`;
   if (z < 1000) return `${Math.round(z)}×`;
-  for (const [n, word] of ZOOM_WORDS) {
-    if (z >= n) return z / n < 1000 ? `${Number((z / n).toPrecision(2))} ${word}×` : `${z.toExponential(1)}×`;
-  }
-  return `${Math.round(z)}×`;
+  const [n, word] = ZOOM_WORDS.find(([limit]) => z >= limit);
+  return z / n < 1000 ? `${Number((z / n).toPrecision(2))} ${word}×` : `${z.toExponential(1)}×`;
 }
 
 // Name goes in the bold headline line, everything else in the muted
 // monospace stats block beneath it (see #hud in index.html).
 // Info overlay: the name, a plain-language line (zoom, detail, rotation,
 // place), and for the WebGL fractals a quieter technical readout under it.
+// Runs every render frame, so it does nothing while the overlay is hidden
+// (showing it re-renders, see applyHudVisibility) or when nothing changed.
+let lastHudKey = "";
 function setHud(name, plainParts, tech = "") {
-  els.hud.querySelector(".hudName").textContent = name;
-  els.hud.querySelector(".hudPlain").replaceChildren(...plainParts.filter(Boolean).map((t) => {
+  if (!hudVisible) return;
+  const parts = plainParts.filter(Boolean);
+  const key = [name, ...parts, tech].join("\n");
+  if (key === lastHudKey) return;
+  lastHudKey = key;
+  els.hudName.textContent = name;
+  els.hudPlain.replaceChildren(...parts.map((t) => {
     const span = document.createElement("span");
     span.textContent = t;
     return span;
   }));
-  const stats = els.hud.querySelector(".hudStats");
-  stats.textContent = tech;
-  stats.classList.toggle("hidden", !tech);
+  els.hudStats.textContent = tech;
+  els.hudStats.classList.toggle("hidden", !tech);
 }
 
 // Plain decimals while zoomed out (scale >= DEEP_ZOOM_THRESHOLD), where
@@ -959,8 +967,8 @@ function updateHud() {
   const iterText = usesFixedDepth ? `depth: ${depth} (auto)` : `maxIter: ${s.maxIter}${s.iterAutoLocked ? "" : " (auto)"}`;
   // A Surprise-me destination's name, for as long as the view is still the
   // one the flight landed on.
-  const t = teleportLanding;
-  const place = t && t.name === currentName && t.cx === s.cx && t.cy === s.cy && t.scale === s.scale ? t.label : "";
+  const d = TELEPORT_DESTINATIONS[teleportLandingIndex];
+  const place = d && d.fractal === currentName && Number(d.re) === s.cx && Number(d.im) === s.cy && d.scale === s.scale ? d.label : "";
   const f = formatHudCoords(s.cx, s.cy, s.scale);
   setHud(fractalLabel(currentName), [
     place,
@@ -1941,6 +1949,7 @@ function addPickerTile(label, slug, onPick, data) {
   img.src = `icons/thumbs/${slug}.webp`;
   img.alt = "";
   img.decoding = "async";
+  img.loading = "lazy"; // fetched when the picker first opens, not at startup
   const name = document.createElement("span");
   name.textContent = label;
   btn.append(img, name);
@@ -2082,7 +2091,7 @@ function teleportDurationMs(distance) {
   return Math.min(2500, Math.max(1000, 1000 + (distance - 4) * 50));
 }
 let lastTeleportIndex = -1; // index into TELEPORT_DESTINATIONS; never picked twice in a row
-let teleportLanding = null; // { name, label, cx, cy, scale } of the last landing, for the info overlay
+let teleportLandingIndex = -1; // TELEPORT_DESTINATIONS index of the last completed flight, for the info overlay
 let teleportGeneration = 0;
 
 // Any direct manipulation (pointer, wheel, Back, fractal switch) wins over
@@ -2124,7 +2133,7 @@ function teleport() {
       // Exact landing: the path's last point can be a few ulps off, which
       // matters at 1e-12 scales.
       Object.assign(st, target);
-      teleportLanding = { name: currentName, label: d.label, ...target };
+      teleportLandingIndex = i;
     }
     markInteracting();
     renderAll();
@@ -2489,7 +2498,7 @@ function applyShareLink(url) {
 // ---------------------------------------------------------------- share: image + menu
 
 function shareFileName() {
-  const label = mode === "fractal" ? fractalLabel(currentName) : EXTRA_MODES.find((e) => e.key === mode).label;
+  const label = mode === "fractal" ? fractalLabel(currentName) : modeLabel(mode);
   const slug = slugify(label);
   const d = new Date();
   const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;

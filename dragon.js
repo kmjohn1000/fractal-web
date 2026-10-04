@@ -34,19 +34,19 @@ function normalizedCurve(def, depth, turtleOpts) {
 // nothing at all -- an empty point list that the renderer and the
 // view-fitting bounds can't handle. Its first real shape is depth 1.
 const LINE_CURVES = {
-  dragon: { label: "Dragon Curve", maxDepth: 16, defaultDepth: 13, points: dragonCurve },
+  dragon: { maxDepth: 16, defaultDepth: 13, points: dragonCurve },
   hilbert: {
-    label: "Hilbert Curve", minDepth: 1, maxDepth: 8, defaultDepth: 5,
+    minDepth: 1, maxDepth: 8, defaultDepth: 5,
     points: (depth) => normalizedCurve(HILBERT_CURVE, depth),
   },
   gosper: {
-    label: "Gosper Curve", maxDepth: 6, defaultDepth: 4,
+    maxDepth: 6, defaultDepth: 4,
     points: (depth) => normalizedCurve(GOSPER_CURVE, depth),
   },
   // The arrowhead's triangle points down at odd depths when started
   // heading +x; starting odd depths at 60 degrees keeps it pointing up.
   arrowhead: {
-    label: "Sierpinski Arrowhead", maxDepth: 11, defaultDepth: 7,
+    maxDepth: 11, defaultDepth: 7,
     points: (depth) => normalizedCurve(SIERPINSKI_ARROWHEAD, depth, { startHeadingDeg: depth % 2 ? 60 : 0 }),
   },
 };

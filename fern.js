@@ -36,10 +36,10 @@ const VICSEK_TRANSFORMS = [
 // Every IFS the view can show, keyed by app.js mode name (EXTRA_MODES
 // lists the same keys for the picker).
 const IFS_SYSTEMS = {
-  fern:       { label: "Barnsley Fern",       transforms: FERN_TRANSFORMS },
-  sierpinski: { label: "Sierpinski Triangle", transforms: SIERPINSKI_TRANSFORMS },
-  levy:       { label: "Lévy C Curve",        transforms: LEVY_C_TRANSFORMS },
-  vicsek:     { label: "Vicsek Fractal",      transforms: VICSEK_TRANSFORMS },
+  fern:       { transforms: FERN_TRANSFORMS },
+  sierpinski: { transforms: SIERPINSKI_TRANSFORMS },
+  levy:       { transforms: LEVY_C_TRANSFORMS },
+  vicsek:     { transforms: VICSEK_TRANSFORMS },
 };
 
 function pickTransform(transforms) {
