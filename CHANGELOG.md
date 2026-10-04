@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.14.3 — 2026-10-04
+- Patterns (Koch, tree, curves, fern and the other point patterns) now sit on the same pure black as the fractals, instead of dark grey.
+
 ## 1.14.2 — 2026-10-04
 - Faster startup: picker previews load the first time the picker opens, and the info overlay does no work while it's hidden.
 

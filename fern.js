@@ -76,7 +76,7 @@ function ifsPoints(transforms, n) {
 }
 
 // Background the fern fades its SOLID_COLORS color from (colormaps.js).
-const IFS_BG = [17, 17, 17];
+const IFS_BG = [0, 0, 0];
 
 // --- Viewport-adaptive sampling --------------------------------------------
 // A single global point cloud (the original approach) goes sparse on zoom:

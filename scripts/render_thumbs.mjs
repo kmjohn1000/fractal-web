@@ -111,5 +111,5 @@ try {
   const exited = new Promise((r) => chrome.once("exit", r));
   chrome.kill();
   await Promise.race([exited, sleep(5000)]);
-  rmSync(profile, { recursive: true, force: true });
+  rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 }
