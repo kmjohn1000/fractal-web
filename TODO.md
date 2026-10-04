@@ -1,73 +1,63 @@
 # Roadmap
 
-## Tier 0 — do now, trivial/no-risk
-- [x] Rotation cos/sin computed on CPU, not per-pixel in FRAG_SRC
-      (eliminates redundant cos()/sin() calls in main(), pure perf,
-      no visual change) — done in `7a3e717`
+Now / Next / Later. Adding an item here isn't approval to build it (see CLAUDE.md).
 
-## Tier 1 — growth mechanism, ship together
-- [x] Screenshot/save button (preserveDrawingBuffer is already set,
-      canvas.toDataURL()/toBlob() should work as-is; fractal control row
-      is full at 7 buttons for one line at 360px — an 8th wraps and costs
-      ~54px of canvas, so share one button with shareable links) — done in `9f94472`
-- [x] Shareable links (needs a URL query/hash format + parser on load;
-      serialize from mainState, not HUD text — the HUD prints ~6
-      significant digits, deep-zoom links need full float64 / 17 digits;
-      include type, center, scale, rotation, maxIter, colormap, Julia c;
-      share via copy or Web Share API, same encoding doubles as bookmarks) — done in `9f94472`
+## Now — land the launch
+Get approved, and harden the app for App Review and a first wave of phone users.
 
-## Tier 2 — close gaps in existing systems
-- [ ] Viewport-adaptive recursion for Koch/Dragon/Tree (currently the
-      only fractal family that doesn't adapt detail to zoom — Carpet/
-      Gasket compute depth from pixel size, Fern regenerates from
-      viewport, these three don't; subdivide only parts whose bounding box
-      touches the viewport, down to ~1px — detail runs out today at ~13×
-      Koch, ~1–2× Tree, ~1× Dragon; filled Koch stays correct since
-      off-screen chords lie inside their bounding triangles; Dragon moves
-      from the L-system string to its two-map IFS form)
+- [ ] Ship 1.13.0 as the first App Store update (blocked until 1.10.2 is
+      approved): already synced — Xcode Archive → Distribute App → Upload.
+      Brings universal links, the rotation compass, Julia-follows-center
+      and smoother coloring
+- [ ] Follow the iOS Larger Text / Dynamic Type setting in the Capacitor
+      app. All UI font sizes are rem off `:root { font-size:
+      calc(16px * var(--text-scale)) }`, but --text-scale is fixed at 1:
+      WKWebView content doesn't get Dynamic Type, and user-scalable=no
+      (needed so pinch drives the canvas) rules out browser text zoom.
+      Needs native Swift: read UIContentSizeCategory (and observe its
+      change notification), then evaluateJavaScript to set --text-scale
+      on document.documentElement.style. Not possible in the plain web build
+- [ ] Mandelbrot toolbar wraps to two lines at 360px: the row has 9 icon
+      buttons (Surprise me was added after the 410px breakpoint was sized
+      for 8), and 9 x 40px + gaps = 404px > 360px. Options: ~36px buttons
+      below ~400px, or fold a button (e.g. dual view) into a menu. Also
+      below 410px the buttons are 40px, under the 44px touch-target min
+- [ ] High-res export: saved/shared images use the live canvas, capped
+      at `Math.min(devicePixelRatio, 2)`. Render exports at a higher
+      resolution, decoupled from that cap
+
+## Next — discovery and delight
+Help people find beautiful places, and give them more ways to see them.
+Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-minibrot.
+
 - [ ] New escape-time types: Celtic Mandelbrot, Buffalo, Lambda
       (single-state iteration, reuse existing shader/perturbation/
       supersampling pipeline with no structural changes)
-- [ ] Cell rebasing for Carpet/Gasket (real fix for the depth-16/22
-      precision ceiling — track cell address separately from a small
-      per-cell delta, refreshed at each subdivision, same principle as
-      the escape-time perturbation rebasing already implemented; CPU
-      resolves the ≤4 level-k cells the view overlaps and whether each is
-      already a hole; exact, no glitches; ~1e15× with float64 cell math,
-      more with BigInt — today Carpet ~3.5e4×, Gasket ~3,000×)
-
-## Tier 3 — differentiation
-- [ ] AI-curated "find something beautiful" auto-discovery
-- [ ] Orbit trap coloring as a style selector
-- [ ] "Zoom to nearest minibrot" guided action
-
-## Potential — from Wikipedia's "Plotting algorithms for the Mandelbrot set" (ranked)
-1. [ ] Exterior distance estimation as a coloring style: track dc' = 2·z·dc + 1
+- [ ] Exterior distance estimation as a coloring style: track dc' = 2·z·dc + 1
       alongside z, color by b = 2|z|·ln|z| / |dc| (normalized by u_scale).
       Draws thin filaments crisply instead of as speckle. Fits beside orbit
       traps (Tier 3); the same estimate could steer "zoom to nearest
       minibrot" and auto-discovery toward the boundary. Perturbation path
       needs dc tracked from the full Z+dz; watch float32 overflow at high
       iteration counts
-2. [ ] Periodicity checking (Brent-style: save z every so often, stop when
-      the orbit returns within eps) so interior pixels stop early instead of
-      running all of maxIter. Only real speedup where the cardioid/bulb skip
-      doesn't apply (Julia, Ship, Tricorn, Multibrot³, Phoenix, minibrot
-      interiors). Fast path only; eps must scale with zoom; GPU gain is capped
-      by warp divergence, so benchmark on a phone before keeping it
-
-## Navigation aids (from Mandelbrot Maps, jmaio.github.io/mandelbrot-maps)
+- [ ] Orbit trap coloring as a style selector
 - [ ] Minimap: small inset of the whole fractal with a marker for the
       current view, so deep zooms keep their bearings. Render the overview
       once per fractal/colormap into a small texture; at deep zoom the view
       rectangle is sub-pixel, so draw a marker/crosshair at the center
       instead of the rectangle. Respect rotation. Decide show/hide rule
       (e.g. only when zoomed in past some scale)
+- [ ] "Zoom to nearest minibrot" guided action
+- [ ] Colormap animation (WebGL: a u_colorPhase uniform shifting the LUT
+      lookup over time via requestAnimationFrame; Koch/Tree: cycle the
+      colormap's stops, like kochAnimateBtn cycles depth; new toggle, not
+      a repurposed "cycle colormap" button)
 
-## Tier 4 — build once Tier 2's variety justifies it
-- [x] Generic L-system engine (unify Koch/Pythagoras Tree/Dragon Curve
-      into one axiom+rules+turtle interpreter; do this before adding
-      more vector fractals, not after) — done in `ff5a58f`
+## Later — big bets
+Flexible scope and timing. Chains: new types → formula editor → Fractint importer;
+distance estimation → zoom-to-minibrot / AI discovery.
+
+### Creator tools
 - [ ] Make-your-own-fractal formula editor (needs the building blocks
       Celtic/Buffalo/Lambda introduce before the abstraction is clear)
 - [ ] Fractint PAR/FRM importer: paste a .par entry + its .frm formula and
@@ -79,16 +69,7 @@
 - [ ] Custom 3x3 keep/remove mask for Carpet (a preset of the L-system/
       mask idea, not standalone work)
 
-## Tier 5 — larger engineering projects
-- [x] Phoenix fractal (needs two-state iteration support — z_(n-1) as
-      running state — not a drop-in like Tier 2's new types) — done in `bbe2e4a`
-- [ ] Phoenix deep zoom (perturbation) — the delta step itself is easy
-      (dz' = 2Z·dz + dz² + dc + p·dz_prev, carrying dz_prev and reading
-      Z[m-1] from the orbit), but rebasing isn't: restarting at Z[0] = 0
-      needs the pixel's z AND z_prev near the reference's (0, 0), and
-      z_prev usually isn't, so dz_prev enters as an O(1) term and float32
-      loses the pixel offset. Needs a two-state rebase condition or
-      multi-reference fallback; prototype against a float64 reference
+### New and harder fractals
 - [ ] "Powers & Dominions" type (Jim Muth's Fractint MandAutoCritInZ):
       z <- a·z^b + d·z^f + c, defaults a=1, b=2.005, d=2, f=1 (b=2 is
       exactly Mandelbrot via w=z+1); z0 = critical point
@@ -107,11 +88,26 @@
       recompute those on the CPU in float64 (Web Workers). This view sits
       on the antenna, where orbits run along the branch cut, so the
       fixup matters
-- [ ] Newton perturbation (rational-function deltas near root
-      singularities; harder than Phoenix, do after it; the difference
-      factors without cancellation as
-      N(Z+δ) − N(Z) = δ(2Z⁴ + 4Z³δ + 2Z²δ² − 2Z − δ) / (3Z²(Z+δ)²);
-      less established than escape-time perturbation — prototype first)
+- [ ] Viewport-adaptive recursion for Koch/Dragon/Tree (currently the
+      only fractal family that doesn't adapt detail to zoom — Carpet/
+      Gasket compute depth from pixel size, Fern regenerates from
+      viewport, these three don't; subdivide only parts whose bounding box
+      touches the viewport, down to ~1px — detail runs out today at ~13×
+      Koch, ~1–2× Tree, ~1× Dragon; filled Koch stays correct since
+      off-screen chords lie inside their bounding triangles; Dragon moves
+      from the L-system string to its two-map IFS form)
+
+### Discovery
+- [ ] AI-curated "find something beautiful" auto-discovery
+      (if it calls an AI service, that breaks the App Store "no external
+      services" answer and the privacy label — needs a privacy.html/label
+      update, or an on-device approach)
+- [ ] Website visitor analytics (parked decision): GoatCounter, loaded on the
+      web build only (gate in platform.js on !isNative), never in the app;
+      update privacy.html (shared by site and app) to say the website counts
+      anonymous page views. Needs a goatcounter.com site code first
+
+### Deep-zoom engine — only when someone actually hits these limits
 - [ ] Arbitrary-precision reference orbit for zoom past ~1e13
       (computeReferenceOrbit is float64-limited to ~15-16 significant
       digits — do this if/when deep zoom becomes an actual marketed
@@ -119,8 +115,6 @@
       but past ~1e-35 the shader's float32 deltas also underflow, so it
       also needs extended-exponent deltas, plus BLA iteration skipping and
       2D reference-orbit textures past MAX_TEXTURE_SIZE)
-
-## Tier 6 — do when actually needed
 - [ ] maxIter past 2000 (real blockers: the shader loops are compiled
       with a constant 2000 bound, and one draw that loops 10⁴–10⁶ times
       risks a GPU watchdog timeout/context loss — needs multi-pass
@@ -129,31 +123,31 @@
       at runtime — Julia-mode reference orbit texture width is
       2*(maxIter+1) texels, safely under 4096 today; without this, deeper
       views show growing false-black interiors)
-
-## Polish (whenever)
-- [ ] Colormap animation (WebGL: a u_colorPhase uniform shifting the LUT
-      lookup over time via requestAnimationFrame; Koch/Tree: cycle the
-      colormap's stops, like kochAnimateBtn cycles depth; new toggle, not
-      a repurposed "cycle colormap" button)
-
-- [ ] Mandelbrot toolbar wraps to two lines at 360px: the row has 9 icon
-      buttons (Surprise me was added after the 410px breakpoint was sized
-      for 8), and 9 x 40px + gaps = 404px > 360px. Options: ~36px buttons
-      below ~400px, or fold a button (e.g. dual view) into a menu. Also
-      below 410px the buttons are 40px, under the 44px touch-target min
-
-- [ ] Follow the iOS Larger Text / Dynamic Type setting in the Capacitor
-      app. All UI font sizes are rem off `:root { font-size:
-      calc(16px * var(--text-scale)) }`, but --text-scale is fixed at 1:
-      WKWebView content doesn't get Dynamic Type, and user-scalable=no
-      (needed so pinch drives the canvas) rules out browser text zoom.
-      Needs native Swift: read UIContentSizeCategory (and observe its
-      change notification), then evaluateJavaScript to set --text-scale
-      on document.documentElement.style. Not possible in the plain web build
-
-- [ ] High-res export: saved/shared images use the live canvas, capped
-      at `Math.min(devicePixelRatio, 2)`. Render exports at a higher
-      resolution, decoupled from that cap
+- [ ] Phoenix deep zoom (perturbation) — the delta step itself is easy
+      (dz' = 2Z·dz + dz² + dc + p·dz_prev, carrying dz_prev and reading
+      Z[m-1] from the orbit), but rebasing isn't: restarting at Z[0] = 0
+      needs the pixel's z AND z_prev near the reference's (0, 0), and
+      z_prev usually isn't, so dz_prev enters as an O(1) term and float32
+      loses the pixel offset. Needs a two-state rebase condition or
+      multi-reference fallback; prototype against a float64 reference
+- [ ] Newton perturbation (rational-function deltas near root
+      singularities; harder than Phoenix, do after it; the difference
+      factors without cancellation as
+      N(Z+δ) − N(Z) = δ(2Z⁴ + 4Z³δ + 2Z²δ² − 2Z − δ) / (3Z²(Z+δ)²);
+      less established than escape-time perturbation — prototype first)
+- [ ] Cell rebasing for Carpet/Gasket (real fix for the depth-16/22
+      precision ceiling — track cell address separately from a small
+      per-cell delta, refreshed at each subdivision, same principle as
+      the escape-time perturbation rebasing already implemented; CPU
+      resolves the ≤4 level-k cells the view overlaps and whether each is
+      already a hole; exact, no glitches; ~1e15× with float64 cell math,
+      more with BigInt — today Carpet ~3.5e4×, Gasket ~3,000×)
+- [ ] Periodicity checking (Brent-style: save z every so often, stop when
+      the orbit returns within eps) so interior pixels stop early instead of
+      running all of maxIter. Only real speedup where the cardioid/bulb skip
+      doesn't apply (Julia, Ship, Tricorn, Multibrot³, Phoenix, minibrot
+      interiors). Fast path only; eps must scale with zoom; GPU gain is capped
+      by warp divergence, so benchmark on a phone before keeping it
 
 ## Deferred indefinitely
 - Menger Sponge / other 3D fractals (real 3D rendering project, not a
