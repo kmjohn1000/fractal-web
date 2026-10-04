@@ -30,10 +30,6 @@ Get approved, and harden the app for App Review and a first wave of phone users.
       box zoom)
 - [ ] Koch's fill toggle is a filled square next to the Play button, so it
       reads as Stop; use a half-filled triangle/snowflake icon (UI review)
-- [ ] One background for every mode: Canvas2D pattern views draw on #111
-      while the WebGL fractals are pure black, visible side by side in the
-      picker thumbnails; pick one (black) and re-run
-      scripts/render_thumbs.mjs (UI review)
 - [ ] High-res export: saved/shared images use the live canvas, capped
       at `Math.min(devicePixelRatio, 2)`. Render exports at a higher
       resolution, decoupled from that cap
@@ -197,6 +193,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   deeper Gasket zoom, not this.
 
 ## Done
+- One background for every mode: pattern views and page body pure black like the fractals — `9d37a80`
 - Info overlay in plain language (zoom, detail, rotation, Surprise-me place name) with the technical readout underneath; "Fractal Atlas" in the tab and home-screen names — `5d71c50`
 - Fractal picker as a thumbnail grid with display names and a Julia sets group (scripts/render_thumbs.mjs) — `f180020`
 - Dual view: Julia follows the main pane's center; flashing center crosshair; tap glides to center — `ab30998`
