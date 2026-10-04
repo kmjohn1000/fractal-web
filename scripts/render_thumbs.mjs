@@ -73,7 +73,7 @@ try {
   const tiles = await evaluate(`[...document.querySelectorAll("#fractalTypeRow .pickTile")].map((b) => ({
     selector: b.dataset.name ? '[data-name="' + CSS.escape(b.dataset.name) + '"]' : '[data-mode="' + b.dataset.mode + '"]',
     file: b.querySelector("img").getAttribute("src").split("/").pop(),
-    ifs: ["fern", "sierpinski", "levy", "vicsek"].includes(b.dataset.mode),
+    ifs: isIfsMode(b.dataset.mode),
   }))`);
   mkdirSync(outDir, { recursive: true });
 
@@ -87,7 +87,13 @@ try {
     await setHeight(Math.round(640 + (r.w - r.h)));
     await sleep(300);
     await evaluate(`[...document.querySelectorAll('#controls .control-row:not(.hidden) button[id$="esetBtn"]')].find((b) => b.offsetWidth > 0).click()`);
-    await sleep(t.ifs ? 7000 : 2500); // IFS modes fill in their points progressively
+    if (t.ifs) {
+      // IFS modes fill in their points progressively: wait until done.
+      for (let i = 0; i < 100 && !(await evaluate("fernView.accepted >= fernState.count")); i++) await sleep(200);
+      await sleep(300);
+    } else {
+      await sleep(2500);
+    }
     r = await evaluate(canvasRect);
     const side = Math.min(r.w, r.h);
     const shot = await send("Page.captureScreenshot", {
@@ -99,7 +105,11 @@ try {
   }
 } finally {
   ws?.close();
-  chrome.kill();
   server.close();
+  // Chrome keeps writing to its profile while it shuts down, so wait for it
+  // to exit before deleting the profile.
+  const exited = new Promise((r) => chrome.once("exit", r));
+  chrome.kill();
+  await Promise.race([exited, sleep(5000)]);
   rmSync(profile, { recursive: true, force: true });
 }
