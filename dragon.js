@@ -116,7 +116,7 @@ function createCurveView(canvas) {
       cachedPts = LINE_CURVES[curve].points(opts.depth);
       cachedKey = key;
     }
-    ctx.fillStyle = "#111";
+    ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // All of a curve's segments are the same length, so the first one sets

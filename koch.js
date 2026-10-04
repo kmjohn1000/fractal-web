@@ -71,7 +71,7 @@ function createKochView(canvas) {
       cachedVerts = kochSnowflake(opts.depth);
       cachedDepth = opts.depth;
     }
-    ctx.fillStyle = "#111";
+    ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.beginPath();

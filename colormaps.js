@@ -62,7 +62,7 @@ const COLORMAPS = [
 // Flat colors for the modes that aren't depth-mapped escape-time images:
 // the fern/IFS point clouds and the Koch/tree/line-curve drawings. Those
 // used to sample COLORMAPS at depth/maxDepth, which puts low depths at the
-// colormap's dark end -- near-invisible on the #111 background. Index 0
+// colormap's dark end -- near-invisible on the black background. Index 0
 // (green) is the fern's default; each line mode has its own default in
 // app.js (vectorColors).
 const SOLID_COLORS = [
