@@ -878,14 +878,36 @@ function requestRender() {
 // views) since they all support the same twist gesture.
 function rotationHudText(rotation) {
   const rotDeg = (rotation || 0) * 180 / Math.PI;
-  return Math.abs(rotDeg) > 0.5 ? `   rotation: ${rotDeg.toFixed(0)}°` : "";
+  return Math.abs(rotDeg) > 0.5 ? `Rotated ${rotDeg.toFixed(0)}°` : "";
+}
+
+// Magnification relative to the fractal's opening view, in words past a
+// thousand ("3.1 billion×"): what a person means by "how far in am I".
+const ZOOM_WORDS = [[1e15, "quadrillion"], [1e12, "trillion"], [1e9, "billion"], [1e6, "million"], [1e3, "thousand"]];
+function formatZoom(baseScale, scale) {
+  const z = baseScale / scale;
+  if (z < 9.95) return `${Number(z.toFixed(1))}×`;
+  if (z < 1000) return `${Math.round(z)}×`;
+  for (const [n, word] of ZOOM_WORDS) {
+    if (z >= n) return z / n < 1000 ? `${Number((z / n).toPrecision(2))} ${word}×` : `${z.toExponential(1)}×`;
+  }
+  return `${Math.round(z)}×`;
 }
 
 // Name goes in the bold headline line, everything else in the muted
 // monospace stats block beneath it (see #hud in index.html).
-function setHud(name, stats) {
+// Info overlay: the name, a plain-language line (zoom, detail, rotation,
+// place), and for the WebGL fractals a quieter technical readout under it.
+function setHud(name, plainParts, tech = "") {
   els.hud.querySelector(".hudName").textContent = name;
-  els.hud.querySelector(".hudStats").textContent = stats;
+  els.hud.querySelector(".hudPlain").replaceChildren(...plainParts.filter(Boolean).map((t) => {
+    const span = document.createElement("span");
+    span.textContent = t;
+    return span;
+  }));
+  const stats = els.hud.querySelector(".hudStats");
+  stats.textContent = tech;
+  stats.classList.toggle("hidden", !tech);
 }
 
 // Plain decimals while zoomed out (scale >= DEEP_ZOOM_THRESHOLD), where
@@ -929,37 +951,47 @@ function updateHud() {
       precision = "float32 (deep zoom unsupported for this fractal type)";
     }
   }
-  const rotText = rotationHudText(s.rotation);
   // Carpet/Gasket ignore the iter slider entirely (zoom-derived depth in
   // the shader) — showing "maxIter: 300" would misleadingly imply it still
   // does something, the same mismatch that caused the coloring bug.
   const usesFixedDepth = s.ftype === FTYPE.CARPET || s.ftype === FTYPE.GASKET;
-  const iterText = usesFixedDepth
-    ? `depth: ${digitFractalDepth(s.ftype, s.scale, mainRenderer.canvas.height)} (auto)`
-    : `maxIter: ${s.maxIter}${s.iterAutoLocked ? "" : " (auto)"}`;
+  const depth = usesFixedDepth ? digitFractalDepth(s.ftype, s.scale, mainRenderer.canvas.height) : 0;
+  const iterText = usesFixedDepth ? `depth: ${depth} (auto)` : `maxIter: ${s.maxIter}${s.iterAutoLocked ? "" : " (auto)"}`;
+  // A Surprise-me destination's name, for as long as the view is still the
+  // one the flight landed on.
+  const t = teleportLanding;
+  const place = t && t.name === currentName && t.cx === s.cx && t.cy === s.cy && t.scale === s.scale ? t.label : "";
   const f = formatHudCoords(s.cx, s.cy, s.scale);
-  setHud(fractalLabel(currentName),
-    `center: ${f.center}\n` +
-    `scale: ${f.scale}   ${iterText}   precision: ${precision}${rotText}` +
-    `${dualActive ? "   [dual — Julia c = center of main pane; tap to recenter]" : ""}`);
+  setHud(fractalLabel(currentName), [
+    place,
+    `Zoom ${formatZoom(s.baseScale, s.scale)}`,
+    usesFixedDepth ? `Depth ${depth}` : `Detail ${s.maxIter}`,
+    rotationHudText(s.rotation),
+    dualActive ? "Julia set uses the center point" : "",
+  ], `center: ${f.center}\nscale: ${f.scale}   ${iterText}   precision: ${precision}`);
+}
+
+// Pattern modes are titled with their picker label (EXTRA_MODES).
+function modeLabel(key) {
+  return EXTRA_MODES.find((m) => m.key === key).label;
 }
 
 function updateKochHud() {
-  setHud("Koch Snowflake", `depth: ${kochState.depth}   ${kochState.fill ? "filled" : "outline"}${rotationHudText(kochView.view.rotation)}`);
+  setHud(modeLabel("koch"), [`Depth ${kochState.depth}, ${kochState.fill ? "filled" : "outline"}`, rotationHudText(kochView.view.rotation)]);
 }
 
 function updateTreeHud() {
-  setHud("Pythagoras Tree", `depth: ${treeState.depth}${rotationHudText(treeView.view.rotation)}`);
+  setHud(modeLabel("tree"), [`Depth ${treeState.depth}`, rotationHudText(treeView.view.rotation)]);
 }
 
 function updateDragonHud() {
-  setHud(LINE_CURVES[dragonView.curve].label, `depth: ${dragonState.depth}${rotationHudText(dragonView.view.rotation)}`);
+  setHud(modeLabel(dragonView.curve), [`Depth ${dragonState.depth}`, rotationHudText(dragonView.view.rotation)]);
 }
 
 function updateFernHud() {
   // accepted = points actually on screen so far; it climbs toward the
   // target as refinement runs, and resets on every pan/zoom.
-  setHud(IFS_SYSTEMS[fernView.system].label, `points: ${fernView.accepted.toLocaleString()} / ${fernState.count.toLocaleString()}${rotationHudText(fernView.view.rotation)}`);
+  setHud(modeLabel(fernView.system), [`${fernView.accepted.toLocaleString()} of ${fernState.count.toLocaleString()} points`, rotationHudText(fernView.view.rotation)]);
 }
 
 // Dual view's crosshair marks the main pane's center -- the Julia pane's c.
@@ -2050,6 +2082,7 @@ function teleportDurationMs(distance) {
   return Math.min(2500, Math.max(1000, 1000 + (distance - 4) * 50));
 }
 let lastTeleportIndex = -1; // index into TELEPORT_DESTINATIONS; never picked twice in a row
+let teleportLanding = null; // { name, label, cx, cy, scale } of the last landing, for the info overlay
 let teleportGeneration = 0;
 
 // Any direct manipulation (pointer, wheel, Back, fractal switch) wins over
@@ -2091,6 +2124,7 @@ function teleport() {
       // Exact landing: the path's last point can be a few ulps off, which
       // matters at 1e-12 scales.
       Object.assign(st, target);
+      teleportLanding = { name: currentName, label: d.label, ...target };
     }
     markInteracting();
     renderAll();

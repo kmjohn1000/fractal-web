@@ -2,6 +2,10 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.14.1 — 2026-10-04
+- The info overlay now leads with plain language (zoom, detail, rotation, and the place name after Surprise me), with the technical readout underneath.
+- The browser tab and home-screen name are now "Fractal Atlas".
+
 ## 1.14.0 — 2026-10-04
 - The fractal picker now shows a preview of every fractal and pattern, with clearer names (Burning Ship, Newton's method, Sierpinski carpet) and the Julia sets grouped together.
 
