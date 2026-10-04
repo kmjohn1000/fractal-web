@@ -28,25 +28,38 @@ const FRACTAL_CONFIGS = {
   // iterations) plus a ~0.1 margin, so each opens filling the screen.
   // Tricorn's tips reach y = +-1.54, which its old +-1.25 box clipped even
   // before aspect fitting.
-  "Mandelbrot":   { ftype: FTYPE.ESCAPE,  power: 2, juliaC: null,               view: [-2.15, 0.65, -1.25, 1.25], dual: true,  category: "zoom" },
-  "Burn. Ship":   { ftype: FTYPE.SHIP,    power: 2, juliaC: null,               view: [-2.15, 1.25, -1.85, 0.65], dual: true,  category: "zoom" },
-  "Tricorn":      { ftype: FTYPE.TRICORN, power: 2, juliaC: null,               view: [-2.1,  1.15, -1.7,  1.7],  dual: true,  category: "zoom" },
-  "Multibrot³": { ftype: FTYPE.ESCAPE, power: 3, juliaC: null,             view: [-0.82, 0.82, -1.45, 1.45], dual: true,  category: "zoom" },
+  "Mandelbrot":   { label: "Mandelbrot", ftype: FTYPE.ESCAPE,  power: 2, juliaC: null,               view: [-2.15, 0.65, -1.25, 1.25], dual: true,  category: "zoom" },
+  "Burn. Ship":   { label: "Burning Ship", ftype: FTYPE.SHIP,    power: 2, juliaC: null,               view: [-2.15, 1.25, -1.85, 0.65], dual: true,  category: "zoom" },
+  "Tricorn":      { label: "Tricorn", ftype: FTYPE.TRICORN, power: 2, juliaC: null,               view: [-2.1,  1.15, -1.7,  1.7],  dual: true,  category: "zoom" },
+  "Multibrot³": { label: "Multibrot³", ftype: FTYPE.ESCAPE, power: 3, juliaC: null,             view: [-0.82, 0.82, -1.45, 1.45], dual: true,  category: "zoom" },
   // Needs the previous iterate as state, so no perturbation (deep zoom) path
   // -- see perturbationEligibleType.
-  "Phoenix":      { ftype: FTYPE.PHOENIX, power: 2, juliaC: null,               view: [-2.0, 0.65, -0.78, 0.78], dual: true,  category: "zoom" },
-  "Julia:Rabbit": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.12256, 0.74486], view: [-1.42, 1.42, -1.2, 1.2], dual: false, category: "zoom" },
-  "Julia:Dragon": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.4, 0.6],         view: [-1.5, 1.5, -1.1, 1.1],   dual: false, category: "zoom" },
-  "Julia:Spiral": { ftype: FTYPE.ESCAPE,  power: 2, juliaC: [0.285, 0.01],       view: [-0.95, 0.95, -1.2, 1.2], dual: false, category: "zoom" },
-  "Julia:Phoenix": { ftype: FTYPE.PHOENIX, power: 2, juliaC: [0.5667, 0],        view: [-0.8, 0.88, -1.38, 1.38], dual: false, category: "zoom" },
-  "Newton z³": { ftype: FTYPE.NEWTON, power: 3, juliaC: null,              view: [-2.0, 2.0, -1.5, 1.5],   dual: false, category: "zoom" },
+  "Phoenix":      { label: "Phoenix", ftype: FTYPE.PHOENIX, power: 2, juliaC: null,               view: [-2.0, 0.65, -0.78, 0.78], dual: true,  category: "zoom" },
+  "Julia:Rabbit": { label: "Douady rabbit", group: "julia", ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.12256, 0.74486], view: [-1.42, 1.42, -1.2, 1.2], dual: false, category: "zoom" },
+  "Julia:Dragon": { label: "Dragon", group: "julia", ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.4, 0.6],         view: [-1.5, 1.5, -1.1, 1.1],   dual: false, category: "zoom" },
+  "Julia:Spiral": { label: "Spiral", group: "julia", ftype: FTYPE.ESCAPE,  power: 2, juliaC: [0.285, 0.01],       view: [-0.95, 0.95, -1.2, 1.2], dual: false, category: "zoom" },
+  "Julia:Phoenix": { label: "Phoenix", group: "julia", ftype: FTYPE.PHOENIX, power: 2, juliaC: [0.5667, 0],        view: [-0.8, 0.88, -1.38, 1.38], dual: false, category: "zoom" },
+  "Newton z³": { label: "Newton's method", ftype: FTYPE.NEWTON, power: 3, juliaC: null,              view: [-2.0, 2.0, -1.5, 1.5],   dual: false, category: "zoom" },
   // Digit-test fractals (see FRAG_SRC's renderDigitFractal) — defined on
   // the unit square, so centered there with a little margin. power is
   // unused by these but kept non-null for consistency with the others.
-  "Carpet":       { ftype: FTYPE.CARPET,  power: 2, juliaC: null,               view: [-0.15, 1.15, -0.15, 1.15], dual: false, category: "zoom" },
-  "Gasket":       { ftype: FTYPE.GASKET,  power: 2, juliaC: null,               view: [-0.15, 1.15, -0.15, 1.15], dual: false, category: "zoom" },
+  "Carpet":       { label: "Sierpinski carpet", ftype: FTYPE.CARPET,  power: 2, juliaC: null,               view: [-0.15, 1.15, -0.15, 1.15], dual: false, category: "zoom" },
+  "Gasket":       { label: "Sierpinski gasket", ftype: FTYPE.GASKET,  power: 2, juliaC: null,               view: [-0.15, 1.15, -0.15, 1.15], dual: false, category: "zoom" },
 };
 const FRACTAL_NAMES = Object.keys(FRACTAL_CONFIGS);
+// FRACTAL_CONFIGS keys double as share-link ids (f=...), so they never
+// change; label is what people see. Julia presets are grouped in the picker
+// under "Julia sets", so their label alone ("Spiral") needs that context
+// anywhere else.
+function fractalLabel(name) {
+  const c = FRACTAL_CONFIGS[name];
+  return c.group === "julia" ? `Julia set: ${c.label}` : c.label;
+}
+// File-name-safe id, shared by export file names and picker thumbnails
+// (icons/thumbs/<slug>.webp, rendered by scripts/render_thumbs.mjs).
+function slugify(text) {
+  return text.normalize("NFKD").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
 
 // "Surprise me" destinations (see teleport()). Keyed by FRACTAL_CONFIGS name,
 // not FTYPE: FTYPE.ESCAPE is shared by Mandelbrot, Multibrot³ and the Julia
@@ -64,24 +77,24 @@ const TELEPORT_DESTINATIONS = [
 ];
 // Picker sections, in display order.
 const FRACTAL_CATEGORIES = [
-  { key: "zoom",    label: "Infinite Zoom" },
-  { key: "pattern", label: "Beautiful Patterns" },
+  { key: "zoom",    label: "Infinite zoom" },
+  { key: "pattern", label: "Patterns" },
 ];
 
 // Menu entries that switch the whole app mode (Canvas2D vector views, not a
 // WebGL shader ftype) rather than selecting a FRACTAL_CONFIGS entry. All are
 // in the picker's "pattern" section.
 const EXTRA_MODES = [
-  { key: "koch", label: "Koch Snowflake", category: "pattern" },
-  { key: "tree", label: "Pythagoras Tree", category: "pattern" },
-  { key: "dragon", label: "Dragon Curve", category: "pattern" },
-  { key: "hilbert", label: "Hilbert Curve", category: "pattern" },
-  { key: "gosper", label: "Gosper Curve", category: "pattern" },
-  { key: "arrowhead", label: "Sierpinski Arrowhead", category: "pattern" },
-  { key: "fern", label: "Barnsley Fern", category: "pattern" },
-  { key: "sierpinski", label: "Sierpinski Triangle", category: "pattern" },
-  { key: "levy", label: "Lévy C Curve", category: "pattern" },
-  { key: "vicsek", label: "Vicsek Fractal", category: "pattern" },
+  { key: "koch", label: "Koch snowflake", category: "pattern" },
+  { key: "tree", label: "Pythagoras tree", category: "pattern" },
+  { key: "dragon", label: "Dragon curve", category: "pattern" },
+  { key: "hilbert", label: "Hilbert curve", category: "pattern" },
+  { key: "gosper", label: "Gosper curve", category: "pattern" },
+  { key: "arrowhead", label: "Sierpinski arrowhead", category: "pattern" },
+  { key: "fern", label: "Barnsley fern", category: "pattern" },
+  { key: "sierpinski", label: "Sierpinski triangle", category: "pattern" },
+  { key: "levy", label: "Lévy C curve", category: "pattern" },
+  { key: "vicsek", label: "Vicsek fractal", category: "pattern" },
 ];
 
 // The chaos-game IFS modes (fern.js's IFS_SYSTEMS). They all share one
@@ -925,7 +938,7 @@ function updateHud() {
     ? `depth: ${digitFractalDepth(s.ftype, s.scale, mainRenderer.canvas.height)} (auto)`
     : `maxIter: ${s.maxIter}${s.iterAutoLocked ? "" : " (auto)"}`;
   const f = formatHudCoords(s.cx, s.cy, s.scale);
-  setHud(currentName,
+  setHud(fractalLabel(currentName),
     `center: ${f.center}\n` +
     `scale: ${f.scale}   ${iterText}   precision: ${precision}${rotText}` +
     `${dualActive ? "   [dual — Julia c = center of main pane; tap to recenter]" : ""}`);
@@ -1878,28 +1891,43 @@ applyHudVisibility();
 
 // ---------------------------------------------------------------- UI wiring
 
+// Picker: a grid of tiles, each a pre-rendered thumbnail plus the name
+// (thumbnails come from scripts/render_thumbs.mjs; re-run it after adding a
+// fractal or changing a default view). Julia presets get their own
+// subsection under Infinite zoom.
+function addPickerHeader(text, isSub = false) {
+  const header = document.createElement("div");
+  header.className = isSub ? "menuSectionHeader sub" : "menuSectionHeader";
+  header.textContent = text;
+  els.fractalTypeRow.appendChild(header);
+}
+function addPickerTile(label, slug, onPick, data) {
+  const btn = document.createElement("button");
+  btn.className = "pickTile";
+  Object.assign(btn.dataset, data);
+  const img = document.createElement("img");
+  img.src = `icons/thumbs/${slug}.webp`;
+  img.alt = "";
+  img.decoding = "async";
+  const name = document.createElement("span");
+  name.textContent = label;
+  btn.append(img, name);
+  btn.addEventListener("click", onPick);
+  els.fractalTypeRow.appendChild(btn);
+}
 FRACTAL_CATEGORIES.forEach((fam) => {
   const names = FRACTAL_NAMES.filter((n) => FRACTAL_CONFIGS[n].category === fam.key);
   const extraModes = EXTRA_MODES.filter((m) => m.category === fam.key);
   if (names.length === 0 && extraModes.length === 0) return;
-  const header = document.createElement("div");
-  header.className = "menuSectionHeader";
-  header.textContent = fam.label;
-  els.fractalTypeRow.appendChild(header);
-  names.forEach((name) => {
-    const btn = document.createElement("button");
-    btn.textContent = name;
-    btn.dataset.name = name;
-    btn.addEventListener("click", () => selectFractal(name));
-    els.fractalTypeRow.appendChild(btn);
-  });
-  extraModes.forEach((m) => {
-    const btn = document.createElement("button");
-    btn.textContent = m.label;
-    btn.dataset.mode = m.key;
-    btn.addEventListener("click", () => setMode(m.key));
-    els.fractalTypeRow.appendChild(btn);
-  });
+  addPickerHeader(fam.label);
+  const addFractal = (name) => addPickerTile(FRACTAL_CONFIGS[name].label, slugify(name), () => selectFractal(name), { name });
+  names.filter((n) => !FRACTAL_CONFIGS[n].group).forEach(addFractal);
+  const julias = names.filter((n) => FRACTAL_CONFIGS[n].group === "julia");
+  if (julias.length) {
+    addPickerHeader("Julia sets", true);
+    julias.forEach(addFractal);
+  }
+  extraModes.forEach((m) => addPickerTile(m.label, m.key, () => setMode(m.key), { mode: m.key }));
 });
 updateMenuActiveState();
 
@@ -2427,8 +2455,8 @@ function applyShareLink(url) {
 // ---------------------------------------------------------------- share: image + menu
 
 function shareFileName() {
-  const label = mode === "fractal" ? currentName : EXTRA_MODES.find((e) => e.key === mode).label;
-  const slug = label.normalize("NFKD").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const label = mode === "fractal" ? fractalLabel(currentName) : EXTRA_MODES.find((e) => e.key === mode).label;
+  const slug = slugify(label);
   const d = new Date();
   const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   return `fractal-web-${slug}-${date}.png`;
