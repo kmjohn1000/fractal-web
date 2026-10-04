@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.14.0 — 2026-10-04
+- The fractal picker now shows a preview of every fractal and pattern, with clearer names (Burning Ship, Newton's method, Sierpinski carpet) and the Julia sets grouped together.
+
 ## 1.13.0 — 2026-09-26
 - Shared links open straight in the Fractal Atlas app on iPhone and iPad when it's installed (universal links), landing on the shared view.
 
