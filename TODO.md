@@ -5,10 +5,11 @@ Now / Next / Later. Adding an item here isn't approval to build it (see CLAUDE.m
 ## Now — land the launch
 Get approved, and harden the app for App Review and a first wave of phone users.
 
-- [ ] Ship 1.13.0 as the first App Store update (blocked until 1.10.2 is
-      approved): already synced — Xcode Archive → Distribute App → Upload.
-      Brings universal links, the rotation compass, Julia-follows-center
-      and smoother coloring
+- [ ] Ship the first App Store update, now 1.14.x (blocked until 1.10.2 is
+      approved): `npm run ios:sync`, then Xcode Archive → Distribute App →
+      Upload. Brings universal links, the rotation compass,
+      Julia-follows-center, smoother coloring, the thumbnail picker and the
+      plain-language info overlay
 - [ ] Follow the iOS Larger Text / Dynamic Type setting in the Capacitor
       app. All UI font sizes are rem off `:root { font-size:
       calc(16px * var(--text-scale)) }`, but --text-scale is fixed at 1:
@@ -21,7 +22,18 @@ Get approved, and harden the app for App Review and a first wave of phone users.
       buttons (Surprise me was added after the 410px breakpoint was sized
       for 8), and 9 x 40px + gaps = 404px > 360px. Options: ~36px buttons
       below ~400px, or fold a button (e.g. dual view) into a menu. Also
-      below 410px the buttons are 40px, under the 44px touch-target min
+      below 410px the buttons are 40px, under the 44px touch-target min.
+      From the 2026-10-04 UI review: also move the iter slider out of the
+      toolbar into the info panel (it's automatic by default, "iter" is
+      jargon, and it costs a whole row of canvas on every screen), and give
+      Surprise me more prominence than the utility buttons (back, reset,
+      box zoom)
+- [ ] Koch's fill toggle is a filled square next to the Play button, so it
+      reads as Stop; use a half-filled triangle/snowflake icon (UI review)
+- [ ] One background for every mode: Canvas2D pattern views draw on #111
+      while the WebGL fractals are pure black, visible side by side in the
+      picker thumbnails; pick one (black) and re-run
+      scripts/render_thumbs.mjs (UI review)
 - [ ] High-res export: saved/shared images use the live canvas, capped
       at `Math.min(devicePixelRatio, 2)`. Render exports at a higher
       resolution, decoupled from that cap
@@ -48,6 +60,18 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       instead of the rectangle. Respect rotation. Decide show/hide rule
       (e.g. only when zoomed in past some scale)
 - [ ] "Zoom to nearest minibrot" guided action
+- [ ] Open the Mandelbrot family rotated 90° on portrait phones: the set is
+      wider than tall, so today it sits small mid-screen with ~45% empty
+      space above and below. Rotation already exists; the opening view's
+      fit would use the swapped aspect. Safe fallback: tighter framing
+      (UI review)
+- [ ] Accent color from the active colormap: selected states (picker ring,
+      active buttons, slider fill) use a fixed iOS blue (#3a6ea5/#6cf);
+      derive the accent from the current colormap's bright end instead, so
+      the controls match the art (UI review)
+- [ ] One-time first-launch hint for the gestures (pinch, two-finger twist,
+      tap to recenter in dual view); dismiss on first interaction, remember
+      it in localStorage (UI review)
 - [ ] Colormap animation (WebGL: a u_colorPhase uniform shifting the LUT
       lookup over time via requestAnimationFrame; Koch/Tree: cycle the
       colormap's stops, like kochAnimateBtn cycles depth; new toggle, not
@@ -56,6 +80,11 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
 ## Later — big bets
 Flexible scope and timing. Chains: new types → formula editor → Fractint importer;
 distance estimation → zoom-to-minibrot / AI discovery.
+
+### Interface polish
+- [ ] Friendlier colormap names: "Gist Rainbow" and "HSV" are matplotlib
+      jargon; optional, the scientific names are fine for enthusiasts
+      (UI review)
 
 ### Creator tools
 - [ ] Make-your-own-fractal formula editor (needs the building blocks
@@ -168,6 +197,8 @@ distance estimation → zoom-to-minibrot / AI discovery.
   deeper Gasket zoom, not this.
 
 ## Done
+- Info overlay in plain language (zoom, detail, rotation, Surprise-me place name) with the technical readout underneath; "Fractal Atlas" in the tab and home-screen names — `5d71c50`
+- Fractal picker as a thumbnail grid with display names and a Julia sets group (scripts/render_thumbs.mjs) — `f180020`
 - Dual view: Julia follows the main pane's center; flashing center crosshair; tap glides to center — `ab30998`
 - Rotation compass: appears while rotating, fades when still, tap to reset rotation — `ceb4236`
 - App Store release via Capacitor: app shell, Save to Photos, share sheet, icon, launch screen, privacy/support pages; 1.10.2 submitted for review 2026-09-26 — `e10c8f0`
