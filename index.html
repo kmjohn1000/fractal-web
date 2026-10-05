@@ -18,10 +18,9 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <style>
   /* Every UI font size is in rem, so they all scale together off this one
-     root size. --text-scale stays 1 (no change) for now; following the
-     iOS Larger Text setting needs native Swift (read UIContentSizeCategory,
-     evaluateJavaScript to set --text-scale on documentElement.style) — a
-     plain web build can't see that setting. See TODO.md. */
+     root size. --text-scale is 1 on the web; in the iOS app
+     FractalBridgeViewController.swift sets it from the Larger Text setting
+     (a plain web build can't see that setting). */
   :root { --text-scale: 1; font-size: calc(16px * var(--text-scale)); }
   html, body {
     margin: 0; padding: 0; background: #000; height: 100%;
