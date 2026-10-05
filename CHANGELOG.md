@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.14.4 — 2026-10-04
+- Koch's fill button now shows a half-filled snowflake instead of a square that looked like a Stop button.
+
 ## 1.14.3 — 2026-10-04
 - Patterns (Koch, tree, curves, fern and the other point patterns) now sit on the same pure black as the fractals, instead of dark grey.
 
