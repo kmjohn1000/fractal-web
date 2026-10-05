@@ -66,13 +66,16 @@ function slugify(text) {
 // presets, whose coordinates mean different things. scale is the view's
 // half-height, as everywhere else. Every entry was checked by rendering it
 // (not taken on faith): each lands on visible boundary detail at its scale.
-// re/im are strings so the source keeps every digit it was given.
+// re/im are strings so the source keeps every digit it was given. Each is
+// the feature's center, not just a point near it: Spiral Cluster is the
+// Misiurewicz point M(28,2) at the spiral's eye; Mini Mandelbrot sits just
+// left of the period-55 nucleus so the minibrot and its halo are centered.
 const TELEPORT_DESTINATIONS = [
   { fractal: "Mandelbrot", label: "Seahorse Valley", re: "-0.743643887037151", im: "0.131825904205330", scale: 4e-10 },
-  { fractal: "Mandelbrot", label: "Elephant Valley", re: "0.2925", im: "0.0165", scale: 6e-3 },
-  { fractal: "Mandelbrot", label: "Mini Mandelbrot", re: "-1.7490033809726543", im: "0.0", scale: 2e-12 },
-  { fractal: "Mandelbrot", label: "Spiral Cluster", re: "-0.7453", im: "0.1127", scale: 1e-3 },
-  { fractal: "Mandelbrot", label: "Feather Valley", re: "-0.774931606245356", im: "-0.13706041474587047", scale: 1e-8 },
+  { fractal: "Mandelbrot", label: "Elephant Valley", re: "0.2825", im: "0.0105", scale: 1.2e-2 },
+  { fractal: "Mandelbrot", label: "Mini Mandelbrot", re: "-1.749003357223038", im: "0.0", scale: 1.5e-12 },
+  { fractal: "Mandelbrot", label: "Spiral Cluster", re: "-0.7451580638016195553", im: "0.1125749162054165212", scale: 1e-3 },
+  { fractal: "Mandelbrot", label: "Feather Valley", re: "-0.774931608855056", im: "-0.13706041846077", scale: 1e-8 },
   { fractal: "Mandelbrot", label: "Double Spiral", re: "-0.16070135", im: "1.0375665", scale: 5e-7 },
 ];
 // Picker sections, in display order.
