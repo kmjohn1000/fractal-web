@@ -2,6 +2,14 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.14.6 — 2026-10-04
+- Opening a shared link when the app launches no longer applies it twice.
+- Malformed share links (odd mode names, huge numbers or rotations) are rejected or cleaned up instead of reaching the view.
+- If the browser drops the graphics context, the reload now keeps your current view.
+- Opening a link to another curve or pattern clears Back history from the previous one.
+- After a two-finger gesture in box-zoom mode, the next tap in dual view is no longer swallowed.
+- The launch screen's safety timeout now works even if startup stalls.
+
 ## 1.14.5 — 2026-10-04
 - Surprise me now lands centered on its sights: Spiral Cluster and Feather Valley on the spiral's eye, Elephant Valley on a row of elephants, and Mini Mandelbrot on an actual mini Mandelbrot.
 

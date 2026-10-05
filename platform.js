@@ -98,6 +98,12 @@ const Platform = (() => {
       .then(({ SplashScreen }) => SplashScreen.hide({ fadeOutDuration: 200 }))
       .catch(() => {});
   }
+  // The fallback must not go through hideLaunchScreen: that sets the flag
+  // before awaiting launchUrlHandled/plugins(), so if either stalls, a
+  // second call would return early and the launch screen would never leave.
+  function forceHideLaunchScreen() {
+    plugins().then(({ SplashScreen }) => SplashScreen.hide({ fadeOutDuration: 200 })).catch(() => {});
+  }
 
   // Universal links: a tapped https://kmjohn1000.github.io/fractal-web/#...
   // share link opens the app (ios/App/App/App.entitlements; the domain's
@@ -108,13 +114,19 @@ const Platform = (() => {
   function onOpenUrl(handler) {
     if (!isNative) return;
     const p = plugins();
+    // On a cold start the plugin reports the launch link twice: once via
+    // getLaunchUrl and again as a retained appUrlOpen event. Apply it once.
+    let launchUrl = null;
     launchUrlHandled = p
       .then(({ App }) => App.getLaunchUrl())
-      .then((res) => { if (res && res.url) handler(res.url); })
+      .then((res) => { if (res && res.url) { launchUrl = res.url; handler(res.url); } })
       .catch(() => {});
-    p.then(({ App }) => App.addListener("appUrlOpen", (e) => handler(e.url))).catch(() => {});
+    p.then(({ App }) => App.addListener("appUrlOpen", (e) => {
+      if (e.url === launchUrl) { launchUrl = null; return; }
+      handler(e.url);
+    })).catch(() => {});
   }
-  if (isNative) setTimeout(hideLaunchScreen, 10000);
+  if (isNative) setTimeout(forceHideLaunchScreen, 10000);
 
   // ------------------------------------------------------------ API
 
