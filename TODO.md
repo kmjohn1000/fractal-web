@@ -18,16 +18,6 @@ Get approved, and harden the app for App Review and a first wave of phone users.
       Needs native Swift: read UIContentSizeCategory (and observe its
       change notification), then evaluateJavaScript to set --text-scale
       on document.documentElement.style. Not possible in the plain web build
-- [ ] Mandelbrot toolbar wraps to two lines at 360px: the row has 9 icon
-      buttons (Surprise me was added after the 410px breakpoint was sized
-      for 8), and 9 x 40px + gaps = 404px > 360px. Options: ~36px buttons
-      below ~400px, or fold a button (e.g. dual view) into a menu. Also
-      below 410px the buttons are 40px, under the 44px touch-target min.
-      From the 2026-10-04 UI review: also move the iter slider out of the
-      toolbar into the info panel (it's automatic by default, "iter" is
-      jargon, and it costs a whole row of canvas on every screen), and give
-      Surprise me more prominence than the utility buttons (back, reset,
-      box zoom)
 - [ ] High-res export: saved/shared images use the live canvas, capped
       at `Math.min(devicePixelRatio, 2)`. Render exports at a higher
       resolution, decoupled from that cap
@@ -178,6 +168,11 @@ distance estimation → zoom-to-minibrot / AI discovery.
 - Real-time collaborative exploration
 
 ## Explicitly rejected
+- Toolbar rework (2026-10-04): moving the iter slider into the info card,
+  folding Info/Box zoom/Reset into a "⋯" menu for full 44px buttons, and a
+  gradient Surprise me button. Mocked up at 360px and declined: the slider
+  is needed for some fractals, so it stays in the toolbar. The row no longer
+  wraps (buttons flex down to ~36px wide, still 44px tall).
 - Log-compressed coloring past ~100 iterations (to "de-noise" deep zooms):
   tried 2026-09-26, reverted before commit. Deep views sit in a narrow
   band of high iteration counts, so compression flattened Seahorse Valley
