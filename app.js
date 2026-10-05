@@ -685,6 +685,11 @@ if (!juliaRenderer) reportError("WebGL context creation failed on juliaCanvas.")
     reportError("WebGL context lost (likely memory pressure). Waiting to recover — the page will reload automatically once it does.");
   });
   canvas.addEventListener("webglcontextrestored", () => {
+    // Carry the current view across the reload as a share link, so a deep
+    // zoom isn't lost at exactly the moment memory pressure hits.
+    // replaceState, not location.hash: that would fire hashchange, whose
+    // handler strips the hash again before the reload commits.
+    try { history.replaceState(null, "", location.pathname + location.search + buildShareHash()); } catch { /* reload to the default view */ }
     location.reload();
   });
 });
@@ -1346,6 +1351,7 @@ function attachFractalInteraction(canvas, getState, paneName, renderer) {
       commitBoxZoom(paneName, getState(), renderer, canvas);
       els.boxRect.classList.add("hidden");
       pointers.delete(e.pointerId);
+      if (pointers.size === 0) multiTouch = false;
       return;
     }
 
@@ -2409,7 +2415,14 @@ function parseShareHash(hash) {
     const int = (k, lo, hi) => num(k, (v) => Number.isInteger(v) && v >= lo && v <= hi);
     const pos = (v) => v > 0;
     const m = p.get("m");
-    const view = { cx: num("x"), cy: num("y"), scale: num("s", pos), rotation: num("r") };
+    // m is attacker-controlled: only "fractal" or a real mode key, never an
+    // inherited property name like "constructor" (which the lookups below
+    // would otherwise resolve against Object.prototype).
+    if (m !== "fractal" && !EXTRA_MODES.some((e) => e.key === m)) return null;
+    // Positions/scales beyond +-1e300 only produce NaN views; rotation is
+    // wrapped so the HUD and compass see a bounded angle.
+    const big = (v) => Math.abs(v) <= 1e300;
+    const view = { cx: num("x", big), cy: num("y", big), scale: num("s", (v) => pos(v) && big(v)), rotation: normalizeAngle(num("r", big)) };
     if (m === "fractal") {
       const name = p.get("f");
       if (!Object.prototype.hasOwnProperty.call(FRACTAL_CONFIGS, name)) return null;
@@ -2418,13 +2431,13 @@ function parseShareHash(hash) {
       if (p.get("d") === "1" && FRACTAL_CONFIGS[name].dual) {
         st.dual = true;
         st.julia = { juliaC: [num("jcx"), num("jcy")], cx: num("jx"), cy: num("jy"), scale: num("js", pos),
-          rotation: num("jr"), maxIter: int("ji", 50, 2000), baseScale: num("jb", pos) };
+          rotation: normalizeAngle(num("jr", big)), maxIter: int("ji", 50, 2000), baseScale: num("jb", pos) };
       }
       return st;
     }
     if (isIfsMode(m)) return { mode: m, ...view, count: int("n", 100000, 4000000), colorIndex: int("c", 0, SOLID_COLORS.length - 1) };
     const maxDepth = isCurveMode(m) ? LINE_CURVES[m].maxDepth : { koch: 8, tree: 12 }[m];
-    if (maxDepth === undefined) return null;
+    if (maxDepth === undefined || !Object.prototype.hasOwnProperty.call(vectorColors, m)) return null;
     const minDepth = isCurveMode(m) ? LINE_CURVES[m].minDepth || 0 : 0;
     // "c" (solid color) is optional: links made before 1.10.0 don't have it.
     const colorIndex = p.has("c") ? int("c", 0, SOLID_COLORS.length - 1) : vectorColors[m];
@@ -2452,14 +2465,20 @@ function applyShareState(st) {
     els.iterSlider.value = mainState.maxIter;
   } else {
     if (isIfsMode(st.mode)) {
-      fernView.setSystem(st.mode); // before the view is written below
+      if (fernView.system !== st.mode) {
+        fernView.setSystem(st.mode); // before the view is written below
+        fernNav.clearHistory(); // Back history belongs to the previous system
+      }
       fernState.count = st.count;
       els.fernPointsSlider.value = st.count;
       setFernColor(st.colorIndex);
     } else {
       colormapIndex = st.cm;
       vectorColors[st.mode] = st.colorIndex;
-      if (isCurveMode(st.mode)) dragonView.setCurve(st.mode); // before depth/view are written
+      if (isCurveMode(st.mode) && dragonView.curve !== st.mode) {
+        dragonView.setCurve(st.mode); // before depth/view are written
+        dragonNav.clearHistory(); // Back history belongs to the previous curve
+      }
       updateColorSwatches();
       depthStateFor(st.mode).depth = st.depth;
       els[`${isCurveMode(st.mode) ? "dragon" : st.mode}DepthSlider`].value = st.depth;
