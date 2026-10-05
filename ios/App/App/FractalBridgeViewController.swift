@@ -1,12 +1,40 @@
 import UIKit
 import Photos
+import WebKit
 import Capacitor
 
 /// The app's web view controller: Capacitor's stock one plus the app-local
 /// plugins below, which aren't npm packages so they must be registered here.
+/// It also carries the iOS Larger Text (Dynamic Type) setting into the page:
+/// WKWebView content doesn't follow it, so the page's `--text-scale` CSS
+/// variable (see index.html) is set from UIFontMetrics, which grows with the
+/// setting, including the accessibility sizes.
 class FractalBridgeViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(SavePhotoPlugin())
+
+        // Set before and after the page parses, so there's no flash at the
+        // wrong size on launch; the notification covers changes while running.
+        for time in [WKUserScriptInjectionTime.atDocumentStart, .atDocumentEnd] {
+            webView?.configuration.userContentController.addUserScript(
+                WKUserScript(source: textScaleScript(), injectionTime: time, forMainFrameOnly: true))
+        }
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(contentSizeChanged),
+            name: UIContentSizeCategory.didChangeNotification, object: nil)
+    }
+
+    /// Ratio of the user's preferred text size to the default (1 at Large).
+    private func textScale() -> CGFloat {
+        UIFontMetrics.default.scaledValue(for: 16, compatibleWith: traitCollection) / 16
+    }
+
+    private func textScaleScript() -> String {
+        "document.documentElement.style.setProperty('--text-scale', '\(textScale())');"
+    }
+
+    @objc private func contentSizeChanged() {
+        webView?.evaluateJavaScript(textScaleScript(), completionHandler: nil)
     }
 }
 

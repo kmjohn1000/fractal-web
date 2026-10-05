@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.15.0 — 2026-10-05
+- The app now follows the iOS Larger Text setting, including the accessibility sizes: menus, the picker, the info overlay and labels grow with it.
+
 ## 1.14.6 — 2026-10-04
 - Opening a shared link when the app launches no longer applies it twice.
 - Malformed share links (odd mode names, huge numbers or rotations) are rejected or cleaned up instead of reaching the view.
