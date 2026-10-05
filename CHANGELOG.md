@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.14.5 — 2026-10-04
+- Surprise me now lands centered on its sights: Spiral Cluster and Feather Valley on the spiral's eye, Elephant Valley on a row of elephants, and Mini Mandelbrot on an actual mini Mandelbrot.
+
 ## 1.14.4 — 2026-10-04
 - Koch's fill button now shows a half-filled snowflake instead of a square that looked like a Stop button.
 
