@@ -10,14 +10,6 @@ Get approved, and harden the app for App Review and a first wave of phone users.
       Upload. Brings universal links, the rotation compass,
       Julia-follows-center, smoother coloring, the thumbnail picker and the
       plain-language info overlay
-- [ ] Follow the iOS Larger Text / Dynamic Type setting in the Capacitor
-      app. All UI font sizes are rem off `:root { font-size:
-      calc(16px * var(--text-scale)) }`, but --text-scale is fixed at 1:
-      WKWebView content doesn't get Dynamic Type, and user-scalable=no
-      (needed so pinch drives the canvas) rules out browser text zoom.
-      Needs native Swift: read UIContentSizeCategory (and observe its
-      change notification), then evaluateJavaScript to set --text-scale
-      on document.documentElement.style. Not possible in the plain web build
 - [ ] High-res export: saved/shared images use the live canvas, capped
       at `Math.min(devicePixelRatio, 2)`. Render exports at a higher
       resolution, decoupled from that cap
@@ -186,6 +178,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   deeper Gasket zoom, not this.
 
 ## Done
+- Follow the iOS Larger Text / Dynamic Type setting in the app (1.15.0): `FractalBridgeViewController` sets `--text-scale` from `UIFontMetrics` at document start/end and on content-size changes, uncapped through the accessibility sizes; the web build stays at 1. Not in a shipped build yet — ships with the next release — `fa00fa7`
 - Code-review hardening (1.14.6): strict share-link parsing (real mode keys only, bounded x/y/s, normalized rotation), cold-start launch link applied once, view kept across a WebGL context-loss reload, Back history cleared when a link switches curve/pattern, box-zoom multi-touch reset, launch-screen fallback that can't be defeated — `393cfeb`
 - Universal links no longer claim support.html and privacy.html (AASA exclusions, in the kmjohn1000.github.io repo) — `8225221`
 - Koch fill toggle shows a half-filled depth-2 snowflake instead of a Stop-like square — `6903923`
