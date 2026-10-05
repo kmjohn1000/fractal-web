@@ -417,7 +417,16 @@
       <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 5v14l12-7z"/></svg>
     </button>
     <button id="kochFillBtn" class="iconBtn active" aria-label="Toggle fill" title="Toggle fill">
-      <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4.5" y="4.5" width="15" height="15" rx="2.5"/></svg>
+      <!-- Depth-2 Koch snowflake, left half filled: reads as "fill", not as
+           a Stop square beside Play. (Depth 1 is a six-pointed star.) -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+        <defs>
+          <path id="kochFillGlyph" d="M12.00 2.60 L12.90 4.17 L14.71 4.17 L13.81 5.73 L14.71 7.30 L16.52 7.30 L17.43 5.73 L18.33 7.30 L20.14 7.30 L19.24 8.87 L20.14 10.43 L18.33 10.43 L17.43 12.00 L18.33 13.57 L20.14 13.57 L19.24 15.13 L20.14 16.70 L18.33 16.70 L17.43 18.27 L16.52 16.70 L14.71 16.70 L13.81 18.27 L14.71 19.83 L12.90 19.83 L12.00 21.40 L11.10 19.83 L9.29 19.83 L10.19 18.27 L9.29 16.70 L7.48 16.70 L6.57 18.27 L5.67 16.70 L3.86 16.70 L4.76 15.13 L3.86 13.57 L5.67 13.57 L6.57 12.00 L5.67 10.43 L3.86 10.43 L4.76 8.87 L3.86 7.30 L5.67 7.30 L6.57 5.73 L7.48 7.30 L9.29 7.30 L10.19 5.73 L9.29 4.17 L11.10 4.17Z"/>
+          <clipPath id="kochFillLeftHalf"><rect width="12" height="24"/></clipPath>
+        </defs>
+        <use href="#kochFillGlyph" fill="currentColor" stroke="none" clip-path="url(#kochFillLeftHalf)"/>
+        <use href="#kochFillGlyph"/>
+      </svg>
     </button>
     <button id="kochColormapBtn" class="iconBtn" aria-label="Choose color" title="Choose color">
       <svg viewBox="0 0 24 24">
