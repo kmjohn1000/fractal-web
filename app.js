@@ -1080,19 +1080,32 @@ function centerForAnchor(renderer, state, sx, sy, targetX, targetY) {
 
 // ---------------------------------------------------------------- fractal-type / mode switching
 
-function selectFractal(name) {
+// Leaving a fractal stashes its live view here, and picking it again restores
+// it, so switching never costs you your place (the colormap is already one
+// global). In memory only: a fresh launch starts from the default views.
+// Reset and share links want a clean slate and pass { fresh: true }.
+const fractalMemory = new Map();
+
+function selectFractal(name, { fresh = false } = {}) {
   cancelTeleport();
+  // Picking the fractal already showing keeps its view; it only leaves a
+  // vector mode (whose switch back lands here too).
+  if (!fresh && name === currentName) { setMode("fractal"); return; }
+  fractalMemory.set(currentName, { mainState, juliaState, mainHistory, juliaHistory });
+  const remembered = fresh ? null : fractalMemory.get(name);
   currentName = name;
   const config = FRACTAL_CONFIGS[name];
-  mainState = freshState(config);
-  mainHistory = [];
+  mainState = remembered ? remembered.mainState : freshState(config);
+  mainHistory = remembered ? remembered.mainHistory : [];
   juliaHistory = [];
-  // Same reasoning as exitDual(): juliaHistory was just cleared above, so
-  // if activePane was left on "julia" from before this switch, Back would
-  // try to pop an empty array and silently do nothing.
+  // Same reasoning as exitDual(): if activePane was left on "julia" from
+  // before this switch, Back would try to pop an empty array and silently
+  // do nothing.
   activePane = "main";
   if (dualActive && !config.dual) dualActive = false;
-  if (dualActive) enterDual();
+  // dualActive stays one app-wide toggle; a remembered Julia pane (its own
+  // view and Back history) comes back with its fractal.
+  if (dualActive) enterDual(remembered && remembered.juliaState ? remembered : null);
   els.dualBtn.disabled = !config.dual;
   els.dualBtn.classList.toggle("active", dualActive);
   // Zoom-only tools. Everything in FRACTAL_CONFIGS is "zoom" today, but the
@@ -1115,18 +1128,23 @@ function selectFractal(name) {
   // Refit now that layout is final: freshState ran above while the canvas
   // could still be hidden (coming from a vector mode) or about to change
   // size (Julia pane / iter slider shown or hidden). setMode only schedules
-  // the render, so it picks this up.
-  const fitted = viewFromBounds(config.view, mainCanvasAspect());
-  Object.assign(mainState, fitted, { baseScale: fitted.scale });
-  // Fresh fractal (or Reset, which is selectFractal) = fresh auto iter mode.
+  // the render, so it picks this up. A remembered view is left as it was.
+  if (!remembered) {
+    const fitted = viewFromBounds(config.view, mainCanvasAspect());
+    Object.assign(mainState, fitted, { baseScale: fitted.scale });
+  }
+  // A new fractal (or Reset) starts in auto iter mode; a remembered one
+  // keeps its lock, and auto mode re-derives from its zoom.
   applyAutoIter();
 }
 
-function enterDual() {
+// from: a remembered { juliaState, juliaHistory } (see selectFractal) to bring
+// back instead of opening a fresh Julia pane.
+function enterDual(from = null) {
   const config = FRACTAL_CONFIGS[currentName];
   if (!config.dual) return;
   dualActive = true;
-  juliaState = {
+  juliaState = from ? from.juliaState : {
     cx: 0, cy: 0, scale: mainState.scale, rotation: 0,
     ftype: mainState.ftype, power: mainState.power,
     isJulia: true, juliaC: [mainState.cx, mainState.cy],
@@ -1136,8 +1154,10 @@ function enterDual() {
     baseScale: mainState.scale,
     iterAutoLocked: mainState.iterAutoLocked,
   };
+  // c is the main pane's center, whichever pane this is.
+  juliaState.juliaC = [mainState.cx, mainState.cy];
   crosshairFlash.lastView = null; // flash the crosshair as dual view opens
-  juliaHistory = [];
+  juliaHistory = from ? from.juliaHistory : [];
   els.juliaCanvas.classList.remove("hidden");
   layoutCanvasArea();
   requestRender();
@@ -2039,8 +2059,8 @@ els.iterSlider.addEventListener("input", () => {
   mainState.maxIter = v;
   if (juliaState) juliaState.maxIter = v;
   // Manual interaction is the only thing that turns auto iter mode off
-  // (for both panes, since this slider drives both); selectFractal/Reset
-  // turn it back on.
+  // (for both panes, since this slider drives both); Reset and a fractal's
+  // first visit turn it back on (a revisit keeps its remembered setting).
   mainState.iterAutoLocked = true;
   if (juliaState) juliaState.iterAutoLocked = true;
   requestRender();
@@ -2188,7 +2208,7 @@ function glideMainTo(x, y) {
 
 els.teleportBtn.addEventListener("click", teleport);
 
-els.resetBtn.addEventListener("click", () => selectFractal(currentName));
+els.resetBtn.addEventListener("click", () => selectFractal(currentName, { fresh: true }));
 
 els.kochDepthSlider.addEventListener("input", () => {
   syncSliderFill(els.kochDepthSlider);
@@ -2457,7 +2477,7 @@ function applyShareState(st) {
   if (st.mode === "fractal") {
     colormapIndex = st.cm;
     if (dualActive) exitDual();
-    selectFractal(st.name);
+    selectFractal(st.name, { fresh: true });
     Object.assign(mainState, { cx: st.cx, cy: st.cy, scale: st.scale, rotation: st.rotation,
       maxIter: st.maxIter, iterAutoLocked: st.iterAutoLocked });
     if (st.dual) {
@@ -2695,7 +2715,7 @@ window.addEventListener("hashchange", applyShareHashFromUrl);
 
 // ---------------------------------------------------------------- init
 
-selectFractal(currentName);
+selectFractal(currentName, { fresh: true });
 updateLUT();
 updateColorSwatches();
 requestRender();
