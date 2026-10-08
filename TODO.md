@@ -10,9 +10,6 @@ Get approved, and harden the app for App Review and a first wave of phone users.
       Upload. Brings universal links, the rotation compass,
       Julia-follows-center, smoother coloring, the thumbnail picker and the
       plain-language info overlay
-- [ ] High-res export: saved/shared images use the live canvas, capped
-      at `Math.min(devicePixelRatio, 2)`. Render exports at a higher
-      resolution, decoupled from that cap
 
 ## Next — discovery and delight
 Help people find beautiful places, and give them more ways to see them.
@@ -61,6 +58,15 @@ distance estimation → zoom-to-minibrot / AI discovery.
 - [ ] Friendlier colormap names: "Gist Rainbow" and "HSV" are matplotlib
       jargon; optional, the scientific names are fine for enthusiasts
       (UI review)
+
+### Paid tier (parked, user decision 2026-10-08)
+- [ ] High-res export as a paid-tier feature: saved/shared images use the
+      live canvas, capped at `Math.min(devicePixelRatio, 2)`. A paid tier
+      would render exports at a higher resolution, decoupled from that cap.
+      Free export stays as is. Needs a monetization decision first (in-app
+      purchase via StoreKit, a price, and updated listing/privacy wording);
+      a watermark-free export could be part of the same tier. The app is
+      free with no monetization today, so nothing here is approved to build
 
 ### Creator tools
 - [ ] Make-your-own-fractal formula editor (needs the building blocks
