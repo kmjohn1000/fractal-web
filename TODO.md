@@ -15,9 +15,16 @@ Get approved, and harden the app for App Review and a first wave of phone users.
 Help people find beautiful places, and give them more ways to see them.
 Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-minibrot.
 
-- [ ] New escape-time types: Celtic Mandelbrot, Buffalo, Lambda
+- [ ] New escape-time types: Buffalo, Lambda (Celtic is done, see Done)
       (single-state iteration, reuse existing shader/perturbation/
       supersampling pipeline with no structural changes)
+- [ ] Burning Ship looks like a ship: the standard images show it upright,
+      which means mirroring the imaginary axis (the set sits at y < 0 and
+      the picker thumbnail shows the hull on top, upside down), plus a fire
+      default palette (Ember/Hot) for this fractal only. Caveats: existing
+      share links store y, so a mirror needs a link-version bump or a flag
+      so old Burning Ship links keep opening the same place; check whether
+      colormaps can have a per-fractal default today (user idea 2026-10-08)
 - [ ] Exterior distance estimation as a coloring style: track dc' = 2·z·dc + 1
       alongside z, color by b = 2|z|·ln|z| / |dc| (normalized by u_scale).
       Draws thin filaments crisply instead of as speckle. Fits beside orbit
@@ -184,6 +191,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   deeper Gasket zoom, not this.
 
 ## Done
+- Celtic Mandelbrot (1.16.0): z' = (|x²−y²|, 2xy) + c as FTYPE.CELTIC; deep zoom via a `diffabs` fold on the real part, Julia dual view, picker thumbnail. Checked against a float64 numpy render: deep views agree on the interior mask (98.8% at 1e-9). Not in a shipped build yet — ships with the next release — `e45eee3`
 - Follow the iOS Larger Text / Dynamic Type setting in the app (1.15.0): `FractalBridgeViewController` sets `--text-scale` from `UIFontMetrics` at document start/end and on content-size changes, uncapped through the accessibility sizes; the web build stays at 1. Not in a shipped build yet — ships with the next release — `fa00fa7`
 - Code-review hardening (1.14.6): strict share-link parsing (real mode keys only, bounded x/y/s, normalized rotation), cold-start launch link applied once, view kept across a WebGL context-loss reload, Back history cleared when a link switches curve/pattern, box-zoom multi-touch reset, launch-screen fallback that can't be defeated — `393cfeb`
 - Universal links no longer claim support.html and privacy.html (AASA exclusions, in the kmjohn1000.github.io repo) — `8225221`
