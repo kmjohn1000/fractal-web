@@ -18,6 +18,14 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
 - [ ] New escape-time types: Buffalo, Lambda (Celtic is done, see Done)
       (single-state iteration, reuse existing shader/perturbation/
       supersampling pipeline with no structural changes)
+- [ ] Remember each fractal's view and the colormap while the app stays open:
+      switching to another fractal and back returns to where you were (view,
+      iteration setting, Back history, dual-view state) instead of resetting
+      to the default opening view. Only the Reset button (that fractal) or a
+      fresh launch after force-closing resets it. Colormap is already global
+      across switches; vector modes (Koch, tree, etc.) already keep their
+      views. Open question: per-fractal memory (leaning here) vs carrying one
+      view across the Mandelbrot-family types (user idea 2026-10-08)
 - [ ] Burning Ship looks like a ship: the standard images show it upright,
       which means mirroring the imaginary axis (the set sits at y < 0 and
       the picker thumbnail shows the hull on top, upside down), plus a fire
