@@ -40,7 +40,7 @@ void main() {
 // ordinary float32, which stays accurate because the delta itself stays
 // small (this is the same "small deltas are fine in float32 regardless of
 // absolute zoom depth" property the dc offset already relied on). Covers
-// Mandelbrot, Multibrot^3, Tricorn and Burning Ship, in parameter-space and
+// Mandelbrot, Multibrot^3, Tricorn, Burning Ship and Celtic, in parameter-space and
 // Julia mode (see perturbStep and renderEscapePerturbation). Newton and the
 // Carpet/Gasket digit tests aren't escape-time iterations and still hit the
 // plain float32 ceiling at deep zoom. A cheap "reset the delta once it
@@ -102,7 +102,7 @@ uniform float u_scale;
 uniform float u_rotCos;
 uniform float u_rotSin;
 uniform int   u_maxIter;
-uniform int   u_ftype;   // 0=escape 1=ship 2=tricorn 3=newton
+uniform int   u_ftype;   // 0=escape 1=ship 2=tricorn 3=newton 7=celtic (see FTYPE in app.js)
 uniform float u_power;   // 2.0 or 3.0 (escape family only)
 uniform bool  u_isJulia;
 uniform vec2  u_juliaC;
@@ -138,6 +138,7 @@ const int FTYPE_NEWTON  = 3;
 const int FTYPE_CARPET  = 4;
 const int FTYPE_GASKET  = 5;
 const int FTYPE_PHOENIX = 6;
+const int FTYPE_CELTIC  = 7;
 
 const vec2 NEWTON_ROOT0 = vec2( 1.0,  0.0);
 const vec2 NEWTON_ROOT1 = vec2(-0.5,  0.8660254037844386);
@@ -331,6 +332,10 @@ vec3 renderEscapeFast(vec2 p) {
     } else if (u_ftype == FTYPE_TRICORN) {
       vec2 zc = vec2(z.x, -z.y);
       zsq = cMul(zc, zc);
+    } else if (u_ftype == FTYPE_CELTIC) {
+      // Mandelbrot with the real part of z^2 folded: (|x^2 - y^2|, 2xy)
+      zsq = cMul(z, z);
+      zsq.x = abs(zsq.x);
     } else {
       zsq = cMul(z, z);
       if (u_power > 2.5) zsq = cMul(zsq, z); // power 3 (Multibrot^3)
@@ -376,6 +381,15 @@ vec2 perturbStep(vec2 Z, vec2 dz, vec2 dc) {
     // 2*(|(X+dx)(Y+dy)| - |XY|) = 2*diffabs(XY, X*dy + dx*Y + dx*dy).
     float re = (2.0 * Z.x + dz.x) * dz.x - (2.0 * Z.y + dz.y) * dz.y;
     float im = 2.0 * diffabs(Z.x * Z.y, Z.x * dz.y + dz.x * Z.y + dz.x * dz.y);
+    return vec2(re, im) + dc;
+  }
+  if (u_ftype == FTYPE_CELTIC) {
+    // f(z) = (|x^2 - y^2|, 2xy). The imaginary part is plain Mandelbrot's:
+    // 2*(X*dy + dx*Y + dx*dy). The real part folds x^2 - y^2 =: A, whose
+    // delta is a = (2X+dx)*dx - (2Y+dy)*dy, so |A+a| - |A| = diffabs(A, a).
+    float a = (2.0 * Z.x + dz.x) * dz.x - (2.0 * Z.y + dz.y) * dz.y;
+    float re = diffabs(Z.x * Z.x - Z.y * Z.y, a);
+    float im = 2.0 * (Z.x * dz.y + dz.x * Z.y + dz.x * dz.y);
     return vec2(re, im) + dc;
   }
   if (u_ftype == FTYPE_TRICORN) {

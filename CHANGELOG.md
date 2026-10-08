@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.16.0 — 2026-10-08
+- Added the Celtic Mandelbrot, a Mandelbrot variant with a folded edge, with deep zoom, a Julia dual view and a picker thumbnail.
+
 ## 1.15.0 — 2026-10-05
 - The app now follows the iOS Larger Text setting, including the accessibility sizes: menus, the picker, the info overlay and labels grow with it.
 

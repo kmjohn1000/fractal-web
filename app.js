@@ -5,7 +5,7 @@
 // the region that must be fully visible when the fractal first opens;
 // viewFromBounds fits it to the canvas's aspect ratio (see there).
 
-const FTYPE = { ESCAPE: 0, SHIP: 1, TRICORN: 2, NEWTON: 3, CARPET: 4, GASKET: 5, PHOENIX: 6 };
+const FTYPE = { ESCAPE: 0, SHIP: 1, TRICORN: 2, NEWTON: 3, CARPET: 4, GASKET: 5, PHOENIX: 6, CELTIC: 7 };
 
 // Phoenix's fixed p in z' = z^2 + c + p*z_prev: the classic real -0.5
 // (Ushiki). With c = 0.5667 in Julia mode that gives the well-known twin-lobe
@@ -31,6 +31,7 @@ const FRACTAL_CONFIGS = {
   "Mandelbrot":   { label: "Mandelbrot", ftype: FTYPE.ESCAPE,  power: 2, juliaC: null,               view: [-2.15, 0.65, -1.25, 1.25], dual: true,  category: "zoom" },
   "Burn. Ship":   { label: "Burning Ship", ftype: FTYPE.SHIP,    power: 2, juliaC: null,               view: [-2.15, 1.25, -1.85, 0.65], dual: true,  category: "zoom" },
   "Tricorn":      { label: "Tricorn", ftype: FTYPE.TRICORN, power: 2, juliaC: null,               view: [-2.1,  1.15, -1.7,  1.7],  dual: true,  category: "zoom" },
+  "Celtic":       { label: "Celtic Mandelbrot", ftype: FTYPE.CELTIC, power: 2, juliaC: null,     view: [-2.0,  0.45, -1.85, 1.85], dual: true,  category: "zoom" },
   "Multibrot³": { label: "Multibrot³", ftype: FTYPE.ESCAPE, power: 3, juliaC: null,             view: [-0.82, 0.82, -1.45, 1.45], dual: true,  category: "zoom" },
   // Needs the previous iterate as state, so no perturbation (deep zoom) path
   // -- see perturbationEligibleType.
@@ -162,7 +163,8 @@ const ESCAPE_RADIUS_SQ = 65536.0;
 // perturbStep in shaders.js for the per-type delta formulas. Covers both
 // parameter-space and Julia mode.
 function perturbationEligibleType(state) {
-  return state.ftype === FTYPE.ESCAPE || state.ftype === FTYPE.TRICORN || state.ftype === FTYPE.SHIP;
+  return state.ftype === FTYPE.ESCAPE || state.ftype === FTYPE.TRICORN || state.ftype === FTYPE.SHIP ||
+    state.ftype === FTYPE.CELTIC;
 }
 
 // One float64 step of the escape-family map, z <- f(z) + c, in place on the
@@ -175,6 +177,10 @@ function stepOrbit(ftype, power, z, cr, ci) {
     const ar = Math.abs(zr), ai = Math.abs(zi);
     z[0] = ar * ar - ai * ai + cr;
     z[1] = 2 * ar * ai + ci;
+  } else if (ftype === FTYPE.CELTIC) {
+    // (|zr^2 - zi^2|, 2*zr*zi)
+    z[0] = Math.abs(zr * zr - zi * zi) + cr;
+    z[1] = 2 * zr * zi + ci;
   } else if (ftype === FTYPE.TRICORN) {
     // conj(z)^2 = (zr^2 - zi^2) - 2*zr*zi*i
     z[0] = zr * zr - zi * zi + cr;
