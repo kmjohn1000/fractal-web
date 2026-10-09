@@ -65,6 +65,15 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
 - [ ] One-time first-launch hint for the gestures (pinch, two-finger twist,
       tap to recenter in dual view); dismiss on first interaction, remember
       it in localStorage (UI review)
+- [ ] Smooth (mirrored) palette option: escape-time colors wrap every 40
+      iterations (`fract(n * 0.025)` in `escapeColor`), so sequential
+      palettes (Inferno, Fire, Hot, Ember, Plasma, Viridis, Turbo, Glacier,
+      Grayscale) snap from their bright end back to dark, drawing a hard seam
+      at each band. A toggle (or per-palette flag) would mirror alternate
+      cycles (dark to bright, then bright to dark) so no seam appears; the
+      cyclic palettes (Classic, Twilight, Spectrum) are unaffected. Could be
+      done by baking a forward+reverse LUT, no shader change. Keep the seam
+      as the default: it suits Fire on the Burning Ship (2026-10-09)
 - [ ] Colormap animation (WebGL: a u_colorPhase uniform shifting the LUT
       lookup over time via requestAnimationFrame; Koch/Tree: cycle the
       colormap's stops, like kochAnimateBtn cycles depth; new toggle, not
