@@ -65,6 +65,30 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
 - [ ] One-time first-launch hint for the gestures (pinch, two-finger twist,
       tap to recenter in dual view); dismiss on first interaction, remember
       it in localStorage (UI review)
+- [ ] Link-preview tags so shared links look good in Messages, Slack and
+      social apps: `index.html` has no `og:title`/`og:description`/
+      `og:image` (or `twitter:card`) today, so a shared link shows as a bare
+      URL. Add them with one striking static fractal image; per-link previews
+      would need a server, so not now. Likely the best marketing per hour
+      spent (iOS review, 2026-10-09)
+- [ ] Haptics at key moments: the Haptics plugin is installed but only fires
+      on a successful save. Candidates: Surprise me landing, the compass
+      snapping to upright, picking a colormap, Reset, crossing 0° while
+      rotating. Keep them subtle, through `platform.js`
+- [ ] Home Screen quick actions (long-press the icon): Surprise me, last
+      view, random colormap. Swift in the app/scene delegate plus a hook
+      into the web app
+- [ ] Copy image (and Save to Files) in the share menu, beside Save to
+      Photos and Copy link; `@capacitor/filesystem` is already installed
+- [ ] Accessibility pass: the buttons have aria-labels, but the fractal
+      canvas gives VoiceOver nothing. Add a short label describing the
+      current view (fractal, zoom, rotation), then run VoiceOver and Voice
+      Control over the app
+- [ ] iPad check: layout at Stage Manager window sizes and in split view
+      (untested)
+- [ ] Listing hook: "Save to Photos, then set as your wallpaper" (apps can't
+      set wallpapers directly, but it's a strong use case); fold into the
+      listing overhaul with the next iOS release
 - [ ] Smooth (mirrored) palette option: escape-time colors wrap every 40
       iterations (`fract(n * 0.025)` in `escapeColor`), so sequential
       palettes (Inferno, Fire, Hot, Ember, Plasma, Viridis, Turbo, Glacier,
@@ -91,6 +115,15 @@ distance estimation → zoom-to-minibrot / AI discovery.
       purchase via StoreKit, a price, and updated listing/privacy wording);
       a watermark-free export could be part of the same tier. The app is
       free with no monetization today, so nothing here is approved to build
+
+### iOS integrations
+- [ ] "Fractal of the Day" widget (home or lock screen): a WidgetKit
+      extension, so native work; retention rather than discovery, so only
+      once the app has users
+- [ ] App Intents / Shortcuts: expose "Surprise me" and "Open last view" to
+      Siri, Spotlight and Shortcuts
+- Skipped for now (no fit without a favorites feature): Apple Pencil,
+  SharePlay, App Clips, Live Activities, iCloud sync
 
 ### Creator tools
 - [ ] Custom palette inside a share link: an optional `cp=` parameter carrying
