@@ -2397,7 +2397,7 @@ function buildShareHash() {
     p.set("f", currentName);
     put("x", s.cx); put("y", s.cy); put("s", s.scale); put("r", s.rotation || 0);
     put("i", s.maxIter); if (s.iterAutoLocked) p.set("il", "1");
-    put("cm", colormapIndex);
+    put("cm", COLORMAPS[colormapIndex].name);
     if (dualActive && juliaState) {
       const j = juliaState;
       p.set("d", "1");
@@ -2411,7 +2411,7 @@ function buildShareHash() {
     if (isIfsMode(mode)) {
       put("n", fernState.count); put("c", fernState.colorIndex);
     } else {
-      put("cm", colormapIndex);
+      put("cm", COLORMAPS[colormapIndex].name);
       put("c", vectorColors[mode]);
       put("dp", depthStateFor(mode).depth);
       if (mode === "koch") p.set("fl", kochState.fill ? "1" : "0");
@@ -2440,6 +2440,11 @@ function parseShareHash(hash) {
     };
     const int = (k, lo, hi) => num(k, (v) => Number.isInteger(v) && v >= lo && v <= hi);
     const pos = (v) => v > 0;
+    // The colormap is named, not numbered, so reordering or retiring
+    // colormaps doesn't change what existing links show. An unknown name
+    // (a retired colormap, or an old numeric link) opens in the default
+    // colormap instead of rejecting the whole link.
+    const cmIndex = () => Math.max(0, COLORMAPS.findIndex((c) => c.name === p.get("cm")));
     const m = p.get("m");
     // m is attacker-controlled: only "fractal" or a real mode key, never an
     // inherited property name like "constructor" (which the lookups below
@@ -2453,7 +2458,7 @@ function parseShareHash(hash) {
       const name = p.get("f");
       if (!Object.prototype.hasOwnProperty.call(FRACTAL_CONFIGS, name)) return null;
       const st = { mode: m, name, ...view, maxIter: int("i", 50, 2000), iterAutoLocked: p.get("il") === "1",
-        cm: int("cm", 0, COLORMAPS.length - 1), dual: false };
+        cm: cmIndex(), dual: false };
       if (p.get("d") === "1" && FRACTAL_CONFIGS[name].dual) {
         st.dual = true;
         st.julia = { juliaC: [num("jcx"), num("jcy")], cx: num("jx"), cy: num("jy"), scale: num("js", pos),
@@ -2467,7 +2472,7 @@ function parseShareHash(hash) {
     const minDepth = isCurveMode(m) ? LINE_CURVES[m].minDepth || 0 : 0;
     // "c" (solid color) is optional: links made before 1.10.0 don't have it.
     const colorIndex = p.has("c") ? int("c", 0, SOLID_COLORS.length - 1) : vectorColors[m];
-    return { mode: m, ...view, cm: int("cm", 0, COLORMAPS.length - 1), colorIndex, depth: int("dp", minDepth, maxDepth), fill: p.get("fl") !== "0" };
+    return { mode: m, ...view, cm: cmIndex(), colorIndex, depth: int("dp", minDepth, maxDepth), fill: p.get("fl") !== "0" };
   } catch {
     return null;
   }

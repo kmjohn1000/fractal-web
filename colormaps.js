@@ -5,8 +5,9 @@
 // sampled at 33 evenly spaced stops (linear interpolation between stops is
 // visually indistinguishable from the 256-entry originals). Hot, Ember,
 // Glacier, Classic, Fire and Spectrum are hand-tuned.
-// Share links store a colormap's index (cm=), so reordering or removing
-// entries changes what older links show.
+// Share links store a colormap's name (cm=Classic), so entries can be
+// reordered freely. Renaming or removing one makes old links using it open in
+// the default colormap (the first entry), so keep the names stable.
 const COLORMAPS = [
   { name: "Inferno", stops: [
     [0.0000,   0,   0,   4], [0.0312,   4,   3,  18], [0.0625,  11,   7,  36],

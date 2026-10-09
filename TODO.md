@@ -93,6 +93,14 @@ distance estimation → zoom-to-minibrot / AI discovery.
       free with no monetization today, so nothing here is approved to build
 
 ### Creator tools
+- [ ] Custom palette inside a share link: an optional `cp=` parameter carrying
+      the whole colormap (about 16-33 evenly spaced colors as hex, roughly
+      100-200 characters) so a link works for a palette the recipient's app
+      version doesn't have. Only matters once users can make their own
+      palettes (a colormap editor); built-ins already travel by name
+      (`cm=Classic`, 1.18.1). Needs strict parsing like the other share
+      fields (bounded length, hex only, bad value falls back to `cm`)
+      (2026-10-09)
 - [ ] Make-your-own-fractal formula editor (needs the building blocks
       Celtic/Buffalo/Lambda introduce before the abstraction is clear)
 - [ ] Fractint PAR/FRM importer: paste a .par entry + its .frm formula and
@@ -208,6 +216,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   deeper Gasket zoom, not this.
 
 ## Done
+- Share links name the colormap (`cm=Classic`) instead of an index (1.18.1), so palettes can be reordered or added without changing what links show; unknown names open in the default — `see commit log`
 - Colormap refresh (1.18.0): added Classic and Fire, dropped Magma and HSV, Gist Rainbow renamed Spectrum, reordered the picker; Inferno/Plasma/Viridis/Turbo/Twilight regenerated from the real matplotlib tables (33 stops). Share links' `cm=` indices shifted (fine this early). Burning Ship's fire default is still open above, but Fire now exists. Not in a shipped build yet — `772e718`
 - Each fractal remembers its view while the app is open (1.17.0): `fractalMemory` stashes a fractal's view, iteration setting, Back history and Julia pane when you leave it and restores them on return; Reset (that fractal) and share links start fresh, picking the current fractal no longer resets it, and the colormap stays global. In memory only, so a relaunch starts from the defaults. Dual view stays one app-wide toggle, so a detour through a fractal without dual (Newton, Carpet, Gasket) turns it off. Not in a shipped build yet — `01f6633`
 - Celtic Mandelbrot (1.16.0): z' = (|x²−y²|, 2xy) + c as FTYPE.CELTIC; deep zoom via a `diffabs` fold on the real part, Julia dual view, picker thumbnail. Checked against a float64 numpy render: deep views agree on the interior mask (98.8% at 1e-9). Not in a shipped build yet — ships with the next release — `e45eee3`
