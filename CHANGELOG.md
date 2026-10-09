@@ -2,6 +2,11 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.18.0 — 2026-10-09
+- Two new colormaps: Classic (blue, white, orange, black, the familiar Mandelbrot poster look) and Fire (black through red and orange to cream).
+- Inferno, Plasma, Viridis, Turbo and Twilight now use the full-detail versions of their matplotlib palettes, so gradients are smoother and Turbo and Twilight look like the originals.
+- Removed Magma (nearly identical to Inferno) and HSV; Gist Rainbow is now called Spectrum. The picker is reordered, with Inferno still the default. Older share links may open in a different colormap.
+
 ## 1.17.0 — 2026-10-08
 - Each fractal now remembers where you left it. Switch to another fractal and back, or visit Koch and return, and your zoom, rotation, iteration setting, Back history and Julia pane are still there. Reset (that fractal only) or relaunching the app starts over.
 - Picking the fractal you're already on no longer resets it.

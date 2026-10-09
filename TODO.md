@@ -74,11 +74,6 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
 Flexible scope and timing. Chains: new types → formula editor → Fractint importer;
 distance estimation → zoom-to-minibrot / AI discovery.
 
-### Interface polish
-- [ ] Friendlier colormap names: "Gist Rainbow" and "HSV" are matplotlib
-      jargon; optional, the scientific names are fine for enthusiasts
-      (UI review)
-
 ### Paid tier (parked, user decision 2026-10-08)
 - [ ] High-res export as a paid-tier feature: saved/shared images use the
       live canvas, capped at `Math.min(devicePixelRatio, 2)`. A paid tier
@@ -204,6 +199,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   deeper Gasket zoom, not this.
 
 ## Done
+- Colormap refresh (1.18.0): added Classic and Fire, dropped Magma and HSV, Gist Rainbow renamed Spectrum, reordered the picker; Inferno/Plasma/Viridis/Turbo/Twilight regenerated from the real matplotlib tables (33 stops). Share links' `cm=` indices shifted (fine this early). Burning Ship's fire default is still open above, but Fire now exists. Not in a shipped build yet — see the commit log
 - Each fractal remembers its view while the app is open (1.17.0): `fractalMemory` stashes a fractal's view, iteration setting, Back history and Julia pane when you leave it and restores them on return; Reset (that fractal) and share links start fresh, picking the current fractal no longer resets it, and the colormap stays global. In memory only, so a relaunch starts from the defaults. Dual view stays one app-wide toggle, so a detour through a fractal without dual (Newton, Carpet, Gasket) turns it off. Not in a shipped build yet — `01f6633`
 - Celtic Mandelbrot (1.16.0): z' = (|x²−y²|, 2xy) + c as FTYPE.CELTIC; deep zoom via a `diffabs` fold on the real part, Julia dual view, picker thumbnail. Checked against a float64 numpy render: deep views agree on the interior mask (98.8% at 1e-9). Not in a shipped build yet — ships with the next release — `e45eee3`
 - Follow the iOS Larger Text / Dynamic Type setting in the app (1.15.0): `FractalBridgeViewController` sets `--text-scale` from `UIFontMetrics` at document start/end and on content-size changes, uncapped through the accessibility sizes; the web build stays at 1. Not in a shipped build yet — ships with the next release — `fa00fa7`
