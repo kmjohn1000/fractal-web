@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.18.1 — 2026-10-09
+- Share links now name the colormap (cm=Classic) instead of numbering it, so links keep their colors when colormaps are added or reordered. A link naming an unknown colormap opens in the default one.
+
 ## 1.18.0 — 2026-10-09
 - Two new colormaps: Classic (blue, white, orange, black, the familiar Mandelbrot poster look) and Fire (black through red and orange to cream).
 - Inferno, Plasma, Viridis, Turbo and Twilight now use the full-detail versions of their matplotlib palettes, so gradients are smoother and Turbo and Twilight look like the originals.
