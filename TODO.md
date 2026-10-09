@@ -3,13 +3,16 @@
 Now / Next / Later. Adding an item here isn't approval to build it (see CLAUDE.md).
 
 ## Now — land the launch
-Get approved, and harden the app for App Review and a first wave of phone users.
+1.14.6 (build 134) is live on the App Store (2026-10-08), but downloads are
+very low, so the next release should also carry the listing work.
 
-- [ ] Ship the first App Store update, now 1.14.x (blocked until 1.10.2 is
-      approved): `npm run ios:sync`, then Xcode Archive → Distribute App →
-      Upload. Brings universal links, the rotation compass,
-      Julia-follows-center, smoother coloring, the thumbnail picker and the
-      plain-language info overlay
+- [ ] Ship the next App Store update (not blocked): `npm run ios:sync`, then
+      Xcode Archive → Distribute App → Upload, then App Review. Brings
+      Dynamic Type (1.15.0), Celtic (1.16.0), per-fractal view memory
+      (1.17.0) and the colormap refresh with named share-link colors
+      (1.18.x). Ride the listing overhaul along with it (title, subtitle and
+      keywords, a softer deep-zoom claim, captioned screenshots, What's New,
+      and the fractal count, now 23 types)
 
 ## Next — discovery and delight
 Help people find beautiful places, and give them more ways to see them.
