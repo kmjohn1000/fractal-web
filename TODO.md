@@ -18,6 +18,19 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
 - [ ] New escape-time types: Buffalo, Lambda (Celtic is done, see Done)
       (single-state iteration, reuse existing shader/perturbation/
       supersampling pipeline with no structural changes)
+- [ ] Surprise me and a one-line description for every escape-time fractal:
+      today Surprise me is Mandelbrot only (`7e2c606`). Add curated places per
+      fractal (Burning Ship's mini-ships, Tricorn, Celtic, ...), and a short
+      "what you're looking at" blurb in the info card or picker. Cheap content
+      work next to the new types (idea from the WebSim Fractal Explorer review,
+      2026-10-09)
+- [ ] More Mandelbrot-family variants beyond Buffalo/Lambda: Heart, Feather,
+      Perpendicular Buffalo/Ship, Mandelbar variants and similar. The WebSim
+      explorer offers 52 types and drew 2,074 views, so exotic variants seem to
+      attract people. Each is a small ftype branch on the shared pipeline; check
+      which ones perturbation can handle (abs-folds need `diffabs`) before
+      promising deep zoom. Count in the listing is "22 fractals", update with
+      any addition (2026-10-09)
 - [ ] Burning Ship looks like a ship: the standard images show it upright,
       which means mirroring the imaginary axis (the set sits at y < 0 and
       the picker thumbnail shows the hull on top, upside down), plus a fire
