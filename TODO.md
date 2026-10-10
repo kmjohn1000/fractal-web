@@ -13,6 +13,26 @@ very low, so the next release should also carry the listing work.
       (1.18.x). Ride the listing overhaul along with it (title, subtitle and
       keywords, a softer deep-zoom claim, captioned screenshots, What's New,
       and the fractal count, now 23 types)
+- [ ] Listing overhaul details, from benchmarking Fractal Dive
+      (apps.apple.com/us/app/fractal-dive/id6813485724, 2026-10-10). The
+      listing has no subtitle today (it's the most visible line in search):
+      - Subtitle that states the benefit, not the method (theirs: "Zoom into
+        fractals forever"; ours could be "Explore 23 fractals, zoom forever",
+        if the deep-zoom claim survives review)
+      - Description as short headed sections written around what the user
+        gets ("No maths required", an auto-tour), not an opening spec list
+        ("22 fractal types", rendering method). The live copy still says 22
+      - Beginner framing: named places with short explanations and scale
+        comparisons (see the Surprise me item under Next)
+      - Localization pass: they ship English plus Dutch, French, German,
+        Italian, Spanish; we're English only. Even Spanish/French/German
+        widens search reach
+      - Neither listing has an app preview video or accessibility labels;
+        add both. Claim Dynamic Type once 1.15.0 is live
+      - Pick a primary category on purpose (both apps sit in Entertainment;
+        Graphics & Design or Education may fit better)
+      - Brighter app icon: the current one is near-black and fades into the
+        dark search card (`scripts/render_icon.py`)
 
 ## Next — discovery and delight
 Help people find beautiful places, and give them more ways to see them.
