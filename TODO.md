@@ -14,8 +14,14 @@ very low, so the next release should also carry the listing work.
       keywords, a softer deep-zoom claim, captioned screenshots, What's New,
       and the fractal count, now 23 types)
 - [ ] Listing overhaul details, from benchmarking Fractal Dive
-      (apps.apple.com/us/app/fractal-dive/id6813485724, 2026-10-10). The
+      (apps.apple.com/us/app/fractal-dive/id6813485724) and Fractal Explorer:
+      Deep Zoom (apps.apple.com/us/app/fractal-explorer-deep-zoom/id6794896393,
+      $2.99, ranked #46 Top Paid in Graphics & Design), 2026-10-10. The
       listing has no subtitle today (it's the most visible line in search):
+      - Their subtitles sell a feeling or benefit ("Zoom into fractals
+        forever", "Fractals you can fall into"); Deep Zoom also states a
+        concrete depth (about 30 digits), which is easier to defend than
+        "forever". Check our real depth (about 1e13) before claiming any
       - Subtitle that states the benefit, not the method (theirs: "Zoom into
         fractals forever"; ours could be "Explore 23 fractals, zoom forever",
         if the deep-zoom claim survives review)
@@ -29,8 +35,9 @@ very low, so the next release should also carry the listing work.
         widens search reach
       - Neither listing has an app preview video or accessibility labels;
         add both. Claim Dynamic Type once 1.15.0 is live
-      - Pick a primary category on purpose (both apps sit in Entertainment;
-        Graphics & Design or Education may fit better)
+      - Pick a primary category on purpose: we and Fractal Dive sit in
+        Entertainment, while Deep Zoom is in Graphics & Design, where it
+        charts. Graphics & Design or Education may fit better
       - Brighter app icon: the current one is near-black and fades into the
         dark search card (`scripts/render_icon.py`)
 
@@ -76,6 +83,19 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       instead of the rectangle. Respect rotation. Decide show/hide rule
       (e.g. only when zoomed in past some scale)
 - [ ] "Zoom to nearest minibrot" guided action
+- [ ] Auto-dive mode: a button that zooms steadily into an interesting spot
+      on its own, with drag to steer (Fractal Dive's "Press Dive", Fractal
+      Explorer: Deep Zoom's "Fly"). Both competitors make guided travel their
+      hook and we have none. Likely builds on distance estimation and "zoom to
+      nearest minibrot" for picking the target; capped by our ~1e13 depth
+      until the arbitrary-precision item under Later is done (competitor
+      benchmark, 2026-10-10)
+- [ ] Saved places (bookmarks): save the current view by name inside the app
+      and fly back to it later. Today we only have share links and
+      per-fractal memory that resets on relaunch. Fractal Explorer: Deep Zoom
+      saves full-precision location and colors and syncs them through iCloud;
+      decide whether sync is worth it or local-only is enough. Could reuse the
+      share-link format as the stored view (competitor benchmark, 2026-10-10)
 - [ ] Open the Mandelbrot family rotated 90° on portrait phones: the set is
       wider than tall, so today it sits small mid-screen with ~45% empty
       space above and below. Rotation already exists; the opening view's
