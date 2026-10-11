@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.18.2 — 2026-10-10
+- New app icon: a bright close-up of Seahorse Valley in the Classic colors, so it stands out on dark backgrounds instead of fading into them.
+
 ## 1.18.1 — 2026-10-09
 - Share links now name the colormap (cm=Classic) instead of numbering it, so links keep their colors when colormaps are added or reordered. A link naming an unknown colormap opens in the default one.
 
