@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.18.3 — 2026-10-10
+- Smaller app and website download: icons recompressed (about 1 MB lighter, no visible change).
+
 ## 1.18.2 — 2026-10-10
 - New app icon: a bright close-up of Seahorse Valley in the Classic colors, so it stands out on dark backgrounds instead of fading into them.
 

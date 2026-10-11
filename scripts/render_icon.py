@@ -3,7 +3,13 @@ Classic colormap (bright spirals, no large dark area, so it stands out on
 dark backgrounds), 2x2 supersampled. Writes the 1024px App Store icon, the
 iOS asset-catalog copy, and the web/PWA sizes (the picture is full-bleed
 texture, so the maskable icons are the same image).
-Run: python3 scripts/render_icon.py  (needs numpy + Pillow)."""
+Then recompresses them: lossless for the 1024px master (pngquant shows faint
+banding in its smooth gradients when enlarged), pngquant for the smaller
+sizes (about 70% smaller, no visible difference).
+Run: python3 scripts/render_icon.py  (needs numpy + Pillow, and
+`brew install oxipng pngquant`)."""
+import subprocess
+
 import numpy as np
 from PIL import Image
 
@@ -35,9 +41,17 @@ rgb[np.isnan(nu)] = INTERIOR
 rgb = rgb.reshape(SIZE, SS, SIZE, SS, 3).mean(axis=(1, 3))
 master = Image.fromarray(rgb.round().astype(np.uint8))
 
-master.save("icons/icon-1024.png")
-master.save("ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png")
+masters = ["icons/icon-1024.png",
+           "ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png"]
+for path in masters:
+    master.save(path)
+small = []
 for name, px in [("icon-512", 512), ("icon-192", 192), ("icon-maskable-512", 512),
                  ("icon-maskable-192", 192), ("apple-touch-icon", 180), ("favicon-32", 32)]:
-    master.resize((px, px), Image.Resampling.LANCZOS).save(f"icons/{name}.png")
+    small.append(f"icons/{name}.png")
+    master.resize((px, px), Image.Resampling.LANCZOS).save(small[-1])
+for path in small:
+    subprocess.run(["pngquant", "--quality", "85-98", "--speed", "1", "--strip",
+                    "--force", "--output", path, path], check=True)
+subprocess.run(["oxipng", "-o", "4", "--strip", "safe", "-q", *masters, *small], check=True)
 print("wrote icons/*.png and the iOS AppIcon")
