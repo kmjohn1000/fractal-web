@@ -38,8 +38,6 @@ very low, so the next release should also carry the listing work.
       - Pick a primary category on purpose: we and Fractal Dive sit in
         Entertainment, while Deep Zoom is in Graphics & Design, where it
         charts. Graphics & Design or Education may fit better
-      - Brighter app icon: the current one is near-black and fades into the
-        dark search card (`scripts/render_icon.py`)
 
 ## Next — discovery and delight
 Help people find beautiful places, and give them more ways to see them.
@@ -292,6 +290,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   deeper Gasket zoom, not this.
 
 ## Done
+- Brighter app icon (1.18.2): Seahorse Valley close-up in the Classic colormap instead of the near-black Mandelbrot, so it stands out in the dark search card; `scripts/render_icon.py` now writes every web/PWA size and the iOS AppIcon. Not in a shipped build yet — `ebac1b5`
 - Share links name the colormap (`cm=Classic`) instead of an index (1.18.1), so palettes can be reordered or added without changing what links show; unknown names open in the default — `6d7f404`
 - Colormap refresh (1.18.0): added Classic and Fire, dropped Magma and HSV, Gist Rainbow renamed Spectrum, reordered the picker; Inferno/Plasma/Viridis/Turbo/Twilight regenerated from the real matplotlib tables (33 stops). Share links' `cm=` indices shifted (fine this early). Burning Ship's fire default is still open above, but Fire now exists. Not in a shipped build yet — `772e718`
 - Each fractal remembers its view while the app is open (1.17.0): `fractalMemory` stashes a fractal's view, iteration setting, Back history and Julia pane when you leave it and restores them on return; Reset (that fractal) and share links start fresh, picking the current fractal no longer resets it, and the colormap stays global. In memory only, so a relaunch starts from the defaults. Dual view stays one app-wide toggle, so a detour through a fractal without dual (Newton, Carpet, Gasket) turns it off. Not in a shipped build yet — `01f6633`
