@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.18.4 — 2026-10-11
+- The website now shows Safari's "Get the app" banner on iPhone and iPad, linking to Fractal Atlas on the App Store.
+
 ## 1.18.3 — 2026-10-10
 - Smaller app and website download: icons recompressed (about 1 MB lighter, no visible change).
 
