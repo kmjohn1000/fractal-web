@@ -252,13 +252,6 @@ distance estimation → zoom-to-minibrot / AI discovery.
       factors without cancellation as
       N(Z+δ) − N(Z) = δ(2Z⁴ + 4Z³δ + 2Z²δ² − 2Z − δ) / (3Z²(Z+δ)²);
       less established than escape-time perturbation — prototype first)
-- [ ] Cell rebasing for Carpet/Gasket (real fix for the depth-16/22
-      precision ceiling — track cell address separately from a small
-      per-cell delta, refreshed at each subdivision, same principle as
-      the escape-time perturbation rebasing already implemented; CPU
-      resolves the ≤4 level-k cells the view overlaps and whether each is
-      already a hole; exact, no glitches; ~1e15× with float64 cell math,
-      more with BigInt — today Carpet ~3.5e4×, Gasket ~3,000×)
 - [ ] Periodicity checking (Brent-style: save z every so often, stop when
       the orbit returns within eps) so interior pixels stop early instead of
       running all of maxIter. Only real speedup where the cardioid/bulb skip
@@ -290,6 +283,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   deeper Gasket zoom, not this.
 
 ## Done
+- Cell rebasing for Carpet/Gasket deep zoom (1.18.6), after user feedback that the gasket wasn't infinite zoom: `digitCellFrame` resolves the 3x3 level-k cells around the view exactly in float64 and the shader runs only the last ~10 levels in cell-local float32, so both now zoom to ~1e15× (the float64 view-center limit; going further would need a BigInt center app-wide). Colors cycle mirrored past the old depth cap. Not in a shipped build yet — `1d1b31b`
 - Brighter app icon (1.18.2): Seahorse Valley close-up in the Classic colormap instead of the near-black Mandelbrot, so it stands out in the dark search card; `scripts/render_icon.py` now writes every web/PWA size and the iOS AppIcon. Not in a shipped build yet — `ebac1b5`
 - Share links name the colormap (`cm=Classic`) instead of an index (1.18.1), so palettes can be reordered or added without changing what links show; unknown names open in the default — `6d7f404`
 - Colormap refresh (1.18.0): added Classic and Fire, dropped Magma and HSV, Gist Rainbow renamed Spectrum, reordered the picker; Inferno/Plasma/Viridis/Turbo/Twilight regenerated from the real matplotlib tables (33 stops). Share links' `cm=` indices shifted (fine this early). Burning Ship's fire default is still open above, but Fire now exists. Not in a shipped build yet — `772e718`
