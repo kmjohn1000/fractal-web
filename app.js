@@ -2584,7 +2584,7 @@ function compositeDualCanvas() {
   return out;
 }
 
-// A copy of src with the "Fractal Atlas" wordmark in a dark translucent
+// A copy of src with the "Fractal Atlas™" wordmark in a dark translucent
 // pill, bottom-right. Drawn on the export only, never the live canvas. The
 // pill (not bare or shadowed text) keeps it legible on any colormap,
 // including flat light or flat dark regions. Sized off the image's short
@@ -2596,7 +2596,7 @@ function watermarkedCopy(src) {
   const ctx = out.getContext("2d");
   ctx.drawImage(src, 0, 0);
 
-  const text = "Fractal Atlas";
+  const text = "Fractal Atlas™";
   const fontPx = Math.max(12, Math.round(Math.min(out.width, out.height) * 0.03));
   ctx.font = `600 ${fontPx}px -apple-system, system-ui, "Helvetica Neue", sans-serif`;
   const h = Math.round(fontPx * 1.9);
