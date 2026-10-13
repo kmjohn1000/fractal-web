@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.18.6 — 2026-10-13
+- Sierpinski gasket and carpet now keep revealing new detail as far as you zoom (to about a quadrillion times), instead of going blank or blurry past a few thousand times.
+
 ## 1.18.5 — 2026-10-12
 - "Fractal Atlas™": the trademark symbol now appears in the browser tab title, on the support and privacy pages (with a trademark notice at the bottom), and in the label on saved and shared images.
 
