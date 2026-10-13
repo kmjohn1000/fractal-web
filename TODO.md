@@ -43,6 +43,19 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       "what you're looking at" blurb in the info card or picker. Cheap content
       work next to the new types (idea from the WebSim Fractal Explorer review,
       2026-10-09)
+- [ ] "Learn more" link to each fractal's Wikipedia article, e.g. in the
+      info card next to the blurb above (user idea 2026-10-13). A `wiki`
+      field per FRACTAL_CONFIGS/EXTRA_MODES entry; most have an article
+      (Mandelbrot set, Julia set, Burning Ship fractal, Tricorn, Multibrot
+      set, Newton fractal, Sierpiński carpet/triangle, Koch snowflake,
+      Pythagoras tree, Dragon curve, Hilbert curve, Gosper curve, Barnsley
+      fern, Lévy C curve, Vicsek fractal); Phoenix and Celtic may not, so
+      hide the link or point at a parent article; verify each URL. In the app,
+      open it through `platform.js` (an in-app Safari sheet via
+      `@capacitor/browser`, a new plugin, or the system browser), not a
+      plain link that would navigate the WebView away from the app. It's a
+      user-tapped outbound link, so the "no external services" privacy
+      answer should still hold, but re-check privacy.html wording
 - [ ] More Mandelbrot-family variants beyond Buffalo/Lambda: Heart, Feather,
       Perpendicular Buffalo/Ship, Mandelbar variants and similar. The WebSim
       explorer offers 52 types and drew 2,074 views, so exotic variants seem to
