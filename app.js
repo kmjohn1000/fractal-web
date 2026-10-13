@@ -109,22 +109,78 @@ const isIfsMode = (m) => Object.prototype.hasOwnProperty.call(IFS_SYSTEMS, m);
 // dragon's view, canvas and control row.
 const isCurveMode = (m) => Object.prototype.hasOwnProperty.call(LINE_CURVES, m);
 
-// Deepest level float32 digit extraction stays accurate for, per base --
-// see renderDigitFractal in shaders.js for how these were measured.
+const digitBase = (ftype) => (ftype === FTYPE.CARPET ? 3 : 2);
+
+// Most levels float32 digit extraction stays accurate for, per base,
+// counted from the cell digitCellFrame rebased to -- see renderDigitFractal
+// in shaders.js for how these were measured.
 function digitMaxDepth(ftype) {
   return ftype === FTYPE.CARPET ? 16 : 22;
 }
 
 // Carpet/Gasket recursion depth for the current zoom: the deepest level
-// whose cells are still at least one device pixel wide, capped at
-// digitMaxDepth. Deeper levels are sub-pixel and only produce aliasing
-// speckle -- see renderDigitFractal in shaders.js for how the shader colors
-// what's below this depth instead.
+// whose cells are still at least one device pixel wide. Deeper levels are
+// sub-pixel and only produce aliasing speckle -- see renderDigitFractal in
+// shaders.js for how the shader colors what's below this depth instead.
 function digitFractalDepth(ftype, scale, heightPx) {
-  const base = ftype === FTYPE.CARPET ? 3 : 2;
   const pixelSize = (scale * 2) / heightPx;
-  const d = Math.floor(Math.log(1 / pixelSize) / Math.log(base) + 1e-9);
-  return Math.max(1, Math.min(digitMaxDepth(ftype), d));
+  const d = Math.floor(Math.log(1 / pixelSize) / Math.log(digitBase(ftype)) + 1e-9);
+  return Math.max(1, d);
+}
+
+// base^k by repeated multiplication, exact while it stays under 2^53
+// (Math.pow isn't guaranteed exact).
+function intPow(base, k) {
+  let v = 1;
+  for (let i = 0; i < k; i++) v *= base;
+  return v;
+}
+
+// Deepest rebase level per base: 2^52 and 3^33 are the last powers under
+// 2^53, so cell addresses and their digits stay exact float64 integers.
+// About as deep as a float64 view center can address anyway (~1e15x).
+const DIGIT_MAX_CELL_LEVEL = { 2: 52, 3: 33 };
+
+// Cell rebasing for Carpet/Gasket deep zoom -- the digit-test counterpart
+// of the escape-time types' perturbation. Picks the deepest level k whose
+// cells are at least as wide as the view's half-diagonal, so the view (at
+// any rotation) lies inside the 3x3 block of level-k cells around the one
+// holding its center. The CPU resolves the top k digits of those 9 cells
+// exactly, and the shader only runs the remaining levels on the pixel's
+// O(1) position within its cell, which float32 handles at any zoom.
+// Returns the view center in level-k cell units relative to the center
+// cell, the world-to-cell-units factor, and per cell (row-major from
+// dy = -1, dx = -1) the level it was cut out at, or -1 if it survives all k.
+function digitCellFrame(ftype, cx, cy, scale, aspect) {
+  const base = digitBase(ftype);
+  const halfDiag = scale * Math.hypot(1, aspect);
+  let k = Math.floor(Math.log(1 / halfDiag) / Math.log(base));
+  k = Math.max(0, Math.min(DIGIT_MAX_CELL_LEVEL[base], k));
+  while (k > 0 && intPow(base, k) * halfDiag > 1) k--;
+  const cells = intPow(base, k);
+  const ix = Math.floor(cx * cells), iy = Math.floor(cy * cells);
+  const holes = [];
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) holes.push(digitHoleLevel(ix + dx, iy + dy, base, k, cells));
+  }
+  return { level: k, center: [cx * cells - ix, cy * cells - iy], cellsPerUnit: cells, holes };
+}
+
+// The level (0 = top) at which level-k cell (ix, iy) is cut out -- the
+// first digit position where both addresses have a 1 -- or -1 if it
+// survives all k levels. The pattern tiles with period 1, so addresses wrap
+// mod base^k. Digits come off the bottom (% and an exact division), so the
+// last match is the topmost level.
+function digitHoleLevel(ix, iy, base, k, cells) {
+  let x = ((ix % cells) + cells) % cells, y = ((iy % cells) + cells) % cells;
+  let hole = -1;
+  for (let i = k - 1; i >= 0; i--) {
+    const dx = x % base, dy = y % base;
+    if (dx === 1 && dy === 1) hole = i;
+    x = (x - dx) / base;
+    y = (y - dy) / base;
+  }
+  return hole;
 }
 
 // Suggested maxIter for a view: the slider's 300 default at the fractal's
@@ -364,7 +420,10 @@ function createFractalRenderer(canvas) {
     phoenixP: gl.getUniformLocation(prog, "u_phoenixP"),
     lut: gl.getUniformLocation(prog, "u_lut"),
     digitDepth: gl.getUniformLocation(prog, "u_digitDepth"),
-    digitMaxDepth: gl.getUniformLocation(prog, "u_digitMaxDepth"),
+    digitLevel: gl.getUniformLocation(prog, "u_digitLevel"),
+    digitCenter: gl.getUniformLocation(prog, "u_digitCenter"),
+    digitScale: gl.getUniformLocation(prog, "u_digitScale"),
+    cellHole: gl.getUniformLocation(prog, "u_cellHole"),
     jitter: gl.getUniformLocation(prog, "u_jitter"),
     usePerturbation: gl.getUniformLocation(prog, "u_usePerturbation"),
     refOrbitTex: gl.getUniformLocation(prog, "u_refOrbitTex"),
@@ -471,8 +530,15 @@ function createFractalRenderer(canvas) {
     gl.uniform1i(u.isJulia, state.isJulia ? 1 : 0);
     gl.uniform2f(u.juliaC, state.juliaC[0], state.juliaC[1]);
     gl.uniform2f(u.phoenixP, PHOENIX_P[0], PHOENIX_P[1]);
-    gl.uniform1i(u.digitDepth, digitFractalDepth(state.ftype, state.scale, canvas.height));
-    gl.uniform1i(u.digitMaxDepth, digitMaxDepth(state.ftype));
+    if (state.ftype === FTYPE.CARPET || state.ftype === FTYPE.GASKET) {
+      const frame = digitCellFrame(state.ftype, state.cx, state.cy, state.scale, canvas.width / canvas.height);
+      const depth = digitFractalDepth(state.ftype, state.scale, canvas.height);
+      gl.uniform1i(u.digitDepth, Math.min(depth, frame.level + digitMaxDepth(state.ftype)));
+      gl.uniform1i(u.digitLevel, frame.level);
+      gl.uniform2f(u.digitCenter, frame.center[0], frame.center[1]);
+      gl.uniform1f(u.digitScale, 2 * state.scale * frame.cellsPerUnit);
+      gl.uniform1fv(u.cellHole, frame.holes);
+    }
 
     // See perturbationEligibleType for which types are covered. Also
     // suppressed mid-gesture (see isInteracting) since recomputing the
@@ -961,8 +1027,14 @@ function updateHud() {
   const s = mainState;
   const eligibleType = perturbationEligibleType(s);
   const deepZoomEligible = mainRenderer.perturbationSupported && eligibleType && s.scale < DEEP_ZOOM_THRESHOLD;
+  // Carpet/Gasket ignore the iter slider entirely (zoom-derived depth in
+  // the shader) — showing "maxIter: 300" would misleadingly imply it still
+  // does something, the same mismatch that caused the coloring bug.
+  const usesFixedDepth = s.ftype === FTYPE.CARPET || s.ftype === FTYPE.GASKET;
   let precision = "float32";
-  if (isInteracting && deepZoomEligible) {
+  if (usesFixedDepth) {
+    if (s.scale < DEEP_ZOOM_THRESHOLD) precision = "cell rebasing (deep zoom)";
+  } else if (isInteracting && deepZoomEligible) {
     precision = "preview (renders at deep zoom once you stop)";
   } else if (lastMainUsedPerturbation) {
     precision = "perturbation (deep zoom)";
@@ -973,10 +1045,6 @@ function updateHud() {
       precision = "float32 (deep zoom unsupported for this fractal type)";
     }
   }
-  // Carpet/Gasket ignore the iter slider entirely (zoom-derived depth in
-  // the shader) — showing "maxIter: 300" would misleadingly imply it still
-  // does something, the same mismatch that caused the coloring bug.
-  const usesFixedDepth = s.ftype === FTYPE.CARPET || s.ftype === FTYPE.GASKET;
   const depth = usesFixedDepth ? digitFractalDepth(s.ftype, s.scale, mainRenderer.canvas.height) : 0;
   const iterText = usesFixedDepth ? `depth: ${depth} (auto)` : `maxIter: ${s.maxIter}${s.iterAutoLocked ? "" : " (auto)"}`;
   // A Surprise-me destination's name, for as long as the view is still the

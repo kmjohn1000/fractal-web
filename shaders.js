@@ -41,9 +41,10 @@ void main() {
 // small (this is the same "small deltas are fine in float32 regardless of
 // absolute zoom depth" property the dc offset already relied on). Covers
 // Mandelbrot, Multibrot^3, Tricorn, Burning Ship and Celtic, in parameter-space and
-// Julia mode (see perturbStep and renderEscapePerturbation). Newton and the
-// Carpet/Gasket digit tests aren't escape-time iterations and still hit the
-// plain float32 ceiling at deep zoom. A cheap "reset the delta once it
+// Julia mode (see perturbStep and renderEscapePerturbation). Newton isn't
+// an escape-time iteration and still hits the plain float32 ceiling at deep
+// zoom; the Carpet/Gasket digit tests get their own exact equivalent, cell
+// rebasing (see renderDigitFractal). A cheap "reset the delta once it
 // grows too large" heuristic was tried and didn't meaningfully help — the
 // worst glitches happen when the reference orbit passes very close to zero
 // (common exactly where people zoom, near mini-Mandelbrot structures), and
@@ -108,8 +109,12 @@ uniform bool  u_isJulia;
 uniform vec2  u_juliaC;
 uniform vec2  u_phoenixP; // Phoenix only: fixed p in z' = z^2 + c + p*z_prev
 uniform sampler2D u_lut;
-uniform int   u_digitDepth;    // Carpet/Gasket only, see renderDigitFractal
-uniform int   u_digitMaxDepth; // Carpet 16, Gasket 22 (DIGIT_MAX_DEPTH in app.js)
+// Carpet/Gasket only, see renderDigitFractal and digitCellFrame in app.js.
+uniform int   u_digitDepth;    // deepest level resolved per pixel
+uniform int   u_digitLevel;    // level of the cells the CPU rebased to
+uniform vec2  u_digitCenter;   // view center in those cells' units, within its own cell
+uniform float u_digitScale;    // uv to cell units
+uniform float u_cellHole[9];   // 3x3 cells around the center one: level cut out at, or -1
 // Sub-pixel sample offset in pixels, (0,0) = pixel center. Supersampling
 // accumulates several jittered renders on the CPU side -- see
 // SAMPLE_OFFSETS in app.js.
@@ -213,19 +218,28 @@ vec3 escapeColor(int iter, vec2 z) {
 // real bug: at its default of 300, the actual exclusion depth (rarely above
 // ~30) divided by 299 crushed nearly the whole image into the first few
 // percent of the colormap, which for the default colormap is nearly black.
-// Coloring is normalized by u_digitMaxDepth - 1 (not by u_digitDepth) so
-// each level keeps the same color at every zoom, and the deepest level
-// reaches the end of the colormap rather than wrapping past it.
+// Each level keeps the same color at every zoom (see digitColor).
 //
-// The cap differs by base. Carpet (base 3) stays at 16: *3 rounds, so
+// Deep zoom is cell rebasing (digitCellFrame in app.js), the digit-test
+// counterpart of perturbation: the CPU works out the top u_digitLevel
+// digits exactly from float64 integer cell addresses, for the 3x3 block of
+// level-u_digitLevel cells the view lies in, and passes which of them are
+// already holes (u_cellHole). The shader works in those cells' units, where
+// the view is O(1) wide, so float32 only ever runs the last ~10 levels. That
+// carries both fractals to the ~1e15x a float64 view center can address.
+// Before it, everything ran from world coordinates in float32 and both
+// stopped resolving new levels: Gasket at ~3,000x, Carpet at ~3.5e4x.
+//
+// The per-pixel levels are still capped (digitMaxDepth in app.js), by base.
+// Carpet (base 3) stays at 16: *3 rounds, so
 // error compounds ~1.6 bits per level. Gasket (base 2) goes to 22: *2 and
 // subtracting floor() are exact in float32, so the only error is the input
 // coordinate's own rounding, which a float32-vs-float64 simulation showed
 // only ever moves a cell edge by one pixel through depth 23 (<=0.02% of
 // pixels off by more), and depth 24 breaks down (6% wrong). 22 leaves one
 // level of margin for real GPUs rounding differently from the simulation.
-// The old shared cap of 16 stopped the Gasket resolving new levels at only
-// ~50x zoom; 22 carries it to ~3,000x.
+// Rebasing keeps the per-pixel count far below either cap except on a
+// canvas tens of thousands of pixels tall.
 //
 // u_digitDepth is the deepest level whose cells are still at least one
 // pixel wide (see digitFractalDepth in app.js), capped as above. It used to be
@@ -239,38 +253,55 @@ vec3 escapeColor(int iter, vec2 z) {
 // area-weighted average of the sub-pixel levels below it (subPixelColor)
 // rather than one arbitrary sample — the limit a supersampled render
 // converges to, so flat regions and resolved holes agree as you zoom in.
-// No perturbation/deep-zoom support either way: this only reuses the
-// existing float32 fast path (see FRAG_SRC's top comment), so like
-// Ship/Tricorn/Julia it hits the same ~1e-5 float32 zoom ceiling rather
-// than perturbation's effectively unlimited depth.
+
+// Color for a hole cut out at this level (0 = top). One pass through the
+// colormap takes 21 levels (Gasket) or 15 (Carpet), the old per-pixel caps
+// minus one, so the opening views keep the colors they always had. Zooming
+// keeps going deeper than that, so alternate passes run back down the
+// colormap rather than jumping from its end to its start.
+vec3 digitColor(float level, float base) {
+  float t = level / (base > 2.5 ? 15.0 : 21.0);
+  return lutColor(1.0 - abs(1.0 - mod(t, 2.0)));
+}
+
 vec3 subPixelColor(int depth, float base) {
-  // Each level removes 1/base^2 of whatever survived the level above it;
-  // anything that survives every level down to u_digitMaxDepth is interior
-  // (black).
+  // Each level removes 1/base^2 of whatever survived the level above it.
+  // The fractal itself has zero area, so the weights are renormalized over
+  // the levels summed; 48 of them already account for over 99.6% of the
+  // area (Carpet; far more for Gasket).
   float hitFrac = 1.0 / (base * base);
   float surviving = 1.0;
   vec3 sum = vec3(0.0);
-  float norm = float(u_digitMaxDepth - 1);
-  for (int k = 0; k < 24; k++) {
-    if (k >= u_digitMaxDepth) break;
-    if (k < depth) continue;
-    sum += surviving * hitFrac * lutColor(float(k) / norm);
+  for (int k = 0; k < 48; k++) {
+    sum += surviving * hitFrac * digitColor(float(depth + k), base);
     surviving *= 1.0 - hitFrac;
   }
-  return sum;
+  return sum / (1.0 - surviving);
 }
 
-vec3 renderDigitFractal(vec2 p, float base) {
+// q is the pixel in level-u_digitLevel cell units, relative to the cell
+// holding the view center (see the comment above subPixelColor).
+vec3 renderDigitFractal(vec2 q, float base) {
+  // Which of the 3x3 rebased cells the pixel is in. Clamped: at level 0 the
+  // zoomed-out view can span more cells than that, but none is a hole yet.
+  // Comparing against the loop index is the GLSL ES 1.00-safe way to index
+  // a uniform array by a runtime value.
+  vec2 n = clamp(floor(q), -1.0, 1.0);
+  int cellIdx = int(n.y + 1.0) * 3 + int(n.x + 1.0);
+  for (int j = 0; j < 9; j++) {
+    if (j == cellIdx && u_cellHole[j] >= 0.0) return digitColor(u_cellHole[j], base);
+  }
+  vec2 p = q - floor(q);
   // Literal loop bound with a runtime break, same pattern as u_maxIter in
-  // the escape-time loops (GLSL ES 1.00 needs a constant bound).
-  // 24 is just the constant loop bound; u_digitDepth never exceeds
-  // u_digitMaxDepth (22 at most).
+  // the escape-time loops (GLSL ES 1.00 needs a constant bound). The CPU
+  // keeps u_digitDepth - u_digitLevel within digitMaxDepth (22 at most).
+  int levels = u_digitDepth - u_digitLevel;
   for (int i = 0; i < 24; i++) {
-    if (i >= u_digitDepth) break;
+    if (i >= levels) break;
     p *= base;
     vec2 cell = mod(floor(p), base);
     if (cell.x == 1.0 && cell.y == 1.0) {
-      return lutColor(float(i) / float(u_digitMaxDepth - 1));
+      return digitColor(float(u_digitLevel + i), base);
     }
     p -= floor(p);
   }
@@ -490,9 +521,9 @@ void main() {
   }
 
   if (u_ftype == FTYPE_CARPET || u_ftype == FTYPE_GASKET) {
-    vec2 p = u_center + uv * u_scale * 2.0;
+    vec2 q = u_digitCenter + uv * u_digitScale;
     float base = (u_ftype == FTYPE_CARPET) ? 3.0 : 2.0;
-    gl_FragColor = vec4(renderDigitFractal(p, base), 1.0);
+    gl_FragColor = vec4(renderDigitFractal(q, base), 1.0);
     return;
   }
 
