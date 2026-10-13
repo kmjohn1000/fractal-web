@@ -2,42 +2,32 @@
 
 Now / Next / Later. Adding an item here isn't approval to build it (see CLAUDE.md).
 
-## Now — land the launch
-1.14.6 (build 134) is live on the App Store (2026-10-08), but downloads are
-very low, so the next release should also carry the listing work.
+## Now — grow reach
+1.18.2 is live on the App Store (2026-10-11) with the overhauled listing:
+subtitle "Explore 23 fractals, zoom deep", headed description ("No maths
+required", 23 fractals and patterns, private by design), What's New, and
+Graphics & Design as the primary category (Entertainment secondary). At 21
+downloads (2026-10-11: 321 impressions, 11% conversion), reach is the
+bottleneck, not conversion.
 
 - [ ] Ship the next App Store update (not blocked): `npm run ios:sync`, then
       Xcode Archive → Distribute App → Upload, then App Review. Brings
-      Dynamic Type (1.15.0), Celtic (1.16.0), per-fractal view memory
-      (1.17.0) and the colormap refresh with named share-link colors
-      (1.18.x). Ride the listing overhaul along with it (title, subtitle and
-      keywords, a softer deep-zoom claim, captioned screenshots, What's New,
-      and the fractal count, now 23 types)
-- [ ] Listing overhaul details, from benchmarking Fractal Dive
+      lighter icons (1.18.3), the website's Smart App Banner (1.18.4, web
+      only), the Fractal Atlas™ name (1.18.5) and Carpet/Gasket deep zoom
+      to ~1e15× (1.18.6)
+- [ ] Remaining listing work, from benchmarking Fractal Dive
       (apps.apple.com/us/app/fractal-dive/id6813485724) and Fractal Explorer:
       Deep Zoom (apps.apple.com/us/app/fractal-explorer-deep-zoom/id6794896393,
-      $2.99, ranked #46 Top Paid in Graphics & Design), 2026-10-10. The
-      listing has no subtitle today (it's the most visible line in search):
-      - Their subtitles sell a feeling or benefit ("Zoom into fractals
-        forever", "Fractals you can fall into"); Deep Zoom also states a
-        concrete depth (about 30 digits), which is easier to defend than
-        "forever". Check our real depth (about 1e13) before claiming any
-      - Subtitle that states the benefit, not the method (theirs: "Zoom into
-        fractals forever"; ours could be "Explore 23 fractals, zoom forever",
-        if the deep-zoom claim survives review)
-      - Description as short headed sections written around what the user
-        gets ("No maths required", an auto-tour), not an opening spec list
-        ("22 fractal types", rendering method). The live copy still says 22
-      - Beginner framing: named places with short explanations and scale
-        comparisons (see the Surprise me item under Next)
+      $2.99, ranked #46 Top Paid in Graphics & Design), 2026-10-10:
       - Localization pass: they ship English plus Dutch, French, German,
         Italian, Spanish; we're English only. Even Spanish/French/German
         widens search reach
-      - Neither listing has an app preview video or accessibility labels;
-        add both. Claim Dynamic Type once 1.15.0 is live
-      - Pick a primary category on purpose: we and Fractal Dive sit in
-        Entertainment, while Deep Zoom is in Graphics & Design, where it
-        charts. Graphics & Design or Education may fit better
+      - Neither listing has an app preview video; add one
+      - Beginner framing: named places with short explanations and scale
+        comparisons (see the Surprise me item under Next)
+      - Depth claims: the live copy says "trillions of times" (Mandelbrot
+        family, ~1e13). The Sierpinski gasket and carpet now reach ~1e15×;
+        "forever" still isn't defensible app-wide
 
 ## Next — discovery and delight
 Help people find beautiful places, and give them more ways to see them.
@@ -48,7 +38,8 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       supersampling pipeline with no structural changes)
 - [ ] Surprise me and a one-line description for every escape-time fractal:
       today Surprise me is Mandelbrot only (`7e2c606`). Add curated places per
-      fractal (Burning Ship's mini-ships, Tricorn, Celtic, ...), and a short
+      fractal (Burning Ship's mini-ships, Tricorn, Celtic, deep Sierpinski
+      gasket/carpet spots now that they zoom to ~1e15×, ...), and a short
       "what you're looking at" blurb in the info card or picker. Cheap content
       work next to the new types (idea from the WebSim Fractal Explorer review,
       2026-10-09)
@@ -57,8 +48,8 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       explorer offers 52 types and drew 2,074 views, so exotic variants seem to
       attract people. Each is a small ftype branch on the shared pipeline; check
       which ones perturbation can handle (abs-folds need `diffabs`) before
-      promising deep zoom. Count in the listing is "22 fractals", update with
-      any addition (2026-10-09)
+      promising deep zoom. The listing's subtitle and description say "23
+      fractals"; update both with any addition (2026-10-09)
 - [ ] Burning Ship looks like a ship: the standard images show it upright,
       which means mirroring the imaginary axis (the set sits at y < 0 and
       the picker thumbnail shows the hull on top, upside down), plus a fire
@@ -279,8 +270,9 @@ distance estimation → zoom-to-minibrot / AI discovery.
   with one level of safety margin below the simulated-safe 23, to
   absorb real GPUs rounding differently than the simulation did.
   Bumping it spends that margin and reintroduces the aliasing this was
-  built to prevent. Cell rebasing (Tier 2) is the correct path to
-  deeper Gasket zoom, not this.
+  built to prevent. Cell rebasing was the correct path to deeper Gasket
+  zoom, and is now done (1.18.6); the cap now only limits per-pixel levels
+  below the rebased cell.
 
 ## Done
 - Cell rebasing for Carpet/Gasket deep zoom (1.18.6), after user feedback that the gasket wasn't infinite zoom: `digitCellFrame` resolves the 3x3 level-k cells around the view exactly in float64 and the shader runs only the last ~10 levels in cell-local float32, so both now zoom to ~1e15× (the float64 view-center limit; going further would need a BigInt center app-wide). Colors cycle mirrored past the old depth cap. Not in a shipped build yet — `1d1b31b`
