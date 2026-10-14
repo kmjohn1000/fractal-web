@@ -114,6 +114,22 @@ const TELEPORT_DESTINATIONS = [
   { fractal: "Tricorn", label: "Lace Tricorn", re: "-1.380765134221053", im: "0.059762690448109", scale: 3e-6 },
   { fractal: "Tricorn", label: "Antenna Talons", re: "-1.9990956613", im: "0.0", scale: 6.75e-7 },
   { fractal: "Tricorn", label: "Flame Minibrot", re: "-1.9997740533", im: "0.0", scale: 3e-8 },
+  // The Phoenix Julia set is mirror-symmetric top to bottom, so every place
+  // is in the upper lobe. Phoenix has no perturbation path: float32 blurs
+  // below a scale of ~1e-4, so Ember Spiral (5e-4) is as deep as it goes.
+  { fractal: "Julia:Phoenix", label: "Flame Column", re: "-0.47", im: "1.07", scale: 0.25 },
+  { fractal: "Julia:Phoenix", label: "Firebird Isle", re: "-0.6457", im: "0.8416", scale: 5e-2, rotation: Math.PI / 2 },
+  { fractal: "Julia:Phoenix", label: "Fire Seahorse", re: "0.317", im: "0.601", scale: 4.5e-2 },
+  { fractal: "Julia:Phoenix", label: "Feather Cascade", re: "0.5783", im: "0.5315", scale: 2.8e-3 },
+  { fractal: "Julia:Phoenix", label: "Ember Spiral", re: "0.581972", im: "0.529445", scale: 5e-4 },
+  // spiral: the flight turns SPIRAL_RAD_PER_ZOOM as it zooms and lands
+  // upright (rotation 0). Each target's base-3 (carpet) or base-2 (gasket)
+  // digits repeat, so the dive looks the same at every level on the way
+  // down: 1/4 = 0.0202...3, 1/8 = 0.0101...3, and (1/7, 2/7) =
+  // (0.001001...2, 0.010010...2).
+  { fractal: "Carpet", label: "Spiral Dive", re: "0.25", im: "0.25", scale: 0.65 / 3 ** 20, rotation: 0, spiral: true },
+  { fractal: "Carpet", label: "Lattice Dive", re: "0.125", im: "0.375", scale: 0.65 / 3 ** 20, rotation: 0, spiral: true },
+  { fractal: "Gasket", label: "Triangle Spiral", re: String(1 / 7), im: String(2 / 7), scale: 0.65 / 2 ** 30, rotation: 0, spiral: true },
 ];
 // Picker sections, in display order.
 const FRACTAL_CATEGORIES = [
@@ -2416,6 +2432,20 @@ function zoomPath(p0, p1) {
 function teleportDurationMs(distance) {
   return Math.min(2500, Math.max(1000, 1000 + (distance - 4) * 50));
 }
+// Spiral dives (a destination's spiral flag) are slower, at a steady speed,
+// turning 90 degrees per 3x of zoom: five full turns on the way down from
+// the opening view.
+const SPIRAL_DIVE_MS = 7000;
+const SPIRAL_RAD_PER_ZOOM = (Math.PI / 2) / Math.log(3); // per e-fold
+// Speed ramps up over the first 12% of the flight, cruises, and slows over
+// the last 18% (fractions of time); returns the distance covered, 0..1.
+function steadyEase(t, a = 0.12, b = 0.18) {
+  const vmax = 1 / (1 - a / 2 - b / 2);
+  if (t < a) return vmax * t * t / (2 * a);
+  if (t <= 1 - b) return vmax * (a / 2 + (t - a));
+  const u = 1 - t;
+  return 1 - vmax * u * u / (2 * b);
+}
 let lastTeleportIndex = -1; // index into TELEPORT_DESTINATIONS; never picked twice in a row
 let teleportLandingIndex = -1; // TELEPORT_DESTINATIONS index of the last completed flight, for the info overlay
 let teleportGeneration = 0;
@@ -2439,13 +2469,23 @@ function teleport() {
   // are drawn masts-down in math orientation); one without leaves the
   // view's rotation alone, as before. The turn takes the shorter way round.
   const r0 = st.rotation || 0;
-  const turn = d.rotation === undefined ? 0 : normalizeAngle(d.rotation - r0);
+  let turn = d.rotation === undefined ? 0 : normalizeAngle(d.rotation - r0);
   if (d.rotation !== undefined) target.rotation = d.rotation;
   pushHistory("main");
   activePane = "main";
   const path = zoomPath([st.cx, st.cy, 2 * st.scale], [target.cx, target.cy, 2 * target.scale]);
-  const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
-  const durationMs = teleportDurationMs(path.distance);
+  // A spiral adds whole turns to the landing turn, as many as its zoom
+  // calls for: path.distance times sqrt(2) is the e-folds of zoom travelled
+  // (out and back in, for a flight that starts deep). The path's parameter
+  // runs at constant speed in zoom, so a turn linear in it keeps the spin
+  // locked to the zoom. Reduced motion skips the spin and the long flight.
+  const spiral = d.spiral && !prefersReducedMotion();
+  if (spiral) {
+    const spin = SPIRAL_RAD_PER_ZOOM * Math.SQRT2 * path.distance;
+    turn += 2 * Math.PI * Math.round((spin - turn) / (2 * Math.PI));
+  }
+  const ease = spiral ? steadyEase : (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  const durationMs = spiral ? SPIRAL_DIVE_MS : teleportDurationMs(path.distance);
   const gen = ++teleportGeneration;
   const t0 = performance.now();
 
@@ -2462,7 +2502,8 @@ function teleport() {
       const k = ease(t);
       const [cx, cy, w] = path(k);
       st.cx = cx; st.cy = cy; st.scale = w / 2;
-      if (turn) st.rotation = r0 + turn * k;
+      // Wrapped, so a spiral cancelled mid-turn leaves a normal angle.
+      if (turn) st.rotation = normalizeAngle(r0 + turn * k);
     } else {
       // Exact landing: the path's last point can be a few ulps off, which
       // matters at 1e-12 scales.
