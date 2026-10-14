@@ -2,6 +2,12 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.20.0 — 2026-10-13
+- The info card is redesigned like a map legend: the place name (after Surprise me) or the fractal as the title, how deep you are ("1.8 trillion times deeper"), a scale bar showing how wide the view is, and the center point, with the technical readout underneath. A darker frosted card keeps it readable over bright colors, and it stays clear of the rotation compass.
+- Patterns (Koch, tree, curves, fern and the other point patterns) get the same card with a scale bar.
+- In dual view, the Julia pane is labeled "Julia set of the center point".
+- The iteration slider is now labeled "detail".
+
 ## 1.19.0 — 2026-10-13
 - Sierpinski carpet no longer jumps or scrambles when you zoom very deep into one of its repeated copies far from the original.
 - Sierpinski gasket and carpet do less graphics work per frame when zoomed deep, which should help on older phones. They look exactly the same.
