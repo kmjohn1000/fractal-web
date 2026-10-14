@@ -44,22 +44,67 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
 - [ ] Surprise me and a one-line description for every escape-time fractal:
       Mandelbrot (`7e2c606`), Burning Ship (`5715799`: six places, landed
       ship-side up via a per-destination `rotation`) and Tricorn (`704c03a`:
-      seven places) are done. Add curated places per remaining fractal
-      (Celtic, Multibrot³, deep Sierpinski
-      gasket/carpet spots now that they zoom to ~1e15×, ...), and a short
-      "what you're looking at" blurb in the info card or picker. Cheap content
-      work next to the new types (idea from the WebSim Fractal Explorer review,
-      2026-10-09). Julia: Phoenix places being researched (user, 2026-10-14)
-- [ ] Surprise me for the Patterns category (Koch, tree, curves, fern, ...):
-      what "surprise" means where zooming isn't the interesting axis —
-      curated close-ups, depth/color/rotation combos (user idea 2026-10-14;
-      recommendations pending)
-- [ ] Sierpinski carpet spiral dive: a Surprise me that rotates while it
-      zooms into a deep point (user idea 2026-10-14; evaluation pending)
-- [ ] Skip the black interior: a competitor says it saves time by not
-      calculating black regions (cardioid/bulb test, periodicity checking,
-      rectangle fill, ...). Evaluate gains on a phone GPU (user, 2026-10-14;
-      evaluation pending)
+      seven places), Julia: Phoenix (`3fe04a4`: five places) and Carpet/
+      Gasket (`3fe04a4`: spiral dives) are done. Add curated places per
+      remaining fractal (Celtic, Multibrot³, the other Julia presets, ...),
+      and a short "what you're looking at" blurb in the info card or picker.
+      Cheap content work next to the new types (idea from the WebSim Fractal
+      Explorer review, 2026-10-09). Phoenix research leftovers, not added:
+      Rising Phoenix (0.06, 0.706, s 1.25, rot π/2: the whole upper lobe,
+      small in dark space) and Twin Curls (-0.112, 0.475, s 0.1: two big
+      flat blobs); Phoenix has no perturbation, so ~1e-4 is its floor
+- [ ] Surprise me for the Patterns category — PARKED by the user
+      2026-10-14. Research done (contact sheet was
+      patterns_surprise_contact_sheet.png in a session scratchpad, not
+      kept). Recommendations, all as share-link hashes (r in radians):
+      - Do — Pythagoras tree at depth 12: Spiral Arm
+        `#v=1&m=tree&x=-2&y=1.5&s=1.5&r=0&cm=Inferno&c=0&dp=12`, Canopy
+        Crown `x=0&y=3.5&s=0.6`, Mosaic `x=-1.3&y=3.3&s=0.6` (same dp=12)
+      - Do — Lévy C curve: Lace Rosette
+        `#v=1&m=levy&x=-0.25&y=0.25&s=0.2&r=0.7853981633974483&n=1000000&c=0`,
+        Lace Window `x=0.75&y=0.8&s=0.17&r=0`, Fine Lace
+        `x=0.75&y=0.903&s=0.06&r=0` (Lace Dome `x=0.75&y=0.85&s=0.2` was a
+        near-duplicate)
+      - Do, weaker — Barnsley fern (n=1000000&c=0): A Frond Is a Fern
+        `x=-1.25&y=2.7575&s=1.7533&r=0.8942`, Fern in a Fern in a Fern
+        `x=-0.692369&y=1.7998145&s=0.1773&r=2.5475`, The Endless Tip
+        `x=2.64934&y=9.96448&s=0.008163&r=-1.881`, Frond Lattice
+        `x=0.6&y=5.0&s=1.5&r=0`, Where Fronds Meet `x=0.2&y=1.5&s=1.2&r=0`,
+        Frond Row `x=-1.0&y=2.4&s=0.8&r=0.8942`. The self-similar ones look
+        like the opening view
+      - Maybe — arrowhead One Continuous Line
+        `#v=1&m=arrowhead&x=0&y=-0.86&s=0.04&r=0&cm=Inferno&c=5&dp=11`;
+        Gosper Coast `#v=1&m=gosper&x=-0.3&y=-0.85&s=0.12&r=0&cm=Inferno&c=4&dp=6`
+      - Skip — Koch, dragon, Hilbert, Sierpinski triangle, Vicsek, random
+        depth/color/rotation combos (close-ups look like the opening view)
+      - Cost ~120–150 lines: a separate PATTERN_DESTINATIONS list (vector
+        views have their own view objects, not mainState), a flight helper
+        shared with teleport(), cancel wiring on the vector views' gestures,
+        a Surprise me button in the pattern control rows, HUD place names.
+        Phone performance of 1M-point fern/Lévy frames mid-flight unverified
+- [ ] Play/pause for the Patterns depth slider (dragon, Hilbert, ...): a
+      play button next to the depth slider that steps the iteration forward
+      and back on its own, and beside it a speed control you press, hold
+      and slide (left slower, right faster) (user idea 2026-10-14). Koch
+      already has a one-way version: its animate button cycles depth 0–8
+      every 700 ms (`kochAnimateBtn`); this generalizes it to every pattern
+      with a depth/points slider and adds ping-pong and speed
+- [ ] Skip the black interior: a competitor (Fractal Dive) says it saves
+      time by not calculating black regions (user, 2026-10-14). Evaluated
+      2026-10-14, not approved to build:
+      - Step 1 (~40 lines): during supersample refinement, skip passes 1–15
+        for pixels whose 3×3 neighborhood was black in sample 0. Measured
+        ~0.3–0.6× refinement cost on interior-heavy views. Needs the Fire
+        and Grayscale colormaps to start at ≥1/255 so "black" means interior
+        only
+      - Step 2 (~30 lines): Brent periodicity checking in the fast shader,
+        switched on per view by a CPU probe for interior. Rabbit renders at
+        0.20× the cost, but views with no interior get ~1.5× slower, hence
+        the probe; not for the deep-zoom (perturbation) path
+      - Rejected: derivative-based interior test, GPU Mariani–Silver
+        rectangle fill, lowering maxIter
+      - All timings were headless (SwiftShader); measure on a phone GPU
+        before building
 - [ ] "Learn more" link to each fractal's Wikipedia article, e.g. in the
       info card next to the blurb above (user idea 2026-10-13). A `wiki`
       field per FRACTAL_CONFIGS/EXTRA_MODES entry, taken from
@@ -309,6 +354,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
+- Sierpinski carpet spiral dive (1.24.0, user idea 2026-10-14): Surprise me on Carpet (Spiral Dive at (1/4, 1/4), Lattice Dive at (1/8, 3/8)) and Gasket (Triangle Spiral at (1/7, 2/7)) flies a 7 s steady dive ~3^20 deep, turning 90° per 3× of zoom and landing upright; points with repeating digits so every level looks alike. Reduce Motion drops the spin. Same release: five Phoenix Julia places — `3fe04a4`
 - Starburst, the user's Mandelbrot Surprise-me spot (1.22.0): dendrite arms around a dense core, 1000× below Frond Thicket, landed at the user's −95° rotation. Same release: Tricorn places, auto detail on landing (a slider lock could land deep places black) and the Feather Valley/Double Spiral label swap — `704c03a`
 - Map-legend info card (1.20.0, from the 2026-10-13 design review): place or fractal as an italic title, "1.8 trillion times deeper", a 1/2/5 × 10ⁿ scale bar, the center point with enough digits to find the spot again (`055ad8c`), and the technical readout underneath, on a darker frosted card that clears the compass. Patterns get the card with a scale bar; dual view labels the Julia pane; the iter slider reads "detail". Not in a shipped build yet — `5104034`
 - Cell rebasing for Carpet/Gasket deep zoom (1.18.6), after user feedback that the gasket wasn't infinite zoom: `digitCellFrame` resolves the 3x3 level-k cells around the view exactly in float64 and the shader runs only the last ~10 levels in cell-local float32, so both now zoom to ~1e15× (the float64 view-center limit; going further would need a BigInt center app-wide). Colors cycle mirrored past the old depth cap. Not in a shipped build yet — `1d1b31b`
