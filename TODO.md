@@ -80,8 +80,9 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       current view, so deep zooms keep their bearings. Render the overview
       once per fractal/colormap into a small texture; at deep zoom the view
       rectangle is sub-pixel, so draw a marker/crosshair at the center
-      instead of the rectangle. Respect rotation. Decide show/hide rule
-      (e.g. only when zoomed in past some scale)
+      instead of the rectangle. Respect rotation. Show/hide rule (user,
+      2026-10-13): visible only while you're moving (pan, zoom, rotate) and
+      fading out once you stop, like the rotation compass. Mockup in progress
 - [ ] "Zoom to nearest minibrot" guided action
 - [ ] Auto-dive mode: a button that zooms steadily into an interesting spot
       on its own, with drag to steer (Fractal Dive's "Press Dive", Fractal
