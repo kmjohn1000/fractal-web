@@ -49,7 +49,17 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       gasket/carpet spots now that they zoom to ~1e15×, ...), and a short
       "what you're looking at" blurb in the info card or picker. Cheap content
       work next to the new types (idea from the WebSim Fractal Explorer review,
-      2026-10-09)
+      2026-10-09). Julia: Phoenix places being researched (user, 2026-10-14)
+- [ ] Surprise me for the Patterns category (Koch, tree, curves, fern, ...):
+      what "surprise" means where zooming isn't the interesting axis —
+      curated close-ups, depth/color/rotation combos (user idea 2026-10-14;
+      recommendations pending)
+- [ ] Sierpinski carpet spiral dive: a Surprise me that rotates while it
+      zooms into a deep point (user idea 2026-10-14; evaluation pending)
+- [ ] Skip the black interior: a competitor says it saves time by not
+      calculating black regions (cardioid/bulb test, periodicity checking,
+      rectangle fill, ...). Evaluate gains on a phone GPU (user, 2026-10-14;
+      evaluation pending)
 - [ ] "Learn more" link to each fractal's Wikipedia article, e.g. in the
       info card next to the blurb above (user idea 2026-10-13). A `wiki`
       field per FRACTAL_CONFIGS/EXTRA_MODES entry, taken from
