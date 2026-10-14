@@ -82,13 +82,6 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         shared with teleport(), cancel wiring on the vector views' gestures,
         a Surprise me button in the pattern control rows, HUD place names.
         Phone performance of 1M-point fern/Lévy frames mid-flight unverified
-- [ ] Play/pause for the Patterns depth slider (dragon, Hilbert, ...): a
-      play button next to the depth slider that steps the iteration forward
-      and back on its own, and beside it a speed control you press, hold
-      and slide (left slower, right faster) (user idea 2026-10-14). Koch
-      already has a one-way version: its animate button cycles depth 0–8
-      every 700 ms (`kochAnimateBtn`); this generalizes it to every pattern
-      with a depth/points slider and adds ping-pong and speed
 - [ ] Skip the black interior: a competitor (Fractal Dive) says it saves
       time by not calculating black regions (user, 2026-10-14). Evaluated
       2026-10-14, not approved to build:
@@ -354,6 +347,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
+- Play/pause for pattern depth (1.25.0, user idea 2026-10-14): Koch, tree and the line curves get a play button that bounces the depth slider min↔max (700 ms per step at 1×) and a hold-and-slide speed button (¼×–4×, 28 px per step; arrow keys too), replacing Koch's one-way animate button. The IFS row (fern, Sierpinski triangle, Lévy C, Vicsek) has a points slider, not depth, so it's left out — `0fab4de`
 - Sierpinski carpet spiral dive (1.24.0, user idea 2026-10-14): Surprise me on Carpet (Spiral Dive at (1/4, 1/4), Lattice Dive at (1/8, 3/8)) and Gasket (Triangle Spiral at (1/7, 2/7)) flies a 7 s steady dive ~3^20 deep, turning 90° per 3× of zoom and landing upright; points with repeating digits so every level looks alike. Reduce Motion drops the spin. Same release: five Phoenix Julia places — `3fe04a4`
 - Starburst, the user's Mandelbrot Surprise-me spot (1.22.0): dendrite arms around a dense core, 1000× below Frond Thicket, landed at the user's −95° rotation. Same release: Tricorn places, auto detail on landing (a slider lock could land deep places black) and the Feather Valley/Double Spiral label swap — `704c03a`
 - Map-legend info card (1.20.0, from the 2026-10-13 design review): place or fractal as an italic title, "1.8 trillion times deeper", a 1/2/5 × 10ⁿ scale bar, the center point with enough digits to find the spot again (`055ad8c`), and the technical readout underneath, on a darker frosted card that clears the compass. Patterns get the card with a scale bar; dual view labels the Julia pane; the iter slider reads "detail". Not in a shipped build yet — `5104034`
