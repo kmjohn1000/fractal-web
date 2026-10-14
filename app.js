@@ -2381,7 +2381,10 @@ function openColormapMenu(solidKey) {
     const swatch = document.createElement("span");
     swatch.className = "cmSwatch";
     swatch.style.background = item.bg;
-    btn.append(swatch, item.name);
+    const name = document.createElement("span");
+    name.className = "cmName";
+    name.textContent = item.name;
+    btn.append(name, swatch);
     btn.addEventListener("click", () => {
       if (solidKey === "fern") {
         setFernColor(i);

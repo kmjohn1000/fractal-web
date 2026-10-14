@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.18.7 — 2026-10-13
+- Redesigned colormap menu: each palette shows as a full-width strip under its name, the current one has a check mark, and all of them fit on screen without scrolling on most phones.
+
 ## 1.18.6 — 2026-10-13
 - Sierpinski gasket and carpet now keep revealing new detail as far as you zoom (to about a quadrillion times), instead of going blank or blurry past a few thousand times.
 
