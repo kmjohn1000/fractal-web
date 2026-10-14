@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.20.1 — 2026-10-13
+- No visible change: the iOS app now declares up front that it uses no special encryption, so App Store Connect stops asking the export-compliance question on every upload.
+
 ## 1.20.0 — 2026-10-13
 - The info card is redesigned like a map legend: the place name (after Surprise me) or the fractal as the title, how deep you are ("1.8 trillion times deeper"), a scale bar showing how wide the view is, and the center point, with the technical readout underneath. A darker frosted card keeps it readable over bright colors, and it stays clear of the rotation compass.
 - Patterns (Koch, tree, curves, fern and the other point patterns) get the same card with a scale bar.
