@@ -84,6 +84,19 @@ const TELEPORT_DESTINATIONS = [
   { fractal: "Mandelbrot", label: "Three-Way Branch", re: "-0.10109636384562", im: "0.95628651080914", scale: 1e-2 },
   { fractal: "Mandelbrot", label: "Tante Renate", re: "-0.7746806106269039", im: "-0.1374168856037867", scale: 1e-6 },
   { fractal: "Mandelbrot", label: "Antenna Minibrot", re: "-0.15860", im: "1.03310", scale: 2e-2 },
+  // Burning Ship is drawn in math orientation (+im up), which hangs every
+  // ship's masts below its hull; rotation (radians, optional) turns the
+  // landed view ship-side up. A half turn also mirrors left-right compared
+  // with the classic picture, which flips the im axis instead. Scales are
+  // sized so each hull fits a portrait phone's width. Sunken Crown sits
+  // just off the real axis (screen top edge at im = 2e-13): across the
+  // axis there, the set is a hard black block with streaks.
+  { fractal: "Burn. Ship", label: "Armada", re: "-1.7595", im: "-0.036", scale: 6.8e-2, rotation: Math.PI },
+  { fractal: "Burn. Ship", label: "Ghost Ship", re: "-1.941", im: "-0.0025", scale: 4e-3, rotation: Math.PI },
+  { fractal: "Burn. Ship", label: "Burning Galleon", re: "-1.6268", im: "-0.012", scale: 1.7e-2, rotation: Math.PI },
+  { fractal: "Burn. Ship", label: "Lightning", re: "-1.93932", im: "-0.00178", scale: 6e-4, rotation: Math.PI },
+  { fractal: "Burn. Ship", label: "Twin Ships", re: "-1.9393403", im: "-0.0017282", scale: 4.5e-5, rotation: Math.PI },
+  { fractal: "Burn. Ship", label: "Sunken Crown", re: "-1.7490033572229", im: "0.0000000000014", scale: 1.2e-12, rotation: Math.PI },
 ];
 // Picker sections, in display order.
 const FRACTAL_CATEGORIES = [
@@ -1190,9 +1203,12 @@ function updateHud() {
   const depth = usesFixedDepth ? digitFractalDepth(s.ftype, s.scale, c.height, c.width / c.height) : 0;
   const iterText = usesFixedDepth ? `depth: ${depth} (auto)` : `maxIter: ${s.maxIter}${s.iterAutoLocked ? "" : " (auto)"}`;
   // A Surprise-me destination's name, for as long as the view is still the
-  // one the flight landed on.
+  // one the flight landed on -- including its rotation, for a destination
+  // that sets one (any turn away from it ends the match; mod 2pi, so a
+  // landing at PI still matches a rotation stored as -PI).
   const d = TELEPORT_DESTINATIONS[teleportLandingIndex];
-  const place = d && d.fractal === currentName && Number(d.re) === s.cx && Number(d.im) === s.cy && d.scale === s.scale ? d.label : "";
+  const sameTurn = !d || d.rotation === undefined || Math.abs(normalizeAngle((s.rotation || 0) - d.rotation)) < 1e-12;
+  const place = d && d.fractal === currentName && Number(d.re) === s.cx && Number(d.im) === s.cy && d.scale === s.scale && sameTurn ? d.label : "";
   const f = formatHudCoords(s.cx, s.cy, s.scale);
   const label = fractalLabel(currentName);
   const deep = zoomPhrase(s.baseScale, s.scale);
@@ -2364,6 +2380,12 @@ function teleport() {
 
   const st = mainState;
   const target = { cx: Number(d.re), cy: Number(d.im), scale: d.scale };
+  // A destination with a rotation lands turned to it (Burning Ship's ships
+  // are drawn masts-down in math orientation); one without leaves the
+  // view's rotation alone, as before. The turn takes the shorter way round.
+  const r0 = st.rotation || 0;
+  const turn = d.rotation === undefined ? 0 : normalizeAngle(d.rotation - r0);
+  if (d.rotation !== undefined) target.rotation = d.rotation;
   pushHistory("main");
   activePane = "main";
   const path = zoomPath([st.cx, st.cy, 2 * st.scale], [target.cx, target.cy, 2 * target.scale]);
@@ -2382,8 +2404,10 @@ function teleport() {
     if (gen !== teleportGeneration || mode !== "fractal" || mainState !== st) return;
     const t = Math.min(1, (now - t0) / durationMs);
     if (t < 1) {
-      const [cx, cy, w] = path(ease(t));
+      const k = ease(t);
+      const [cx, cy, w] = path(k);
       st.cx = cx; st.cy = cy; st.scale = w / 2;
+      if (turn) st.rotation = r0 + turn * k;
     } else {
       // Exact landing: the path's last point can be a few ulps off, which
       // matters at 1e-12 scales.
