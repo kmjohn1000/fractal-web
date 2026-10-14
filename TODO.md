@@ -15,8 +15,8 @@ bottleneck, not conversion.
       lighter icons (1.18.3), the website's Smart App Banner (1.18.4, web
       only), the Fractal Atlas™ name (1.18.5), Carpet/Gasket deep zoom
       to ~1e15× (1.18.6), the new colormap menu (1.18.7), "1.8 trillion
-      times" (1.18.8), the colormap pill button (1.18.9) and full-precision
-      center point (1.18.10)
+      times" (1.18.8), the colormap pill button (1.18.9), full-precision
+      center point (1.18.10) and the Carpet/Gasket review fixes (1.19.0)
 - [ ] Remaining listing work, from benchmarking Fractal Dive
       (apps.apple.com/us/app/fractal-dive/id6813485724) and Fractal Explorer:
       Deep Zoom (apps.apple.com/us/app/fractal-explorer-deep-zoom/id6794896393,
