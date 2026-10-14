@@ -42,8 +42,9 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       (single-state iteration, reuse existing shader/perturbation/
       supersampling pipeline with no structural changes)
 - [ ] Surprise me and a one-line description for every escape-time fractal:
-      today Surprise me is Mandelbrot only (`7e2c606`). Add curated places per
-      fractal (Burning Ship's mini-ships, Tricorn, Celtic, deep Sierpinski
+      Mandelbrot (`7e2c606`) and Burning Ship (`5715799`: six places, landed
+      ship-side up via a per-destination `rotation`) are done. Add curated
+      places per remaining fractal (Tricorn, Celtic, deep Sierpinski
       gasket/carpet spots now that they zoom to ~1e15×, ...), and a short
       "what you're looking at" blurb in the info card or picker. Cheap content
       work next to the new types (idea from the WebSim Fractal Explorer review,
