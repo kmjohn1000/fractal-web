@@ -735,6 +735,11 @@ const els = {
   hudName: document.querySelector("#hud .hudName"),
   hudPlain: document.querySelector("#hud .hudPlain"),
   hudStats: document.querySelector("#hud .hudStats"),
+  hudScale: document.querySelector("#hud .hudScale"),
+  hudBar: document.querySelector("#hud .hudBar"),
+  hudScaleText: document.querySelector("#hud .hudScaleText"),
+  hudCenter: document.querySelector("#hud .hudCenter"),
+  juliaLabel: document.getElementById("juliaLabel"),
   fractalTypeRow: document.getElementById("fractalTypeRow"),
   fractalControls: document.getElementById("fractalControls"),
   kochControls: document.getElementById("kochControls"),
@@ -1001,6 +1006,7 @@ function renderAll() {
     updateFernHud();
   }
   updateCompasses();
+  updateJuliaLabel();
 }
 
 // Progressive supersampling: after renderAll draws sample 0, add the rest of
@@ -1054,17 +1060,48 @@ function formatZoom(baseScale, scale) {
   return z / n < 1000 ? `${Number((z / n).toPrecision(2))} ${word} times` : `${z.toExponential(1)}×`;
 }
 
-// Name goes in the bold headline line, everything else in the muted
-// monospace stats block beneath it (see #hud in index.html).
-// Info overlay: the name, a plain-language line (zoom, detail, rotation,
-// place), and for the WebGL fractals a quieter technical readout under it.
+// How deep the view is, for the info card: "415× deeper", "1.8 trillion
+// times deeper", "Opening view", or "Zoomed out 2×".
+function zoomPhrase(baseScale, scale) {
+  const z = baseScale / scale;
+  if (Math.abs(Math.log(z)) < 0.05) return "opening view";
+  return z < 1 ? `zoomed out ${formatZoom(scale, baseScale)}` : `${formatZoom(baseScale, scale)} deeper`;
+}
+
+// Map-style scale bar for a view showing unitsPerPx world units per CSS
+// pixel: the 1, 2 or 5 x 10^n length whose bar comes closest to 64px (in
+// log terms, so bars stay roughly 40-100px wide), and its label.
+function scaleBar(unitsPerPx) {
+  const target = 64 * unitsPerPx;
+  const e = Math.floor(Math.log10(target));
+  let best = null;
+  for (const k of [e - 1, e, e + 1]) {
+    for (const m of [1, 2, 5]) {
+      const v = m * 10 ** k;
+      const d = Math.abs(Math.log(v / target));
+      if (!best || d < best.d) best = { v, d, m, k };
+    }
+  }
+  const sup = (n) => String(n).replace("-", "⁻").replace(/\d/g, (c) => "⁰¹²³⁴⁵⁶⁷⁸⁹"[c]);
+  const label = best.k >= -4 && best.k <= 3 ? String(Number(best.v.toPrecision(1)))
+    : best.m === 1 ? `10${sup(best.k)}` : `${best.m} × 10${sup(best.k)}`;
+  return { px: best.v / unitsPerPx, label: `${label} across` };
+}
+
+const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+// Info overlay (see #hud in index.html): the title (a place name, or the
+// fractal or pattern), a plain-language line (how deep, rotation), a scale
+// bar for the pane's height in world units (unitsPerPx), and for the WebGL
+// fractals the center point and a quieter technical readout.
 // Runs every render frame, so it does nothing while the overlay is hidden
 // (showing it re-renders, see applyHudVisibility) or when nothing changed.
 let lastHudKey = "";
-function setHud(name, plainParts, tech = "") {
+function setHud(name, plainParts, { unitsPerPx = 0, center = "", tech = "" } = {}) {
   if (!hudVisible) return;
   const parts = plainParts.filter(Boolean);
-  const key = [name, ...parts, tech].join("\n");
+  const bar = unitsPerPx > 0 && Number.isFinite(unitsPerPx) ? scaleBar(unitsPerPx) : null;
+  const key = [name, ...parts, bar && bar.px.toFixed(1), bar && bar.label, center, tech].join("\n");
   if (key === lastHudKey) return;
   lastHudKey = key;
   els.hudName.textContent = name;
@@ -1073,8 +1110,29 @@ function setHud(name, plainParts, tech = "") {
     span.textContent = t;
     return span;
   }));
+  els.hudScale.classList.toggle("hidden", !bar);
+  if (bar) {
+    els.hudBar.style.width = `${bar.px.toFixed(1)}px`;
+    els.hudScaleText.textContent = bar.label;
+  }
+  els.hudCenter.textContent = center;
+  els.hudCenter.classList.toggle("hidden", !center);
   els.hudStats.textContent = tech;
   els.hudStats.classList.toggle("hidden", !tech);
+}
+
+// Dual view: a small label on the Julia pane, shown with the info card.
+function updateJuliaLabel() {
+  const show = hudVisible && mode === "fractal" && dualActive;
+  els.juliaLabel.classList.toggle("hidden", !show);
+  if (!show) return;
+  els.juliaLabel.style.top = `${els.juliaCanvas.offsetTop + 10}px`;
+  els.juliaLabel.style.left = `${els.juliaCanvas.offsetLeft + 10}px`;
+}
+
+// World units per CSS pixel for a pane whose view is 2 * halfHeight tall.
+function unitsPerCssPx(halfHeight, canvas) {
+  return canvas.clientHeight > 0 ? (2 * halfHeight) / canvas.clientHeight : 0;
 }
 
 // Plain decimals while zoomed out (scale >= DEEP_ZOOM_THRESHOLD), where
@@ -1130,13 +1188,16 @@ function updateHud() {
   const d = TELEPORT_DESTINATIONS[teleportLandingIndex];
   const place = d && d.fractal === currentName && Number(d.re) === s.cx && Number(d.im) === s.cy && d.scale === s.scale ? d.label : "";
   const f = formatHudCoords(s.cx, s.cy, s.scale);
-  setHud(fractalLabel(currentName), [
-    place,
-    `Zoom ${formatZoom(s.baseScale, s.scale)}`,
-    usesFixedDepth ? `Depth ${depth}` : `Detail ${s.maxIter}`,
+  const label = fractalLabel(currentName);
+  const deep = zoomPhrase(s.baseScale, s.scale);
+  setHud(place || label, [
+    place ? `${label}, ${deep}` : capitalize(deep),
     rotationHudText(s.rotation),
-    dualActive ? "Julia set uses the center point" : "",
-  ], `center: ${f.center}\nscale: ${f.scale}   ${iterText}   precision: ${precision}`);
+  ], {
+    unitsPerPx: unitsPerCssPx(s.scale, mainRenderer.canvas),
+    center: f.center,
+    tech: `scale: ${f.scale}   ${iterText}   precision: ${precision}`,
+  });
 }
 
 // Pattern modes are titled with their picker label (EXTRA_MODES).
@@ -1144,22 +1205,29 @@ function modeLabel(key) {
   return EXTRA_MODES.find((m) => m.key === key).label;
 }
 
+// Scale bar for a pattern's view (Canvas2D views keep halfHeight).
+const patternBar = (view, canvas) => ({ unitsPerPx: unitsPerCssPx(view.halfHeight, canvas) });
+
 function updateKochHud() {
-  setHud(modeLabel("koch"), [`Depth ${kochState.depth}, ${kochState.fill ? "filled" : "outline"}`, rotationHudText(kochView.view.rotation)]);
+  setHud(modeLabel("koch"), [`Depth ${kochState.depth}, ${kochState.fill ? "filled" : "outline"}`, rotationHudText(kochView.view.rotation)],
+    patternBar(kochView.view, els.kochCanvas));
 }
 
 function updateTreeHud() {
-  setHud(modeLabel("tree"), [`Depth ${treeState.depth}`, rotationHudText(treeView.view.rotation)]);
+  setHud(modeLabel("tree"), [`Depth ${treeState.depth}`, rotationHudText(treeView.view.rotation)],
+    patternBar(treeView.view, els.treeCanvas));
 }
 
 function updateDragonHud() {
-  setHud(modeLabel(dragonView.curve), [`Depth ${dragonState.depth}`, rotationHudText(dragonView.view.rotation)]);
+  setHud(modeLabel(dragonView.curve), [`Depth ${dragonState.depth}`, rotationHudText(dragonView.view.rotation)],
+    patternBar(dragonView.view, els.dragonCanvas));
 }
 
 function updateFernHud() {
   // accepted = points actually on screen so far; it climbs toward the
   // target as refinement runs, and resets on every pan/zoom.
-  setHud(modeLabel(fernView.system), [`${fernView.accepted.toLocaleString()} of ${fernState.count.toLocaleString()} points`, rotationHudText(fernView.view.rotation)]);
+  setHud(modeLabel(fernView.system), [`${fernView.accepted.toLocaleString()} of ${fernState.count.toLocaleString()} points`, rotationHudText(fernView.view.rotation)],
+    patternBar(fernView.view, els.fernCanvas));
 }
 
 // Dual view's crosshair marks the main pane's center -- the Julia pane's c.

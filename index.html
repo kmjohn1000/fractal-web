@@ -56,32 +56,69 @@
      are added back in to keep it clear of the notch (see #errorBanner
      above). pointer-events: none lets pans/pinches that start on the card
      go through to the canvas underneath. */
+  /* Laid out like a map legend: the place (or fractal) as the title, how
+     deep you are, a scale bar, then the center point and the technical
+     readout. The frosted dark card stays readable over the brightest
+     colormaps (60% dark under the blur, a faint text shadow). The width
+     limit keeps it clear of the rotation compass in the top-right corner
+     (40px + 10px margin), so long place names wrap instead. */
   #hud {
     position: absolute; z-index: 10; pointer-events: none;
-    top: calc(8px + env(safe-area-inset-top));
-    left: calc(8px + env(safe-area-inset-left));
-    max-width: calc(100% - 16px - env(safe-area-inset-left) - env(safe-area-inset-right));
+    top: calc(10px + env(safe-area-inset-top));
+    left: calc(10px + env(safe-area-inset-left));
+    max-width: calc(100% - 70px - env(safe-area-inset-left) - env(safe-area-inset-right));
     box-sizing: border-box;
-    padding: 6px 10px; border-radius: 8px; /* matches button radius */
-    background: rgba(0,0,0,0.7);
+    padding: 10px 14px 12px; border-radius: 14px;
+    background: rgba(20,20,22,0.6);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4);
+    box-shadow: 0 0 0 0.5px rgba(255,255,255,0.12);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.35);
   }
+  /* Side by side (landscape dual view), stay within the main pane. */
+  #canvasArea.row #hud { max-width: calc(50% - 30px); }
   #hud .hudName {
-    font: 600 0.875rem/1.3 -apple-system, system-ui, sans-serif; color: #fff;
+    font: italic 400 1.5rem/1.15 ui-serif, "New York", Georgia, serif;
+    color: #fff; letter-spacing: 0.01em;
   }
-  /* Plain-language line (zoom, detail, rotation, place): items wrap as
-     whole units on narrow phones. */
+  /* Plain-language line (depth, rotation): items wrap as whole units on
+     narrow phones. */
   #hud .hudPlain {
-    display: flex; flex-wrap: wrap; gap: 2px 14px; margin-top: 2px;
-    font: 0.8125rem/1.35 -apple-system, system-ui, sans-serif; color: #e5e5ea;
+    display: flex; flex-wrap: wrap; gap: 2px 12px; margin-top: 3px;
+    font: 0.8125rem/1.3 -apple-system, system-ui, sans-serif; color: rgba(255,255,255,0.88);
   }
   #hud .hudPlain:empty { display: none; }
+  /* Scale bar: a 1, 2 or 5 x 10^n length, half filled like a map's. */
+  #hud .hudScale {
+    display: flex; align-items: center; gap: 8px; margin-top: 10px;
+    font: 500 0.75rem/1 -apple-system, system-ui, sans-serif;
+    font-variant-numeric: tabular-nums; color: #fff;
+  }
+  #hud .hudBar {
+    flex: none; height: 6px; box-sizing: border-box;
+    border: 1.5px solid #fff; border-top: none;
+    background: linear-gradient(to right, #fff 50%, transparent 50%) bottom / 100% 3px no-repeat;
+  }
+  #hud .hudCenter {
+    margin-top: 8px;
+    font: 0.75rem/1.35 -apple-system, system-ui, sans-serif;
+    font-variant-numeric: tabular-nums; color: rgba(255,255,255,0.8);
+  }
   /* Technical readout under it, quieter. pre-wrap, not pre: keep the
      explicit line breaks and column spacing, but wrap a long line instead
      of running it off a phone's right edge. */
   #hud .hudStats {
-    margin-top: 4px;
+    margin-top: 6px;
     font: 0.625rem/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
-    color: #8e8e93; white-space: pre-wrap;
+    color: rgba(255,255,255,0.55); white-space: pre-wrap;
+  }
+  /* Dual view: names the Julia pane, in the card's style. */
+  #juliaLabel {
+    position: absolute; z-index: 10; pointer-events: none;
+    padding: 4px 9px; border-radius: 10px;
+    background: rgba(20,20,22,0.6);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4);
+    box-shadow: 0 0 0 0.5px rgba(255,255,255,0.12);
+    font: 0.75rem/1.3 -apple-system, system-ui, sans-serif; color: #fff;
   }
 
   /* The canvas area is always the topmost in-flow content (the HUD floats
@@ -366,7 +403,8 @@
   });
 </script>
 <div id="canvasArea">
-  <div id="hud" class="hidden"><div class="hudName"></div><div class="hudPlain"></div><div class="hudStats"></div></div>
+  <div id="hud" class="hidden"><div class="hudName"></div><div class="hudPlain"></div><div class="hudScale"><span class="hudBar"></span><span class="hudScaleText"></span></div><div class="hudCenter"></div><div class="hudStats"></div></div>
+  <div id="juliaLabel" class="hidden">Julia set of the center point</div>
   <canvas id="mainCanvas"></canvas>
   <canvas id="juliaCanvas" class="hidden"></canvas>
   <canvas id="kochCanvas" class="hidden"></canvas>
@@ -386,7 +424,7 @@
     <button id="shareNativeBtn" role="menuitem" class="hidden">Share…</button>
   </div>
   <div id="fractalControls" class="control-row">
-    <label id="iterField" class="field">iter <input id="iterSlider" type="range" min="50" max="2000" step="10" value="300"></label>
+    <label id="iterField" class="field">detail <input id="iterSlider" type="range" min="50" max="2000" step="10" value="300"></label>
     <button class="iconBtn fractalMenuBtn" aria-haspopup="true" aria-label="Choose fractal type" title="Choose fractal type">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/>
