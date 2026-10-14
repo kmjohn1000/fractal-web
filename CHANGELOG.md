@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.25.0 — 2026-10-14
+- Play depth: the Koch snowflake, Pythagoras tree, dragon, Hilbert, Gosper and arrowhead curves get a play/pause button that steps the depth up and back down on its own. Next to it, a speed button: hold it and slide left for slower, right for faster (¼× to 4×). Touching the depth slider or switching fractals stops playback. Replaces the Koch snowflake's one-way animate button.
+
 ## 1.24.0 — 2026-10-14
 - Surprise me now works on the Phoenix Julia set, with five places: Flame Column, Firebird Isle, Fire Seahorse, Feather Cascade and Ember Spiral.
 - Surprise me on the Sierpinski carpet and gasket: a seven-second spiral dive, turning as it zooms about a billion times deeper, landing upright. With Reduce Motion on, it's a normal flight without the spin.
