@@ -2,6 +2,10 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.21.0 — 2026-10-14
+- Surprise me now works on Burning Ship, with six curated places: Armada, Ghost Ship, Burning Galleon, Lightning, Twin Ships and Sunken Crown.
+- Burning Ship places are shown ship-side up: the flight turns the view 180° on the way in. Tap the compass to turn it back.
+
 ## 1.20.2 — 2026-10-14
 - Surprise me has three new Mandelbrot places: Three-Way Branch, Tante Renate and Antenna Minibrot.
 
