@@ -2,6 +2,10 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.24.0 — 2026-10-14
+- Surprise me now works on the Phoenix Julia set, with five places: Flame Column, Firebird Isle, Fire Seahorse, Feather Cascade and Ember Spiral.
+- Surprise me on the Sierpinski carpet and gasket: a seven-second spiral dive, turning as it zooms about a billion times deeper, landing upright. With Reduce Motion on, it's a normal flight without the spin.
+
 ## 1.23.0 — 2026-10-14
 - Julia sets in dual view: picking a Julia preset (or tapping dual view on one) shows the Mandelbrot set it comes from (Phoenix for the Phoenix Julia), zoomed in around its point c, with the Julia set below. The Julia pane names the preset until you move c.
 
