@@ -1007,14 +1007,12 @@ function setHud(name, plainParts, tech = "") {
 // scientific notation once in deep-zoom territory, where the digits are
 // the point.
 function formatHudCoords(cx, cy, scale) {
-  if (scale < DEEP_ZOOM_THRESHOLD) {
-    return {
-      center: `${cx.toExponential(5)} + ${cy.toExponential(5)}i`,
-      scale: scale.toExponential(3),
-    };
-  }
-  // 2 decimals at scale ~1, one more per decade of zoom, capped at 4.
-  const decimals = Math.min(4, Math.max(2, Math.ceil(-Math.log10(scale)) + 1));
+  // Enough decimals to find the spot again from the card alone: the center
+  // to within ~1/1000 of the view height (2 * scale), so one more decimal
+  // per decade of zoom. Capped at 17, past which a float64 center holds no
+  // more digits. Fixed-point at every depth: the precision that matters is
+  // absolute, which scientific notation hides for centers near 0.
+  const decimals = Math.min(17, Math.max(2, Math.ceil(3 - Math.log10(2 * scale))));
   const fmt = (v) => {
     let t = v.toFixed(decimals);
     // Trim trailing zeros, but keep at least 2 decimals (0.00, not 0).
@@ -1023,7 +1021,7 @@ function formatHudCoords(cx, cy, scale) {
   };
   return {
     center: `${fmt(cx)} + ${fmt(cy)}i`,
-    scale: String(Number(scale.toPrecision(3))),
+    scale: scale < DEEP_ZOOM_THRESHOLD ? scale.toExponential(3) : String(Number(scale.toPrecision(3))),
   };
 }
 

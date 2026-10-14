@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.18.10 — 2026-10-13
+- The info card's center point now always has enough digits to find the spot again, at any zoom. Past 1,000× it used to show only 6 digits, which at deep zoom pointed somewhere else entirely. It's now a plain decimal at every depth (e.g. -0.745289000123457 + 0.113070000056789i), growing one digit per tenfold zoom.
+
 ## 1.18.9 — 2026-10-13
 - The color button now shows your current colormap as a small strip, like the rows in the colormap menu, instead of the same three-circle icon everywhere. On patterns (fern, Koch, tree, curves) it shows the current color. VoiceOver reads the current choice, e.g. "Choose colormap (Classic)".
 
