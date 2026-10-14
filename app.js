@@ -669,6 +669,7 @@ const els = {
   iterField: document.getElementById("iterField"),
   iterSlider: document.getElementById("iterSlider"),
   colormapBtn: document.getElementById("colormapBtn"),
+  colormapPill: document.getElementById("colormapPill"),
   dualBtn: document.getElementById("dualBtn"),
   boxZoomBtn: document.getElementById("boxZoomBtn"),
   backBtn: document.getElementById("backBtn"),
@@ -850,6 +851,9 @@ function updateLUT() {
   const bytes = buildLUTBytes(COLORMAPS[colormapIndex].stops);
   mainRenderer.setLUT(bytes);
   juliaRenderer.setLUT(bytes);
+  const cm = COLORMAPS[colormapIndex];
+  els.colormapPill.style.background = cmGradient(cm.stops);
+  labelColorButton(els.colormapBtn, "Choose colormap", cm.name);
 }
 
 function layoutCanvasArea() {
@@ -2358,13 +2362,25 @@ function setFernColor(i) {
   updateColorSwatches();
 }
 
-// The corner badge on each solid-color button shows that mode's color; the
-// curve row's badge follows whichever curve is shown.
+// Color buttons name the current choice, so screen readers hear "Choose
+// colormap (Classic)" rather than an unlabeled color strip.
+function labelColorButton(btn, action, name) {
+  btn.setAttribute("aria-label", `${action} (${name})`);
+  btn.title = `${action} (${name})`;
+}
+
+// The pill on each solid-color button shows that mode's color; the curve
+// row's pill follows whichever curve is shown.
 function updateColorSwatches() {
-  els.fernColorSwatch.setAttribute("fill", solidCss(fernState.colorIndex));
-  els.kochColorSwatch.setAttribute("fill", solidCss(vectorColors.koch));
-  els.treeColorSwatch.setAttribute("fill", solidCss(vectorColors.tree));
-  els.dragonColorSwatch.setAttribute("fill", solidCss(vectorColors[dragonView.curve]));
+  [
+    [els.fernColorBtn, els.fernColorSwatch, fernState.colorIndex],
+    [els.kochColormapBtn, els.kochColorSwatch, vectorColors.koch],
+    [els.treeColormapBtn, els.treeColorSwatch, vectorColors.tree],
+    [els.dragonColormapBtn, els.dragonColorSwatch, vectorColors[dragonView.curve]],
+  ].forEach(([btn, pill, i]) => {
+    pill.style.background = solidCss(i);
+    labelColorButton(btn, "Choose color", SOLID_COLORS[i].name);
+  });
 }
 
 // solidKey: null for the escape-time colormap, "fern", or a vectorColors key.
