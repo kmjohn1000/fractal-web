@@ -109,6 +109,10 @@ const isIfsMode = (m) => Object.prototype.hasOwnProperty.call(IFS_SYSTEMS, m);
 // dragon's view, canvas and control row.
 const isCurveMode = (m) => Object.prototype.hasOwnProperty.call(LINE_CURVES, m);
 
+// Carpet and Gasket: the digit-test fractals (renderDigitFractal in
+// shaders.js), which use a zoom-derived depth instead of maxIter and cell
+// rebasing instead of perturbation.
+const isDigitFractal = (ftype) => ftype === FTYPE.CARPET || ftype === FTYPE.GASKET;
 const digitBase = (ftype) => (ftype === FTYPE.CARPET ? 3 : 2);
 
 // Most levels float32 digit extraction stays accurate for, per base,
@@ -118,14 +122,28 @@ function digitMaxDepth(ftype) {
   return ftype === FTYPE.CARPET ? 16 : 22;
 }
 
-// Carpet/Gasket recursion depth for the current zoom: the deepest level
-// whose cells are still at least one device pixel wide. Deeper levels are
-// sub-pixel and only produce aliasing speckle -- see renderDigitFractal in
-// shaders.js for how the shader colors what's below this depth instead.
-function digitFractalDepth(ftype, scale, heightPx) {
+// Levels per pass through the colormap (u_digitCycle, see digitColor in
+// shaders.js): the old per-pixel caps minus one, so the opening views keep
+// the colors they always had.
+function digitColorCycle(ftype) {
+  return ftype === FTYPE.CARPET ? 15 : 21;
+}
+
+// Deepest level whose cells are still at least one device pixel wide.
+// Deeper levels are sub-pixel and only produce aliasing speckle -- see
+// renderDigitFractal in shaders.js for how the shader colors what's below
+// this depth instead.
+function digitPixelDepth(ftype, scale, heightPx) {
   const pixelSize = (scale * 2) / heightPx;
   const d = Math.floor(Math.log(1 / pixelSize) / Math.log(digitBase(ftype)) + 1e-9);
   return Math.max(1, d);
+}
+
+// Carpet/Gasket recursion depth for the current view: the pixel depth,
+// capped at what float32 resolves below the rebased cell level. The
+// renderer draws to this depth and the info card reports it.
+function digitFractalDepth(ftype, scale, heightPx, aspect) {
+  return Math.min(digitPixelDepth(ftype, scale, heightPx), digitCellLevel(ftype, scale, aspect) + digitMaxDepth(ftype));
 }
 
 // base^k by repeated multiplication, exact while it stays under 2^53
@@ -153,17 +171,63 @@ const DIGIT_MAX_CELL_LEVEL = { 2: 52, 3: 33 };
 // dy = -1, dx = -1) the level it was cut out at, or -1 if it survives all k.
 function digitCellFrame(ftype, cx, cy, scale, aspect) {
   const base = digitBase(ftype);
-  const halfDiag = scale * Math.hypot(1, aspect);
-  let k = Math.floor(Math.log(1 / halfDiag) / Math.log(base));
-  k = Math.max(0, Math.min(DIGIT_MAX_CELL_LEVEL[base], k));
-  while (k > 0 && intPow(base, k) * halfDiag > 1) k--;
+  const k = digitCellLevel(ftype, scale, aspect);
   const cells = intPow(base, k);
-  const ix = Math.floor(cx * cells), iy = Math.floor(cy * cells);
+  // The pattern repeats with period 1, so drop the center's whole-number
+  // part first (exact in float64). On a copy far from the original,
+  // cx * cells would otherwise pass 2^53, where cell addresses round:
+  // neighboring cells got the wrong holes and the view jumped by cells.
+  const fx = cx - Math.trunc(cx), fy = cy - Math.trunc(cy);
+  const ix = Math.floor(fx * cells), iy = Math.floor(fy * cells);
   const holes = [];
   for (let dy = -1; dy <= 1; dy++) {
     for (let dx = -1; dx <= 1; dx++) holes.push(digitHoleLevel(ix + dx, iy + dy, base, k, cells));
   }
-  return { level: k, center: [cx * cells - ix, cy * cells - iy], cellsPerUnit: cells, holes };
+  return { level: k, center: [fx * cells - ix, fy * cells - iy], cellsPerUnit: cells, holes };
+}
+
+// The rebase level k for digitCellFrame: the deepest whose cells are at
+// least as wide as the view's half-diagonal.
+function digitCellLevel(ftype, scale, aspect) {
+  const base = digitBase(ftype);
+  const halfDiag = scale * Math.hypot(1, aspect);
+  let k = Math.floor(Math.log(1 / halfDiag) / Math.log(base));
+  k = Math.max(0, Math.min(DIGIT_MAX_CELL_LEVEL[base], k));
+  while (k > 0 && intPow(base, k) * halfDiag > 1) k--;
+  return k;
+}
+
+// Color for pixels that survive every level the shader resolves: the
+// area-weighted average of the colors of the sub-pixel levels below
+// u_digitDepth -- the limit a supersampled render converges to, so flat
+// regions and resolved holes agree as you zoom in. It's the same for every
+// pixel, so it's worked out here once per view rather than per pixel.
+// Each level removes 1/base^2 of whatever survived the level above it. The
+// fractal itself has zero area, so the weights are renormalized over the
+// levels summed; 48 of them already account for over 99.6% of the area
+// (Carpet; far more for Gasket). Returns RGB in 0..1.
+function digitSubPixelColor(ftype, depth, lutBytes) {
+  const base = digitBase(ftype), cycle = digitColorCycle(ftype);
+  const hitFrac = 1 / (base * base);
+  let surviving = 1;
+  const sum = [0, 0, 0];
+  for (let k = 0; k < 48; k++) {
+    const t = (depth + k) / cycle;
+    const c = lutColorCpu(lutBytes, 1 - Math.abs(1 - (t - 2 * Math.floor(t / 2))));
+    for (let i = 0; i < 3; i++) sum[i] += surviving * hitFrac * c[i];
+    surviving *= 1 - hitFrac;
+  }
+  return sum.map((v) => v / (1 - surviving));
+}
+
+// CPU twin of lutColor in shaders.js: the same wrap, end-color special
+// case, and LINEAR filtering of the 256-texel LUT (CLAMP_TO_EDGE). RGB in 0..1.
+function lutColorCpu(bytes, t) {
+  const u = Math.abs(t - 1) < 1e-5 ? 255.5 / 256 : t - Math.floor(t);
+  const x = u * 256 - 0.5;
+  const i0 = Math.floor(x), f = x - i0;
+  const a = Math.max(0, i0) * 4, b = Math.min(255, i0 + 1) * 4;
+  return [0, 1, 2].map((c) => (bytes[a + c] * (1 - f) + bytes[b + c] * f) / 255);
 }
 
 // The level (0 = top) at which level-k cell (ix, iy) is cut out -- the
@@ -424,6 +488,8 @@ function createFractalRenderer(canvas) {
     digitCenter: gl.getUniformLocation(prog, "u_digitCenter"),
     digitScale: gl.getUniformLocation(prog, "u_digitScale"),
     cellHole: gl.getUniformLocation(prog, "u_cellHole"),
+    digitCycle: gl.getUniformLocation(prog, "u_digitCycle"),
+    subPixelColor: gl.getUniformLocation(prog, "u_subPixelColor"),
     jitter: gl.getUniformLocation(prog, "u_jitter"),
     usePerturbation: gl.getUniformLocation(prog, "u_usePerturbation"),
     refOrbitTex: gl.getUniformLocation(prog, "u_refOrbitTex"),
@@ -445,7 +511,10 @@ function createFractalRenderer(canvas) {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
+  // Kept for digitSubPixelColor, which samples the LUT on the CPU.
+  let lutBytes = null;
   function setLUT(bytes) {
+    lutBytes = bytes;
     gl.bindTexture(gl.TEXTURE_2D, lutTex);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 256, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, bytes);
   }
@@ -530,10 +599,16 @@ function createFractalRenderer(canvas) {
     gl.uniform1i(u.isJulia, state.isJulia ? 1 : 0);
     gl.uniform2f(u.juliaC, state.juliaC[0], state.juliaC[1]);
     gl.uniform2f(u.phoenixP, PHOENIX_P[0], PHOENIX_P[1]);
-    if (state.ftype === FTYPE.CARPET || state.ftype === FTYPE.GASKET) {
-      const frame = digitCellFrame(state.ftype, state.cx, state.cy, state.scale, canvas.width / canvas.height);
-      const depth = digitFractalDepth(state.ftype, state.scale, canvas.height);
-      gl.uniform1i(u.digitDepth, Math.min(depth, frame.level + digitMaxDepth(state.ftype)));
+    // Per view, not per pass: every later sample in a refinement chain is
+    // the same view (any change restarts at sample 0), and the program
+    // keeps its uniforms between draws.
+    if (sampleIndex === 0 && isDigitFractal(state.ftype)) {
+      const aspect = canvas.width / canvas.height;
+      const frame = digitCellFrame(state.ftype, state.cx, state.cy, state.scale, aspect);
+      const depth = digitFractalDepth(state.ftype, state.scale, canvas.height, aspect);
+      gl.uniform1i(u.digitDepth, depth);
+      gl.uniform1f(u.digitCycle, digitColorCycle(state.ftype));
+      gl.uniform3fv(u.subPixelColor, digitSubPixelColor(state.ftype, depth, lutBytes));
       gl.uniform1i(u.digitLevel, frame.level);
       gl.uniform2f(u.digitCenter, frame.center[0], frame.center[1]);
       gl.uniform1f(u.digitScale, 2 * state.scale * frame.cellsPerUnit);
@@ -796,7 +871,7 @@ function freshState(config) {
 function applyAutoIter() {
   for (const st of [mainState, dualActive ? juliaState : null]) {
     if (!st || st.iterAutoLocked) continue;
-    if (st.ftype === FTYPE.CARPET || st.ftype === FTYPE.GASKET) continue;
+    if (isDigitFractal(st.ftype)) continue;
     st.maxIter = suggestedMaxIter(st.baseScale, st.scale);
   }
   const shown = activePane === "julia" && dualActive && juliaState ? juliaState : mainState;
@@ -1032,7 +1107,7 @@ function updateHud() {
   // Carpet/Gasket ignore the iter slider entirely (zoom-derived depth in
   // the shader) — showing "maxIter: 300" would misleadingly imply it still
   // does something, the same mismatch that caused the coloring bug.
-  const usesFixedDepth = s.ftype === FTYPE.CARPET || s.ftype === FTYPE.GASKET;
+  const usesFixedDepth = isDigitFractal(s.ftype);
   let precision = "float32";
   if (usesFixedDepth) {
     if (s.scale < DEEP_ZOOM_THRESHOLD) precision = "cell rebasing (deep zoom)";
@@ -1047,7 +1122,8 @@ function updateHud() {
       precision = "float32 (deep zoom unsupported for this fractal type)";
     }
   }
-  const depth = usesFixedDepth ? digitFractalDepth(s.ftype, s.scale, mainRenderer.canvas.height) : 0;
+  const c = mainRenderer.canvas;
+  const depth = usesFixedDepth ? digitFractalDepth(s.ftype, s.scale, c.height, c.width / c.height) : 0;
   const iterText = usesFixedDepth ? `depth: ${depth} (auto)` : `maxIter: ${s.maxIter}${s.iterAutoLocked ? "" : " (auto)"}`;
   // A Surprise-me destination's name, for as long as the view is still the
   // one the flight landed on.
@@ -1188,7 +1264,7 @@ function selectFractal(name, { fresh = false } = {}) {
   // nothing for them, and leaving it enabled implied otherwise, which is
   // exactly the mismatch that made them render as almost solid black
   // before that was caught and fixed.
-  const usesFixedDepth = config.ftype === FTYPE.CARPET || config.ftype === FTYPE.GASKET;
+  const usesFixedDepth = isDigitFractal(config.ftype);
   els.iterSlider.disabled = usesFixedDepth;
   els.iterField.classList.toggle("hidden", usesFixedDepth);
   els.juliaCanvas.classList.toggle("hidden", !dualActive);
@@ -2805,8 +2881,8 @@ window.addEventListener("hashchange", applyShareHashFromUrl);
 
 // ---------------------------------------------------------------- init
 
+updateLUT(); // first: Carpet/Gasket renders read the LUT on the CPU
 selectFractal(currentName, { fresh: true });
-updateLUT();
 updateColorSwatches();
 requestRender();
 applyShareHashFromUrl();

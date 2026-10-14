@@ -2,6 +2,11 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.19.0 — 2026-10-13
+- Sierpinski carpet no longer jumps or scrambles when you zoom very deep into one of its repeated copies far from the original.
+- Sierpinski gasket and carpet do less graphics work per frame when zoomed deep, which should help on older phones. They look exactly the same.
+- At extreme zooms the info card's depth for the gasket and carpet now always matches the depth actually drawn.
+
 ## 1.18.10 — 2026-10-13
 - The info card's center point now always has enough digits to find the spot again, at any zoom. Past 1,000× it used to show only 6 digits, which at deep zoom pointed somewhere else entirely. It's now a plain decimal at every depth (e.g. -0.745289000123457 + 0.113070000056789i), growing one digit per tenfold zoom.
 
