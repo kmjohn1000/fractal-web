@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.23.0 — 2026-10-14
+- Julia sets in dual view: picking a Julia preset (or tapping dual view on one) shows the Mandelbrot set it comes from (Phoenix for the Phoenix Julia), zoomed in around its point c, with the Julia set below. The Julia pane names the preset until you move c.
+
 ## 1.22.1 — 2026-10-14
 - Surprise me framing: Ghost Ship and Burning Galleon zoom out to show their full masts; Antenna Talons, Baby Tricorn and Hidden Mandelbrot are centered on a phone screen.
 
