@@ -45,12 +45,10 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       2026-10-09)
 - [ ] "Learn more" link to each fractal's Wikipedia article, e.g. in the
       info card next to the blurb above (user idea 2026-10-13). A `wiki`
-      field per FRACTAL_CONFIGS/EXTRA_MODES entry; most have an article
-      (Mandelbrot set, Julia set, Burning Ship fractal, Tricorn, Multibrot
-      set, Newton fractal, Sierpiński carpet/triangle, Koch snowflake,
-      Pythagoras tree, Dragon curve, Hilbert curve, Gosper curve, Barnsley
-      fern, Lévy C curve, Vicsek fractal); Phoenix and Celtic may not, so
-      hide the link or point at a parent article; verify each URL. In the app,
+      field per FRACTAL_CONFIGS/EXTRA_MODES entry, taken from
+      `docs/learn-more-links.md` (verified table, all 23 entries: 20 links,
+      Celtic and both Phoenix entries hidden; four open decisions listed
+      there). In the app,
       open it through `platform.js` (an in-app Safari sheet via
       `@capacitor/browser`, a new plugin, or the system browser), not a
       plain link that would navigate the WebView away from the app. It's a
