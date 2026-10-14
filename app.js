@@ -95,20 +95,21 @@ const TELEPORT_DESTINATIONS = [
   // just off the real axis (screen top edge at im = 2e-13): across the
   // axis there, the set is a hard black block with streaks.
   { fractal: "Burn. Ship", label: "Armada", re: "-1.7595", im: "-0.036", scale: 6.8e-2, rotation: Math.PI },
-  { fractal: "Burn. Ship", label: "Ghost Ship", re: "-1.941", im: "-0.0025", scale: 4e-3, rotation: Math.PI },
-  { fractal: "Burn. Ship", label: "Burning Galleon", re: "-1.6268", im: "-0.012", scale: 1.7e-2, rotation: Math.PI },
+  { fractal: "Burn. Ship", label: "Ghost Ship", re: "-1.941", im: "-0.0038", scale: 6e-3, rotation: Math.PI },
+  { fractal: "Burn. Ship", label: "Burning Galleon", re: "-1.6268", im: "-0.03", scale: 5e-2, rotation: Math.PI },
   { fractal: "Burn. Ship", label: "Lightning", re: "-1.93932", im: "-0.00178", scale: 6e-4, rotation: Math.PI },
   { fractal: "Burn. Ship", label: "Twin Ships", re: "-1.9393403", im: "-0.0017282", scale: 4.5e-5, rotation: Math.PI },
   { fractal: "Burn. Ship", label: "Sunken Crown", re: "-1.7490033572229", im: "0.0000000000014", scale: 1.2e-12, rotation: Math.PI },
   // Tricorn copies alternate in kind: odd periods are baby Tricorns, even
-  // ones little Mandelbrot sets. Each is centered on its copy's nucleus
-  // (Hidden and Flame Minibrot nudged onto the copy's visual center).
-  { fractal: "Tricorn", label: "Baby Tricorn", re: "-1.754877666246693", im: "0.0", scale: 3e-2 },
-  { fractal: "Tricorn", label: "Hidden Mandelbrot", re: "-1.9405", im: "0.0", scale: 2e-3 },
+  // ones little Mandelbrot sets. Each starts from its copy's nucleus; Baby
+  // Tricorn, Hidden Mandelbrot, Antenna Talons and Flame Minibrot are then
+  // shifted onto the copy's visual center on a portrait phone.
+  { fractal: "Tricorn", label: "Baby Tricorn", re: "-1.7529", im: "0.0", scale: 4e-2 },
+  { fractal: "Tricorn", label: "Hidden Mandelbrot", re: "-1.94136", im: "0.0", scale: 3e-3 },
   { fractal: "Tricorn", label: "Tilted Tricorn", re: "-1.380734140799838", im: "0.059837338423964", scale: 2.2e-4 },
   { fractal: "Tricorn", label: "Lace Minibrot", re: "-1.366420146878388", im: "0.040471294040541", scale: 2e-5 },
   { fractal: "Tricorn", label: "Lace Tricorn", re: "-1.380765134221053", im: "0.059762690448109", scale: 3e-6 },
-  { fractal: "Tricorn", label: "Antenna Talons", re: "-1.999095682327019", im: "0.0", scale: 4.5e-7 },
+  { fractal: "Tricorn", label: "Antenna Talons", re: "-1.9990956613", im: "0.0", scale: 6.75e-7 },
   { fractal: "Tricorn", label: "Flame Minibrot", re: "-1.9997740533", im: "0.0", scale: 3e-8 },
 ];
 // Picker sections, in display order.
