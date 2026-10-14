@@ -42,17 +42,14 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       (single-state iteration, reuse existing shader/perturbation/
       supersampling pipeline with no structural changes)
 - [ ] Surprise me and a one-line description for every escape-time fractal:
-      Mandelbrot (`7e2c606`) and Burning Ship (`5715799`: six places, landed
-      ship-side up via a per-destination `rotation`) are done. Add curated
-      places per remaining fractal (Tricorn, Celtic, deep Sierpinski
+      Mandelbrot (`7e2c606`), Burning Ship (`5715799`: six places, landed
+      ship-side up via a per-destination `rotation`) and Tricorn (`704c03a`:
+      seven places) are done. Add curated places per remaining fractal
+      (Celtic, Multibrot³, deep Sierpinski
       gasket/carpet spots now that they zoom to ~1e15×, ...), and a short
       "what you're looking at" blurb in the info card or picker. Cheap content
       work next to the new types (idea from the WebSim Fractal Explorer review,
       2026-10-09)
-- [ ] Mandelbrot Surprise-me candidate from the user (2026-10-14): a starburst
-      of dendrite arms around a dense core, 1000× below the current "Double
-      Spiral" entry. x -0.16070135134000138, y 1.0375666168602689,
-      s 5.107413907207074e-10, r -1.6580627893946112 (needs ~2000 iterations)
 - [ ] "Learn more" link to each fractal's Wikipedia article, e.g. in the
       info card next to the blurb above (user idea 2026-10-13). A `wiki`
       field per FRACTAL_CONFIGS/EXTRA_MODES entry, taken from
@@ -302,6 +299,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
+- Starburst, the user's Mandelbrot Surprise-me spot (1.22.0): dendrite arms around a dense core, 1000× below Frond Thicket, landed at the user's −95° rotation. Same release: Tricorn places, auto detail on landing (a slider lock could land deep places black) and the Feather Valley/Double Spiral label swap — `704c03a`
 - Map-legend info card (1.20.0, from the 2026-10-13 design review): place or fractal as an italic title, "1.8 trillion times deeper", a 1/2/5 × 10ⁿ scale bar, the center point with enough digits to find the spot again (`055ad8c`), and the technical readout underneath, on a darker frosted card that clears the compass. Patterns get the card with a scale bar; dual view labels the Julia pane; the iter slider reads "detail". Not in a shipped build yet — `5104034`
 - Cell rebasing for Carpet/Gasket deep zoom (1.18.6), after user feedback that the gasket wasn't infinite zoom: `digitCellFrame` resolves the 3x3 level-k cells around the view exactly in float64 and the shader runs only the last ~10 levels in cell-local float32, so both now zoom to ~1e15× (the float64 view-center limit; going further would need a BigInt center app-wide). Colors cycle mirrored past the old depth cap. Not in a shipped build yet — `1d1b31b`
 - Brighter app icon (1.18.2): Seahorse Valley close-up in the Classic colormap instead of the near-black Mandelbrot, so it stands out in the dark search card; `scripts/render_icon.py` now writes every web/PWA size and the iOS AppIcon. Not in a shipped build yet — `ebac1b5`
