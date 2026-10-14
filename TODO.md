@@ -16,7 +16,8 @@ bottleneck, not conversion.
       only), the Fractal Atlas™ name (1.18.5), Carpet/Gasket deep zoom
       to ~1e15× (1.18.6), the new colormap menu (1.18.7), "1.8 trillion
       times" (1.18.8), the colormap pill button (1.18.9), full-precision
-      center point (1.18.10) and the Carpet/Gasket review fixes (1.19.0)
+      center point (1.18.10), the Carpet/Gasket review fixes (1.19.0) and
+      the map-legend info card (1.20.0)
 - [ ] Remaining listing work, from benchmarking Fractal Dive
       (apps.apple.com/us/app/fractal-dive/id6813485724) and Fractal Explorer:
       Deep Zoom (apps.apple.com/us/app/fractal-explorer-deep-zoom/id6794896393,
@@ -35,13 +36,6 @@ bottleneck, not conversion.
 Help people find beautiful places, and give them more ways to see them.
 Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-minibrot.
 
-- [ ] Map-legend info card (from the 2026-10-13 design review; mocked, not
-      yet approved to build): darker frosted card (rgba(20,20,22,.6) + blur)
-      with the place or fractal name, "1.8 trillion times deeper", and a
-      scale bar rounded to 1/2/5 × 10ⁿ; width-limited so long names wrap
-      clear of the compass. Keep the center point (user 2026-10-13), shown
-      with enough digits to find the spot again (same rule as the card
-      today, `055ad8c`), and keep the full technical readout under it
 - [ ] New escape-time types: Buffalo, Lambda (Celtic is done, see Done)
       (single-state iteration, reuse existing shader/perturbation/
       supersampling pipeline with no structural changes)
@@ -299,6 +293,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
+- Map-legend info card (1.20.0, from the 2026-10-13 design review): place or fractal as an italic title, "1.8 trillion times deeper", a 1/2/5 × 10ⁿ scale bar, the center point with enough digits to find the spot again (`055ad8c`), and the technical readout underneath, on a darker frosted card that clears the compass. Patterns get the card with a scale bar; dual view labels the Julia pane; the iter slider reads "detail". Not in a shipped build yet — `5104034`
 - Cell rebasing for Carpet/Gasket deep zoom (1.18.6), after user feedback that the gasket wasn't infinite zoom: `digitCellFrame` resolves the 3x3 level-k cells around the view exactly in float64 and the shader runs only the last ~10 levels in cell-local float32, so both now zoom to ~1e15× (the float64 view-center limit; going further would need a BigInt center app-wide). Colors cycle mirrored past the old depth cap. Not in a shipped build yet — `1d1b31b`
 - Brighter app icon (1.18.2): Seahorse Valley close-up in the Classic colormap instead of the near-black Mandelbrot, so it stands out in the dark search card; `scripts/render_icon.py` now writes every web/PWA size and the iOS AppIcon. Not in a shipped build yet — `ebac1b5`
 - Share links name the colormap (`cm=Classic`) instead of an index (1.18.1), so palettes can be reordered or added without changing what links show; unknown names open in the default — `6d7f404`
