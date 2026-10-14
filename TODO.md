@@ -98,7 +98,9 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       hook and we have none. Likely builds on distance estimation and "zoom to
       nearest minibrot" for picking the target; capped by our ~1e13 depth
       until the arbitrary-precision item under Later is done (competitor
-      benchmark, 2026-10-10)
+      benchmark, 2026-10-10). Related "flyover" (user idea 2026-10-14): could
+      also mean a tour that flies between Surprise-me places, or an ambient
+      drift along the boundary; design evaluation pending
 - [ ] Saved places (bookmarks): save the current view by name inside the app
       and fly back to it later. Today we only have share links and
       per-fractal memory that resets on relaunch. Fractal Explorer: Deep Zoom
