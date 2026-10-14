@@ -115,6 +115,8 @@ uniform int   u_digitLevel;    // level of the cells the CPU rebased to
 uniform vec2  u_digitCenter;   // view center in those cells' units, within its own cell
 uniform float u_digitScale;    // uv to cell units
 uniform float u_cellHole[9];   // 3x3 cells around the center one: level cut out at, or -1
+uniform float u_digitCycle;    // levels per pass through the colormap (digitColorCycle)
+uniform vec3  u_subPixelColor; // color past u_digitDepth (digitSubPixelColor)
 // Sub-pixel sample offset in pixels, (0,0) = pixel center. Supersampling
 // accumulates several jittered renders on the CPU side -- see
 // SAMPLE_OFFSETS in app.js.
@@ -250,37 +252,24 @@ vec3 escapeColor(int iter, vec2 z) {
 // the cause: moving the sample a third of a pixel changed 44% of pixels,
 // while float32-vs-float64 differed on only 7% (nearly all at depth >= 13).
 // A point that survives every resolvable level is colored with the
-// area-weighted average of the sub-pixel levels below it (subPixelColor)
-// rather than one arbitrary sample — the limit a supersampled render
-// converges to, so flat regions and resolved holes agree as you zoom in.
+// area-weighted average of the sub-pixel levels below it
+// (u_subPixelColor, worked out once per view by digitSubPixelColor in
+// app.js) rather than one arbitrary sample — the limit a supersampled
+// render converges to, so flat regions and resolved holes agree as you
+// zoom in.
 
 // Color for a hole cut out at this level (0 = top). One pass through the
-// colormap takes 21 levels (Gasket) or 15 (Carpet), the old per-pixel caps
-// minus one, so the opening views keep the colors they always had. Zooming
+// colormap takes u_digitCycle levels (digitColorCycle in app.js). Zooming
 // keeps going deeper than that, so alternate passes run back down the
-// colormap rather than jumping from its end to its start.
-vec3 digitColor(float level, float base) {
-  float t = level / (base > 2.5 ? 15.0 : 21.0);
+// colormap rather than jumping from its end to its start. digitSubPixelColor
+// in app.js mirrors this on the CPU.
+vec3 digitColor(float level) {
+  float t = level / u_digitCycle;
   return lutColor(1.0 - abs(1.0 - mod(t, 2.0)));
 }
 
-vec3 subPixelColor(int depth, float base) {
-  // Each level removes 1/base^2 of whatever survived the level above it.
-  // The fractal itself has zero area, so the weights are renormalized over
-  // the levels summed; 48 of them already account for over 99.6% of the
-  // area (Carpet; far more for Gasket).
-  float hitFrac = 1.0 / (base * base);
-  float surviving = 1.0;
-  vec3 sum = vec3(0.0);
-  for (int k = 0; k < 48; k++) {
-    sum += surviving * hitFrac * digitColor(float(depth + k), base);
-    surviving *= 1.0 - hitFrac;
-  }
-  return sum / (1.0 - surviving);
-}
-
 // q is the pixel in level-u_digitLevel cell units, relative to the cell
-// holding the view center (see the comment above subPixelColor).
+// holding the view center (see digitCellFrame in app.js).
 vec3 renderDigitFractal(vec2 q, float base) {
   // Which of the 3x3 rebased cells the pixel is in. Clamped: at level 0 the
   // zoomed-out view can span more cells than that, but none is a hole yet.
@@ -289,7 +278,7 @@ vec3 renderDigitFractal(vec2 q, float base) {
   vec2 n = clamp(floor(q), -1.0, 1.0);
   int cellIdx = int(n.y + 1.0) * 3 + int(n.x + 1.0);
   for (int j = 0; j < 9; j++) {
-    if (j == cellIdx && u_cellHole[j] >= 0.0) return digitColor(u_cellHole[j], base);
+    if (j == cellIdx && u_cellHole[j] >= 0.0) return digitColor(u_cellHole[j]);
   }
   vec2 p = q - floor(q);
   // Literal loop bound with a runtime break, same pattern as u_maxIter in
@@ -301,11 +290,11 @@ vec3 renderDigitFractal(vec2 q, float base) {
     p *= base;
     vec2 cell = mod(floor(p), base);
     if (cell.x == 1.0 && cell.y == 1.0) {
-      return digitColor(float(u_digitLevel + i), base);
+      return digitColor(float(u_digitLevel + i));
     }
     p -= floor(p);
   }
-  return subPixelColor(u_digitDepth, base);
+  return u_subPixelColor;
 }
 
 vec3 renderNewton(vec2 p) {
