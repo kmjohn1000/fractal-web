@@ -82,7 +82,10 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       rectangle is sub-pixel, so draw a marker/crosshair at the center
       instead of the rectangle. Respect rotation. Show/hide rule (user,
       2026-10-13): visible only while you're moving (pan, zoom, rotate) and
-      fading out once you stop, like the rotation compass. Mockup in progress
+      fading out once you stop, like the rotation compass. Mocked up
+      2026-10-13 (96px frosted inset, bottom-right; box marker, crosshair
+      when deep); not yet approved. Open: depth cue past ~1,000×, Julia
+      pane in dual view, non-Mandelbrot fractals, what tapping it does
 - [ ] "Zoom to nearest minibrot" guided action
 - [ ] Auto-dive mode: a button that zooms steadily into an interesting spot
       on its own, with drag to steer (Fractal Dive's "Press Dive", Fractal
