@@ -808,7 +808,6 @@ const els = {
   teleportBtn: document.getElementById("teleportBtn"),
   resetBtn: document.getElementById("resetBtn"),
   kochDepthSlider: document.getElementById("kochDepthSlider"),
-  kochAnimateBtn: document.getElementById("kochAnimateBtn"),
   kochFillBtn: document.getElementById("kochFillBtn"),
   kochColormapBtn: document.getElementById("kochColormapBtn"),
   kochResetBtn: document.getElementById("kochResetBtn"),
@@ -940,7 +939,7 @@ let juliaState = null; // populated when dual mode is entered
 let mainHistory = [];
 let juliaHistory = [];
 
-const kochState = { depth: 4, fill: true, animating: false, timer: null };
+const kochState = { depth: 4, fill: true };
 const treeState = { depth: 9 };
 // Each line curve keeps its own depth; dragonState.depth reads/writes the
 // one currently shown, so code written for the dragon alone still works.
@@ -1482,6 +1481,7 @@ function exitDual() {
 }
 
 function setMode(next) {
+  stopDepthPlay();
   mode = next;
   els.fractalTypeRow.classList.remove("open"); // collapse the picker on any mode switch
   els.shareMenu.classList.remove("open");
@@ -2567,19 +2567,140 @@ els.kochFillBtn.addEventListener("click", () => {
 });
 
 
-els.kochAnimateBtn.addEventListener("click", () => {
-  kochState.animating = !kochState.animating;
-  els.kochAnimateBtn.classList.toggle("active", kochState.animating);
-  if (kochState.animating) {
-    kochState.timer = setInterval(() => {
-      kochState.depth = (kochState.depth + 1) % 9;
-      els.kochDepthSlider.value = kochState.depth;
-      requestRender();
-    }, 700);
-  } else {
-    clearInterval(kochState.timer);
+// Depth play/pause (Koch, tree, line curves): steps the row's depth slider
+// up to its max and back down, over and over, by setting its value and
+// firing "input" -- the same path as a drag, so each mode's own listener
+// does the redraw. The speed button beside it is pressed and slid: left
+// slower, right faster, one step per SPEED_DRAG_PX. Speed is shared by all
+// rows. Switching modes or touching the slider stops playback.
+const DEPTH_STEP_MS = 700; // at 1x, as Koch's old animate button
+const PLAY_SPEEDS = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4];
+const SPEED_DRAG_PX = 28;
+const depthPlayer = { slider: null, dir: 1, timer: 0, speedIndex: PLAY_SPEEDS.indexOf(1) };
+
+function depthSliderForMode() {
+  if (mode === "koch") return els.kochDepthSlider;
+  if (mode === "tree") return els.treeDepthSlider;
+  if (isCurveMode(mode)) return els.dragonDepthSlider;
+  return null;
+}
+
+function speedText(speed) {
+  return ({ 0.25: "¼", 0.5: "½", 0.75: "¾" }[speed] || String(speed)) + "×";
+}
+
+function syncPlayButtons() {
+  const playing = depthPlayer.slider !== null;
+  for (const btn of document.querySelectorAll(".depthPlayBtn")) {
+    btn.classList.toggle("playing", playing);
+    btn.setAttribute("aria-label", playing ? "Pause depth" : "Play depth");
+    btn.title = playing ? "Pause depth" : "Play depth";
   }
-});
+  const text = speedText(PLAY_SPEEDS[depthPlayer.speedIndex]);
+  for (const btn of document.querySelectorAll(".depthSpeedBtn")) {
+    btn.textContent = text;
+    btn.setAttribute("aria-label", `Play speed ${text}`);
+  }
+}
+
+function stopDepthPlay() {
+  if (!depthPlayer.slider) return;
+  clearTimeout(depthPlayer.timer);
+  depthPlayer.slider = null;
+  syncPlayButtons();
+}
+
+function depthPlayStep() {
+  const s = depthPlayer.slider;
+  const min = parseInt(s.min, 10), max = parseInt(s.max, 10);
+  const v = parseInt(s.value, 10);
+  if (max <= min) { stopDepthPlay(); return; }
+  if (v + depthPlayer.dir > max || v + depthPlayer.dir < min) depthPlayer.dir = -depthPlayer.dir;
+  s.value = v + depthPlayer.dir;
+  s.dispatchEvent(new Event("input"));
+  depthPlayer.timer = setTimeout(depthPlayStep, DEPTH_STEP_MS / PLAY_SPEEDS[depthPlayer.speedIndex]);
+}
+
+function startDepthPlay() {
+  const s = depthSliderForMode();
+  if (!s) return;
+  depthPlayer.slider = s;
+  // Heads up from where it is, unless it's already at the top.
+  depthPlayer.dir = parseInt(s.value, 10) >= parseInt(s.max, 10) ? -1 : 1;
+  syncPlayButtons();
+  depthPlayStep();
+}
+
+for (const btn of document.querySelectorAll(".depthPlayBtn")) {
+  btn.addEventListener("click", () => (depthPlayer.slider ? stopDepthPlay() : startDepthPlay()));
+}
+for (const s of [els.kochDepthSlider, els.treeDepthSlider, els.dragonDepthSlider]) {
+  s.addEventListener("pointerdown", stopDepthPlay);
+}
+
+// The readout above a held speed button: the speed, and which way is which.
+let speedBubbleTimer = 0;
+function showSpeedBubble(btn, hint) {
+  const b = document.getElementById("speedBubble");
+  const r = btn.getBoundingClientRect();
+  b.innerHTML = `<b>${speedText(PLAY_SPEEDS[depthPlayer.speedIndex])}</b><span>${hint}</span>`;
+  b.classList.remove("hidden");
+  // Kept on screen: the speed button can sit near the row's left edge.
+  const half = b.offsetWidth / 2 + 8;
+  b.style.left = `${Math.min(window.innerWidth - half, Math.max(half, r.left + r.width / 2))}px`;
+  b.style.top = `${r.top}px`;
+  clearTimeout(speedBubbleTimer);
+}
+function hideSpeedBubble(delayMs) {
+  clearTimeout(speedBubbleTimer);
+  speedBubbleTimer = setTimeout(() => document.getElementById("speedBubble").classList.add("hidden"), delayMs);
+}
+function setSpeedIndex(i) {
+  depthPlayer.speedIndex = Math.min(PLAY_SPEEDS.length - 1, Math.max(0, i));
+  syncPlayButtons();
+}
+
+for (const btn of document.querySelectorAll(".depthSpeedBtn")) {
+  let drag = null;
+  const hint = "◀ slower · faster ▶";
+  btn.addEventListener("pointerdown", (e) => {
+    btn.setPointerCapture(e.pointerId);
+    drag = { id: e.pointerId, x0: e.clientX, i0: depthPlayer.speedIndex, moved: false };
+    btn.classList.add("dragging");
+    showSpeedBubble(btn, hint);
+  });
+  btn.addEventListener("pointermove", (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const dx = e.clientX - drag.x0;
+    if (Math.abs(dx) > 6) drag.moved = true;
+    const i = drag.i0 + Math.round(dx / SPEED_DRAG_PX);
+    if (i !== depthPlayer.speedIndex) {
+      setSpeedIndex(i);
+      showSpeedBubble(btn, hint);
+    }
+  });
+  const end = (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    // A tap without a slide leaves the readout up a little longer, as a
+    // how-to for the gesture.
+    hideSpeedBubble(drag.moved ? 500 : 1800);
+    drag = null;
+    btn.classList.remove("dragging");
+  };
+  btn.addEventListener("pointerup", end);
+  btn.addEventListener("pointercancel", end);
+  // Keyboard: arrow keys step the speed while the button has focus.
+  btn.addEventListener("keydown", (e) => {
+    const step = { ArrowLeft: -1, ArrowDown: -1, ArrowRight: 1, ArrowUp: 1 }[e.key];
+    if (!step) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setSpeedIndex(depthPlayer.speedIndex + step);
+    showSpeedBubble(btn, hint);
+    hideSpeedBubble(1200);
+  });
+}
+syncPlayButtons();
 
 els.kochResetBtn.addEventListener("click", () => {
   kochNav.clearHistory();

@@ -355,6 +355,31 @@
     box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3);
   }
 
+  /* Depth play/pause (Koch, tree, line curves): one button, two glyphs. */
+  .depthPlayBtn .pauseIcon, .depthPlayBtn.playing .playIcon { display: none; }
+  .depthPlayBtn.playing .pauseIcon { display: block; }
+  /* Speed: pressed and slid sideways, so the drag mustn't scroll the page. */
+  .depthSpeedBtn {
+    font: 600 0.75rem -apple-system, system-ui, sans-serif;
+    font-variant-numeric: tabular-nums; touch-action: none;
+  }
+  .depthSpeedBtn.dragging { background: rgba(255,255,255,0.18); }
+  /* Readout above the speed button while it's held: app.js positions it. */
+  #speedBubble {
+    position: fixed; z-index: 40; pointer-events: none;
+    transform: translate(-50%, -100%); margin-top: -10px;
+    padding: 8px 14px 7px; border-radius: 12px; text-align: center;
+    background: #1e1e20; color: #f2f2f7; white-space: nowrap;
+    box-shadow: 0 10px 32px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.35);
+    font: 0.75rem -apple-system, system-ui, sans-serif;
+  }
+  #speedBubble.hidden { display: none; }
+  #speedBubble b {
+    display: block; font-size: 1.25rem; font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  #speedBubble span { color: #9a9a9a; }
+
   input[type=range] {
     flex: 1 1 80px; min-width: 60px; height: 32px; margin: 0;
     -webkit-appearance: none; appearance: none; background: transparent;
@@ -413,6 +438,7 @@
   <canvas id="fernCanvas" class="hidden"></canvas>
 </div>
 <div id="boxZoomRect" class="hidden"></div>
+<div id="speedBubble" class="hidden" role="status" aria-live="polite"></div>
 <div id="crosshair" class="hidden"></div>
 
 <div id="controls">
@@ -482,9 +508,11 @@
         <rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>
       </svg>
     </button>
-    <button id="kochAnimateBtn" class="iconBtn" aria-label="Animate depth" title="Animate depth">
-      <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 5v14l12-7z"/></svg>
+    <button class="iconBtn depthPlayBtn" aria-label="Play depth" title="Play depth">
+      <svg class="playIcon" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 5v14l12-7z"/></svg>
+      <svg class="pauseIcon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
     </button>
+    <button class="iconBtn depthSpeedBtn" aria-label="Play speed" title="Play speed: hold and slide left or right">1×</button>
     <button id="kochFillBtn" class="iconBtn active" aria-label="Toggle fill" title="Toggle fill">
       <!-- Depth-2 Koch snowflake, left half filled: reads as "fill", not as
            a Stop square beside Play. (Depth 1 is a six-pointed star.) -->
@@ -531,6 +559,11 @@
         <rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>
       </svg>
     </button>
+    <button class="iconBtn depthPlayBtn" aria-label="Play depth" title="Play depth">
+      <svg class="playIcon" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 5v14l12-7z"/></svg>
+      <svg class="pauseIcon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+    </button>
+    <button class="iconBtn depthSpeedBtn" aria-label="Play speed" title="Play speed: hold and slide left or right">1×</button>
     <button id="treeColormapBtn" class="iconBtn" aria-label="Choose color" title="Choose color">
       <span id="treeColorSwatch" class="colorPill"></span>
     </button>
@@ -565,6 +598,11 @@
         <rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>
       </svg>
     </button>
+    <button class="iconBtn depthPlayBtn" aria-label="Play depth" title="Play depth">
+      <svg class="playIcon" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 5v14l12-7z"/></svg>
+      <svg class="pauseIcon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+    </button>
+    <button class="iconBtn depthSpeedBtn" aria-label="Play speed" title="Play speed: hold and slide left or right">1×</button>
     <button id="dragonColormapBtn" class="iconBtn" aria-label="Choose color" title="Choose color">
       <span id="dragonColorSwatch" class="colorPill"></span>
     </button>
