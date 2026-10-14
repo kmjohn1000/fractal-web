@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.20.2 — 2026-10-14
+- Surprise me has three new Mandelbrot places: Three-Way Branch, Tante Renate and Antenna Minibrot.
+
 ## 1.20.1 — 2026-10-13
 - No visible change: the iOS app now declares up front that it uses no special encryption, so App Store Connect stops asking the export-compliance question on every upload.
 

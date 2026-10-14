@@ -71,6 +71,9 @@ function slugify(text) {
 // the feature's center, not just a point near it: Spiral Cluster is the
 // Misiurewicz point M(28,2) at the spiral's eye; Mini Mandelbrot sits just
 // left of the period-55 nucleus so the minibrot and its halo are centered.
+// Three-Way Branch is a Misiurewicz point where three arms meet; Antenna
+// Minibrot is the period-4 minibrot (nucleus -0.156520166834 +
+// 1.032247108923i), shifted onto its body's visual center.
 const TELEPORT_DESTINATIONS = [
   { fractal: "Mandelbrot", label: "Seahorse Valley", re: "-0.743643887037151", im: "0.131825904205330", scale: 4e-10 },
   { fractal: "Mandelbrot", label: "Elephant Valley", re: "0.2825", im: "0.0105", scale: 1.2e-2 },
@@ -78,6 +81,9 @@ const TELEPORT_DESTINATIONS = [
   { fractal: "Mandelbrot", label: "Spiral Cluster", re: "-0.7451580638016195553", im: "0.1125749162054165212", scale: 1e-3 },
   { fractal: "Mandelbrot", label: "Feather Valley", re: "-0.774931608855056", im: "-0.13706041846077", scale: 1e-8 },
   { fractal: "Mandelbrot", label: "Double Spiral", re: "-0.16070135", im: "1.0375665", scale: 5e-7 },
+  { fractal: "Mandelbrot", label: "Three-Way Branch", re: "-0.10109636384562", im: "0.95628651080914", scale: 1e-2 },
+  { fractal: "Mandelbrot", label: "Tante Renate", re: "-0.7746806106269039", im: "-0.1374168856037867", scale: 1e-6 },
+  { fractal: "Mandelbrot", label: "Antenna Minibrot", re: "-0.15860", im: "1.03310", scale: 2e-2 },
 ];
 // Picker sections, in display order.
 const FRACTAL_CATEGORIES = [
