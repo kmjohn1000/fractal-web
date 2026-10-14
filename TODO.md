@@ -48,6 +48,10 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       "what you're looking at" blurb in the info card or picker. Cheap content
       work next to the new types (idea from the WebSim Fractal Explorer review,
       2026-10-09)
+- [ ] Mandelbrot Surprise-me candidate from the user (2026-10-14): a starburst
+      of dendrite arms around a dense core, 1000× below the current "Double
+      Spiral" entry. x -0.16070135134000138, y 1.0375666168602689,
+      s 5.107413907207074e-10, r -1.6580627893946112 (needs ~2000 iterations)
 - [ ] "Learn more" link to each fractal's Wikipedia article, e.g. in the
       info card next to the blurb above (user idea 2026-10-13). A `wiki`
       field per FRACTAL_CONFIGS/EXTRA_MODES entry, taken from
