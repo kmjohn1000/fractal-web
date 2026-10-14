@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.18.8 — 2026-10-13
+- Big zooms in the info card read in words, like "Zoom 1.8 trillion times", instead of "1.8 trillion×".
+
 ## 1.18.7 — 2026-10-13
 - Redesigned colormap menu: each palette shows as a full-width strip under its name, the current one has a check mark, and all of them fit on screen without scrolling on most phones.
 

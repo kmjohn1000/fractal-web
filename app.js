@@ -965,14 +965,14 @@ function rotationHudText(rotation) {
 }
 
 // Magnification relative to the fractal's opening view, in words past a
-// thousand ("3.1 billion×"): what a person means by "how far in am I".
+// thousand ("3.1 billion times"): what a person means by "how far in am I".
 const ZOOM_WORDS = [[1e15, "quadrillion"], [1e12, "trillion"], [1e9, "billion"], [1e6, "million"], [1e3, "thousand"]];
 function formatZoom(baseScale, scale) {
   const z = baseScale / scale;
   if (z < 9.95) return `${Number(z.toFixed(1))}×`;
   if (z < 1000) return `${Math.round(z)}×`;
   const [n, word] = ZOOM_WORDS.find(([limit]) => z >= limit);
-  return z / n < 1000 ? `${Number((z / n).toPrecision(2))} ${word}×` : `${z.toExponential(1)}×`;
+  return z / n < 1000 ? `${Number((z / n).toPrecision(2))} ${word} times` : `${z.toExponential(1)}×`;
 }
 
 // Name goes in the bold headline line, everything else in the muted
