@@ -2,6 +2,12 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.22.0 — 2026-10-14
+- Surprise me now works on Tricorn, with seven curated places: Baby Tricorn, Hidden Mandelbrot, Tilted Tricorn, Lace Minibrot, Lace Tricorn, Antenna Talons and Flame Minibrot.
+- New Mandelbrot place: Starburst.
+- Fixed: Surprise me could land on a black screen after you'd moved the detail slider. Landing now sets detail automatically for the new place.
+- Renamed two Mandelbrot places to match what they show: Feather Valley is now Double Spiral, and the old Double Spiral is now Frond Thicket.
+
 ## 1.21.0 — 2026-10-14
 - Surprise me now works on Burning Ship, with six curated places: Armada, Ghost Ship, Burning Galleon, Lightning, Twin Ships and Sunken Crown.
 - Burning Ship places are shown ship-side up: the flight turns the view 180° on the way in. Tap the compass to turn it back.

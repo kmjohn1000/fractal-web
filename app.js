@@ -79,11 +79,14 @@ const TELEPORT_DESTINATIONS = [
   { fractal: "Mandelbrot", label: "Elephant Valley", re: "0.2825", im: "0.0105", scale: 1.2e-2 },
   { fractal: "Mandelbrot", label: "Mini Mandelbrot", re: "-1.749003357223038", im: "0.0", scale: 1.5e-12 },
   { fractal: "Mandelbrot", label: "Spiral Cluster", re: "-0.7451580638016195553", im: "0.1125749162054165212", scale: 1e-3 },
-  { fractal: "Mandelbrot", label: "Feather Valley", re: "-0.774931608855056", im: "-0.13706041846077", scale: 1e-8 },
-  { fractal: "Mandelbrot", label: "Double Spiral", re: "-0.16070135", im: "1.0375665", scale: 5e-7 },
+  { fractal: "Mandelbrot", label: "Double Spiral", re: "-0.774931608855056", im: "-0.13706041846077", scale: 1e-8 },
+  { fractal: "Mandelbrot", label: "Frond Thicket", re: "-0.16070135", im: "1.0375665", scale: 5e-7 },
   { fractal: "Mandelbrot", label: "Three-Way Branch", re: "-0.10109636384562", im: "0.95628651080914", scale: 1e-2 },
   { fractal: "Mandelbrot", label: "Tante Renate", re: "-0.7746806106269039", im: "-0.1374168856037867", scale: 1e-6 },
   { fractal: "Mandelbrot", label: "Antenna Minibrot", re: "-0.15860", im: "1.03310", scale: 2e-2 },
+  // Starburst is Frond Thicket's spot ~1000x deeper, framed by the user; its
+  // rotation keeps their framing.
+  { fractal: "Mandelbrot", label: "Starburst", re: "-0.16070135134000138", im: "1.0375666168602689", scale: 5.107413907207074e-10, rotation: -1.6580627893946112 },
   // Burning Ship is drawn in math orientation (+im up), which hangs every
   // ship's masts below its hull; rotation (radians, optional) turns the
   // landed view ship-side up. A half turn also mirrors left-right compared
@@ -97,6 +100,16 @@ const TELEPORT_DESTINATIONS = [
   { fractal: "Burn. Ship", label: "Lightning", re: "-1.93932", im: "-0.00178", scale: 6e-4, rotation: Math.PI },
   { fractal: "Burn. Ship", label: "Twin Ships", re: "-1.9393403", im: "-0.0017282", scale: 4.5e-5, rotation: Math.PI },
   { fractal: "Burn. Ship", label: "Sunken Crown", re: "-1.7490033572229", im: "0.0000000000014", scale: 1.2e-12, rotation: Math.PI },
+  // Tricorn copies alternate in kind: odd periods are baby Tricorns, even
+  // ones little Mandelbrot sets. Each is centered on its copy's nucleus
+  // (Hidden and Flame Minibrot nudged onto the copy's visual center).
+  { fractal: "Tricorn", label: "Baby Tricorn", re: "-1.754877666246693", im: "0.0", scale: 3e-2 },
+  { fractal: "Tricorn", label: "Hidden Mandelbrot", re: "-1.9405", im: "0.0", scale: 2e-3 },
+  { fractal: "Tricorn", label: "Tilted Tricorn", re: "-1.380734140799838", im: "0.059837338423964", scale: 2.2e-4 },
+  { fractal: "Tricorn", label: "Lace Minibrot", re: "-1.366420146878388", im: "0.040471294040541", scale: 2e-5 },
+  { fractal: "Tricorn", label: "Lace Tricorn", re: "-1.380765134221053", im: "0.059762690448109", scale: 3e-6 },
+  { fractal: "Tricorn", label: "Antenna Talons", re: "-1.999095682327019", im: "0.0", scale: 4.5e-7 },
+  { fractal: "Tricorn", label: "Flame Minibrot", re: "-1.9997740533", im: "0.0", scale: 3e-8 },
 ];
 // Picker sections, in display order.
 const FRACTAL_CATEGORIES = [
@@ -2412,6 +2425,10 @@ function teleport() {
       // Exact landing: the path's last point can be a few ulps off, which
       // matters at 1e-12 scales.
       Object.assign(st, target);
+      // A slider-locked maxIter can be far too low for the new place (a
+      // lock at 300 lands Seahorse Valley all black), so landing hands
+      // maxIter back to auto mode; the settle's applyAutoIter sets it.
+      st.iterAutoLocked = false;
       teleportLandingIndex = i;
     }
     markInteracting();
