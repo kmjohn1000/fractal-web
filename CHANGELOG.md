@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.22.1 — 2026-10-14
+- Surprise me framing: Ghost Ship and Burning Galleon zoom out to show their full masts; Antenna Talons, Baby Tricorn and Hidden Mandelbrot are centered on a phone screen.
+
 ## 1.22.0 — 2026-10-14
 - Surprise me now works on Tricorn, with seven curated places: Baby Tricorn, Hidden Mandelbrot, Tilted Tricorn, Lace Minibrot, Lace Tricorn, Antenna Talons and Flame Minibrot.
 - New Mandelbrot place: Starburst.
