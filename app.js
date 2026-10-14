@@ -36,10 +36,13 @@ const FRACTAL_CONFIGS = {
   // Needs the previous iterate as state, so no perturbation (deep zoom) path
   // -- see perturbationEligibleType.
   "Phoenix":      { label: "Phoenix", ftype: FTYPE.PHOENIX, power: 2, juliaC: null,               view: [-2.0, 0.65, -0.78, 0.78], dual: true,  category: "zoom" },
-  "Julia:Rabbit": { label: "Douady rabbit", group: "julia", ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.12256, 0.74486], view: [-1.42, 1.42, -1.2, 1.2], dual: false, category: "zoom" },
-  "Julia:Dragon": { label: "Dragon", group: "julia", ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.4, 0.6],         view: [-1.5, 1.5, -1.1, 1.1],   dual: false, category: "zoom" },
-  "Julia:Spiral": { label: "Spiral", group: "julia", ftype: FTYPE.ESCAPE,  power: 2, juliaC: [0.285, 0.01],       view: [-0.95, 0.95, -1.2, 1.2], dual: false, category: "zoom" },
-  "Julia:Phoenix": { label: "Phoenix", group: "julia", ftype: FTYPE.PHOENIX, power: 2, juliaC: [0.5667, 0],        view: [-0.8, 0.88, -1.38, 1.38], dual: false, category: "zoom" },
+  // A Julia preset has no dual view of its own; dualParent is the set whose
+  // dual view shows it (see openPresetInDual): the parent in the main pane,
+  // centered on the preset's c, and the preset in the Julia pane.
+  "Julia:Rabbit": { label: "Douady rabbit", group: "julia", ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.12256, 0.74486], view: [-1.42, 1.42, -1.2, 1.2], dual: false, dualParent: "Mandelbrot", category: "zoom" },
+  "Julia:Dragon": { label: "Dragon", group: "julia", ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.4, 0.6],         view: [-1.5, 1.5, -1.1, 1.1],   dual: false, dualParent: "Mandelbrot", category: "zoom" },
+  "Julia:Spiral": { label: "Spiral", group: "julia", ftype: FTYPE.ESCAPE,  power: 2, juliaC: [0.285, 0.01],       view: [-0.95, 0.95, -1.2, 1.2], dual: false, dualParent: "Mandelbrot", category: "zoom" },
+  "Julia:Phoenix": { label: "Phoenix", group: "julia", ftype: FTYPE.PHOENIX, power: 2, juliaC: [0.5667, 0],        view: [-0.8, 0.88, -1.38, 1.38], dual: false, dualParent: "Phoenix", category: "zoom" },
   "Newton z³": { label: "Newton's method", ftype: FTYPE.NEWTON, power: 3, juliaC: null,              view: [-2.0, 2.0, -1.5, 1.5],   dual: false, category: "zoom" },
   // Digit-test fractals (see FRAG_SRC's renderDigitFractal) — defined on
   // the unit square, so centered there with a little margin. power is
@@ -1159,6 +1162,9 @@ function updateJuliaLabel() {
   const show = hudVisible && mode === "fractal" && dualActive;
   els.juliaLabel.classList.toggle("hidden", !show);
   if (!show) return;
+  const preset = dualPresetName();
+  const text = preset ? `${FRACTAL_CONFIGS[preset].label}: Julia set of the center point` : "Julia set of the center point";
+  if (els.juliaLabel.textContent !== text) els.juliaLabel.textContent = text;
   els.juliaLabel.style.top = `${els.juliaCanvas.offsetTop + 10}px`;
   els.juliaLabel.style.left = `${els.juliaCanvas.offsetLeft + 10}px`;
 }
@@ -1338,6 +1344,7 @@ const fractalMemory = new Map();
 
 function selectFractal(name, { fresh = false } = {}) {
   cancelTeleport();
+  if (dualActive && FRACTAL_CONFIGS[name].dualParent) { openPresetInDual(name); return; }
   // Picking the fractal already showing keeps its view; it only leaves a
   // vector mode (whose switch back lands here too).
   if (!fresh && name === currentName) { setMode("fractal"); return; }
@@ -1356,7 +1363,7 @@ function selectFractal(name, { fresh = false } = {}) {
   // dualActive stays one app-wide toggle; a remembered Julia pane (its own
   // view and Back history) comes back with its fractal.
   if (dualActive) enterDual(remembered && remembered.juliaState ? remembered : null);
-  els.dualBtn.disabled = !config.dual;
+  els.dualBtn.disabled = !config.dual && !config.dualParent;
   els.dualBtn.classList.toggle("active", dualActive);
   // Zoom-only tools. Everything in FRACTAL_CONFIGS is "zoom" today, but the
   // category is the rule; teleport also needs curated destinations, which
@@ -1411,6 +1418,38 @@ function enterDual(from = null) {
   els.juliaCanvas.classList.remove("hidden");
   layoutCanvasArea();
   requestRender();
+}
+
+// A Julia preset in dual view: its parent set (dualParent) in the main pane,
+// centered on the preset's c and zoomed in PRESET_DUAL_ZOOM times so you can
+// see which part of the set c is in (the crosshair marks it), and the preset
+// in the Julia pane -- at its opening framing, or at juliaView (the preset's
+// own view, when the dual button is pressed on it). Panning the main pane
+// moves c as usual; the Julia pane's label names the preset until it does.
+const PRESET_DUAL_ZOOM = 4;
+let dualPreset = null; // { name, c } of the last preset opened this way
+function openPresetInDual(name, juliaView = null) {
+  const preset = FRACTAL_CONFIGS[name];
+  const [cx, cy] = preset.juliaC;
+  dualActive = true;
+  selectFractal(preset.dualParent, { fresh: true });
+  Object.assign(mainState, { cx, cy, scale: mainState.baseScale / PRESET_DUAL_ZOOM });
+  const jc = els.juliaCanvas;
+  const aspect = jc.clientWidth > 0 && jc.clientHeight > 0 ? jc.clientWidth / jc.clientHeight : 1;
+  const opening = viewFromBounds(preset.view, aspect);
+  const jv = juliaView || { ...opening, rotation: 0, baseScale: opening.scale };
+  Object.assign(juliaState, { cx: jv.cx, cy: jv.cy, scale: jv.scale, rotation: jv.rotation, baseScale: jv.baseScale, juliaC: [cx, cy] });
+  if (juliaView && juliaView.iterAutoLocked) Object.assign(juliaState, { maxIter: juliaView.maxIter, iterAutoLocked: true });
+  dualPreset = { name, c: [cx, cy] };
+  applyAutoIter();
+  requestRender();
+}
+
+// The preset whose c the main pane is still centered on, if any.
+function dualPresetName() {
+  if (!dualActive || !dualPreset) return null;
+  const p = FRACTAL_CONFIGS[dualPreset.name];
+  return currentName === p.dualParent && mainState.cx === dualPreset.c[0] && mainState.cy === dualPreset.c[1] ? dualPreset.name : null;
 }
 
 function exitDual() {
@@ -2318,7 +2357,9 @@ els.iterSlider.addEventListener("input", () => {
 
 
 els.dualBtn.addEventListener("click", () => {
-  if (dualActive) exitDual(); else enterDual();
+  if (dualActive) exitDual();
+  else if (FRACTAL_CONFIGS[currentName].dualParent) openPresetInDual(currentName, mainState);
+  else enterDual();
   els.dualBtn.classList.toggle("active", dualActive);
 });
 
