@@ -10,14 +10,16 @@ Graphics & Design as the primary category (Entertainment secondary). At 21
 downloads (2026-10-11: 321 impressions, 11% conversion), reach is the
 bottleneck, not conversion.
 
-- [ ] Ship the next App Store update (not blocked): `npm run ios:sync`, then
-      Xcode Archive → Distribute App → Upload, then App Review. Brings
-      lighter icons (1.18.3), the website's Smart App Banner (1.18.4, web
-      only), the Fractal Atlas™ name (1.18.5), Carpet/Gasket deep zoom
-      to ~1e15× (1.18.6), the new colormap menu (1.18.7), "1.8 trillion
-      times" (1.18.8), the colormap pill button (1.18.9), full-precision
-      center point (1.18.10), the Carpet/Gasket review fixes (1.19.0) and
-      the map-legend info card (1.20.0)
+- [ ] 1.20.0 (build 174) deployed to App Store Connect 2026-10-13, covering
+      1.18.3–1.20.0 (What's New in `appstore-screenshots/copy/`). Once
+      live: try it on a real phone (Carpet/Gasket deep zoom, legend card,
+      colormap menu were only tested in desktop Chromium), and verify the
+      version with the iTunes lookup API
+- [ ] New App Store screenshots: today's are from ~1.10 (three-circle color
+      button, "iter" slider, no info card, no picker). Proposed set, with
+      short captions: picker grid ("23 fractals, all free"), deep zoom with
+      the legend card, split view, Sierpinski gasket deep zoom, a rotated
+      view with the compass, a pattern. Not yet approved
 - [ ] Remaining listing work, from benchmarking Fractal Dive
       (apps.apple.com/us/app/fractal-dive/id6813485724) and Fractal Explorer:
       Deep Zoom (apps.apple.com/us/app/fractal-explorer-deep-zoom/id6794896393,
