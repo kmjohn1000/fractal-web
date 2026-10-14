@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.18.9 — 2026-10-13
+- The color button now shows your current colormap as a small strip, like the rows in the colormap menu, instead of the same three-circle icon everywhere. On patterns (fern, Koch, tree, curves) it shows the current color. VoiceOver reads the current choice, e.g. "Choose colormap (Classic)".
+
 ## 1.18.8 — 2026-10-13
 - Big zooms in the info card read in words, like "Zoom 1.8 trillion times", instead of "1.8 trillion×".
 
