@@ -10,11 +10,6 @@ Graphics & Design as the primary category (Entertainment secondary). At 21
 downloads (2026-10-11: 321 impressions, 11% conversion), reach is the
 bottleneck, not conversion.
 
-- [ ] New App Store screenshots: today's are from ~1.10 (three-circle color
-      button, "iter" slider, no info card, no picker). Proposed set, with
-      short captions: picker grid ("23 fractals, all free"), deep zoom with
-      the legend card, split view, Sierpinski gasket deep zoom, a rotated
-      view with the compass, a pattern. Not yet approved
 - [ ] Remaining listing work, from benchmarking Fractal Dive
       (apps.apple.com/us/app/fractal-dive/id6813485724) and Fractal Explorer:
       Deep Zoom (apps.apple.com/us/app/fractal-explorer-deep-zoom/id6794896393,
@@ -361,6 +356,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
+- New App Store screenshots for 1.25.0 (2026-10-15): six captioned shots per device in git-ignored `appstore-screenshots/1.25.0/` (iPhone 6.5" 1284x2778, iPad 13" 2064x2752), rendered from the web app in headless Chrome: Mini Mandelbrot with the legend card, the picker, Spiral Julia in dual view, Lace Tricorn, Armada, Pythagoras tree with play. Sierpinski deep zoom was tried and dropped: flat-looking at depth. What's New and a listing copy review are in `appstore-screenshots/copy/whats-new-1.25.0.md`. Upload with the 1.25.0 release
 - 1.20.0 (build 174) live on the App Store 2026-10-14 (iTunes lookup API); user checked Carpet/Gasket deep zoom, the legend card and the colormap menu on a real phone 2026-10-15. Hold-and-slide depth speed (1.25.0) also checked on the phone ahead of the next release
 - Play/pause for pattern depth (1.25.0, user idea 2026-10-14): Koch, tree and the line curves get a play button that bounces the depth slider min↔max (700 ms per step at 1×) and a hold-and-slide speed button (¼×–4×, 28 px per step; arrow keys too), replacing Koch's one-way animate button. The IFS row (fern, Sierpinski triangle, Lévy C, Vicsek) has a points slider, not depth, so it's left out — `0fab4de`
 - Sierpinski carpet spiral dive (1.24.0, user idea 2026-10-14): Surprise me on Carpet (Spiral Dive at (1/4, 1/4), Lattice Dive at (1/8, 3/8)) and Gasket (Triangle Spiral at (1/7, 2/7)) flies a 7 s steady dive ~3^20 deep, turning 90° per 3× of zoom and landing upright; points with repeating digits so every level looks alike. Reduce Motion drops the spin. Same release: five Phoenix Julia places — `3fe04a4`
