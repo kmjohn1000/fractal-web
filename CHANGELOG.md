@@ -2,6 +2,15 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.31.0 — 2026-10-15
+- Surprise me now covers every zoom fractal, with 21 new places (53 in all):
+  - Celtic: Baby Celtic, Manta, Celtic Cross, Four-Leaf Clover, Halo Bell
+  - Multibrot³: Baby Multibrot, Twin-Disk Minibrot, Seahorse Curl, Spiral Galaxy
+  - Phoenix: Whirlpool, Firebird, Ember Swarm
+  - Julia sets: Little Rabbit, Dragon's Eye, Twin Spirals, Dragon's Tail, Galaxy, Seahorse Tail
+- Three new spiral dives: Rabbit Hole, Into the Eye and Into the Galaxy.
+- Detail now rises smoothly during every spiral dive, so the centers stay detailed instead of going black, and Pole Star's colors no longer jump on landing.
+
 ## 1.30.2 — 2026-10-15
 - On fractals with one Surprise-me place (Newton's method, Sierpinski gasket), tapping Surprise me again spirals back out to the opening view; before, it did nothing.
 
