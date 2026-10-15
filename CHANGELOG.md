@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.25.2 — 2026-10-15
+- Quieter slider thumb: smaller, and light gray instead of bright white, so it no longer draws the eye away from the fractal.
+
 ## 1.25.1 — 2026-10-15
 - Sleeker sliders: a slimmer track and a smaller thumb that grows slightly while you hold it, with the same large touch area.
 

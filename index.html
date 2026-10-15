@@ -385,10 +385,11 @@
   #speedBubble span { color: #9a9a9a; }
 
   /* Every slider, one look: a slim 4px track, accent-filled from the
-     minimum up to the thumb and gray after it, and a small white thumb
-     with a soft shadow that swells a little while held.
+     minimum up to the thumb and gray after it, and a small light-gray
+     thumb (not pure white, so it doesn't outshine the image) with a soft
+     shadow that swells a little while held.
      The thumb pseudo-element is a 44px touch box (iOS's minimum target)
-     with the visible 22px dot, its shadow and the focus ring painted in
+     with the visible 16px dot, its shadow and the focus ring painted in
      as radial gradients, since a box-shadow would outline the whole box.
      The input is 44px tall too, with -6px vertical margins so the row
      still lays it out as 32px (the toolbar height, which
@@ -400,16 +401,16 @@
      straight part starts, --sl-c0 is the dot center's distance in from
      there at the minimum. A track pseudo-element can't read the value, so
      app.js keeps --fill (0-1) in sync on each slider. Colors are opaque
-     because the caps overlap the straight part, and the dot fades to
-     transparent white, not "transparent" (black), or WebKit draws a gray
-     fringe around it.
+     because the caps overlap the straight part, and the dot fades to a
+     transparent copy of its own color, not "transparent" (black), or
+     WebKit draws a gray fringe around it.
      Pressed, the dot's radius (--sl-r) grows. WebKit ignores transforms
      on the thumb but follows custom properties set on the input; the
      @property registration lets it animate where supported (elsewhere it
      just snaps). */
-  @property --sl-r { syntax: "<length>"; inherits: true; initial-value: 10.5px; }
+  @property --sl-r { syntax: "<length>"; inherits: true; initial-value: 7.5px; }
   input[type=range] {
-    --sl-hit: 44px; --sl-dot: 22px; --sl-track: 4px; --sl-r: 10.5px;
+    --sl-hit: 44px; --sl-dot: 16px; --sl-track: 4px; --sl-r: 7.5px;
     --sl-on: #6cf; --sl-off: #48484a;
     --sl-inset: calc((var(--sl-hit) - var(--sl-dot)) / 2 + var(--sl-track) / 2);
     --sl-c0: calc(var(--sl-dot) / 2 - var(--sl-track) / 2);
@@ -420,15 +421,15 @@
       radial-gradient(circle closest-side, var(--sl-off) 70%, transparent) right calc(var(--sl-inset) - var(--sl-track) / 2) top 50% / var(--sl-track) var(--sl-track) no-repeat,
       linear-gradient(to right, var(--sl-on) var(--sl-stop), var(--sl-off) var(--sl-stop)) 50% 50% / calc(100% - 2 * var(--sl-inset)) 100% no-repeat;
     --sl-thumb-bg:
-      radial-gradient(circle, #fff 0 var(--sl-r), rgba(255,255,255,0) calc(var(--sl-r) + 0.75px) calc(var(--sl-r) + 2px), var(--sl-ring) calc(var(--sl-r) + 2.5px) calc(var(--sl-r) + 4.5px), transparent calc(var(--sl-r) + 5px)),
-      radial-gradient(circle at 50% calc(50% + 1px), rgba(0,0,0,0.45) 0 8px, transparent 15px);
+      radial-gradient(circle, #d8d8dc 0 var(--sl-r), rgba(216,216,220,0) calc(var(--sl-r) + 0.75px) calc(var(--sl-r) + 2px), var(--sl-ring) calc(var(--sl-r) + 2.5px) calc(var(--sl-r) + 4.5px), transparent calc(var(--sl-r) + 5px)),
+      radial-gradient(circle at 50% calc(50% + 1px), rgba(0,0,0,0.4) 0 5.5px, transparent 11px);
     flex: 1 1 80px; min-width: 60px; height: var(--sl-hit);
     margin: -6px calc((var(--sl-dot) - var(--sl-hit)) / 2);
     -webkit-appearance: none; appearance: none; background: transparent;
     -webkit-tap-highlight-color: transparent;
     transition: --sl-r 0.15s ease-out;
   }
-  input[type=range]:active { --sl-r: 12.5px; }
+  input[type=range]:active { --sl-r: 9px; }
   @media (prefers-reduced-motion: reduce) { input[type=range] { transition: none; } }
   /* Focus: a ring around the dot, in place of the default outline around
      the whole (overhanging) 44px input box. */
