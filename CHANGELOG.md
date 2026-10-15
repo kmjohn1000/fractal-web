@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.30.1 — 2026-10-15
+- Surprise me on Newton's method: Pole Star, a spiral dive a billion times into the six-armed star at the center.
+
 ## 1.30.0 — 2026-10-15
 A refined toolbar (developed as 1.25.1–1.25.4 on the web, released together):
 - Quieter sliders: a slimmer track and a small light-gray thumb in place of the big white one, so the slider no longer draws the eye away from the fractal. It grows slightly while you hold it, with the same large touch area.

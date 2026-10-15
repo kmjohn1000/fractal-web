@@ -130,6 +130,13 @@ const TELEPORT_DESTINATIONS = [
   { fractal: "Carpet", label: "Spiral Dive", re: "0.25", im: "0.25", scale: 0.65 / 3 ** 20, rotation: 0, spiral: true },
   { fractal: "Carpet", label: "Lattice Dive", re: "0.125", im: "0.375", scale: 0.65 / 3 ** 20, rotation: 0, spiral: true },
   { fractal: "Gasket", label: "Triangle Spiral", re: String(1 / 7), im: String(2 / 7), scale: 0.65 / 2 ** 30, rotation: 0, spiral: true },
+  // Newton's map sends 0 (a double pole) to infinity, a repelling fixed
+  // point with multiplier 3/2, so the six-armed star at 0 repeats every
+  // sqrt(1.5)x of zoom. It's also the one place float32 (Newton has no
+  // perturbation) stays sharp at depth: a center of 0 loses no digits.
+  // Elsewhere Newton blurs below ~1e-4, and its natural spirals (repelling
+  // cycles) turn under a fifth of a turn per 10x, too little to show.
+  { fractal: "Newton z³", label: "Pole Star", re: "0", im: "0", scale: 1e-9, rotation: 0, spiral: true },
 ];
 // Picker sections, in display order.
 const FRACTAL_CATEGORIES = [
