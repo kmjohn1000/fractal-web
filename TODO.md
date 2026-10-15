@@ -34,16 +34,10 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
 - [ ] New escape-time types: Buffalo, Lambda (Celtic is done, see Done)
       (single-state iteration, reuse existing shader/perturbation/
       supersampling pipeline with no structural changes)
-- [ ] Surprise me and a one-line description for every escape-time fractal:
-      Mandelbrot (`7e2c606`), Burning Ship (`5715799`: six places, landed
-      ship-side up via a per-destination `rotation`) and Tricorn (`704c03a`:
-      seven places), Julia: Phoenix (`3fe04a4`: five places) and Carpet/
-      Gasket (`3fe04a4`: spiral dives) and Newton (1.30.1: Pole Star, a
-      spiral dive into the pole at 0) are done. Add curated places per
-      remaining fractal (Celtic, Multibrot³, the other Julia presets, ...),
-      and a short "what you're looking at" blurb in the info card or picker.
-      Cheap content work next to the new types (idea from the WebSim Fractal
-      Explorer review, 2026-10-09). Phoenix research leftovers, not added:
+- [ ] A one-line "what you're looking at" blurb per fractal or place, in
+      the info card or picker (idea from the WebSim Fractal Explorer review,
+      2026-10-09). Surprise me itself now covers every zoom fractal
+      (`238ee7e`, see Done). Phoenix research leftovers, not added:
       Rising Phoenix (0.06, 0.706, s 1.25, rot π/2: the whole upper lobe,
       small in dark space) and Twin Curls (-0.112, 0.475, s 0.1: two big
       flat blobs); Phoenix has no perturbation, so ~1e-4 is its floor
@@ -67,39 +61,6 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         is maybe 2-4× slower).
       - Copy: 31 → 32 named places in the description, What's New and
         promo caption.
-- [ ] More Surprise-me places, researched and render-checked 2026-10-15
-      (portrait phone, auto detail ≤ 2000; landings only, not flights).
-      re, im, scale (half-height):
-      - Celtic:
-        - Baby Celtic -1.766, 0, 6e-2
-        - Manta -1.47, 0.645, 5e-2
-        - Celtic Cross -1.9412, 0, 9e-3
-        - Four-Leaf Clover -1.749003357223038, 0, 1e-7
-        - Halo Bell -1.749003357223038, 0, 1.5e-12 (the showpiece)
-      - Multibrot³:
-        - Baby Multibrot 0.2644, 1.2605, 3e-2
-        - Twin-Disk Minibrot 0.6, 0.6847, 2.5e-2
-        - Seahorse Curl 0.1854, 0.8406, 4e-3
-        - Spiral Galaxy 0.2203299273540233, 1.1863292989343286, 1e-5
-      - Phoenix (all ≥ 3e-3, so float32 stays sharp):
-        - Whirlpool -0.6053, 0.4975, 3e-3 (best)
-        - Firebird -1.902, 0, 8e-3
-        - Ember Swarm -0.3599, 0.6771, 8e-3
-      - Julia: Rabbit (40–50% black in any view):
-        - Rabbit Hole spiral dive into the ears' junction
-          -0.2763365709357304, 0.4797274969941251, 1e-12 (repeats every
-          1.357×)
-        - Little Rabbit -0.31136, 0.5181, 5e-3
-      - Julia: Dragon:
-        - Dragon's Eye -0.37595385170901174, 0.34248379570988946, 0.2
-        - Twin Spirals 0, 0, 0.4
-        - Dragon's Tail 1.353, -0.372, 5e-2
-        - Into the Eye: spiral dive to Dragon's Eye at 1e-11. Watch the
-          real flight for flicker.
-      - Julia: Spiral:
-        - Galaxy 0.47353729561814784, 0.18894516327019664, 0.2
-        - Seahorse Tail 0.5264627043818522, -0.18894516327019664, 5e-2
-        - Into the Galaxy: spiral dive to Galaxy at 1e-11
 - [ ] Playful Surprise-me ideas (same research, 2026-10-15):
       - Top 3:
         - Rare "golden" places drawn about 1 in 15 taps, with a gold "Rare
@@ -430,6 +391,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
+- Surprise me on every zoom fractal (1.31.0): 21 places from the 2026-10-15 research on Celtic, Multibrot³, Phoenix and the Rabbit, Dragon and Spiral Julia sets. Three of them are spiral dives (Rabbit Hole, Into the Eye, Into the Galaxy) that land at 1e-3, so the whole flight renders live. Auto detail now follows the zoom during spiral dives. Earlier the same day: Pole Star on Newton (1.30.1) and spiral-out on fractals with one place (1.30.2) — `238ee7e`
 - New App Store screenshots for 1.25.0 (2026-10-15): six captioned shots per device in git-ignored `appstore-screenshots/1.25.0/` (iPhone 6.5" 1284x2778, iPad 13" 2064x2752), rendered from the web app in headless Chrome: Mini Mandelbrot with the legend card, the picker, Spiral Julia in dual view, Lace Tricorn, Armada, Pythagoras tree with play. Sierpinski deep zoom was tried and dropped: flat-looking at depth. Re-rendered 2026-10-15 for the 1.30.0 toolbar in `appstore-screenshots/1.30.0/`. What's New and a copy review are in `appstore-screenshots/copy/whats-new-1.30.0.md`; the full paste-ready English and French listing is `copy/listing-1.30.0.md`. Upload with the 1.30.0 release
 - 1.20.0 (build 174) live on the App Store 2026-10-14 (iTunes lookup API); user checked Carpet/Gasket deep zoom, the legend card and the colormap menu on a real phone 2026-10-15. Hold-and-slide depth speed (1.25.0) also checked on the phone ahead of the next release
 - Play/pause for pattern depth (1.25.0, user idea 2026-10-14): Koch, tree and the line curves get a play button that bounces the depth slider min↔max (700 ms per step at 1×) and a hold-and-slide speed button (¼×–4×, 28 px per step; arrow keys too), replacing Koch's one-way animate button. The IFS row (fern, Sierpinski triangle, Lévy C, Vicsek) has a points slider, not depth, so it's left out — `0fab4de`
