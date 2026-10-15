@@ -195,6 +195,12 @@
     padding: 6px 8px;
   }
   .control-row:not(:last-child) { border-bottom: 0.5px solid rgba(255,255,255,0.1); }
+  /* Every mode's buttons share one order: picker, color, info, then the
+     mode's own tools, then Back, Share, Reset. The auto margin on Back
+     takes only space the capped (44px) buttons leave over, so on phones
+     the row still fills evenly; on wider screens Back/Share/Reset sit at
+     the right edge, in the same place whichever mode is showing. */
+  .control-row .trailStart { margin-left: auto; }
   #fractalControls.hidden, #kochControls.hidden, #treeControls.hidden,
   #dragonControls.hidden, #fernControls.hidden { display: none; }
 
@@ -508,11 +514,6 @@
         <rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>
       </svg>
     </button>
-    <button id="dualBtn" class="iconBtn" aria-label="Toggle dual (Julia) view" title="Toggle dual (Julia) view">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="4" y="3.5" width="16" height="7" rx="2"/><rect x="4" y="13.5" width="16" height="7" rx="2"/>
-      </svg>
-    </button>
     <button id="colormapBtn" class="iconBtn" aria-label="Choose colormap" title="Choose colormap">
       <span id="colormapPill" class="colorPill"></span>
     </button>
@@ -522,21 +523,26 @@
         <circle cx="12" cy="7.5" r="1.3" fill="currentColor" stroke="none"/>
       </svg>
     </button>
+    <button id="dualBtn" class="iconBtn" aria-label="Toggle dual (Julia) view" title="Toggle dual (Julia) view">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="3.5" width="16" height="7" rx="2"/><rect x="4" y="13.5" width="16" height="7" rx="2"/>
+      </svg>
+    </button>
     <button id="boxZoomBtn" class="iconBtn" aria-label="Box zoom" title="Box zoom">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M4 9V6a2 2 0 0 1 2-2h3"/><path d="M15 4h3a2 2 0 0 1 2 2v3"/>
         <path d="M20 15v3a2 2 0 0 1-2 2h-3"/><path d="M9 20H6a2 2 0 0 1-2-2v-3"/>
       </svg>
     </button>
-    <button id="backBtn" class="iconBtn" aria-label="Back" title="Back">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>
-      </svg>
-    </button>
     <button id="teleportBtn" class="iconBtn" aria-label="Surprise me" title="Surprise me">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M10.5 3.5l1.7 5.3 5.3 1.7-5.3 1.7-1.7 5.3-1.7-5.3-5.3-1.7 5.3-1.7z"/>
         <path d="M18 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z" fill="currentColor" stroke-width="1.5"/>
+      </svg>
+    </button>
+    <button id="backBtn" class="iconBtn trailStart" aria-label="Back" title="Back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>
       </svg>
     </button>
     <button id="shareBtn" class="iconBtn shareBtn" aria-label="Share" title="Share" aria-haspopup="true">
@@ -559,6 +565,15 @@
         <rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>
       </svg>
     </button>
+    <button id="kochColormapBtn" class="iconBtn" aria-label="Choose color" title="Choose color">
+      <span id="kochColorSwatch" class="colorPill"></span>
+    </button>
+    <button id="kochHudBtn" class="iconBtn hudToggleBtn" aria-label="Toggle info overlay" title="Toggle info overlay">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/>
+        <circle cx="12" cy="7.5" r="1.3" fill="currentColor" stroke="none"/>
+      </svg>
+    </button>
     <button class="iconBtn depthPlayBtn" aria-label="Play depth" title="Play depth">
       <svg class="playIcon" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 5v14l12-7z"/></svg>
       <svg class="pauseIcon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
@@ -576,16 +591,7 @@
         <use href="#kochFillGlyph"/>
       </svg>
     </button>
-    <button id="kochColormapBtn" class="iconBtn" aria-label="Choose color" title="Choose color">
-      <span id="kochColorSwatch" class="colorPill"></span>
-    </button>
-    <button id="kochHudBtn" class="iconBtn hudToggleBtn" aria-label="Toggle info overlay" title="Toggle info overlay">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/>
-        <circle cx="12" cy="7.5" r="1.3" fill="currentColor" stroke="none"/>
-      </svg>
-    </button>
-    <button id="kochBackBtn" class="iconBtn" aria-label="Back" title="Back">
+    <button id="kochBackBtn" class="iconBtn trailStart" aria-label="Back" title="Back">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>
       </svg>
@@ -610,11 +616,6 @@
         <rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>
       </svg>
     </button>
-    <button class="iconBtn depthPlayBtn" aria-label="Play depth" title="Play depth">
-      <svg class="playIcon" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 5v14l12-7z"/></svg>
-      <svg class="pauseIcon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
-    </button>
-    <button class="iconBtn depthSpeedBtn" aria-label="Play speed" title="Play speed: hold and slide left or right">1×</button>
     <button id="treeColormapBtn" class="iconBtn" aria-label="Choose color" title="Choose color">
       <span id="treeColorSwatch" class="colorPill"></span>
     </button>
@@ -624,7 +625,12 @@
         <circle cx="12" cy="7.5" r="1.3" fill="currentColor" stroke="none"/>
       </svg>
     </button>
-    <button id="treeBackBtn" class="iconBtn" aria-label="Back" title="Back">
+    <button class="iconBtn depthPlayBtn" aria-label="Play depth" title="Play depth">
+      <svg class="playIcon" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 5v14l12-7z"/></svg>
+      <svg class="pauseIcon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+    </button>
+    <button class="iconBtn depthSpeedBtn" aria-label="Play speed" title="Play speed: hold and slide left or right">1×</button>
+    <button id="treeBackBtn" class="iconBtn trailStart" aria-label="Back" title="Back">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>
       </svg>
@@ -649,11 +655,6 @@
         <rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>
       </svg>
     </button>
-    <button class="iconBtn depthPlayBtn" aria-label="Play depth" title="Play depth">
-      <svg class="playIcon" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 5v14l12-7z"/></svg>
-      <svg class="pauseIcon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
-    </button>
-    <button class="iconBtn depthSpeedBtn" aria-label="Play speed" title="Play speed: hold and slide left or right">1×</button>
     <button id="dragonColormapBtn" class="iconBtn" aria-label="Choose color" title="Choose color">
       <span id="dragonColorSwatch" class="colorPill"></span>
     </button>
@@ -663,7 +664,12 @@
         <circle cx="12" cy="7.5" r="1.3" fill="currentColor" stroke="none"/>
       </svg>
     </button>
-    <button id="dragonBackBtn" class="iconBtn" aria-label="Back" title="Back">
+    <button class="iconBtn depthPlayBtn" aria-label="Play depth" title="Play depth">
+      <svg class="playIcon" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 5v14l12-7z"/></svg>
+      <svg class="pauseIcon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+    </button>
+    <button class="iconBtn depthSpeedBtn" aria-label="Play speed" title="Play speed: hold and slide left or right">1×</button>
+    <button id="dragonBackBtn" class="iconBtn trailStart" aria-label="Back" title="Back">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>
       </svg>
@@ -703,7 +709,7 @@
         <path d="M20 15v3a2 2 0 0 1-2 2h-3"/><path d="M9 20H6a2 2 0 0 1-2-2v-3"/>
       </svg>
     </button>
-    <button id="fernBackBtn" class="iconBtn" aria-label="Back" title="Back">
+    <button id="fernBackBtn" class="iconBtn trailStart" aria-label="Back" title="Back">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>
       </svg>

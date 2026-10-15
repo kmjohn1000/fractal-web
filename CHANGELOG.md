@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.25.3 — 2026-10-15
+- The toolbar buttons keep the same order in every mode: fractal picker, color and info first, then that mode's own tools, then Back, Share and Reset. On iPad and wider screens, Back, Share and Reset sit at the right edge.
+
 ## 1.25.2 — 2026-10-15
 - Quieter slider thumb: smaller, and light gray instead of bright white, so it no longer draws the eye away from the fractal.
 
