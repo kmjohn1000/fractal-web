@@ -46,6 +46,26 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       Rising Phoenix (0.06, 0.706, s 1.25, rot π/2: the whole upper lobe,
       small in dark space) and Twin Curls (-0.112, 0.475, s 0.1: two big
       flat blobs); Phoenix has no perturbation, so ~1e-4 is its floor
+- [ ] Bird's Eye, the user's Mandelbrot Surprise-me place (future release,
+      not 1.30.0; user 2026-10-15): x=-0.7499608238178327,
+      y=0.010995666098898458, half-height 5.59389760808153e-6, framed as
+      given (no recentering on the eye). Needs maxIter 8000: at the
+      current 2000 cap the eye is a black hole (43% of pixels differ from
+      10000; 8000 is visually identical, 7%). Plan agreed with the user:
+      - Detail slider cap 2000 → 8000, logarithmic. Auto-detail stays
+        capped at 2000.
+      - Destinations can carry their own maxIter (Bird's Eye: 8000,
+        slider locked).
+      - Raise the constant loop bounds in shaders.js (3 loops), the
+        share-link `i`/`ji` parse limits and the slider's max.
+      - Draw passes above ~2000 in horizontal strips, flushing between
+        strips, so no single GPU job nears iOS's watchdog.
+      - Context loss today reloads at the same view. At 8000 that could
+        loop, so reload at auto detail and say why.
+      - User tests on a real iPhone (M3: 274 ms per pass at 8000; a phone
+        is maybe 2-4× slower).
+      - Copy: 31 → 32 named places in the description, What's New and
+        promo caption.
 - [ ] Surprise me for the Patterns category — PARKED by the user
       2026-10-14. Research done (contact sheet was
       patterns_surprise_contact_sheet.png in a session scratchpad, not
@@ -307,14 +327,11 @@ distance estimation → zoom-to-minibrot / AI discovery.
       but past ~1e-35 the shader's float32 deltas also underflow, so it
       also needs extended-exponent deltas, plus BLA iteration skipping and
       2D reference-orbit textures past MAX_TEXTURE_SIZE)
-- [ ] maxIter past 2000 (real blockers: the shader loops are compiled
-      with a constant 2000 bound, and one draw that loops 10⁴–10⁶ times
-      risks a GPU watchdog timeout/context loss — needs multi-pass
-      iteration, saving per-pixel state (z, dz, reference index) in float
-      textures between passes; also check gl.getParameter(MAX_TEXTURE_SIZE)
-      at runtime — Julia-mode reference orbit texture width is
-      2*(maxIter+1) texels, safely under 4096 today; without this, deeper
-      views show growing false-black interiors)
+- [ ] maxIter past 8000 (the cap planned for Bird's Eye, see Next): one
+      draw looping 10⁴–10⁶ times needs multi-pass iteration, saving
+      per-pixel state (z, dz, reference index) in float textures between
+      passes, and a 2D reference-orbit texture (dual view's orbit row is
+      2*(maxIter+1) texels; iPhone's MAX_TEXTURE_SIZE is 16384)
 - [ ] Phoenix deep zoom (perturbation) — the delta step itself is easy
       (dz' = 2Z·dz + dz² + dc + p·dz_prev, carrying dz_prev and reading
       Z[m-1] from the orbit), but rebasing isn't: restarting at Z[0] = 0
