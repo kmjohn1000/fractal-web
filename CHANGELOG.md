@@ -2,6 +2,11 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.32.0 — 2026-10-15
+- Surprise me on the Mandelbrot set: Bird's Eye, a spiral eye that only appears at very high detail (54 places in all). It lands with detail set to 8000.
+- The detail slider now goes up to 8000, up from 2000, and moves in even steps across its range. Auto detail still stops at 2000.
+- If high detail is ever too much for the device and the view has to reload, it comes back at auto detail and says why.
+
 ## 1.31.0 — 2026-10-15
 - Surprise me now covers every zoom fractal, with 21 new places (53 in all):
   - Celtic: Baby Celtic, Manta, Celtic Cross, Four-Leaf Clover, Halo Bell

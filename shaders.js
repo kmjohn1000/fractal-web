@@ -1,5 +1,16 @@
 "use strict";
 
+// Highest maxIter anything can ask for: the detail slider's top and the
+// escape-time loops' constant bound below. Auto detail stops lower
+// (AUTO_ITER_CAP in app.js); only the slider and a destination's own
+// maxIter (Bird's Eye) go past it.
+const ITER_CAP = 8000;
+
+// The reference orbit texture is laid out in rows of this many texels: at
+// ITER_CAP a Julia render's two orbits are 16,002 texels, more than one row
+// can hold on GPUs whose MAX_TEXTURE_SIZE is 4096.
+const REF_TEX_ROW = 2048;
+
 const VERT_SRC = `
 attribute vec2 a_pos;
 void main() {
@@ -132,7 +143,10 @@ uniform sampler2D u_refOrbitTex;
 uniform int   u_refOrbitLen;
 uniform int   u_critOffset;
 uniform int   u_critLen;
+// Texel indices run along rows of u_refTexWidth texels (REF_TEX_ROW once
+// an orbit needs more than one row), see refOrbitAt.
 uniform float u_refTexWidth;
+uniform float u_refTexHeight;
 // World-space offset of the reference orbit's own point from u_center --
 // chooseReference in app.js doesn't always use the view center. See
 // renderEscapePerturbation.
@@ -212,7 +226,7 @@ vec3 escapeColor(int iter, vec2 z) {
 // every level, regardless of how many levels run.
 //
 // Depth is u_digitDepth, deliberately NOT u_maxIter: u_maxIter's range
-// (50-2000, from the iter slider) is calibrated for escape-time iteration
+// (50-8000, from the iter slider) is calibrated for escape-time iteration
 // counts, but this recursion only has ~15-24 meaningful levels in float32
 // before the repeated *base/re-fract() accumulates enough rounding error to
 // be numerically meaningless (each level consumes ~log2(base) bits of the
@@ -303,7 +317,7 @@ vec3 renderNewton(vec2 p) {
   int rootIdx = -1;
   int iterUsed = 0;
 
-  for (int i = 0; i < 2000; i++) {
+  for (int i = 0; i < ${ITER_CAP}; i++) {
     if (i >= u_maxIter) break;
     iterUsed = i;
     // z - (z^3 - 1)/(3z^2), rewritten as (2z + (1/z)^2)/3 so it never
@@ -346,7 +360,7 @@ vec3 renderEscapeFast(vec2 p) {
   // (z' = z^2 + c + p*z_prev, z_(-1) = 0); everything else ignores zPrev.
   vec2 zPrev = vec2(0.0);
 
-  for (int i = 0; i < 2000; i++) {
+  for (int i = 0; i < ${ITER_CAP}; i++) {
     if (i >= u_maxIter) break;
     vec2 zsq;
     if (u_ftype == FTYPE_SHIP) {
@@ -431,7 +445,13 @@ vec2 perturbStep(vec2 Z, vec2 dz, vec2 dc) {
 }
 
 vec2 refOrbitAt(int index) {
-  return texture2D(u_refOrbitTex, vec2((float(index) + 0.5) / u_refTexWidth, 0.5)).xy;
+  // Exact in float32: indices stay below 2^24, and dividing by a full
+  // row's REF_TEX_ROW (a power of two) is exact. A single shorter row only
+  // ever divides an index below its width, which stays below 1.
+  float i = float(index);
+  float row = floor(i / u_refTexWidth);
+  float col = i - row * u_refTexWidth;
+  return texture2D(u_refOrbitTex, vec2((col + 0.5) / u_refTexWidth, (row + 0.5) / u_refTexHeight)).xy;
 }
 
 // The pixel's offset from the reference point (uv*u_scale*2.0 is always the
@@ -462,7 +482,7 @@ vec3 renderEscapePerturbation(vec2 uv) {
   bool escaped = false;
   vec2 fullAtEscape = vec2(0.0);
 
-  for (int i = 0; i < 2000; i++) {
+  for (int i = 0; i < ${ITER_CAP}; i++) {
     if (i >= u_maxIter) break;
 
     dz = perturbStep(Zm, dz, dc);
