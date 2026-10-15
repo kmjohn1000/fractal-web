@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.30.2 — 2026-10-15
+- On fractals with one Surprise-me place (Newton's method, Sierpinski gasket), tapping Surprise me again spirals back out to the opening view; before, it did nothing.
+
 ## 1.30.1 — 2026-10-15
 - Surprise me on Newton's method: Pole Star, a spiral dive a billion times into the six-armed star at the center.
 

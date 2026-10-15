@@ -2477,15 +2477,42 @@ function cancelTeleport() { teleportGeneration++; }
 
 function teleport() {
   if (mode !== "fractal") return;
-  const candidates = TELEPORT_DESTINATIONS
+  const own = TELEPORT_DESTINATIONS
     .map((d, i) => ({ d, i }))
-    .filter(({ d, i }) => d.fractal === currentName && i !== lastTeleportIndex);
-  if (candidates.length === 0) return;
-  const { d, i } = candidates[Math.floor(Math.random() * candidates.length)];
-  lastTeleportIndex = i;
-
+    .filter(({ d }) => d.fractal === currentName);
+  if (own.length === 0) return;
+  const candidates = own.filter(({ i }) => i !== lastTeleportIndex);
   const st = mainState;
-  const target = { cx: Number(d.re), cy: Number(d.im), scale: d.scale };
+  let d, i, target;
+  let landingIndex, spinSign = 1;
+  if (candidates.length > 0) {
+    ({ d, i } = candidates[Math.floor(Math.random() * candidates.length)]);
+    lastTeleportIndex = i;
+    target = { cx: Number(d.re), cy: Number(d.im), scale: d.scale };
+    landingIndex = i;
+  } else {
+    // A fractal with one place (Newton, Gasket): taps alternate between
+    // diving in and spiraling back out to the opening view, picked by
+    // which of the two the current view is nearer, so a hand zoom between
+    // taps still gets the sensible direction.
+    ({ d, i } = own[0]);
+    const home = viewFromBounds(FRACTAL_CONFIGS[currentName].view, mainCanvasAspect());
+    const here = [st.cx, st.cy, 2 * st.scale];
+    const toPlace = zoomPath(here, [Number(d.re), Number(d.im), 2 * d.scale]).distance;
+    const toHome = zoomPath(here, [home.cx, home.cy, 2 * home.scale]).distance;
+    if (toPlace < toHome) {
+      // The opening view is upright, so the way out lands at rotation 0
+      // and its spiral unwinds the way in.
+      d = { ...d, rotation: 0 };
+      target = { cx: home.cx, cy: home.cy, scale: home.scale };
+      landingIndex = -1;
+      spinSign = -1;
+    } else {
+      target = { cx: Number(d.re), cy: Number(d.im), scale: d.scale };
+      landingIndex = i;
+    }
+  }
+
   // A destination with a rotation lands turned to it (Burning Ship's ships
   // are drawn masts-down in math orientation); one without leaves the
   // view's rotation alone, as before. The turn takes the shorter way round.
@@ -2502,7 +2529,7 @@ function teleport() {
   // locked to the zoom. Reduced motion skips the spin and the long flight.
   const spiral = d.spiral && !prefersReducedMotion();
   if (spiral) {
-    const spin = SPIRAL_RAD_PER_ZOOM * Math.SQRT2 * path.distance;
+    const spin = spinSign * SPIRAL_RAD_PER_ZOOM * Math.SQRT2 * path.distance;
     turn += 2 * Math.PI * Math.round((spin - turn) / (2 * Math.PI));
   }
   const ease = spiral ? steadyEase : (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
@@ -2533,7 +2560,7 @@ function teleport() {
       // lock at 300 lands Seahorse Valley all black), so landing hands
       // maxIter back to auto mode; the settle's applyAutoIter sets it.
       st.iterAutoLocked = false;
-      teleportLandingIndex = i;
+      teleportLandingIndex = landingIndex;
     }
     markInteracting();
     renderAll();
