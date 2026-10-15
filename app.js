@@ -1012,6 +1012,7 @@ function deepZoomEligible(renderer, state) {
 }
 
 function renderAll() {
+  updateBackButtons();
   if (mode === "fractal") {
     if (isInteracting && deepZoomEligible(mainRenderer, mainState)) {
       mainRenderer.renderPreview(mainState);
@@ -1087,6 +1088,19 @@ function scheduleRefinement() {
 }
 
 let renderPending = false;
+// Back is dimmed while there's nothing to go back to. Every history push,
+// pop or clear is followed by a render (gestures, Back, Reset, fractal and
+// mode switches), so renderAll refreshes it instead of each of those sites.
+// The vector navs are declared further down; renderAll first runs after
+// they exist.
+function updateBackButtons() {
+  const nav = mode === "koch" ? kochNav : mode === "tree" ? treeNav
+    : isCurveMode(mode) ? dragonNav : isIfsMode(mode) ? fernNav : null;
+  const canGoBack = nav ? nav.canGoBack() : (activePane === "julia" ? juliaHistory : mainHistory).length > 0;
+  const btn = nav ? els[`${isCurveMode(mode) ? "dragon" : isIfsMode(mode) ? "fern" : mode}BackBtn`] : els.backBtn;
+  if (btn.disabled === canGoBack) btn.disabled = !canGoBack;
+}
+
 function requestRender() {
   if (renderPending) return;
   renderPending = true;
@@ -1979,7 +1993,7 @@ function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive = () =>
     requestRender();
   }, { passive: false });
 
-  return { back, checkpoint, clearHistory: () => { history.length = 0; } };
+  return { back, checkpoint, clearHistory: () => { history.length = 0; }, canGoBack: () => history.length > 0 };
 }
 
 // The region each vector view shows in full when its mode first opens and
@@ -2662,6 +2676,7 @@ function setSpeedIndex(i) {
 
 for (const btn of document.querySelectorAll(".depthSpeedBtn")) {
   let drag = null;
+  let slid = false; // the press that ends in this click was a slide, not a tap
   const hint = "◀ slower · faster ▶";
   btn.addEventListener("pointerdown", (e) => {
     btn.setPointerCapture(e.pointerId);
@@ -2684,11 +2699,22 @@ for (const btn of document.querySelectorAll(".depthSpeedBtn")) {
     // A tap without a slide leaves the readout up a little longer, as a
     // how-to for the gesture.
     hideSpeedBubble(drag.moved ? 500 : 1800);
+    slid = drag.moved;
     drag = null;
     btn.classList.remove("dragging");
   };
   btn.addEventListener("pointerup", end);
   btn.addEventListener("pointercancel", end);
+  // A tap (or VoiceOver/Switch Control activation, or Enter/Space) steps
+  // to the next speed, wrapping from 4x back to 1/4x, so the speed can be
+  // changed without the hold-and-slide. A slide also ends in a click, which
+  // is skipped.
+  btn.addEventListener("click", () => {
+    if (slid) { slid = false; return; }
+    setSpeedIndex((depthPlayer.speedIndex + 1) % PLAY_SPEEDS.length);
+    showSpeedBubble(btn, hint);
+    hideSpeedBubble(1800);
+  });
   // Keyboard: arrow keys step the speed while the button has focus.
   btn.addEventListener("keydown", (e) => {
     const step = { ArrowLeft: -1, ArrowDown: -1, ArrowRight: 1, ArrowUp: 1 }[e.key];
@@ -3142,6 +3168,57 @@ document.addEventListener("pointerdown", (e) => {
   if (!els.shareMenu.classList.contains("open")) return;
   if (els.shareMenu.contains(e.target) || e.target.closest(".shareBtn")) return;
   closeShareMenu();
+});
+
+// ---------------------------------------------------------------- toolbar accessibility
+
+// Toggle buttons and popovers change state by toggling "active"/"open" at
+// many call sites, so one observer per element mirrors that state into
+// ARIA instead: aria-pressed on the toggles, aria-expanded on each popover's
+// opener buttons. A popover that opens gets focus on its current (or
+// first) item; one that closes with focus inside hands it back to the
+// button that opened it. Escape closes whichever popover is open.
+const TOGGLE_BUTTONS = [els.dualBtn, els.boxZoomBtn, els.fernBoxZoomBtn, els.kochFillBtn, ...document.querySelectorAll(".hudToggleBtn")];
+for (const btn of TOGGLE_BUTTONS) {
+  const sync = () => btn.setAttribute("aria-pressed", String(btn.classList.contains("active")));
+  sync();
+  new MutationObserver(sync).observe(btn, { attributes: true, attributeFilter: ["class"] });
+}
+
+const POPOVERS = [
+  { menu: els.fractalTypeRow, openers: [...document.querySelectorAll(".fractalMenuBtn")] },
+  { menu: els.colormapMenu, openers: [els.colormapBtn, els.kochColormapBtn, els.treeColormapBtn, els.dragonColormapBtn, els.fernColorBtn] },
+  { menu: els.shareMenu, openers: [...document.querySelectorAll(".shareBtn")] },
+];
+for (const p of POPOVERS) {
+  let opener = null;
+  for (const btn of p.openers) {
+    btn.setAttribute("aria-expanded", "false");
+    btn.addEventListener("click", () => { opener = btn; });
+  }
+  let wasOpen = false;
+  new MutationObserver(() => {
+    const open = p.menu.classList.contains("open");
+    if (open === wasOpen) return;
+    wasOpen = open;
+    for (const btn of p.openers) btn.setAttribute("aria-expanded", String(open));
+    if (open) {
+      const item = p.menu.querySelector("button.active:not(.hidden)") || p.menu.querySelector("button:not(.hidden)");
+      item?.focus({ preventScroll: true });
+    } else if (p.menu.contains(document.activeElement) || document.activeElement === document.body) {
+      // Picking a fractal can switch modes, hiding the row the opener was
+      // in: fall back to the same button in the row now showing.
+      const target = opener?.offsetParent ? opener : p.openers.find((b) => b.offsetParent);
+      target?.focus({ preventScroll: true });
+    }
+  }).observe(p.menu, { attributes: true, attributeFilter: ["class"] });
+}
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  const open = POPOVERS.find((p) => p.menu.classList.contains("open"));
+  if (!open) return;
+  e.preventDefault();
+  open.menu.classList.remove("open");
 });
 
 function flashLabel(btn, text) {
