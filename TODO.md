@@ -67,6 +67,59 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         is maybe 2-4× slower).
       - Copy: 31 → 32 named places in the description, What's New and
         promo caption.
+- [ ] More Surprise-me places, researched and render-checked 2026-10-15
+      (portrait phone, auto detail ≤ 2000; landings only, not flights).
+      re, im, scale (half-height):
+      - Celtic:
+        - Baby Celtic -1.766, 0, 6e-2
+        - Manta -1.47, 0.645, 5e-2
+        - Celtic Cross -1.9412, 0, 9e-3
+        - Four-Leaf Clover -1.749003357223038, 0, 1e-7
+        - Halo Bell -1.749003357223038, 0, 1.5e-12 (the showpiece)
+      - Multibrot³:
+        - Baby Multibrot 0.2644, 1.2605, 3e-2
+        - Twin-Disk Minibrot 0.6, 0.6847, 2.5e-2
+        - Seahorse Curl 0.1854, 0.8406, 4e-3
+        - Spiral Galaxy 0.2203299273540233, 1.1863292989343286, 1e-5
+      - Phoenix (all ≥ 3e-3, so float32 stays sharp):
+        - Whirlpool -0.6053, 0.4975, 3e-3 (best)
+        - Firebird -1.902, 0, 8e-3
+        - Ember Swarm -0.3599, 0.6771, 8e-3
+      - Julia: Rabbit (40–50% black in any view):
+        - Rabbit Hole spiral dive into the ears' junction
+          -0.2763365709357304, 0.4797274969941251, 1e-12 (repeats every
+          1.357×)
+        - Little Rabbit -0.31136, 0.5181, 5e-3
+      - Julia: Dragon:
+        - Dragon's Eye -0.37595385170901174, 0.34248379570988946, 0.2
+        - Twin Spirals 0, 0, 0.4
+        - Dragon's Tail 1.353, -0.372, 5e-2
+        - Into the Eye: spiral dive to Dragon's Eye at 1e-11. Watch the
+          real flight for flicker.
+      - Julia: Spiral:
+        - Galaxy 0.47353729561814784, 0.18894516327019664, 0.2
+        - Seahorse Tail 0.5264627043818522, -0.18894516327019664, 5e-2
+        - Into the Galaxy: spiral dive to Galaxy at 1e-11
+- [ ] Playful Surprise-me ideas (same research, 2026-10-15):
+      - Top 3:
+        - Rare "golden" places drawn about 1 in 15 taps, with a gold "Rare
+          find" line and a local found-count. (S)
+        - Long-press the die for "Anywhere": a random fractal, then a
+          random place. Needs a VoiceOver alternative. (M)
+        - Place of the day, picked from a hash of the date, so everyone
+          gets the same place with no server. (S)
+      - Others:
+        - A rolling die icon during the flight
+        - "Looks like…" subtitles
+        - Haptic ticks per 10× of zoom
+        - A secret place after 7 quick taps. Must be mentioned in the
+          listing (guideline 2.3.1).
+        - A rare wrong-way "oops" dive
+        - A per-place suggested colormap (never override silently)
+        - A "Where am I?" guessing game
+        - Tour mode
+        - A spin-locked dive whose spiral appears to freeze
+        - Vicsek "you rolled a five" joke, if patterns ever get a die
 - [ ] Surprise me for the Patterns category — PARKED by the user
       2026-10-14. Research done (contact sheet was
       patterns_surprise_contact_sheet.png in a session scratchpad, not
