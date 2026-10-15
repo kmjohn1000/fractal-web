@@ -17,7 +17,10 @@ bottleneck, not conversion.
       - Localization pass: they ship English plus Dutch, French, German,
         Italian, Spanish; we're English only. Even Spanish/French/German
         widens search reach
-      - Neither listing has an app preview video; add one
+      - Neither listing has an app preview video; add one. Made 2026-10-15
+        for 1.30.0 (29.5 s of real app footage, iPhone 886x1920 and iPad
+        1200x1600, in git-ignored `appstore-screenshots/1.30.0/previews/`);
+        not uploaded yet
       - Beginner framing: named places with short explanations and scale
         comparisons (see the Surprise me item under Next)
       - Depth claims: the live copy says "trillions of times" (Mandelbrot
