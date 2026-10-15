@@ -31,6 +31,28 @@ bottleneck, not conversion.
 Help people find beautiful places, and give them more ways to see them.
 Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-minibrot.
 
+- [ ] Render past the screen edges so a drag reveals image, not blank
+      (user idea 2026-10-15). Where it matters: only deep zoom (scale <
+      1e-3, perturbation). Shallower views already re-render live every
+      drag frame. At depth a drag moves a snapshot of the last frame
+      (`renderPreview`), and anything outside it is flat gray (#111) until
+      the gesture settles and re-renders. That's slower now that detail
+      goes to 8000. Approach:
+      - Snapshot into an offscreen framebuffer bigger than the screen (a
+        margin of ~25% per side), and have `renderPreview` sample it
+        (`u_snapRes`/offset already handle a snapshot of a different
+        size).
+      - Fill the margin after the visible frame is done (after its 16
+        supersample passes, one pass, in strips, cancelled by any new
+        view), so it never delays what you see. A 25% margin is ~2.25×
+        the pixels: rendering it up front would make every deep render
+        ~2× slower.
+      - Pinch-out reveals edges too; the margin covers small zoom-outs.
+      - Costs: an extra framebuffer (~27 MB at iPhone dpr 2), more memory
+        pressure (context loss); `chooseReference` must pick from the
+        larger area, or margin pixels may glitch.
+      - Size: ~80–120 lines in the renderer.
+
 - [ ] New escape-time types: Buffalo, Lambda (Celtic is done, see Done)
       (single-state iteration, reuse existing shader/perturbation/
       supersampling pipeline with no structural changes)
