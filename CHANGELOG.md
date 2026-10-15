@@ -2,22 +2,16 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
-## 1.25.4 — 2026-10-15
+## 1.30.0 — 2026-10-15
+A refined toolbar (developed as 1.25.1–1.25.4 on the web, released together):
+- Quieter sliders: a slimmer track and a small light-gray thumb in place of the big white one, so the slider no longer draws the eye away from the fractal. It grows slightly while you hold it, with the same large touch area.
+- The toolbar buttons keep the same order in every mode: fractal picker, color and info first, then that mode's own tools, then Back, Share and Reset. On iPad and wider screens, Back, Share and Reset sit at the right edge.
 - New icons: a die for Surprise me and a house for Reset (the old ones read as "AI" and "undo").
 - Back is dimmed when there's nothing to go back to.
 - Tap the speed button to step to the next speed; hold and slide still works.
 - In landscape on iPhone, the toolbar stays clear of the notch and Dynamic Island.
 - VoiceOver now hears whether dual view, box zoom, info and fill are on, and whether a menu is open. Escape closes the open menu, and focus returns to its button.
 - At the largest text sizes, the speed button's label no longer spills out of the button.
-
-## 1.25.3 — 2026-10-15
-- The toolbar buttons keep the same order in every mode: fractal picker, color and info first, then that mode's own tools, then Back, Share and Reset. On iPad and wider screens, Back, Share and Reset sit at the right edge.
-
-## 1.25.2 — 2026-10-15
-- Quieter slider thumb: smaller, and light gray instead of bright white, so it no longer draws the eye away from the fractal.
-
-## 1.25.1 — 2026-10-15
-- Sleeker sliders: a slimmer track and a smaller thumb that grows slightly while you hold it, with the same large touch area.
 
 ## 1.25.0 — 2026-10-14
 - Play depth: the Koch snowflake, Pythagoras tree, dragon, Hilbert, Gosper and arrowhead curves get a play/pause button that steps the depth up and back down on its own. Next to it, a speed button: hold it and slide left for slower, right for faster (¼× to 4×). Touching the depth slider or switching fractals stops playback. Replaces the Koch snowflake's one-way animate button.
