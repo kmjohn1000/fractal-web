@@ -141,6 +141,25 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       2026-10-13 (96px frosted inset, bottom-right; box marker, crosshair
       when deep); not yet approved. Open: depth cue past ~1,000×, Julia
       pane in dual view, non-Mandelbrot fractals, what tapping it does
+- [ ] AirPlay TV mode (user liked it, 2026-10-14): when the iPhone/iPad
+      connects to an Apple TV or AirPlay display, show a clean full-screen
+      fractal there (no toolbar, no info card) and keep the controls on
+      the phone. Natural content: a slow tour of Surprise me places and
+      spiral dives (the flyover idea under Auto-dive). App-only: iOS gives
+      an external-display scene (`UIWindowSceneSessionRoleExternalDisplay
+      NonInteractive`); the app would open a second WKWebView in it on a
+      TV page from the same bundle, and the two web views talk through a
+      small native plugin (`platform.js`). Without this, AirPlay already
+      mirrors the phone screen, toolbar included. Needs an Info.plist
+      scene-manifest entry; check the second web view's memory/GPU cost
+      at 4K, maybe render at 1080p. Nothing comparable on the web build
+      (Safari's Remote Playback only covers video)
+- [ ] Native tvOS app (asked 2026-10-14): the tvOS SDK has no WebKit, so
+      Capacitor can't target it. It would be a separate Swift + Metal app
+      (port shaders.js to Metal, the reference orbit and cell rebasing to
+      Swift; MetalFX for 4K upscaling), driven by the Siri Remote (no
+      pinch or twist): an ambient tour app. Few thousand lines, and every
+      new fractal gets built twice. Only if AirPlay TV mode gets used
 - [ ] "Zoom to nearest minibrot" guided action
 - [ ] Auto-dive mode: a button that zooms steadily into an interesting spot
       on its own, with drag to steer (Fractal Dive's "Press Dive", Fractal
