@@ -2332,8 +2332,8 @@ document.addEventListener("pointerdown", (e) => {
   els.fractalTypeRow.classList.remove("open");
 });
 
-// Sliders: keep each one's filled-track position (--fill, read by the
-// track's gradient in index.html) in sync with its value. Dragging fires
+// Sliders: keep each one's filled-track position (--fill, 0-1, read by
+// the track's gradient in index.html) in sync with its value. Dragging fires
 // "input" (each listener below calls syncSliderFill); everything app.js
 // sets from code (URL restore, fractal switches, Koch's depth animation,
 // a curve's max depth changing) goes through the value/max setters, which
@@ -2343,7 +2343,7 @@ const SLIDERS = [els.iterSlider, els.kochDepthSlider, els.treeDepthSlider, els.d
 function syncSliderFill(slider) {
   const min = parseFloat(slider.min), max = parseFloat(slider.max);
   const pct = max > min ? (parseFloat(slider.value) - min) / (max - min) * 100 : 0;
-  slider.style.setProperty("--fill", `${Math.min(100, Math.max(0, pct))}%`);
+  slider.style.setProperty("--fill", String(Math.min(100, Math.max(0, pct)) / 100));
 }
 
 for (const slider of SLIDERS) {
