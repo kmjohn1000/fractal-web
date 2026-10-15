@@ -2,6 +2,14 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.25.4 — 2026-10-15
+- New icons: a die for Surprise me and a house for Reset (the old ones read as "AI" and "undo").
+- Back is dimmed when there's nothing to go back to.
+- Tap the speed button to step to the next speed; hold and slide still works.
+- In landscape on iPhone, the toolbar stays clear of the notch and Dynamic Island.
+- VoiceOver now hears whether dual view, box zoom, info and fill are on, and whether a menu is open. Escape closes the open menu, and focus returns to its button.
+- At the largest text sizes, the speed button's label no longer spills out of the button.
+
 ## 1.25.3 — 2026-10-15
 - The toolbar buttons keep the same order in every mode: fractal picker, color and info first, then that mode's own tools, then Back, Share and Reset. On iPad and wider screens, Back, Share and Reset sit at the right edge.
 

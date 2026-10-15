@@ -187,6 +187,9 @@
     background: rgb(22,22,24);
     border-top: 0.5px solid rgba(255,255,255,0.14);
     padding-bottom: max(0px, calc(env(safe-area-inset-bottom) - 14px));
+    /* Landscape iPhone: keep the label and buttons clear of the notch or
+       Dynamic Island, as #canvasArea already is. */
+    padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right);
   }
   /* gap/padding sized so the busiest row (7 x 44px buttons) stays on one
      line down to 360px-wide phones: 7*44 + 6*6 = 344 = 360 - 2*8. */
@@ -369,8 +372,10 @@
   .depthPlayBtn .pauseIcon, .depthPlayBtn.playing .playIcon { display: none; }
   .depthPlayBtn.playing .pauseIcon { display: block; }
   /* Speed: pressed and slid sideways, so the drag mustn't scroll the page. */
+  /* Capped: at the largest Larger Text sizes "1×" would outgrow the
+     button, which can't get wider. */
   .depthSpeedBtn {
-    font: 600 0.75rem -apple-system, system-ui, sans-serif;
+    font: 600 min(0.75rem, 15px) -apple-system, system-ui, sans-serif;
     font-variant-numeric: tabular-nums; touch-action: none;
   }
   .depthSpeedBtn.dragging { background: rgba(255,255,255,0.18); }
@@ -536,8 +541,12 @@
     </button>
     <button id="teleportBtn" class="iconBtn" aria-label="Surprise me" title="Surprise me">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M10.5 3.5l1.7 5.3 5.3 1.7-5.3 1.7-1.7 5.3-1.7-5.3-5.3-1.7 5.3-1.7z"/>
-        <path d="M18 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z" fill="currentColor" stroke-width="1.5"/>
+        <!-- A die: "random". Sparkles had come to read as "AI". -->
+        <rect x="4" y="4" width="16" height="16" rx="3.5"/>
+        <g fill="currentColor" stroke="none">
+          <circle cx="8.6" cy="8.6" r="1.35"/><circle cx="15.4" cy="8.6" r="1.35"/><circle cx="12" cy="12" r="1.35"/>
+          <circle cx="8.6" cy="15.4" r="1.35"/><circle cx="15.4" cy="15.4" r="1.35"/>
+        </g>
       </svg>
     </button>
     <button id="backBtn" class="iconBtn trailStart" aria-label="Back" title="Back">
@@ -553,7 +562,7 @@
     </button>
     <button id="resetBtn" class="iconBtn" aria-label="Reset view" title="Reset view">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9"/><path d="M4.5 4v5h5"/>
+        <path d="M3.5 11.5L12 4l8.5 7.5"/><path d="M6 9.5V19a1 1 0 0 0 1 1h3.5v-5.5h3V20H17a1 1 0 0 0 1-1V9.5"/>
       </svg>
     </button>
   </div>
@@ -578,7 +587,7 @@
       <svg class="playIcon" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 5v14l12-7z"/></svg>
       <svg class="pauseIcon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
     </button>
-    <button class="iconBtn depthSpeedBtn" aria-label="Play speed" title="Play speed: hold and slide left or right">1×</button>
+    <button class="iconBtn depthSpeedBtn" aria-label="Play speed" title="Play speed: tap for the next speed, or hold and slide left or right">1×</button>
     <button id="kochFillBtn" class="iconBtn active" aria-label="Toggle fill" title="Toggle fill">
       <!-- Depth-2 Koch snowflake, left half filled: reads as "fill", not as
            a Stop square beside Play. (Depth 1 is a six-pointed star.) -->
@@ -604,7 +613,7 @@
     </button>
     <button id="kochResetBtn" class="iconBtn" aria-label="Reset view" title="Reset view">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9"/><path d="M4.5 4v5h5"/>
+        <path d="M3.5 11.5L12 4l8.5 7.5"/><path d="M6 9.5V19a1 1 0 0 0 1 1h3.5v-5.5h3V20H17a1 1 0 0 0 1-1V9.5"/>
       </svg>
     </button>
   </div>
@@ -629,7 +638,7 @@
       <svg class="playIcon" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 5v14l12-7z"/></svg>
       <svg class="pauseIcon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
     </button>
-    <button class="iconBtn depthSpeedBtn" aria-label="Play speed" title="Play speed: hold and slide left or right">1×</button>
+    <button class="iconBtn depthSpeedBtn" aria-label="Play speed" title="Play speed: tap for the next speed, or hold and slide left or right">1×</button>
     <button id="treeBackBtn" class="iconBtn trailStart" aria-label="Back" title="Back">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>
@@ -643,7 +652,7 @@
     </button>
     <button id="treeResetBtn" class="iconBtn" aria-label="Reset view" title="Reset view">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9"/><path d="M4.5 4v5h5"/>
+        <path d="M3.5 11.5L12 4l8.5 7.5"/><path d="M6 9.5V19a1 1 0 0 0 1 1h3.5v-5.5h3V20H17a1 1 0 0 0 1-1V9.5"/>
       </svg>
     </button>
   </div>
@@ -668,7 +677,7 @@
       <svg class="playIcon" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 5v14l12-7z"/></svg>
       <svg class="pauseIcon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
     </button>
-    <button class="iconBtn depthSpeedBtn" aria-label="Play speed" title="Play speed: hold and slide left or right">1×</button>
+    <button class="iconBtn depthSpeedBtn" aria-label="Play speed" title="Play speed: tap for the next speed, or hold and slide left or right">1×</button>
     <button id="dragonBackBtn" class="iconBtn trailStart" aria-label="Back" title="Back">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>
@@ -682,7 +691,7 @@
     </button>
     <button id="dragonResetBtn" class="iconBtn" aria-label="Reset view" title="Reset view">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9"/><path d="M4.5 4v5h5"/>
+        <path d="M3.5 11.5L12 4l8.5 7.5"/><path d="M6 9.5V19a1 1 0 0 0 1 1h3.5v-5.5h3V20H17a1 1 0 0 0 1-1V9.5"/>
       </svg>
     </button>
   </div>
@@ -722,7 +731,7 @@
     </button>
     <button id="fernResetBtn" class="iconBtn" aria-label="Reset view" title="Reset view">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9"/><path d="M4.5 4v5h5"/>
+        <path d="M3.5 11.5L12 4l8.5 7.5"/><path d="M6 9.5V19a1 1 0 0 0 1 1h3.5v-5.5h3V20H17a1 1 0 0 0 1-1V9.5"/>
       </svg>
     </button>
   </div>
