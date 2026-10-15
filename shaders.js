@@ -306,11 +306,14 @@ vec3 renderNewton(vec2 p) {
   for (int i = 0; i < 2000; i++) {
     if (i >= u_maxIter) break;
     iterUsed = i;
-    vec2 z2 = cMul(z, z);
-    vec2 denom = 3.0 * z2;
-    if (dot(denom, denom) > 1e-24) {
-      vec2 num = cMul(z, z2) - vec2(1.0, 0.0);
-      z -= cDiv(num, denom);
+    // z - (z^3 - 1)/(3z^2), rewritten as (2z + (1/z)^2)/3 so it never
+    // forms z^2 or z^4: those underflow float32 near the pole at 0, which
+    // blanked Surprise me's dive there below a scale of ~1e-6. This form
+    // holds down to |z| ~ 1e-19.
+    float d = dot(z, z);
+    if (d > 0.0) {
+      vec2 w = vec2(z.x, -z.y) / d;
+      z = (2.0 * z + cMul(w, w)) / 3.0;
     }
     if (dot(z - NEWTON_ROOT0, z - NEWTON_ROOT0) < 1e-12) { rootIdx = 0; break; }
     if (dot(z - NEWTON_ROOT1, z - NEWTON_ROOT1) < 1e-12) { rootIdx = 1; break; }

@@ -38,7 +38,8 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       Mandelbrot (`7e2c606`), Burning Ship (`5715799`: six places, landed
       ship-side up via a per-destination `rotation`) and Tricorn (`704c03a`:
       seven places), Julia: Phoenix (`3fe04a4`: five places) and Carpet/
-      Gasket (`3fe04a4`: spiral dives) are done. Add curated places per
+      Gasket (`3fe04a4`: spiral dives) and Newton (1.30.1: Pole Star, a
+      spiral dive into the pole at 0) are done. Add curated places per
       remaining fractal (Celtic, Multibrot³, the other Julia presets, ...),
       and a short "what you're looking at" blurb in the info card or picker.
       Cheap content work next to the new types (idea from the WebSim Fractal
