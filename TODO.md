@@ -63,9 +63,9 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       Rising Phoenix (0.06, 0.706, s 1.25, rot π/2: the whole upper lobe,
       small in dark space) and Twin Curls (-0.112, 0.475, s 0.1: two big
       flat blobs); Phoenix has no perturbation, so ~1e-4 is its floor
-- [ ] Bird's Eye, the user's Mandelbrot place (x=-0.7499608238178327,
-      y=0.010995666098898458, half-height 5.59389760808153e-6), needs
-      maxIter 8000; at 2000 the eye is a black hole. Built in 1.32.0
+- [ ] Bird's Eye at full detail. The place itself is back in 1.32.2,
+      landing locked at 2000 (user: worth keeping without the higher
+      iterations); at 8000 its black eye resolves into a spiral. Built in 1.32.0
       (`c6fd357`: log slider to 8000, flushed strips above 2000, 2D
       orbit texture, context-loss reset) and ROLLED BACK in 1.32.1
       (`7ed8233`) on 2026-10-16: on the user's phone, zooming in ended in
@@ -76,7 +76,7 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       (state in float textures, see the Later item) instead of one long
       loop per pixel
 - [ ] Listing copy: the 1.30.0 listing files still say 31 places; it's
-      53 as of 1.31.0 (description, What's New, promo text and caption)
+      54 as of 1.32.2 (description, What's New, promo text and caption)
 - [ ] Playful Surprise-me ideas (same research, 2026-10-15):
       - Top 3:
         - Rare "golden" places drawn about 1 in 15 taps, with a gold "Rare
