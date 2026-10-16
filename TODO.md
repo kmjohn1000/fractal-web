@@ -63,12 +63,20 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       Rising Phoenix (0.06, 0.706, s 1.25, rot π/2: the whole upper lobe,
       small in dark space) and Twin Curls (-0.112, 0.475, s 0.1: two big
       flat blobs); Phoenix has no perturbation, so ~1e-4 is its floor
-- [ ] Bird's Eye follow-ups (built in 1.32.0, see Done):
-      - User tests on a real iPhone: land on Bird's Eye and drag detail
-        to 8000; watch for slowness or a context-loss reload (M3: 274 ms
-        per pass at 8000; a phone is maybe 2-4× slower)
-      - Copy: the 1.30.0 listing files still say 31 places; it's 54 as
-        of 1.32.0 (description, What's New, promo text and caption)
+- [ ] Bird's Eye, the user's Mandelbrot place (x=-0.7499608238178327,
+      y=0.010995666098898458, half-height 5.59389760808153e-6), needs
+      maxIter 8000; at 2000 the eye is a black hole. Built in 1.32.0
+      (`c6fd357`: log slider to 8000, flushed strips above 2000, 2D
+      orbit texture, context-loss reset) and ROLLED BACK in 1.32.1
+      (`7ed8233`) on 2026-10-16: on the user's phone, zooming in ended in
+      "WebGL context lost". Strips + flush didn't keep the GPU safe.
+      Before retrying: reproduce on the phone, find what actually
+      triggers it (one pass's length, memory, or refinement passes queued
+      back to back with no yield), and consider multi-pass iteration
+      (state in float textures, see the Later item) instead of one long
+      loop per pixel
+- [ ] Listing copy: the 1.30.0 listing files still say 31 places; it's
+      53 as of 1.31.0 (description, What's New, promo text and caption)
 - [ ] Playful Surprise-me ideas (same research, 2026-10-15):
       - Top 3:
         - Rare "golden" places drawn about 1 in 15 taps, with a gold "Rare
@@ -399,7 +407,6 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
-- Bird's Eye (1.32.0, user's place 2026-10-15): Mandelbrot Surprise-me place at x=-0.7499608238178327, y=0.010995666098898458, half-height 5.59389760808153e-6, rotation 0, landing locked at detail 8000. Detail slider to 8000 on a log scale (auto still caps at 2000), passes above 2000 drawn in flushed strips, reference orbit texture in 2048-texel rows, context loss above 2000 reloads at auto detail with a note. Headless-verified (SwiftShader); phone test still open — `c6fd357`
 - Surprise me on every zoom fractal (1.31.0): 21 places from the 2026-10-15 research on Celtic, Multibrot³, Phoenix and the Rabbit, Dragon and Spiral Julia sets. Three of them are spiral dives (Rabbit Hole, Into the Eye, Into the Galaxy) that land at 1e-3, so the whole flight renders live. Auto detail now follows the zoom during spiral dives. Earlier the same day: Pole Star on Newton (1.30.1) and spiral-out on fractals with one place (1.30.2) — `238ee7e`
 - New App Store screenshots for 1.25.0 (2026-10-15): six captioned shots per device in git-ignored `appstore-screenshots/1.25.0/` (iPhone 6.5" 1284x2778, iPad 13" 2064x2752), rendered from the web app in headless Chrome: Mini Mandelbrot with the legend card, the picker, Spiral Julia in dual view, Lace Tricorn, Armada, Pythagoras tree with play. Sierpinski deep zoom was tried and dropped: flat-looking at depth. Re-rendered 2026-10-15 for the 1.30.0 toolbar in `appstore-screenshots/1.30.0/`. What's New and a copy review are in `appstore-screenshots/copy/whats-new-1.30.0.md`; the full paste-ready English and French listing is `copy/listing-1.30.0.md`. Upload with the 1.30.0 release
 - 1.20.0 (build 174) live on the App Store 2026-10-14 (iTunes lookup API); user checked Carpet/Gasket deep zoom, the legend card and the colormap menu on a real phone 2026-10-15. Hold-and-slide depth speed (1.25.0) also checked on the phone ahead of the next release
