@@ -149,19 +149,21 @@ const TELEPORT_DESTINATIONS = [
   // Cross (period 4, -1.940799806529485) are shifted onto each copy's
   // visual center on a portrait phone.
   { fractal: "Celtic", label: "Baby Celtic", re: "-1.766", im: "0", scale: 6e-2 },
-  { fractal: "Celtic", label: "Manta", re: "-1.47", im: "0.645", scale: 5e-2 },
+  { fractal: "Celtic", label: "Manta", re: "-1.471", im: "0.641", scale: 7e-2 },
   { fractal: "Celtic", label: "Celtic Cross", re: "-1.9412", im: "0", scale: 9e-3 },
   { fractal: "Celtic", label: "Four-Leaf Clover", re: "-1.749003357223038", im: "0", scale: 1e-7 },
   { fractal: "Celtic", label: "Halo Bell", re: "-1.749003357223038", im: "0", scale: 1.5e-12 },
   // Baby Multibrot is the period-3 copy (nucleus 0.264425021936024 +
-  // 1.260489344108479i); Seahorse Curl sits by the top bulb's join at
-  // 4i/(3*sqrt(3)); Spiral Galaxy is a Misiurewicz point.
-  { fractal: "Multibrot³", label: "Baby Multibrot", re: "0.2644", im: "1.2605", scale: 3e-2 },
+  // 1.260489344108479i), shifted onto its visual center and sized so its
+  // buds fit a portrait phone's width; Seahorse Curl sits by the top
+  // bulb's join at 4i/(3*sqrt(3)); Spiral Galaxy is a Misiurewicz point.
+  { fractal: "Multibrot³", label: "Baby Multibrot", re: "0.2656", im: "1.261", scale: 5e-2 },
   { fractal: "Multibrot³", label: "Twin-Disk Minibrot", re: "0.6", im: "0.6847", scale: 2.5e-2 },
   { fractal: "Multibrot³", label: "Seahorse Curl", re: "0.1854", im: "0.8406", scale: 4e-3 },
   { fractal: "Multibrot³", label: "Spiral Galaxy", re: "0.2203299273540233", im: "1.1863292989343286", scale: 1e-5 },
-  // Phoenix has no perturbation, so these stay at or above 3e-3.
-  { fractal: "Phoenix", label: "Whirlpool", re: "-0.6053", im: "0.4975", scale: 3e-3 },
+  // Phoenix has no perturbation, so these stay at or above 3e-3. Whirlpool
+  // is centered on its spiral's eye.
+  { fractal: "Phoenix", label: "Whirlpool", re: "-0.60463", im: "0.49775", scale: 3e-3 },
   { fractal: "Phoenix", label: "Firebird", re: "-1.902", im: "0", scale: 8e-3 },
   { fractal: "Phoenix", label: "Ember Swarm", re: "-0.3599", im: "0.6771", scale: 8e-3 },
   // Julia spiral dives aim at a repelling fixed point, where the set
@@ -169,10 +171,13 @@ const TELEPORT_DESTINATIONS = [
   // DEEP_ZOOM_THRESHOLD: below it a flight shows the frozen last-frame
   // preview, not live frames, which would stop the spin.
   { fractal: "Julia:Rabbit", label: "Rabbit Hole", re: "-0.2763365709357304", im: "0.4797274969941251", scale: 1e-3, rotation: 0, spiral: true },
-  { fractal: "Julia:Rabbit", label: "Little Rabbit", re: "-0.31136", im: "0.5181", scale: 5e-3 },
+  // Little Rabbit frames one small body with its ears and the three-way
+  // pinch below it, all within a portrait phone's width.
+  { fractal: "Julia:Rabbit", label: "Little Rabbit", re: "-0.3108", im: "0.5186", scale: 8e-3 },
   { fractal: "Julia:Dragon", label: "Dragon's Eye", re: "-0.37595385170901174", im: "0.34248379570988946", scale: 0.2 },
   { fractal: "Julia:Dragon", label: "Twin Spirals", re: "0", im: "0", scale: 0.4 },
-  { fractal: "Julia:Dragon", label: "Dragon's Tail", re: "1.353", im: "-0.372", scale: 5e-2 },
+  // Dragon's Tail is centered on the rosette at the set's right-hand end.
+  { fractal: "Julia:Dragon", label: "Dragon's Tail", re: "1.342", im: "-0.3815", scale: 4e-2 },
   { fractal: "Julia:Dragon", label: "Into the Eye", re: "-0.37595385170901174", im: "0.34248379570988946", scale: 1e-3, rotation: 0, spiral: true },
   { fractal: "Julia:Spiral", label: "Galaxy", re: "0.47353729561814784", im: "0.18894516327019664", scale: 0.2 },
   { fractal: "Julia:Spiral", label: "Seahorse Tail", re: "0.5264627043818522", im: "-0.18894516327019664", scale: 5e-2 },
