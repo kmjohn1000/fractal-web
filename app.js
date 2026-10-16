@@ -90,6 +90,11 @@ const TELEPORT_DESTINATIONS = [
   // Starburst is Frond Thicket's spot ~1000x deeper, framed by the user; its
   // rotation keeps their framing.
   { fractal: "Mandelbrot", label: "Starburst", re: "-0.16070135134000138", im: "1.0375666168602689", scale: 5.107413907207074e-10, rotation: -1.6580627893946112 },
+  // Bird's Eye is the user's place, framed exactly as they gave it (not
+  // recentered on the eye). maxIter (optional) lands with detail locked
+  // there instead of auto: auto gives ~1400 here, which leaves a much
+  // bigger black hole in the eye than the 2000 maximum does.
+  { fractal: "Mandelbrot", label: "Bird's Eye", re: "-0.7499608238178327", im: "0.010995666098898458", scale: 5.59389760808153e-6, rotation: 0, maxIter: 2000 },
   // Burning Ship is drawn in math orientation (+im up), which hangs every
   // ship's masts below its hull; rotation (radians, optional) turns the
   // landed view ship-side up. A half turn also mirrors left-right compared
@@ -2598,8 +2603,14 @@ function teleport() {
       Object.assign(st, target);
       // A slider-locked maxIter can be far too low for the new place (a
       // lock at 300 lands Seahorse Valley all black), so landing hands
-      // maxIter back to auto mode; the settle's applyAutoIter sets it.
-      st.iterAutoLocked = false;
+      // maxIter back to auto mode; the settle's applyAutoIter sets it. A
+      // place with its own maxIter (Bird's Eye) lands locked to it instead.
+      if (landingIndex >= 0 && d.maxIter) {
+        st.maxIter = d.maxIter;
+        st.iterAutoLocked = true;
+      } else {
+        st.iterAutoLocked = false;
+      }
       teleportLandingIndex = landingIndex;
     }
     markInteracting();
