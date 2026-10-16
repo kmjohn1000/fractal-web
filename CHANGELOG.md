@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.32.2 — 2026-10-16
+- Bird's Eye is back in Surprise me on the Mandelbrot set (54 places), landing at the highest detail, 2000.
+
 ## 1.32.1 — 2026-10-16
 - Rolled back 1.32.0: detail tops out at 2000 again, and Bird's Eye is out of Surprise me for now (53 places). At high detail, zooming in could lose the graphics and force a reload.
 
