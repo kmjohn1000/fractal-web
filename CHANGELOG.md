@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.32.3 — 2026-10-16
+- Five Surprise-me places are reframed so they fit and sit centered on an iPhone: Manta, Baby Multibrot, Whirlpool, Little Rabbit and Dragon's Tail.
+
 ## 1.32.2 — 2026-10-16
 - Bird's Eye is back in Surprise me on the Mandelbrot set (54 places), landing at the highest detail, 2000.
 
