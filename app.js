@@ -124,9 +124,9 @@ const TELEPORT_DESTINATIONS = [
   // below a scale of ~1e-4, so Ember Spiral (5e-4) is as deep as it goes.
   { fractal: "Julia:Phoenix", label: "Flame Column", re: "-0.47", im: "1.07", scale: 0.25 },
   { fractal: "Julia:Phoenix", label: "Firebird Isle", re: "-0.6457", im: "0.8416", scale: 5e-2, rotation: Math.PI / 2 },
-  { fractal: "Julia:Phoenix", label: "Fire Seahorse", re: "0.317", im: "0.601", scale: 4.5e-2 },
+  { fractal: "Julia:Phoenix", label: "Fire Seahorse", re: "0.315", im: "0.612", scale: 4.5e-2 },
   { fractal: "Julia:Phoenix", label: "Feather Cascade", re: "0.5783", im: "0.5315", scale: 2.8e-3 },
-  { fractal: "Julia:Phoenix", label: "Ember Spiral", re: "0.581972", im: "0.529445", scale: 5e-4 },
+  { fractal: "Julia:Phoenix", label: "Ember Spiral", re: "0.58192", im: "0.52952", scale: 5e-4 },
   // spiral: the flight turns SPIRAL_RAD_PER_ZOOM as it zooms and lands
   // upright (rotation 0). Each target's base-3 (carpet) or base-2 (gasket)
   // digits repeat, so the dive looks the same at every level on the way
