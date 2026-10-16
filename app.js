@@ -90,11 +90,6 @@ const TELEPORT_DESTINATIONS = [
   // Starburst is Frond Thicket's spot ~1000x deeper, framed by the user; its
   // rotation keeps their framing.
   { fractal: "Mandelbrot", label: "Starburst", re: "-0.16070135134000138", im: "1.0375666168602689", scale: 5.107413907207074e-10, rotation: -1.6580627893946112 },
-  // Bird's Eye is the user's place, framed exactly as they gave it (not
-  // recentered on the eye). maxIter (optional) lands with detail locked
-  // there instead of auto: at auto's 2000 cap the eye is a black hole (43%
-  // of pixels differ from a 10000 render); 8000 is visually identical (7%).
-  { fractal: "Mandelbrot", label: "Bird's Eye", re: "-0.7499608238178327", im: "0.010995666098898458", scale: 5.59389760808153e-6, rotation: 0, maxIter: 8000 },
   // Burning Ship is drawn in math orientation (+im up), which hangs every
   // ship's masts below its hull; rotation (radians, optional) turns the
   // landed view ship-side up. A half turn also mirrors left-right compared
@@ -350,32 +345,14 @@ function digitHoleLevel(ix, iy, base, k, cells) {
 // own opening scale, plus K per halving of scale past it (deeper views need
 // more iterations before boundary points escape). Never below the default
 // when zoomed out past the opening view. Rounded to the iter slider's step
-// of 10. Used while a pane's iterAutoLocked is false -- see applyAutoIter.
-// Capped at AUTO_ITER_CAP: past it every pass is drawn in strips (see
-// drawToCanvas) and a phone can take a second or more per pass, which
-// auto detail shouldn't impose just because you zoomed deep.
-const MIN_ITER = 50;
-const AUTO_ITER_CAP = 2000;
+// of 10 so the slider can show the exact value. Used while a pane's
+// iterAutoLocked is false -- see applyAutoIter.
 function suggestedMaxIter(baseScale, currentScale) {
   const DEFAULT_ITER = 300; // matches iterSlider's default
   const K = 60;
   const extraLevels = Math.max(0, Math.log2(baseScale / currentScale));
   const v = DEFAULT_ITER + K * extraLevels;
-  return Math.max(MIN_ITER, Math.min(AUTO_ITER_CAP, Math.round(v / 10) * 10));
-}
-
-// The detail slider is logarithmic: its value is a position 0..ITER_SLIDER_STEPS
-// spanning MIN_ITER..ITER_CAP, so each stretch of the track multiplies
-// maxIter by the same factor (a linear 50-8000 track would crowd every
-// everyday value into its first quarter). Positions map to maxIter rounded
-// to 10; a maxIter maps back to the nearest position.
-const ITER_SLIDER_STEPS = 1000;
-function iterFromSliderPos(pos) {
-  const v = MIN_ITER * (ITER_CAP / MIN_ITER) ** (pos / ITER_SLIDER_STEPS);
-  return Math.max(MIN_ITER, Math.min(ITER_CAP, Math.round(v / 10) * 10));
-}
-function sliderPosFromIter(maxIter) {
-  return Math.round(ITER_SLIDER_STEPS * Math.log(maxIter / MIN_ITER) / Math.log(ITER_CAP / MIN_ITER));
+  return Math.max(50, Math.min(2000, Math.round(v / 10) * 10));
 }
 
 // Fits the whole box on screen: scale is the view's half-height, and the
@@ -614,7 +591,6 @@ function createFractalRenderer(canvas) {
     critOffset: gl.getUniformLocation(prog, "u_critOffset"),
     critLen: gl.getUniformLocation(prog, "u_critLen"),
     refTexWidth: gl.getUniformLocation(prog, "u_refTexWidth"),
-    refTexHeight: gl.getUniformLocation(prog, "u_refTexHeight"),
     refOffset: gl.getUniformLocation(prog, "u_refOffset"),
   };
 
@@ -669,13 +645,7 @@ function createFractalRenderer(canvas) {
   // Final draw to the canvas. Sample 0 overwrites; sample k>0 blends in
   // with weight 1/(k+1), which keeps the canvas equal to the running mean of
   // samples 0..k.
-  //
-  // Past AUTO_ITER_CAP the pass is drawn in horizontal strips, each sized
-  // to about one AUTO_ITER_CAP pass's work and flushed on its own, so no
-  // single GPU submission runs long enough for iOS's GPU watchdog to kill
-  // it (and the WebGL context with it). An M3 takes ~274 ms per pass at
-  // 8000; a phone, a few times that.
-  function drawToCanvas(sampleIndex, maxIter) {
+  function drawToCanvas(sampleIndex) {
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, canvas.width, canvas.height);
     if (sampleIndex > 0) {
@@ -683,20 +653,7 @@ function createFractalRenderer(canvas) {
       gl.blendFunc(gl.CONSTANT_ALPHA, gl.ONE_MINUS_CONSTANT_ALPHA);
       gl.blendColor(0, 0, 0, 1 / (sampleIndex + 1));
     }
-    const strips = Math.ceil(maxIter / AUTO_ITER_CAP);
-    if (strips <= 1) {
-      gl.drawArrays(gl.TRIANGLES, 0, 6);
-    } else {
-      gl.enable(gl.SCISSOR_TEST);
-      for (let i = 0; i < strips; i++) {
-        const y0 = Math.floor(canvas.height * i / strips);
-        const y1 = Math.floor(canvas.height * (i + 1) / strips);
-        gl.scissor(0, y0, canvas.width, y1 - y0);
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
-        gl.flush();
-      }
-      gl.disable(gl.SCISSOR_TEST);
-    }
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
     gl.disable(gl.BLEND);
   }
 
@@ -766,10 +723,8 @@ function createFractalRenderer(canvas) {
     gl.bindTexture(gl.TEXTURE_2D, lutTex);
     gl.uniform1i(u.lut, 0);
 
-    // Carpet/Gasket ignore maxIter (see usesFixedDepth), so never strip them.
-    const passIter = isDigitFractal(state.ftype) ? 0 : state.maxIter;
     if (!usePerturbation) {
-      drawToCanvas(sampleIndex, passIter);
+      drawToCanvas(sampleIndex);
       return false;
     }
 
@@ -784,8 +739,9 @@ function createFractalRenderer(canvas) {
       let data, refLen, critOffset, critLen;
       if (state.isJulia) {
         // [view-point orbit | critical orbit] in one texture, see
-        // renderEscapePerturbation. Up to 2*(ITER_CAP+1) texels, laid out
-        // in rows of REF_TEX_ROW below.
+        // renderEscapePerturbation. At most 2*(maxIter+1) = 4002 texels,
+        // within every WebGL device's MAX_TEXTURE_SIZE (4096 minimum in
+        // practice).
         const [jr, ji] = state.juliaC;
         const view = computeReferenceOrbit(state, rx, ry, jr, ji);
         const crit = computeReferenceOrbit(state, 0, 0, jr, ji);
@@ -798,19 +754,9 @@ function createFractalRenderer(canvas) {
         data = orbit.data;
         refLen = orbit.length; critOffset = 0; critLen = orbit.length;
       }
-      // One row while it fits (2000 detail and below, as before), else
-      // rows of REF_TEX_ROW with the last one padded: a single row of up
-      // to 16,002 texels would exceed MAX_TEXTURE_SIZE on GPUs at 4096.
-      const texels = data.length / 4;
-      const width = Math.min(texels, REF_TEX_ROW);
-      const height = Math.ceil(texels / width);
-      if (width * height > texels) {
-        const padded = new Float32Array(width * height * 4);
-        padded.set(data);
-        data = padded;
-      }
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.FLOAT, data);
-      refCache = { dx: ref.dx, dy: ref.dy, refLen, critOffset, critLen, width, height };
+      const width = data.length / 4;
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, 1, 0, gl.RGBA, gl.FLOAT, data);
+      refCache = { dx: ref.dx, dy: ref.dy, refLen, critOffset, critLen, width };
       refCacheKey = key;
     }
     gl.uniform1i(u.refOrbitTex, 1);
@@ -818,9 +764,8 @@ function createFractalRenderer(canvas) {
     gl.uniform1i(u.critOffset, refCache.critOffset);
     gl.uniform1i(u.critLen, refCache.critLen);
     gl.uniform1f(u.refTexWidth, refCache.width);
-    gl.uniform1f(u.refTexHeight, refCache.height);
     gl.uniform2f(u.refOffset, refCache.dx, refCache.dy);
-    drawToCanvas(sampleIndex, passIter);
+    drawToCanvas(sampleIndex);
     return true;
   }
 
@@ -973,9 +918,6 @@ const fernView = createIfsView(els.fernCanvas);
 if (!mainRenderer) reportError("WebGL context creation failed on mainCanvas — this browser/device may not support WebGL.");
 if (!juliaRenderer) reportError("WebGL context creation failed on juliaCanvas.");
 
-// sessionStorage flag: the last context loss reset high detail (see below).
-const DETAIL_RESET_KEY = "fractalDetailReset";
-
 // iOS Safari has historically been more willing than desktop browsers to
 // silently drop a WebGL context under memory pressure — exactly the kind of
 // load a deep-zoom perturbation session creates. There's no cheap way to
@@ -993,17 +935,6 @@ const DETAIL_RESET_KEY = "fractalDetailReset";
     // zoom isn't lost at exactly the moment memory pressure hits.
     // replaceState, not location.hash: that would fire hashchange, whose
     // handler strips the hash again before the reload commits.
-    // Detail past AUTO_ITER_CAP may be what cost the context (a pass the
-    // GPU watchdog killed), and reloading straight back into it could loop,
-    // so those panes come back at auto detail, with a note saying why.
-    const heavy = [mainState, juliaState].filter((st) => st && st.maxIter > AUTO_ITER_CAP);
-    for (const st of heavy) {
-      st.iterAutoLocked = false;
-      st.maxIter = suggestedMaxIter(st.baseScale, st.scale);
-    }
-    if (heavy.length) {
-      try { sessionStorage.setItem(DETAIL_RESET_KEY, "1"); } catch { /* reload without the note */ }
-    }
     try { history.replaceState(null, "", location.pathname + location.search + buildShareHash()); } catch { /* reload to the default view */ }
     location.reload();
   });
@@ -1042,14 +973,7 @@ function applyAutoIter() {
     st.maxIter = suggestedMaxIter(st.baseScale, st.scale);
   }
   const shown = activePane === "julia" && dualActive && juliaState ? juliaState : mainState;
-  showIterOnSlider(shown.maxIter);
-}
-
-// The slider's value is a log-scale position (see iterFromSliderPos), so
-// VoiceOver reads maxIter from aria-valuetext instead.
-function showIterOnSlider(maxIter) {
-  els.iterSlider.value = sliderPosFromIter(maxIter);
-  els.iterSlider.setAttribute("aria-valuetext", String(maxIter));
+  els.iterSlider.value = shown.maxIter;
 }
 
 let mainState = freshState(FRACTAL_CONFIGS[currentName]);
@@ -2492,8 +2416,7 @@ for (const slider of SLIDERS) {
 
 els.iterSlider.addEventListener("input", () => {
   syncSliderFill(els.iterSlider);
-  const v = iterFromSliderPos(parseInt(els.iterSlider.value, 10));
-  els.iterSlider.setAttribute("aria-valuetext", String(v));
+  const v = parseInt(els.iterSlider.value, 10);
   mainState.maxIter = v;
   if (juliaState) juliaState.maxIter = v;
   // Manual interaction is the only thing that turns auto iter mode off
@@ -2675,14 +2598,8 @@ function teleport() {
       Object.assign(st, target);
       // A slider-locked maxIter can be far too low for the new place (a
       // lock at 300 lands Seahorse Valley all black), so landing hands
-      // maxIter back to auto mode; the settle's applyAutoIter sets it. A
-      // place with its own maxIter (Bird's Eye) lands locked to it instead.
-      if (landingIndex >= 0 && d.maxIter) {
-        st.maxIter = d.maxIter;
-        st.iterAutoLocked = true;
-      } else {
-        st.iterAutoLocked = false;
-      }
+      // maxIter back to auto mode; the settle's applyAutoIter sets it.
+      st.iterAutoLocked = false;
       teleportLandingIndex = landingIndex;
     }
     markInteracting();
@@ -2812,18 +2729,9 @@ for (const s of [els.kochDepthSlider, els.treeDepthSlider, els.dragonDepthSlider
 // The readout above a held speed button: the speed, and which way is which.
 let speedBubbleTimer = 0;
 function showSpeedBubble(btn, hint) {
-  showBubble(btn, speedText(PLAY_SPEEDS[depthPlayer.speedIndex]), hint);
-}
-// Also used for the one-off detail-reset note (see init). title and hint
-// are plain text.
-function showBubble(anchor, title, hint) {
   const b = document.getElementById("speedBubble");
-  const r = anchor.getBoundingClientRect();
-  const t = document.createElement("b");
-  t.textContent = title;
-  const h = document.createElement("span");
-  h.textContent = hint;
-  b.replaceChildren(t, h);
+  const r = btn.getBoundingClientRect();
+  b.innerHTML = `<b>${speedText(PLAY_SPEEDS[depthPlayer.speedIndex])}</b><span>${hint}</span>`;
   b.classList.remove("hidden");
   // Kept on screen: the speed button can sit near the row's left edge.
   const half = b.offsetWidth / 2 + 8;
@@ -3129,12 +3037,12 @@ function parseShareHash(hash) {
     if (m === "fractal") {
       const name = p.get("f");
       if (!Object.prototype.hasOwnProperty.call(FRACTAL_CONFIGS, name)) return null;
-      const st = { mode: m, name, ...view, maxIter: int("i", MIN_ITER, ITER_CAP), iterAutoLocked: p.get("il") === "1",
+      const st = { mode: m, name, ...view, maxIter: int("i", 50, 2000), iterAutoLocked: p.get("il") === "1",
         cm: cmIndex(), dual: false };
       if (p.get("d") === "1" && FRACTAL_CONFIGS[name].dual) {
         st.dual = true;
         st.julia = { juliaC: [num("jcx"), num("jcy")], cx: num("jx"), cy: num("jy"), scale: num("js", pos),
-          rotation: normalizeAngle(num("jr", big)), maxIter: int("ji", MIN_ITER, ITER_CAP), baseScale: num("jb", pos) };
+          rotation: normalizeAngle(num("jr", big)), maxIter: int("ji", 50, 2000), baseScale: num("jb", pos) };
       }
       return st;
     }
@@ -3165,7 +3073,7 @@ function applyShareState(st) {
       Object.assign(juliaState, st.julia, { juliaC: [mainState.cx, mainState.cy], iterAutoLocked: st.iterAutoLocked });
     }
     els.dualBtn.classList.toggle("active", dualActive);
-    showIterOnSlider(mainState.maxIter);
+    els.iterSlider.value = mainState.maxIter;
   } else {
     if (isIfsMode(st.mode)) {
       if (fernView.system !== st.mode) {
@@ -3449,19 +3357,6 @@ updateColorSwatches();
 requestRender();
 applyShareHashFromUrl();
 Platform.onOpenUrl(applyShareLink); // before hideLaunchScreen, which waits on it
-// After a context loss that reset high detail (see webglcontextrestored),
-// say so above the detail slider, once.
-try {
-  if (sessionStorage.getItem(DETAIL_RESET_KEY)) {
-    sessionStorage.removeItem(DETAIL_RESET_KEY);
-    if (mode === "fractal") {
-      requestAnimationFrame(() => {
-        showBubble(els.iterField, "Detail back to auto", "High detail was too much for this device");
-        hideSpeedBubble(6000);
-      });
-    }
-  }
-} catch { /* no note */ }
 // requestRender draws on the next animation frame; one frame after that it
 // has been painted, so the app's launch screen can fade into it (no-op on
 // the web, see platform.js).

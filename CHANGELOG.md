@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.32.1 — 2026-10-16
+- Rolled back 1.32.0: detail tops out at 2000 again, and Bird's Eye is out of Surprise me for now (53 places). At high detail, zooming in could lose the graphics and force a reload.
+
 ## 1.32.0 — 2026-10-15
 - Surprise me on the Mandelbrot set: Bird's Eye, a spiral eye that only appears at very high detail (54 places in all). It lands with detail set to 8000.
 - The detail slider now goes up to 8000, up from 2000, and moves in even steps across its range. Auto detail still stops at 2000.
