@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.32.4 — 2026-10-16
+- Fire Seahorse and Ember Spiral are recentered on an iPhone: the whole seahorse now fits, and the spiral sits in the middle.
+
 ## 1.32.3 — 2026-10-16
 - Five Surprise-me places are reframed so they fit and sit centered on an iPhone: Manta, Baby Multibrot, Whirlpool, Little Rabbit and Dragon's Tail.
 
