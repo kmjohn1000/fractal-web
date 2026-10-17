@@ -88,6 +88,25 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         don't keep their frame), device-loss recovery; thumbnails stay on
         WebGL
       - Size: ~1000-1500 lines JS + ~900 WGSL; spike a few hours
+      - Spike results 2026-10-16 (`scripts/webgpu-spike.html`, not
+        committed; run in headless Chrome, Playwright WebKit (Safari 26.6),
+        the iOS simulator and inside the app on the user's iPhone 15):
+        - WebGPU works in the app's WKWebView on the phone (Apple adapter,
+          compute shaders). The simulator's WKWebView returns no adapter
+        - Double-float (Dekker and fma-based) collapses to float32 under
+          WGSL everywhere: no cheap precision from WebGPU. Fixed point
+          stays exact (100/100/99.9%)
+        - Watchdog: all-exact Phoenix at phone size, which lost the WebGL
+          context, finished in 2.7 s as 312 awaited 64 px tiles (slowest
+          30 ms), device OK. Tiling fixes the crash class
+        - Speed as tested is ~3x slower than WebGL (Newton fixed point
+          685 vs ~220 ms full screen): per-tile submit+await overhead
+          (~100 tiles), not GPU time (tile max 11 ms). Batch tiles per
+          submit within a frame budget before judging speed
+        - So WebGPU's case is stability and headroom (detail > 2000,
+          heavier exact paths), not precision. Next if pursued: batched
+          tiles, and BLA for the Mandelbrot family (also possible in
+          WebGL)
 - [ ] New escape-time types: Buffalo, Lambda (Celtic is done, see Done)
       (single-state iteration, reuse existing shader/perturbation/
       supersampling pipeline with no structural changes)
