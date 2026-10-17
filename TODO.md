@@ -220,15 +220,55 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       default palette (Ember/Hot) for this fractal only. Caveats: existing
       share links store y, so a mirror needs a link-version bump or a flag
       so old Burning Ship links keep opening the same place; check whether
-      colormaps can have a per-fractal default today (user idea 2026-10-08)
-- [ ] Exterior distance estimation as a coloring style: track dc' = 2·z·dc + 1
-      alongside z, color by b = 2|z|·ln|z| / |dc| (normalized by u_scale).
-      Draws thin filaments crisply instead of as speckle. Fits beside orbit
-      traps (Tier 3); the same estimate could steer "zoom to nearest
-      minibrot" and auto-discovery toward the boundary. Perturbation path
-      needs dc tracked from the full Z+dz; watch float32 overflow at high
-      iteration counts
-- [ ] Orbit trap coloring as a style selector
+      colormaps can have a per-fractal default today (user idea 2026-10-08);
+      see "Curated palettes" below
+- [ ] Coloring Style selector and Looks (merges "Exterior distance
+      estimation as a coloring style" and "Orbit trap coloring as a style
+      selector"; benchmarked against fractal.garden, MIT,
+      github.com/trebeljahr/fractal-garden, utils/escapeTimeColoring.ts and
+      utils/shaders/escape-time.frag, read 2026-10-17):
+      - Styles: smooth (today); exterior distance estimate; stripe
+        average (Härkönen: 0.5+0.5·sin(5·arg z) averaged over the orbit,
+        blended between the last two averages by the smooth fraction);
+        orbit traps (point, cross) that also color the interior instead
+        of black.
+      - Distance estimation: track dc' = 2·z·dc + 1 alongside z, color by
+        b = 2|z|·ln|z| / |dc| (normalized by u_scale, i.e. pixel size, so
+        the glow is zoom-invariant). Draws thin filaments crisply instead
+        of as speckle. Fits beside orbit traps (Tier 3); the same estimate
+        could steer "zoom to nearest minibrot" and auto-discovery toward
+        the boundary. Perturbation path needs dc tracked from the full
+        Z+dz; watch float32 overflow at high iteration counts.
+      - Deep zoom: every style must use the full z (Z + dz) each iteration
+        in the perturbation path. Traps are cheap; stripes add atan+sin
+        per iteration; DE needs dc tracked from the full Z+dz (above).
+      - Two user controls: color density (scales the 40-iteration cycle,
+        today's fixed 0.025 in `escapeColor`) and color offset (palette
+        phase). Density is the user control the rejected log-compression
+        note asks for. Offset is the same uniform as the "Colormap
+        animation" item's u_colorPhase.
+      - Looks: named presets bundling style + colormap + density + offset
+        (theirs: Classic, Ultra Fractal, Inferno, Edge glow, Iteration
+        bands, Stripes, Orbit trap, Cross trap); touching any control
+        switches to "Custom". Cheap, and the curated answer to
+        per-fractal variety.
+      - Don't copy their "Log escape time": it is the log compression
+        already rejected (flattened Seahorse Valley at 4e-10), and it
+        shifts as auto detail raises maxIter.
+      - Their palettes overlap ours: their "Ultra Fractal" has the same
+        stops as our Classic.
+- [ ] Curated palettes instead of one global default (2026-10-17;
+      considered randomizing the palette per fractal and recommended
+      against it: a random pick gambles the first impression, gives bad
+      pairings like Grayscale on Newton, and overrides a user's choice,
+      since the colormap is global since 1.17.0). Instead:
+      1. A default colormap (or Look, see the coloring Style item) per
+         fractal, used until the user picks one; after that their pick
+         applies everywhere.
+      2. An optional colormap per Surprise-me destination, the same way
+         destinations already carry `rotation`.
+      Share links are unaffected (`cm=` stores the name). Check how
+      fractalMemory and the global colormap interact before designing.
 - [ ] Minimap: small inset of the whole fractal with a marker for the
       current view, so deep zooms keep their bearings. Render the overview
       once per fractal/colormap into a small texture; at deep zoom the view
@@ -344,7 +384,8 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
 - [ ] Colormap animation (WebGL: a u_colorPhase uniform shifting the LUT
       lookup over time via requestAnimationFrame; Koch/Tree: cycle the
       colormap's stops, like kochAnimateBtn cycles depth; new toggle, not
-      a repurposed "cycle colormap" button)
+      a repurposed "cycle colormap" button). u_colorPhase is the same
+      uniform as the coloring Style item's color offset control
 - [ ] Apollonian gasket (user idea 2026-10-17; evaluated, not approved to
       build). Circles only, unlike anything in the picker. Default to the
       (-1, 2, 2, 3) packing: every circle's curvature is an integer, so
@@ -364,6 +405,27 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       palette by eye. ~150-200 lines with thumbnail and places. Breaks
       "23 fractals" in the subtitle and description; batch with any
       other new type
+- [ ] Koch snowflake Easter egg (user idea 2026-10-17; not approved to
+      build). Trigger: a full 360° twist in one gesture on the Koch view.
+      The snowflake splits into its seven-piece self-tiling (one copy at
+      1/√3 in the center, six at 1/3 around it; areas 1/3 + 6/9 = 1),
+      each piece splits again, then the two-size plane tiling grows
+      outward to fill the screen (Wikipedia, Koch snowflake: one size
+      can't tile the plane, two sizes can). Reduce Motion: show the
+      finished mosaic, no animation. Save/Share must capture it.
+      ~100-150 lines; cap depth on small flakes (4 rounds = 2,401
+      flakes, ~460k vertices at depth 3). Koch already has two-finger
+      twist (`attachVectorViewInteraction`, checked 2026-10-17), but the
+      twist angle is `atan2` minus the start angle, run through
+      `normalizeAngle`, so it wraps at ±180°: detecting 360° needs an
+      unwrapped running sum of per-frame angle deltas. Pair with a
+      December "Let it snow" In-App Event (Special Event badge, up to 31
+      days, reviewed separately from app versions; shows in search, on
+      the product page and in the Today/Apps tabs, per
+      developer.apple.com/app-store/in-app-events). Apple wants new
+      content, not awareness promos, so the event needs a real seasonal
+      feature, e.g. snowfall on the Koch view; approval isn't
+      guaranteed. Submit in November to start Dec 1
 
 ## Later — big bets
 Flexible scope and timing. Chains: new types → formula editor → Fractint importer;
