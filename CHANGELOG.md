@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.33.2 — 2026-10-16
+- Surprise me on the Mandelbrot set: Pinwheel, arms of fine filaments spiraling around one center (56 places in all).
+
 ## 1.33.1 — 2026-10-16
 - Surprise me on the Mandelbrot set: Butterfly Crest, a tiny Mandelbrot set ringed by mirrored butterfly curls (55 places in all).
 
