@@ -26,6 +26,30 @@ bottleneck, not conversion.
       - Depth claims: the live copy says "trillions of times" (Mandelbrot
         family, ~1e13). The Sierpinski gasket and carpet now reach ~1e15×;
         "forever" still isn't defensible app-wide
+- [ ] Web cold open for first-time visitors (findings from a headless
+      render of the live site at iPhone width and 1280px, 2026-10-15). A
+      visitor from a shared link or post gets the plain whole-set
+      Mandelbrot in Inferno, small, ~40% of a portrait screen empty, nine
+      unlabeled icons, no text saying what this is, and no link to the
+      app.
+      - Land first-time web visitors (localStorage flag, web build only)
+        on a Surprise-me place with the info card open; keep the
+        whole-shape view for Reset and the picker. ~15 lines
+      - One-line identity strip on first visit, e.g. "Fractal Atlas: zoom
+        23 fractals, free on iPhone", with an App Store link. index.html
+        has no <a> at all today, and the apple-itunes-app banner only
+        shows in iOS Safari, so desktop/Android visitors never learn
+        there's an app. Also add visible links to privacy and support
+      - Add <meta name="description"> (missing) alongside the existing
+        og-tags item
+      - Desktop: the nine buttons cluster bottom-left while the detail
+        slider spans the full width; center the row or cap the slider
+      - Opening info card says "Opening view"; "The whole Mandelbrot
+        set" teaches more
+      - Check on a device whether Back looks enabled on a cold open with
+        no history
+      Relates to the portrait-rotation item under Next, which the
+      screenshots support.
 
 ## Next — discovery and delight
 Help people find beautiful places, and give them more ways to see them.
