@@ -62,6 +62,12 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         so the deepest views right beside a star copy can still blur
       - `teleport()`'s one-place branch is unused now that every fractal
         has 2+ places; kept for a future fractal with a single place
+      - Unexplained: on 2026-10-16 the user's iPhone Safari turned WebGL
+        off for the site (startup "Error: null", readable since 1.35.2)
+        after some earlier GPU crash; the trigger wasn't found (the deep
+        Mandelbrot link opened afterwards is light, ~38 ms/pass on M3;
+        Phoenix and Newton deep checked fine on the phone later). If it
+        recurs, note what was on screen just before
 - [ ] New escape-time types: Buffalo, Lambda (Celtic is done, see Done)
       (single-state iteration, reuse existing shader/perturbation/
       supersampling pipeline with no structural changes)
@@ -426,7 +432,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
-- Phoenix deep zoom (1.34.0): float32 perturbation against one float64 reference, and a pixel that glitches continues in exact fixed point from Z[m] + d. 100% agreement with float64 at 1e-9 and ~0.3 s full screen on an iPhone 15 in the spike (`scripts/precision-spike.html`, not committed); all-fixed-point was 2–4 s and its long draws lost the phone's WebGL context. Exact steps capped at 600 per pixel, 4 refinement samples, self-test on first use. Still to check: the live site on the user's phone — `508c401`
+- Phoenix deep zoom (1.34.0): float32 perturbation against one float64 reference, and a pixel that glitches continues in exact fixed point from Z[m] + d. 100% agreement with float64 at 1e-9 and ~0.3 s full screen on an iPhone 15 in the spike (`scripts/precision-spike.html`, not committed); all-fixed-point was 2–4 s and its long draws lost the phone's WebGL context. Exact steps capped at 600 per pixel, 4 refinement samples, self-test on first use. Checked by the user on their iPhone 15 (website, 1.35.2): Phoenix and Newton (incl. near the central star, 1.35.1) both sharp at depth — `508c401`
 - Newton deep zoom (1.33.0), in place of the "Newton perturbation" item: away from the origin, deep views render in exact 16.48 fixed point (WebGL2 uints) and stay sharp to ~1e-11 (float32 blurred past ~1e-4). ~0.2 s per full-screen pass on an iPhone 15; self-tested on first use, float32 fallback. The renderer now asks for WebGL2 first — `6672769`
 - Surprise me on every zoom fractal (1.31.0): 21 places from the 2026-10-15 research on Celtic, Multibrot³, Phoenix and the Rabbit, Dragon and Spiral Julia sets. Three of them are spiral dives (Rabbit Hole, Into the Eye, Into the Galaxy) that land at 1e-3, so the whole flight renders live. Auto detail now follows the zoom during spiral dives. Earlier the same day: Pole Star on Newton (1.30.1) and spiral-out on fractals with one place (1.30.2) — `238ee7e`
 - New App Store screenshots for 1.25.0 (2026-10-15): six captioned shots per device in git-ignored `appstore-screenshots/1.25.0/` (iPhone 6.5" 1284x2778, iPad 13" 2064x2752), rendered from the web app in headless Chrome: Mini Mandelbrot with the legend card, the picker, Spiral Julia in dual view, Lace Tricorn, Armada, Pythagoras tree with play. Sierpinski deep zoom was tried and dropped: flat-looking at depth. Re-rendered 2026-10-15 for the 1.30.0 toolbar in `appstore-screenshots/1.30.0/`. What's New and a copy review are in `appstore-screenshots/copy/whats-new-1.30.0.md`; the full paste-ready English and French listing is `copy/listing-1.30.0.md`. Upload with the 1.30.0 release
