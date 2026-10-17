@@ -751,7 +751,12 @@ function createFractalRenderer(canvas) {
     const s = gl.createShader(type);
     gl.shaderSource(s, src);
     gl.compileShader(s);
-    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+      // A lost context fails every compile with no log. iOS Safari does
+      // this for a while after the GPU crashes, from the very first shader.
+      if (gl.isContextLost()) throw new Error("The browser has turned graphics off for this page. Close the tab and reopen it; if that doesn't help, restart the device.");
+      throw new Error(gl.getShaderInfoLog(s));
+    }
     return s;
   }
 

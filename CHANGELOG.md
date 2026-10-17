@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.35.2 — 2026-10-16
+- If the browser has turned graphics off for the page (iOS Safari can do this for a while after a graphics crash), the app now says so and how to recover, instead of showing "Error: null".
+
 ## 1.35.1 — 2026-10-16
 - Fixed: deep zooms of Newton's method near its central star, and near the smaller copies of it, turned blocky with the wrong colors. They now stay sharp there too.
 - Phoenix switches to its deep-zoom math later, below 1/10,000 instead of 1/1,000. Places in between, like Ember Spiral, now render as before: live while you drag, with full smoothing.
