@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.33.1 — 2026-10-16
+- Surprise me on the Mandelbrot set: Butterfly Crest, a tiny Mandelbrot set ringed by mirrored butterfly curls (55 places in all).
+
 ## 1.33.0 — 2026-10-16
 - Newton's method now zooms about ten million times deeper away from its center: it stays sharp down to about 100 billion times, where it used to blur past about 10,000 times. It uses exact 64-bit math on the graphics chip, and checks itself first; if the check fails, it falls back to the old behavior.
 

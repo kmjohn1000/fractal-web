@@ -95,6 +95,10 @@ const TELEPORT_DESTINATIONS = [
   // there instead of auto: auto gives ~1400 here, which leaves a much
   // bigger black hole in the eye than the 2000 maximum does.
   { fractal: "Mandelbrot", label: "Bird's Eye", re: "-0.7499608238178327", im: "0.010995666098898458", scale: 5.59389760808153e-6, rotation: 0, maxIter: 2000 },
+  // Butterfly Crest is the user's place too, framed as they gave it: a
+  // minibrot in its halo on the real axis, ringed by mirrored butterfly and
+  // seahorse curls.
+  { fractal: "Mandelbrot", label: "Butterfly Crest", re: "-1.7498024610968186", im: "-4.2378297315393065e-11", scale: 4.9499706813632855e-8, rotation: 0 },
   // Burning Ship is drawn in math orientation (+im up), which hangs every
   // ship's masts below its hull; rotation (radians, optional) turns the
   // landed view ship-side up. A half turn also mirrors left-right compared
