@@ -5,7 +5,7 @@
 // the region that must be fully visible when the fractal first opens;
 // viewFromBounds fits it to the canvas's aspect ratio (see there).
 
-const FTYPE = { ESCAPE: 0, SHIP: 1, TRICORN: 2, NEWTON: 3, CARPET: 4, GASKET: 5, PHOENIX: 6, CELTIC: 7 };
+const FTYPE = { ESCAPE: 0, SHIP: 1, TRICORN: 2, NEWTON: 3, CARPET: 4, GASKET: 5, PHOENIX: 6, CELTIC: 7, APOLLONIAN: 8 };
 
 // Phoenix's fixed p in z' = z^2 + c + p*z_prev: the classic real -0.5
 // (Ushiki). With c = 0.5667 in Julia mode that gives the well-known twin-lobe
@@ -18,7 +18,8 @@ const PHOENIX_P = [-0.5, 0];
 // Surprise me):
 //   "zoom"    - fractals you explore by zooming: every escape-time type
 //               (Mandelbrot and its variants, the Julia presets, Newton)
-//               and the digit-test Carpet/Gasket. Everything in
+//               the digit-test Carpet/Gasket and the Apollonian gasket's
+//               circle inversions. Everything in
 //               FRACTAL_CONFIGS is "zoom"; any future escape-time or
 //               digit-extraction type belongs here too.
 //   "pattern" - the Canvas2D curves and chaos-game IFS shapes (EXTRA_MODES).
@@ -49,6 +50,8 @@ const FRACTAL_CONFIGS = {
   // unused by these but kept non-null for consistency with the others.
   "Carpet":       { label: "Sierpinski carpet", ftype: FTYPE.CARPET,  power: 2, juliaC: null,               view: [-0.15, 1.15, -0.15, 1.15], dual: false, category: "zoom" },
   "Gasket":       { label: "Sierpinski gasket", ftype: FTYPE.GASKET,  power: 2, juliaC: null,               view: [-0.15, 1.15, -0.15, 1.15], dual: false, category: "zoom" },
+  // The packing fills the unit circle (see APOLLO_DUAL).
+  "Apollonian":   { label: "Apollonian gasket", ftype: FTYPE.APOLLONIAN, power: 2, juliaC: null,         view: [-1.05, 1.05, -1.05, 1.05], dual: false, category: "zoom" },
 };
 const FRACTAL_NAMES = Object.keys(FRACTAL_CONFIGS);
 // FRACTAL_CONFIGS keys double as share-link ids (f=...), so they never
@@ -179,6 +182,20 @@ const TELEPORT_DESTINATIONS = [
   { fractal: "Gasket", label: "Stair Dive", re: String(2 / 15), im: String(1 / 15), scale: 0.65 / 2 ** 32, rotation: 0, spiral: true },
   { fractal: "Gasket", label: "Long Step", re: String(2 / 5), im: String(1 / 15), scale: 0.65 / 2 ** 32, rotation: 0, spiral: true },
   { fractal: "Gasket", label: "Hypotenuse Slide", re: String(2 / 3), im: String(1 / 3), scale: 0.65 / 2 ** 30, rotation: 0, spiral: true },
+  // Apollonian places sit off the tangency points, where the inversion count
+  // has no limit and a deep view is flat. Circle Fifteen is the gap between
+  // the three big circles, centered in its biggest circle (curvature 15).
+  // The rest are repelling fixed points of three inversions in a row (dual
+  // circles 2, 1, 0 for the Golden pair, numbered as in APOLLO_DUAL; 3, 0, 2;
+  // 1, 0, 3; 1, 2, 3), found by iterating the inverse: each view repeats,
+  // mirrored, every 9 + 4 sqrt(5) = phi^6 ~ 17.94x of zoom. Golden Dive is
+  // Golden Glide's view 17.94^8 x deeper.
+  { fractal: "Apollonian", label: "Circle Fifteen", re: "0", im: "0.215", scale: 0.2 },
+  { fractal: "Apollonian", label: "Golden Glide", re: String(1 / Math.sqrt(5)), im: String(2 / Math.sqrt(5)), scale: 5e-2 },
+  { fractal: "Apollonian", label: "Golden Dive", re: String(1 / Math.sqrt(5)), im: String(2 / Math.sqrt(5)), scale: 5e-2 / (9 + 4 * Math.sqrt(5)) ** 8, rotation: 0, spiral: true },
+  { fractal: "Apollonian", label: "Triangle Chain", re: "0.035190936333361365", im: "0.18426213483334736", scale: 2e-2 },
+  { fractal: "Apollonian", label: "Lace Triangle", re: "-0.6314757303333053", im: "0.4824045318333193", scale: 3e-3 },
+  { fractal: "Apollonian", label: "Bead Strand", re: "-0.3144318014344091", im: "0.7773181617212908", scale: 1e-2 },
   // Newton's map sends 0 (a double pole) to infinity, a repelling fixed
   // point with multiplier 3/2, so the six-armed star at 0 repeats every
   // sqrt(1.5)x of zoom. It's also the one place float32 stays sharp at
@@ -290,6 +307,10 @@ const isCurveMode = (m) => Object.prototype.hasOwnProperty.call(LINE_CURVES, m);
 // rebasing instead of perturbation.
 const isDigitFractal = (ftype) => ftype === FTYPE.CARPET || ftype === FTYPE.GASKET;
 const digitBase = (ftype) => (ftype === FTYPE.CARPET ? 3 : 2);
+// Fractals whose depth comes from the view rather than maxIter (the detail
+// slider): Carpet/Gasket's zoom-derived depth, the Apollonian gasket's
+// inversion count.
+const ignoresMaxIter = (ftype) => isDigitFractal(ftype) || ftype === FTYPE.APOLLONIAN;
 
 // Most levels float32 digit extraction stays accurate for, per base,
 // counted from the cell digitCellFrame rebased to -- see renderDigitFractal
@@ -421,6 +442,139 @@ function digitHoleLevel(ix, iy, base, k, cells) {
     y = (y - dy) / base;
   }
   return hole;
+}
+
+// Apollonian gasket: the (-1, 2, 2, 3) packing -- the unit circle, circles
+// of radius 1/2 at -1/2 and 1/2, and circles of radius 1/3 at +-2i/3 --
+// where every circle's curvature is an integer. renderApollonian in
+// shaders.js inverts each pixel in the packing's four dual circles (each
+// passes through three of its six tangency points, at right angles to the
+// three circles that meet there) until it's outside all of them, and colors
+// it by how many inversions that took. The dual disks don't overlap, so
+// which one to invert in is never a choice. r = 0 is the real axis, inside
+// below it: that step is a reflection. Each entry swaps one circle of
+// APOLLO_START for its mirror image and leaves the other three where they
+// are. renderApollonian hard-codes the same four.
+const APOLLO_DUAL = [
+  { x: 0, y: 0, r: 0 },        // swaps the circle at 2i/3 for the one at -2i/3
+  { x: 1, y: 1, r: 1 },        // swaps the circle at -1/2
+  { x: -1, y: 1, r: 1 },       // swaps the circle at 1/2
+  { x: 0, y: 0.25, r: 0.25 },  // swaps the unit circle
+];
+// Curvatures of the circles at 2i/3, -1/2, 1/2 and the unit circle
+// (negative: it encloses the others), in APOLLO_DUAL's order.
+const APOLLO_START = [3, 2, 2, -1];
+
+// The APOLLO_DUAL entry whose inside holds (x, y), or -1.
+function apolloDualAt(x, y) {
+  return APOLLO_DUAL.findIndex((c) => (c.r === 0 ? y < 0 : (x - c.x) ** 2 + (y - c.y) ** 2 < c.r * c.r));
+}
+
+// Curvature of the packing circle under the view center, for the info card,
+// or null on the gasket itself (or too close to it to tell, or past 2^53,
+// where curvatures stop being exact). Each inversion
+// trades one circle of a Descartes quadruple for the other circle tangent to
+// the remaining three, k' = 2 (sum of those three) - k, so following the
+// center's inversions from APOLLO_START gives the quadruple around the
+// center's circle: integers, exact in float64 below 2^53 (curvature ~1e15,
+// as deep as a float64 center goes). The point ends up in the
+// curvilinear triangle of one starting circle, which says which entry is
+// the center's circle.
+const APOLLO_CENTER_STEPS = 100000;
+function apolloCenterCurvature(cx, cy) {
+  const k = APOLLO_START.slice();
+  let x = cx, y = cy;
+  for (let n = 0; n < APOLLO_CENTER_STEPS; n++) {
+    const j = apolloDualAt(x, y);
+    if (j < 0) {
+      // Strictly inside, so a center on a circle (the opening view's, where
+      // the two big circles touch) shows no curvature.
+      const inside = (ox, oy, r) => (x - ox) ** 2 + (y - oy) ** 2 < r * r * (1 - 1e-12);
+      if (inside(0, 2 / 3, 1 / 3)) return k[0];
+      if (inside(-0.5, 0, 0.5)) return k[1];
+      if (inside(0.5, 0, 0.5)) return k[2];
+      return x * x + y * y > 1 + 1e-12 ? k[3] : null;
+    }
+    k[j] = 2 * (k[0] + k[1] + k[2] + k[3] - k[j]) - k[j];
+    if (k[j] > Number.MAX_SAFE_INTEGER) return null;
+    const c = APOLLO_DUAL[j];
+    if (c.r === 0) {
+      y = -y;
+    } else {
+      const dx = x - c.x, dy = y - c.y, f = (c.r * c.r) / (dx * dx + dy * dy);
+      x = c.x + dx * f;
+      y = c.y + dy * f;
+    }
+  }
+  return null;
+}
+
+// Deep zoom for the Apollonian gasket, its counterpart of digitCellFrame:
+// while the disk around the view (its half-diagonal, so any rotation) lies
+// inside one dual disk, every pixel's first inversion is that one, so the
+// CPU applies it to the whole view in float64. What's left for the shader
+// starts from a view that has grown back to O(1), which float32 handles.
+// The composed inversions are one Mobius map of the pixel's offset u from
+// the center (of its mirror image, after an odd number of steps):
+//   w = w0 + K u / (1 + L u)
+// renderApollonian applies it in float32: K u and L u stay accurate however
+// small u gets. Stops early near a tangency point, where the view straddles
+// two dual circles at any depth; counts there pass the shader's cap anyway.
+// Returns w0, K, L (complex, as [re, im]), flip (conjugate u first) and
+// steps, the inversion count the shader adds to its own.
+const APOLLO_VIEW_STEPS = 100000;
+function apolloFrame(cx, cy, scale, aspect) {
+  let w0r = cx, w0i = cy, kr = 1, ki = 0, lr = 0, li = 0;
+  let flip = false, steps = 0;
+  const R = scale * Math.hypot(1, aspect);
+  for (; steps < APOLLO_VIEW_STEPS; steps++) {
+    // The image of the disk |u| <= R: center m, radius rho.
+    const a = 1 - R * R * (lr * lr + li * li);
+    if (a <= 0) break;
+    // m = w0 - K R^2 conj(L) / a
+    const mr = w0r - (R * R / a) * (kr * lr + ki * li);
+    const mi = w0i - (R * R / a) * (ki * lr - kr * li);
+    const rho = Math.hypot(kr, ki) * R / a;
+    // Only invert a disk that's inside the dual disk and well clear of its
+    // center, whose image would be the outside of a disk.
+    const j = APOLLO_DUAL.findIndex((c) => {
+      if (c.r === 0) return mi + rho < 0;
+      const d = Math.hypot(mr - c.x, mi - c.y);
+      return d + rho < c.r && d > 2 * rho;
+    });
+    if (j < 0) break;
+    const c = APOLLO_DUAL[j];
+    if (c.r === 0) {
+      w0i = -w0i; ki = -ki; li = -li;
+    } else {
+      // p = conj(w0 - o); w0' = o + r^2 / p; K' = -r^2 conj(K) / p^2;
+      // L' = conj(L) + conj(K) / p.
+      const pr = w0r - c.x, pi = -(w0i - c.y), p2 = pr * pr + pi * pi, r2 = c.r * c.r;
+      w0r = c.x + (r2 * pr) / p2;
+      w0i = c.y - (r2 * pi) / p2;
+      const qr = (pr * pr - pi * pi) / (p2 * p2), qi = (-2 * pr * pi) / (p2 * p2); // 1 / p^2
+      const nkr = -r2 * (kr * qr + ki * qi), nki = -r2 * (kr * qi - ki * qr); // -r^2 conj(K) / p^2
+      const sr = (kr * pr - ki * pi) / p2, si = (-ki * pr - kr * pi) / p2;   // conj(K) / p
+      lr = lr + sr;
+      li = -li + si;
+      kr = nkr;
+      ki = nki;
+    }
+    flip = !flip;
+  }
+  return { w0: [w0r, w0i], k: [kr, ki], l: [lr, li], flip, steps };
+}
+
+// Color for pixels past renderApollonian's inversion cap: the colormap's
+// average. Counts there change faster than pixels do, so supersampling
+// converges to the average of the colors they cycle through, which the
+// mirrored cycle visits evenly. RGB in 0..1.
+function apolloCapColor(lutBytes) {
+  const sum = [0, 0, 0];
+  for (let i = 0; i < 256; i++) {
+    for (let c = 0; c < 3; c++) sum[c] += lutBytes[i * 4 + c];
+  }
+  return sum.map((v) => v / (256 * 255));
 }
 
 // Suggested maxIter for a view: the slider's 300 default at the fractal's
@@ -817,6 +971,12 @@ function createFractalRenderer(canvas) {
     cellHole: gl.getUniformLocation(prog, "u_cellHole"),
     digitCycle: gl.getUniformLocation(prog, "u_digitCycle"),
     subPixelColor: gl.getUniformLocation(prog, "u_subPixelColor"),
+    apoW0: gl.getUniformLocation(prog, "u_apoW0"),
+    apoK: gl.getUniformLocation(prog, "u_apoK"),
+    apoL: gl.getUniformLocation(prog, "u_apoL"),
+    apoFlip: gl.getUniformLocation(prog, "u_apoFlip"),
+    apoSteps: gl.getUniformLocation(prog, "u_apoSteps"),
+    apoCapColor: gl.getUniformLocation(prog, "u_apoCapColor"),
     jitter: gl.getUniformLocation(prog, "u_jitter"),
     usePerturbation: gl.getUniformLocation(prog, "u_usePerturbation"),
     refOrbitTex: gl.getUniformLocation(prog, "u_refOrbitTex"),
@@ -1134,6 +1294,15 @@ function createFractalRenderer(canvas) {
       gl.uniform1f(u.digitScale, 2 * state.scale * frame.cellsPerUnit);
       gl.uniform1fv(u.cellHole, frame.holes);
     }
+    if (sampleIndex === 0 && state.ftype === FTYPE.APOLLONIAN) {
+      const frame = apolloFrame(state.cx, state.cy, state.scale, canvas.width / canvas.height);
+      gl.uniform2f(u.apoW0, frame.w0[0], frame.w0[1]);
+      gl.uniform2f(u.apoK, frame.k[0], frame.k[1]);
+      gl.uniform2f(u.apoL, frame.l[0], frame.l[1]);
+      gl.uniform1i(u.apoFlip, frame.flip ? 1 : 0);
+      gl.uniform1f(u.apoSteps, frame.steps);
+      gl.uniform3fv(u.apoCapColor, apolloCapColor(lutBytes));
+    }
 
     // See perturbationEligibleType for which types are covered. Also
     // suppressed mid-gesture (see isInteracting) since recomputing the
@@ -1398,11 +1567,12 @@ function freshState(config) {
 // value. Called on discrete view changes only -- gesture settle, box zoom,
 // Back, fractal select/Reset -- never per frame, so it can't fight a live
 // pinch. The slider writes both panes and locks both (see its handler).
-// Carpet/Gasket ignore maxIter entirely (usesFixedDepth) and are skipped.
+// Carpet/Gasket and the Apollonian gasket ignore maxIter entirely
+// (ignoresMaxIter) and are skipped.
 function applyAutoIter() {
   for (const st of [mainState, dualActive ? juliaState : null]) {
     if (!st || st.iterAutoLocked) continue;
-    if (isDigitFractal(st.ftype)) continue;
+    if (ignoresMaxIter(st.ftype)) continue;
     st.maxIter = suggestedMaxIter(st.baseScale, st.scale);
   }
   const shown = activePane === "julia" && dualActive && juliaState ? juliaState : mainState;
@@ -1704,6 +1874,25 @@ function formatHudCoords(cx, cy, scale) {
   };
 }
 
+// The Apollonian info card's line about the circle under the center (see
+// apolloCenterCurvature), left out while that circle is too small to see:
+// a center on the gasket lands in circles far below a pixel. Remembered
+// for the last view: updateHud runs every frame, and near the gasket the
+// walk can take thousands of steps.
+let apolloCurvatureKey = "", apolloCurvatureLine = "";
+function apolloCurvatureText(cx, cy, scale) {
+  const key = `${cx},${cy},${scale}`;
+  if (key !== apolloCurvatureKey) {
+    const k = apolloCenterCurvature(cx, cy);
+    apolloCurvatureKey = key;
+    // Radius 1/k at least 1/200 of the view's half-height.
+    apolloCurvatureLine = k === null || k * scale > 200 ? ""
+      : k < 0 ? "Center: outside the outer circle (curvature −1)"
+      : `Circle at center: curvature ${k.toLocaleString("en-US")}`;
+  }
+  return apolloCurvatureLine;
+}
+
 function updateHud() {
   const s = mainState;
   const eligibleType = perturbationEligibleType(s);
@@ -1711,8 +1900,12 @@ function updateHud() {
   // the shader) — showing "maxIter: 300" would misleadingly imply it still
   // does something, the same mismatch that caused the coloring bug.
   const usesFixedDepth = isDigitFractal(s.ftype);
+  const c = mainRenderer.canvas;
+  const apollo = s.ftype === FTYPE.APOLLONIAN ? apolloFrame(s.cx, s.cy, s.scale, c.width / c.height) : null;
   let precision = "float32";
-  if (usesFixedDepth) {
+  if (apollo) {
+    if (apollo.steps > 0) precision = "composed inversions (deep zoom)";
+  } else if (usesFixedDepth) {
     if (s.scale < DEEP_ZOOM_THRESHOLD) precision = "cell rebasing (deep zoom)";
   } else if (isInteracting && deepZoomEligible(mainRenderer, s)) {
     precision = "preview (renders at deep zoom once you stop)";
@@ -1735,9 +1928,9 @@ function updateHud() {
       precision = "float32 (deep zoom unsupported for this fractal type)";
     }
   }
-  const c = mainRenderer.canvas;
   const depth = usesFixedDepth ? digitFractalDepth(s.ftype, s.scale, c.height, c.width / c.height) : 0;
-  const iterText = usesFixedDepth ? `depth: ${depth} (auto)` : `maxIter: ${s.maxIter}${s.iterAutoLocked ? "" : " (auto)"}`;
+  const iterText = apollo ? `depth: ${apollo.steps} inversions`
+    : usesFixedDepth ? `depth: ${depth} (auto)` : `maxIter: ${s.maxIter}${s.iterAutoLocked ? "" : " (auto)"}`;
   // A Surprise-me destination's name, for as long as the view is still the
   // one the flight landed on -- including its rotation, for a destination
   // that sets one (any turn away from it ends the match; mod 2pi, so a
@@ -1750,6 +1943,7 @@ function updateHud() {
   const deep = zoomPhrase(s.baseScale, s.scale);
   setHud(place || label, [
     place ? `${label}, ${deep}` : capitalize(deep),
+    apollo ? apolloCurvatureText(s.cx, s.cy, s.scale) : "",
     rotationHudText(s.rotation),
   ], {
     unitsPerPx: unitsPerCssPx(s.scale, mainRenderer.canvas),
@@ -1887,11 +2081,12 @@ function selectFractal(name, { fresh = false } = {}) {
   const isZoom = config.category === "zoom";
   els.boxZoomBtn.classList.toggle("hidden", !isZoom);
   els.teleportBtn.classList.toggle("hidden", !isZoom || !TELEPORT_DESTINATIONS.some((d) => d.fractal === name));
-  // Carpet/Gasket use a zoom-derived depth (see FRAG_SRC) — the iter slider does
+  // Carpet/Gasket and the Apollonian gasket set their own depth
+  // (ignoresMaxIter) — the iter slider does
   // nothing for them, and leaving it enabled implied otherwise, which is
   // exactly the mismatch that made them render as almost solid black
   // before that was caught and fixed.
-  const usesFixedDepth = isDigitFractal(config.ftype);
+  const usesFixedDepth = ignoresMaxIter(config.ftype);
   els.iterSlider.disabled = usesFixedDepth;
   els.iterField.classList.toggle("hidden", usesFixedDepth);
   els.juliaCanvas.classList.toggle("hidden", !dualActive);

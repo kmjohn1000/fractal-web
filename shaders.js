@@ -121,6 +121,13 @@ uniform float u_digitScale;    // uv to cell units
 uniform float u_cellHole[9];   // 3x3 cells around the center one: level cut out at, or -1
 uniform float u_digitCycle;    // levels per pass through the colormap (digitColorCycle)
 uniform vec3  u_subPixelColor; // color past u_digitDepth (digitSubPixelColor)
+// Apollonian gasket only, see renderApollonian and apolloFrame in app.js.
+uniform vec2  u_apoW0;         // the view's composed inversions: w0 + K u / (1 + L u)
+uniform vec2  u_apoK;
+uniform vec2  u_apoL;
+uniform bool  u_apoFlip;       // odd step count: apply to conj(u)
+uniform float u_apoSteps;      // inversions the CPU already applied
+uniform vec3  u_apoCapColor;   // color past APOLLO_MAX_STEPS (apolloCapColor)
 // Sub-pixel sample offset in pixels, (0,0) = pixel center. Supersampling
 // accumulates several jittered renders on the CPU side -- see
 // SAMPLE_OFFSETS in app.js.
@@ -150,6 +157,7 @@ const int FTYPE_CARPET  = 4;
 const int FTYPE_GASKET  = 5;
 const int FTYPE_PHOENIX = 6;
 const int FTYPE_CELTIC  = 7;
+const int FTYPE_APOLLONIAN = 8;
 
 const vec2 NEWTON_ROOT0 = vec2( 1.0,  0.0);
 const vec2 NEWTON_ROOT1 = vec2(-0.5,  0.8660254037844386);
@@ -299,6 +307,55 @@ vec3 renderDigitFractal(vec2 q, float base) {
     p -= floor(p);
   }
   return u_subPixelColor;
+}
+
+// Apollonian gasket, the (-1, 2, 2, 3) packing (APOLLO_DUAL in app.js has
+// the geometry). Inverts the pixel in whichever of the four dual circles
+// holds it until none does, and colors it by the number of inversions. Each
+// packing circle shows as nested bands, counts climbing toward its rim, and
+// the gasket itself is where they climb fastest. Near a tangency point the
+// count grows without bound, so it's capped. Past the cap the color is the
+// colormap's average (u_apoCapColor): what supersampling those pixels
+// would converge to.
+//
+// u is the pixel's offset from the view center. For deep zoom the CPU has
+// already applied the inversions every pixel shares (apolloFrame in
+// app.js), as one Mobius map of u: K u and L u keep their precision at any
+// depth, and the result is O(1), where float32 is fine. Same ~1e15 limit as
+// cell rebasing: the float64 center.
+//
+// One pass through the colormap takes APOLLO_CYCLE inversions and alternate
+// passes run back down it, like digitColor. APOLLO_OFFSET starts the
+// opening view's large circles a quarter of the way in: at 0 they're
+// Inferno's near-black start.
+const int APOLLO_MAX_STEPS = 500;
+const float APOLLO_CYCLE = 24.0;
+const float APOLLO_OFFSET = 6.0;
+
+vec3 renderApollonian(vec2 u) {
+  if (u_apoFlip) u.y = -u.y;
+  vec2 z = u_apoW0 + cDiv(cMul(u_apoK, u), vec2(1.0, 0.0) + cMul(u_apoL, u));
+  float n = u_apoSteps;
+  for (int i = 0; i < APOLLO_MAX_STEPS; i++) {
+    vec2 p1 = z - vec2(1.0, 1.0);
+    vec2 p2 = z - vec2(-1.0, 1.0);
+    vec2 p3 = z - vec2(0.0, 0.25);
+    float d1 = dot(p1, p1), d2 = dot(p2, p2), d3 = dot(p3, p3);
+    if (z.y < 0.0) {
+      z.y = -z.y;
+    } else if (d1 < 1.0) {
+      z = vec2(1.0, 1.0) + p1 / d1;
+    } else if (d2 < 1.0) {
+      z = vec2(-1.0, 1.0) + p2 / d2;
+    } else if (d3 < 0.0625) {
+      z = vec2(0.0, 0.25) + p3 * (0.0625 / d3);
+    } else {
+      float t = (n + APOLLO_OFFSET) / APOLLO_CYCLE;
+      return lutColor(1.0 - abs(1.0 - mod(t, 2.0)));
+    }
+    n += 1.0;
+  }
+  return u_apoCapColor;
 }
 
 vec3 renderNewton(vec2 p) {
@@ -520,6 +577,11 @@ void main() {
     vec2 q = u_digitCenter + uv * u_digitScale;
     float base = (u_ftype == FTYPE_CARPET) ? 3.0 : 2.0;
     gl_FragColor = vec4(renderDigitFractal(q, base), 1.0);
+    return;
+  }
+
+  if (u_ftype == FTYPE_APOLLONIAN) {
+    gl_FragColor = vec4(renderApollonian(uv * u_scale * 2.0), 1.0);
     return;
   }
 
