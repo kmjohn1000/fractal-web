@@ -345,6 +345,25 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       lookup over time via requestAnimationFrame; Koch/Tree: cycle the
       colormap's stops, like kochAnimateBtn cycles depth; new toggle, not
       a repurposed "cycle colormap" button)
+- [ ] Apollonian gasket (user idea 2026-10-17; evaluated, not approved to
+      build). Circles only, unlike anything in the picker. Default to the
+      (-1, 2, 2, 3) packing: every circle's curvature is an integer, so
+      the info card can show the curvature of the circle under the center
+      (exact in float64 to ~1e15). Render by iterated inversion in the
+      four dual circles (one complex divide per step; ~95 max at the
+      opening view), colored by inversion count, mirrored cycle like
+      Carpet/Gasket. In that packing one dual "circle" is the real axis,
+      so that step is a reflection. Prototyped in numpy 2026-10-17.
+      Deep zoom (untested plan): compose the view's inversions on the CPU
+      in float64 into one Möbius map, apply it in the shader to the
+      float32 pixel offset, the circle counterpart of digitCellFrame;
+      same ~1e15 ceiling. Caveats: inversion counts grow without bound
+      near tangency points, so cap them, and keep Surprise-me places off
+      tangency points (two flat disks and a hairline at 1e-3). Inferno
+      as-is makes the three biggest disks near-black; pick its default
+      palette by eye. ~150-200 lines with thumbnail and places. Breaks
+      "23 fractals" in the subtitle and description; batch with any
+      other new type
 
 ## Later — big bets
 Flexible scope and timing. Chains: new types → formula editor → Fractint importer;
