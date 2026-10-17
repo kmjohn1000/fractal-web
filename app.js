@@ -137,12 +137,12 @@ const TELEPORT_DESTINATIONS = [
   // ones little Mandelbrot sets. Each starts from its copy's nucleus; Baby
   // Tricorn, Hidden Mandelbrot, Antenna Talons and Flame Minibrot are then
   // shifted onto the copy's visual center on a portrait phone.
-  { fractal: "Tricorn", label: "Baby Tricorn", re: "-1.7529", im: "0.0", scale: 4e-2 },
+  { fractal: "Tricorn", label: "Baby Tricorn", re: "-1.7605", im: "0.0", scale: 5e-2 },
   { fractal: "Tricorn", label: "Hidden Mandelbrot", re: "-1.94136", im: "0.0", scale: 3e-3 },
   { fractal: "Tricorn", label: "Tilted Tricorn", re: "-1.380734140799838", im: "0.059837338423964", scale: 2.2e-4 },
   { fractal: "Tricorn", label: "Lace Minibrot", re: "-1.366420146878388", im: "0.040471294040541", scale: 2e-5 },
   { fractal: "Tricorn", label: "Lace Tricorn", re: "-1.380765134221053", im: "0.059762690448109", scale: 3e-6 },
-  { fractal: "Tricorn", label: "Antenna Talons", re: "-1.9990956613", im: "0.0", scale: 6.75e-7 },
+  { fractal: "Tricorn", label: "Antenna Talons", re: "-1.99909577", im: "0.0", scale: 9.5e-7 },
   { fractal: "Tricorn", label: "Flame Minibrot", re: "-1.9997740533", im: "0.0", scale: 3e-8 },
   // Off-axis copies, nuclei found numerically: two period-6 minibrots and a
   // period-5 baby Tricorn.

@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.35.4 — 2026-10-16
+- Surprise me on the Tricorn: Antenna Talons and Baby Tricorn are recentered and zoomed out so the whole shape fits on a phone, tails included.
+
 ## 1.35.3 — 2026-10-16
 - Surprise me: Elephant Valley lands upside down, so the elephants march along the top of the set; Cauliflower is zoomed out so the whole shape fits on a phone; Bird's Eye and Butterfly Crest are zoomed out a little to show more around them.
 
