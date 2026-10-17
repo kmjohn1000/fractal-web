@@ -53,6 +53,15 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         larger area, or margin pixels may glitch.
       - Size: ~80–120 lines in the renderer.
 
+- [ ] Code-review leftovers (2026-10-16; bugs 1-2, the info card and
+      Phoenix's threshold were fixed in 1.35.1):
+      - Compass reset (`resetRotation`) ignores `teleportGeneration` and
+        pointerdown, so a twist or Surprise-me flight started during its
+        350 ms fights it frame by frame (from reading; not reproduced)
+      - Newton orbits passing within ~1e-4 of 0 still finish in float32,
+        so the deepest views right beside a star copy can still blur
+      - `teleport()`'s one-place branch is unused now that every fractal
+        has 2+ places; kept for a future fractal with a single place
 - [ ] New escape-time types: Buffalo, Lambda (Celtic is done, see Done)
       (single-state iteration, reuse existing shader/perturbation/
       supersampling pipeline with no structural changes)
