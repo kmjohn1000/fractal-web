@@ -154,7 +154,9 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       (state in float textures, see the Later item) instead of one long
       loop per pixel
 - [ ] Listing copy: the 1.30.0 listing files still say 31 places; it's
-      92 as of 1.35.0 (description, What's New, promo text and caption)
+      98 as of 1.36.0 (description, What's New, promo text and caption).
+      The subtitle and description's "23 fractals" is 24 since 1.36.0
+      (Apollonian gasket)
 - [ ] Playful Surprise-me ideas (same research, 2026-10-15):
       - Top 3:
         - Rare "golden" places drawn about 1 in 15 taps, with a gold "Rare
@@ -410,25 +412,6 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       colormap's stops, like kochAnimateBtn cycles depth; new toggle, not
       a repurposed "cycle colormap" button). u_colorPhase is the same
       uniform as the coloring Style item's color offset control
-- [ ] Apollonian gasket (user idea 2026-10-17; evaluated, not approved to
-      build). Circles only, unlike anything in the picker. Default to the
-      (-1, 2, 2, 3) packing: every circle's curvature is an integer, so
-      the info card can show the curvature of the circle under the center
-      (exact in float64 to ~1e15). Render by iterated inversion in the
-      four dual circles (one complex divide per step; ~95 max at the
-      opening view), colored by inversion count, mirrored cycle like
-      Carpet/Gasket. In that packing one dual "circle" is the real axis,
-      so that step is a reflection. Prototyped in numpy 2026-10-17.
-      Deep zoom (untested plan): compose the view's inversions on the CPU
-      in float64 into one Möbius map, apply it in the shader to the
-      float32 pixel offset, the circle counterpart of digitCellFrame;
-      same ~1e15 ceiling. Caveats: inversion counts grow without bound
-      near tangency points, so cap them, and keep Surprise-me places off
-      tangency points (two flat disks and a hairline at 1e-3). Inferno
-      as-is makes the three biggest disks near-black; pick its default
-      palette by eye. ~150-200 lines with thumbnail and places. Breaks
-      "23 fractals" in the subtitle and description; batch with any
-      other new type
 - [ ] Koch snowflake Easter egg (user idea 2026-10-17; not approved to
       build). Trigger: a full 360° twist in one gesture on the Koch view.
       The snowflake splits into its seven-piece self-tiling (one copy at
@@ -589,6 +572,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
+- Apollonian gasket (1.36.0, user idea 2026-10-17): the (−1, 2, 2, 3) packing by iterated inversion in its four dual circles, colored by inversion count (mirrored cycle of 24, offset 6 so Inferno's big disks are purple, not black; capped at 500 per pixel, capped pixels get the colormap's average). Deep zoom composes the inversions the whole view shares into one Möbius map in float64 (`apolloFrame`); checked sharp at 1.4e15× in headless Chrome. Info card shows the integer curvature of the circle under the center when it's visible. Six Surprise-me places, five of them repelling fixed points of three-inversion words (they repeat every φ⁶ ≈ 17.94×), including the 4.7e-12 spiral dive Golden Dive. Not yet checked on a phone. The listing's "23 fractals" is now 24 — `431010a`
 - Phoenix deep zoom (1.34.0): float32 perturbation against one float64 reference, and a pixel that glitches continues in exact fixed point from Z[m] + d. 100% agreement with float64 at 1e-9 and ~0.3 s full screen on an iPhone 15 in the spike (`scripts/precision-spike.html`, not committed); all-fixed-point was 2–4 s and its long draws lost the phone's WebGL context. Exact steps capped at 600 per pixel, 4 refinement samples, self-test on first use. Checked by the user on their iPhone 15 (website, 1.35.2): Phoenix and Newton (incl. near the central star, 1.35.1) both sharp at depth — `508c401`
 - Newton deep zoom (1.33.0), in place of the "Newton perturbation" item: away from the origin, deep views render in exact 16.48 fixed point (WebGL2 uints) and stay sharp to ~1e-11 (float32 blurred past ~1e-4). ~0.2 s per full-screen pass on an iPhone 15; self-tested on first use, float32 fallback. The renderer now asks for WebGL2 first — `6672769`
 - Surprise me on every zoom fractal (1.31.0): 21 places from the 2026-10-15 research on Celtic, Multibrot³, Phoenix and the Rabbit, Dragon and Spiral Julia sets. Three of them are spiral dives (Rabbit Hole, Into the Eye, Into the Galaxy) that land at 1e-3, so the whole flight renders live. Auto detail now follows the zoom during spiral dives. Earlier the same day: Pole Star on Newton (1.30.1) and spiral-out on fractals with one place (1.30.2) — `238ee7e`
