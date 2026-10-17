@@ -137,10 +137,11 @@ const TELEPORT_DESTINATIONS = [
   { fractal: "Gasket", label: "Triangle Spiral", re: String(1 / 7), im: String(2 / 7), scale: 0.65 / 2 ** 30, rotation: 0, spiral: true },
   // Newton's map sends 0 (a double pole) to infinity, a repelling fixed
   // point with multiplier 3/2, so the six-armed star at 0 repeats every
-  // sqrt(1.5)x of zoom. It's also the one place float32 (Newton has no
-  // perturbation) stays sharp at depth: a center of 0 loses no digits.
-  // Elsewhere Newton blurs below ~1e-4, and its natural spirals (repelling
-  // cycles) turn under a fifth of a turn per 10x, too little to show.
+  // sqrt(1.5)x of zoom. It's also the one place float32 stays sharp at
+  // depth: a center of 0 loses no digits, so the dive renders live all the
+  // way down (elsewhere deep Newton is fixed point, see newtonDeepEligible,
+  // too slow for live frames). Newton's natural spirals (repelling cycles)
+  // turn under a fifth of a turn per 10x, too little to show.
   { fractal: "Newton z³", label: "Pole Star", re: "0", im: "0", scale: 1e-9, rotation: 0, spiral: true },
   // Celtic equals Mandelbrot on the real axis, so Mandelbrot's real-axis
   // landmarks reappear in new shapes: Halo Bell is Mini Mandelbrot's
@@ -391,6 +392,52 @@ function perturbationEligibleType(state) {
     state.ftype === FTYPE.CELTIC;
 }
 
+// Newton's deep zoom is fixed point instead (NEWTON_DEEP_FRAG_SRC in
+// shaders.js), and only where float32 actually fails: once the view is
+// deep AND far from the origin relative to its size. float32 resolves a
+// center c to ~|c| * 1e-7, so a view within NEWTON_FLOAT32_REACH half-heights
+// of 0 still renders exactly in float32 -- Pole Star's dive into 0 stays on
+// that path the whole way down, with the live frames its spin needs.
+const NEWTON_FLOAT32_REACH = 1000;
+function newtonDeepEligible(state) {
+  return state.ftype === FTYPE.NEWTON && state.scale < DEEP_ZOOM_THRESHOLD
+    && Math.hypot(state.cx, state.cy) > NEWTON_FLOAT32_REACH * state.scale;
+}
+
+// A float64 value as NEWTON_DEEP_FRAG_SRC's 16.48 fixed point: four 16-bit
+// limbs of the two's-complement integer round(x * 2^48), most significant
+// first. Exact for every float64 the views use (|x| < 2^15, rounded to 2^-48).
+function fixedLimbs(x) {
+  let b = BigInt(Math.round(x * 2 ** 48));
+  if (b < 0n) b += 1n << 64n;
+  return [48n, 32n, 16n, 0n].map((s) => Number((b >> s) & 0xFFFFn));
+}
+const FIXED_THIRD = (() => {
+  const b = (1n << 48n) / 3n;
+  return [48n, 32n, 16n, 0n].map((s) => Number((b >> s) & 0xFFFFn));
+})();
+
+// Newton's map in float64, as the self-test's reference: iterations used and
+// root index (-1 if none), same loop as renderNewton/NEWTON_DEEP_FRAG_SRC.
+const NEWTON_ROOTS = [[1, 0], [-0.5, Math.sqrt(3) / 2], [-0.5, -Math.sqrt(3) / 2]];
+function newtonOrbitF64(zr, zi, maxIter) {
+  let used = 0;
+  for (let i = 0; i < maxIter; i++) {
+    used = i;
+    const d = zr * zr + zi * zi;
+    if (d > 0) {
+      const wr = zr / d, wi = -zi / d;
+      zr = (2 * zr + wr * wr - wi * wi) / 3;
+      zi = (2 * zi + 2 * wr * wi) / 3;
+    }
+    for (let k = 0; k < 3; k++) {
+      const dr = zr - NEWTON_ROOTS[k][0], di = zi - NEWTON_ROOTS[k][1];
+      if (dr * dr + di * di < 1e-12) return { used, root: k };
+    }
+  }
+  return { used, root: -1 };
+}
+
 // One float64 step of the escape-family map, z <- f(z) + c, in place on the
 // 2-element array z (avoids allocating per step in chooseReference's hot
 // loop). Must match renderEscapeFast in shaders.js.
@@ -526,9 +573,13 @@ function createFractalRenderer(canvas) {
   // previous frame's canvas contents, which the browser would otherwise be
   // free to discard after compositing.
   const ctxOpts = { antialias: false, alpha: false, preserveDrawingBuffer: true };
-  const gl = canvas.getContext("webgl", ctxOpts)
+  // WebGL2 when there is one: Newton's deep zoom needs its 32-bit uints
+  // (NEWTON_DEEP_FRAG_SRC). The ES 1.00 shaders run unchanged on either.
+  const gl = canvas.getContext("webgl2", ctxOpts)
+          || canvas.getContext("webgl", ctxOpts)
           || canvas.getContext("experimental-webgl", ctxOpts);
   if (!gl) return null;
+  const isWebGL2 = typeof WebGL2RenderingContext !== "undefined" && gl instanceof WebGL2RenderingContext;
 
   function compile(type, src) {
     const s = gl.createShader(type);
@@ -540,9 +591,9 @@ function createFractalRenderer(canvas) {
 
   // a_pos is pinned to attribute 0 in both programs so they share the
   // quad's vertex-attribute setup below without re-pointing it per draw.
-  function link(fragSrc) {
+  function link(fragSrc, vertSrc = VERT_SRC) {
     const p = gl.createProgram();
-    gl.attachShader(p, compile(gl.VERTEX_SHADER, VERT_SRC));
+    gl.attachShader(p, compile(gl.VERTEX_SHADER, vertSrc));
     gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fragSrc));
     gl.bindAttribLocation(p, 0, "a_pos");
     gl.linkProgram(p);
@@ -627,8 +678,9 @@ function createFractalRenderer(canvas) {
   // texel a genuine re/im pair, not an 8-bit-quantized color). Feature-detect
   // once; if unavailable, perturbation mode is simply never offered and deep
   // zoom stays capped at the plain float32 ceiling for this renderer.
-  const floatTexExt = gl.getExtension("OES_texture_float");
-  const refOrbitTex = floatTexExt ? gl.createTexture() : null;
+  // WebGL2 has float textures built in (and no OES_texture_float to ask for).
+  const floatTexOk = isWebGL2 || !!gl.getExtension("OES_texture_float");
+  const refOrbitTex = floatTexOk ? gl.createTexture() : null;
   if (refOrbitTex) {
     gl.bindTexture(gl.TEXTURE_2D, refOrbitTex);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -673,6 +725,77 @@ function createFractalRenderer(canvas) {
   let refCacheKey = "";
   let refCache = null;
 
+  // Newton's fixed-point deep zoom (NEWTON_DEEP_FRAG_SRC): compiled and
+  // self-tested the first time a deep Newton view needs it, not at launch.
+  // null = not tried yet, false = unavailable (no WebGL2, a compile error,
+  // or a failed self-test: deep Newton then stays on float32, as before).
+  let newtonDeep = isWebGL2 ? null : false;
+  function newtonDeepProgram() {
+    if (newtonDeep !== null) return newtonDeep;
+    try {
+      const p = link(NEWTON_DEEP_FRAG_SRC, VERT_SRC_300);
+      const names = ["resolution", "jitter", "rotCos", "rotSin", "scale", "maxIter", "cx", "cy", "third", "testMode", "lut"];
+      const nu = Object.fromEntries(names.map((n) => [n, gl.getUniformLocation(p, `u_${n}`)]));
+      newtonDeep = { prog: p, u: nu };
+      if (!newtonDeepSelfTest()) newtonDeep = false;
+    } catch (e) {
+      console.warn("Newton deep zoom unavailable:", e);
+      newtonDeep = false;
+    }
+    return newtonDeep;
+  }
+
+  function setNewtonDeepUniforms(state, w, h, jitter) {
+    const { u: nu } = newtonDeep;
+    gl.useProgram(newtonDeep.prog);
+    gl.uniform2f(nu.resolution, w, h);
+    gl.uniform2f(nu.jitter, jitter[0], jitter[1]);
+    const rot = state.rotation || 0;
+    gl.uniform1f(nu.rotCos, Math.cos(rot));
+    gl.uniform1f(nu.rotSin, Math.sin(rot));
+    gl.uniform1f(nu.scale, state.scale);
+    gl.uniform1i(nu.maxIter, state.maxIter | 0);
+    gl.uniform4ui(nu.cx, ...fixedLimbs(state.cx));
+    gl.uniform4ui(nu.cy, ...fixedLimbs(state.cy));
+    gl.uniform4ui(nu.third, ...FIXED_THIRD);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, lutTex);
+    gl.uniform1i(nu.lut, 0);
+  }
+
+  // The fixed-point math is exact on paper, but a shader compiler can still
+  // get it wrong (an "optimized" variant rendered garbage on an iPhone 15
+  // while passing on a Mac), so before first use it draws a 16x16 corner of
+  // a deep view where float32 gets every pixel wrong and checks each pixel's
+  // root and iteration count against float64. The real frame drawn right
+  // after covers the corner.
+  function newtonDeepSelfTest() {
+    const n = 16;
+    const view = { cx: 0.4637970443508781, cy: 0.6374591385438365, scale: 1e-9, rotation: 0, maxIter: 300 };
+    setNewtonDeepUniforms(view, n, n, [0, 0]);
+    gl.uniform1i(newtonDeep.u.testMode, 1);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, n, n);
+    gl.disable(gl.BLEND);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    const px = new Uint8Array(n * n * 4);
+    gl.readPixels(0, 0, n, n, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    gl.uniform1i(newtonDeep.u.testMode, 0);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    let ok = 0;
+    for (let y = 0; y < n; y++) {
+      for (let x = 0; x < n; x++) {
+        const uvx = (x + 0.5 - 0.5 * n) / n, uvy = (y + 0.5 - 0.5 * n) / n;
+        const ref = newtonOrbitF64(view.cx + uvx * view.scale * 2, view.cy + uvy * view.scale * 2, view.maxIter);
+        const i = (y * n + x) * 4;
+        const used = px[i] + 256 * px[i + 1], root = px[i + 2] - 1;
+        if (root === ref.root && Math.abs(used - ref.used) <= 1) ok++;
+      }
+    }
+    // 99.8% agreed in testing; float32 gets 0%.
+    return ok >= 0.95 * n * n;
+  }
+
   // sampleIndex selects the sub-pixel offset from SAMPLE_OFFSETS; see there
   // and drawToCanvas for how successive samples accumulate.
   // The view the canvas's current accurate frame was drawn for, and whether
@@ -681,12 +804,21 @@ function createFractalRenderer(canvas) {
   let snapView = null;
   let needSnapshot = false;
 
+  // Returns which deep-zoom path drew the frame ("perturbation" or
+  // "fixed point"), or null for plain float32 -- for the info card.
   function render(state, sampleIndex = 0) {
     // A resize clears the canvas, so there's nothing left to blend into.
     if (resize()) sampleIndex = 0;
     if (sampleIndex === 0) {
       lastView = { cx: state.cx, cy: state.cy, scale: state.scale, rotation: state.rotation || 0 };
       needSnapshot = true;
+    }
+    // Mid-gesture, deep views show the moving preview instead (renderAll);
+    // this guard covers a pane renderAll still draws live.
+    if (!isInteracting && newtonDeepEligible(state) && newtonDeepProgram()) {
+      setNewtonDeepUniforms(state, canvas.width, canvas.height, SAMPLE_OFFSETS[sampleIndex]);
+      drawToCanvas(sampleIndex);
+      return "fixed point";
     }
     gl.useProgram(prog);
     const jitter = SAMPLE_OFFSETS[sampleIndex];
@@ -735,7 +867,7 @@ function createFractalRenderer(canvas) {
 
     if (!usePerturbation) {
       drawToCanvas(sampleIndex);
-      return false;
+      return null;
     }
 
     const key = [state.ftype, state.cx, state.cy, state.scale, state.rotation || 0,
@@ -765,7 +897,7 @@ function createFractalRenderer(canvas) {
         refLen = orbit.length; critOffset = 0; critLen = orbit.length;
       }
       const width = data.length / 4;
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, 1, 0, gl.RGBA, gl.FLOAT, data);
+      gl.texImage2D(gl.TEXTURE_2D, 0, isWebGL2 ? gl.RGBA32F : gl.RGBA, width, 1, 0, gl.RGBA, gl.FLOAT, data);
       refCache = { dx: ref.dx, dy: ref.dy, refLen, critOffset, critLen, width };
       refCacheKey = key;
     }
@@ -776,7 +908,7 @@ function createFractalRenderer(canvas) {
     gl.uniform1f(u.refTexWidth, refCache.width);
     gl.uniform2f(u.refOffset, refCache.dx, refCache.dy);
     drawToCanvas(sampleIndex);
-    return true;
+    return "perturbation";
   }
 
   // Deep-zoom gesture preview (see renderAll): on the first call after an
@@ -820,7 +952,12 @@ function createFractalRenderer(canvas) {
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
 
-  return { canvas, render, renderPreview, setLUT, resize, perturbationSupported, get dpr() { return dpr; } };
+  return {
+    canvas, render, renderPreview, setLUT, resize, perturbationSupported,
+    // Until its first use, an optimistic yes on WebGL2 (see newtonDeep).
+    get newtonDeepSupported() { return newtonDeep !== false; },
+    get dpr() { return dpr; },
+  };
 }
 
 // ---------------------------------------------------------------- app state
@@ -1045,7 +1182,8 @@ function layoutCanvasArea() {
   els.canvasArea.classList.toggle("row", dualActive && !stacked);
 }
 
-let lastMainUsedPerturbation = false;
+// The main pane's last render() result: "perturbation", "fixed point" or null.
+let lastMainDeepPath = null;
 
 // Below the deep-zoom threshold, a live float32 re-render during an active
 // gesture isn't a lower-quality version of the same view — the per-pixel
@@ -1058,9 +1196,10 @@ let lastMainUsedPerturbation = false;
 // one draws the snapshot through the same float64 view math the renderer
 // uses, so it can't drift from where the real render will land.
 function deepZoomEligible(renderer, state) {
-  return renderer.perturbationSupported
+  return (renderer.perturbationSupported
     && perturbationEligibleType(state)
-    && state.scale < DEEP_ZOOM_THRESHOLD;
+    && state.scale < DEEP_ZOOM_THRESHOLD)
+    || (renderer.newtonDeepSupported && newtonDeepEligible(state));
 }
 
 function renderAll() {
@@ -1069,7 +1208,7 @@ function renderAll() {
     if (isInteracting && deepZoomEligible(mainRenderer, mainState)) {
       mainRenderer.renderPreview(mainState);
     } else {
-      lastMainUsedPerturbation = mainRenderer.render(mainState);
+      lastMainDeepPath = mainRenderer.render(mainState);
     }
 
     // The dual-mode Julia pane can be deep-zoomed too (perturbation covers
@@ -1281,7 +1420,6 @@ function formatHudCoords(cx, cy, scale) {
 function updateHud() {
   const s = mainState;
   const eligibleType = perturbationEligibleType(s);
-  const deepZoomEligible = mainRenderer.perturbationSupported && eligibleType && s.scale < DEEP_ZOOM_THRESHOLD;
   // Carpet/Gasket ignore the iter slider entirely (zoom-derived depth in
   // the shader) — showing "maxIter: 300" would misleadingly imply it still
   // does something, the same mismatch that caused the coloring bug.
@@ -1289,12 +1427,15 @@ function updateHud() {
   let precision = "float32";
   if (usesFixedDepth) {
     if (s.scale < DEEP_ZOOM_THRESHOLD) precision = "cell rebasing (deep zoom)";
-  } else if (isInteracting && deepZoomEligible) {
+  } else if (isInteracting && deepZoomEligible(mainRenderer, s)) {
     precision = "preview (renders at deep zoom once you stop)";
-  } else if (lastMainUsedPerturbation) {
-    precision = "perturbation (deep zoom)";
+  } else if (lastMainDeepPath) {
+    precision = `${lastMainDeepPath} (deep zoom)`;
   } else if (s.scale < DEEP_ZOOM_THRESHOLD) {
-    if (!mainRenderer.perturbationSupported) {
+    if (s.ftype === FTYPE.NEWTON) {
+      // Near 0, float32 is exact anyway (see newtonDeepEligible).
+      if (newtonDeepEligible(s)) precision = "float32 (deep zoom unavailable: needs WebGL2)";
+    } else if (!mainRenderer.perturbationSupported) {
       precision = "float32 (deep zoom unavailable: no float texture support)";
     } else if (!eligibleType) {
       precision = "float32 (deep zoom unsupported for this fractal type)";
