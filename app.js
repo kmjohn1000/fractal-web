@@ -99,6 +99,9 @@ const TELEPORT_DESTINATIONS = [
   // minibrot in its halo on the real axis, ringed by mirrored butterfly and
   // seahorse curls.
   { fractal: "Mandelbrot", label: "Butterfly Crest", re: "-1.7498024610968186", im: "-4.2378297315393065e-11", scale: 4.9499706813632855e-8, rotation: 0 },
+  // Pinwheel is the user's place as well, framed as given: dendrite arms
+  // spiraling around one center.
+  { fractal: "Mandelbrot", label: "Pinwheel", re: "-0.5360670633819427", im: "-0.5255257785409202", scale: 5.1991824685514734e-9, rotation: 0 },
   // Burning Ship is drawn in math orientation (+im up), which hangs every
   // ship's masts below its hull; rotation (radians, optional) turns the
   // landed view ship-side up. A half turn also mirrors left-right compared
