@@ -621,13 +621,18 @@ vec3 lutColor(float t) {
 
 // Newton: below the deep-zoom threshold and away from the origin (see
 // newtonDeepEligible in app.js). Measured on an iPhone 15: ~12 ms per
-// 256x256 pass at 1e-9, about 0.2 s full screen.
+// 256x256 pass at 1e-9, about 0.2 s full screen (before the u-mode below).
 //
-// Near the pole at 0 the 1/z^2 term outgrows the 16-bit integer part, so a
-// pixel whose orbit gets within 1/64 of 0 (or past |z| = 128) finishes in
-// float32 -- which is accurate there: values near 0 have no large integer
-// part eating their precision, which is also why Pole Star's dive stays on
-// the plain float32 path.
+// The map N(z) = (2z + 1/z^2) / 3 throws an orbit that passes near the pole
+// at 0 far out (|N(z)| ~ 1/(3|z|^2)), past the 16-bit integer part. So the
+// orbit is kept as z while |z| <= 2 and as u = 1/z beyond, where
+//   u' = 3u / (2 + u^3)            (u-mode, |u| < 1/2)
+//   u' = 3z^2 / (1 + 2z^3)         (straight from z when |z| < 1/4)
+// and every value stays small and exact. An earlier version dropped to
+// float32 instead, which lost the pixel offsets near the central star and
+// its copies (5-40% of pixels right at 1e-9). Only an orbit that comes
+// within ~1e-4 of 0 still finishes in float32: there u ~ 3|z|^2 is too
+// small for 48 fraction bits, and float32's relative precision is better.
 
 const NEWTON_DEEP_FRAG_SRC = `#version 300 es
 precision highp float;
@@ -651,46 +656,126 @@ out vec4 fragColor;
 const vec2 NEWTON_ROOT0 = vec2( 1.0,  0.0);
 const vec2 NEWTON_ROOT1 = vec2(-0.5,  0.8660254037844386);
 const vec2 NEWTON_ROOT2 = vec2(-0.5, -0.8660254037844386);
+const uvec4 FX_ONE = uvec4(1u, 0u, 0u, 0u);
+const uvec4 FX_TWO = uvec4(2u, 0u, 0u, 0u);
 ${FIXED_POINT_GLSL}
+// 1/s for a real s > 0 whose float32 value is sf: one Newton-Raphson step on
+// the float32 reciprocal doubles its 24 correct bits to all 48. Needs
+// 1/32768 < s < 32768.
+uvec4 fxRecip(uvec4 s, float sf) {
+  uvec4 y0 = fxFromFloat(1.0 / sf);
+  return fxMul(y0, fxAdd(FX_TWO, fxNeg(fxMul(s, y0))));
+}
+// (rx, ry) = (ax + i ay)(bx + i by)
+void cxMul(uvec4 ax, uvec4 ay, uvec4 bx, uvec4 by, out uvec4 rx, out uvec4 ry) {
+  rx = fxAdd(fxMul(ax, bx), fxNeg(fxMul(ay, by)));
+  ry = fxAdd(fxMul(ax, by), fxMul(ay, bx));
+}
+// (rx, ry) = 1 / (x + i y) = (x - i y) / (x^2 + y^2)
+void cxRecip(uvec4 x, uvec4 y, out uvec4 rx, out uvec4 ry) {
+  uvec4 s = fxAdd(fxMul(x, x), fxMul(y, y));
+  uvec4 inv = fxRecip(s, fxToFloat(s));
+  rx = fxMul(x, inv);
+  ry = fxNeg(fxMul(y, inv));
+}
+// (rx, ry) = 3 (nx + i ny) / (dx + i dy)
+void cxThreeOver(uvec4 nx, uvec4 ny, uvec4 dx, uvec4 dy, out uvec4 rx, out uvec4 ry) {
+  uvec4 ix, iy, qx, qy;
+  cxRecip(dx, dy, ix, iy);
+  cxMul(nx, ny, ix, iy, qx, qy);
+  rx = fxAdd(fxAdd(qx, qx), qx);
+  ry = fxAdd(fxAdd(qy, qy), qy);
+}
+
 void main() {
   vec2 uv = (gl_FragCoord.xy + u_jitter - 0.5 * u_resolution) / u_resolution.y;
   uv = vec2(uv.x * u_rotCos - uv.y * u_rotSin, uv.x * u_rotSin + uv.y * u_rotCos);
   // The offset from the center is small, so float32 holds it to ~1e-7 of a
   // pixel; adding it to the center is where the precision is needed.
   vec2 off = uv * u_scale * 2.0;
-  uvec4 zx = fxAdd(u_cx, fxFromFloat(off.x));
-  uvec4 zy = fxAdd(u_cy, fxFromFloat(off.y));
-  vec2 z = vec2(fxToFloat(zx), fxToFloat(zy));
+  // (ax, ay) is z, or u = 1/z while inU; f is its float32 value.
+  uvec4 ax = fxAdd(u_cx, fxFromFloat(off.x));
+  uvec4 ay = fxAdd(u_cy, fxFromFloat(off.y));
+  vec2 f = vec2(fxToFloat(ax), fxToFloat(ay));
+  bool inU = false;
+  // A center past |z| = 2 (newtonDeepEligible keeps it under 100) starts
+  // as u.
+  if (dot(f, f) > 4.0) {
+    cxRecip(ax, ay, ax, ay);
+    f = vec2(fxToFloat(ax), fxToFloat(ay));
+    inU = true;
+  }
   bool exact = true;
+  vec2 z = f;   // float32 z, once exact is off
   int rootIdx = -1;
   int iterUsed = 0;
 
-  // Same iteration as renderNewton in FRAG_SRC, z <- (2z + (1/z)^2) / 3,
-  // with 1/z = conj(z) / |z|^2 and 1/|z|^2 from one Newton-Raphson step on
-  // the float32 reciprocal (doubles its 24 correct bits to all 48).
+  // Same iteration as renderNewton in FRAG_SRC, z <- (2z + (1/z)^2) / 3.
   for (int i = 0; i < 2000; i++) {
     if (i >= u_maxIter) break;
     iterUsed = i;
-    float d = dot(z, z);
-    if (exact && (d < 1.0 / 4096.0 || d > 16384.0)) exact = false;
     if (exact) {
-      uvec4 s = fxAdd(fxMul(zx, zx), fxMul(zy, zy));
-      uvec4 y0 = fxFromFloat(1.0 / d);
-      uvec4 y = fxMul(y0, fxAdd(uvec4(2u, 0u, 0u, 0u), fxNeg(fxMul(s, y0))));
-      uvec4 wx = fxMul(zx, y), wy = fxNeg(fxMul(zy, y));
-      uvec4 w2x = fxAdd(fxMul(wx, wx), fxNeg(fxMul(wy, wy)));
-      uvec4 w2y = fxMul(wx, wy);
-      w2y = fxAdd(w2y, w2y);
-      zx = fxMul(fxAdd(fxAdd(zx, zx), w2x), u_third);
-      zy = fxMul(fxAdd(fxAdd(zy, zy), w2y), u_third);
-      z = vec2(fxToFloat(zx), fxToFloat(zy));
-    } else if (d > 0.0) {
-      vec2 w = vec2(z.x, -z.y) / d;
-      z = (2.0 * z + vec2(w.x * w.x - w.y * w.y, 2.0 * w.x * w.y)) / 3.0;
+      float d = dot(f, f);
+      uvec4 nx, ny;
+      if (inU) {
+        // u' = 3u / (2 + u^3)
+        uvec4 u2x, u2y, u3x, u3y;
+        cxMul(ax, ay, ax, ay, u2x, u2y);
+        cxMul(u2x, u2y, ax, ay, u3x, u3y);
+        cxThreeOver(ax, ay, fxAdd(u3x, FX_TWO), u3y, nx, ny);
+        ax = nx; ay = ny;
+        f = vec2(fxToFloat(ax), fxToFloat(ay));
+        // Back to z once |z| <= 2: |u|^2 is then in [1/4, 0.64].
+        if (dot(f, f) >= 0.25) {
+          cxRecip(ax, ay, ax, ay);
+          f = vec2(fxToFloat(ax), fxToFloat(ay));
+          inU = false;
+        }
+      } else if (d < 1e-8) {
+        // Within 1e-4 of the pole: finish in float32 (see above).
+        exact = false;
+        z = f;
+      } else if (d < 0.0625) {
+        // |z| < 1/4: u' = 3z^2 / (1 + 2z^3), |u'| < 0.2.
+        uvec4 z2x, z2y, z3x, z3y;
+        cxMul(ax, ay, ax, ay, z2x, z2y);
+        cxMul(z2x, z2y, ax, ay, z3x, z3y);
+        cxThreeOver(z2x, z2y, fxAdd(fxAdd(z3x, z3x), FX_ONE), fxAdd(z3y, z3y), nx, ny);
+        ax = nx; ay = ny;
+        f = vec2(fxToFloat(ax), fxToFloat(ay));
+        inU = true;
+      } else {
+        // 1/4 <= |z| <= 2: z' = (2z + w^2) / 3 with w = 1/z (|w| <= 4).
+        uvec4 wx, wy;
+        cxRecip(ax, ay, wx, wy);
+        uvec4 w2x = fxAdd(fxMul(wx, wx), fxNeg(fxMul(wy, wy)));
+        uvec4 w2y = fxMul(wx, wy);
+        w2y = fxAdd(w2y, w2y);
+        ax = fxMul(fxAdd(fxAdd(ax, ax), w2x), u_third);
+        ay = fxMul(fxAdd(fxAdd(ay, ay), w2y), u_third);
+        f = vec2(fxToFloat(ax), fxToFloat(ay));
+        // |z'| <= ~6.7 here; past 2 it continues as u.
+        if (dot(f, f) > 4.0) {
+          cxRecip(ax, ay, ax, ay);
+          f = vec2(fxToFloat(ax), fxToFloat(ay));
+          inU = true;
+        }
+      }
+      if (exact && !inU) z = f;
     }
-    if (dot(z - NEWTON_ROOT0, z - NEWTON_ROOT0) < 1e-12) { rootIdx = 0; break; }
-    if (dot(z - NEWTON_ROOT1, z - NEWTON_ROOT1) < 1e-12) { rootIdx = 1; break; }
-    if (dot(z - NEWTON_ROOT2, z - NEWTON_ROOT2) < 1e-12) { rootIdx = 2; break; }
+    if (!exact) {
+      float d = dot(z, z);
+      if (d > 0.0) {
+        vec2 w = vec2(z.x, -z.y) / d;
+        z = (2.0 * z + vec2(w.x * w.x - w.y * w.y, 2.0 * w.x * w.y)) / 3.0;
+      }
+    }
+    // The roots have |z| = 1, so a u-mode value can't be at one.
+    if (!exact || !inU) {
+      if (dot(z - NEWTON_ROOT0, z - NEWTON_ROOT0) < 1e-12) { rootIdx = 0; break; }
+      if (dot(z - NEWTON_ROOT1, z - NEWTON_ROOT1) < 1e-12) { rootIdx = 1; break; }
+      if (dot(z - NEWTON_ROOT2, z - NEWTON_ROOT2) < 1e-12) { rootIdx = 2; break; }
+    }
   }
 
   if (u_testMode) {

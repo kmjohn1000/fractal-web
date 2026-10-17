@@ -471,16 +471,20 @@ function perturbationEligibleType(state) {
 // Fixed point also only pays off where its fixed 2^-48 step is finer than
 // float32's ~|c| * 2^-23: within ~3e-8 of 0 float32 is the finer one (a
 // dive centered 1e-16 from 0 went blank at 2e-19 in fixed point).
+// The shader also needs |c| < 100 (its first 1/z keeps |z|^2 inside the
+// fixed-point range; far out, the basins are plain sectors anyway).
 const NEWTON_FLOAT32_REACH = 1000;
 function newtonDeepEligible(state) {
   const r = Math.hypot(state.cx, state.cy);
   return state.ftype === FTYPE.NEWTON && state.scale < DEEP_ZOOM_THRESHOLD
-    && r > NEWTON_FLOAT32_REACH * state.scale && r * 2 ** -23 > 2 ** -48;
+    && r > NEWTON_FLOAT32_REACH * state.scale && r * 2 ** -23 > 2 ** -48 && r < 100;
 }
 
-// A float64 value as NEWTON_DEEP_FRAG_SRC's 16.48 fixed point: four 16-bit
-// limbs of the two's-complement integer round(x * 2^48), most significant
-// first. Exact for every float64 the views use (|x| < 2^15, rounded to 2^-48).
+// A float64 value as the deep shaders' 16.48 fixed point: four 16-bit limbs
+// of the two's-complement integer round(x * 2^48), most significant first.
+// Exact for |x| < 2^15 (rounded to 2^-48); the eligibility checks keep every
+// value passed here inside FIXED_RANGE, so it never wraps or overflows.
+const FIXED_RANGE = 2 ** 14;
 function fixedLimbs(x) {
   let b = BigInt(Math.round(x * 2 ** 48));
   if (b < 0n) b += 1n << 64n;
@@ -492,9 +496,14 @@ const FIXED_THIRD = (() => {
 })();
 
 // Phoenix's deep zoom (PHOENIX_DEEP_FRAG_SRC: float32 perturbation, exact
-// fixed point for glitched pixels), in both modes.
+// fixed point for glitched pixels), in both modes. Plain float32 stays sharp
+// down to ~1e-4, and it renders live during gestures with full refinement,
+// so Phoenix switches later than the perturbation types' 1e-3.
+const PHOENIX_DEEP_THRESHOLD = 1e-4;
 function phoenixDeepEligible(state) {
-  return state.ftype === FTYPE.PHOENIX && state.scale < DEEP_ZOOM_THRESHOLD;
+  const inRange = (v) => Math.abs(v) < FIXED_RANGE;
+  return state.ftype === FTYPE.PHOENIX && state.scale < PHOENIX_DEEP_THRESHOLD
+    && inRange(state.cx) && inRange(state.cy) && inRange(state.juliaC[0]) && inRange(state.juliaC[1]);
 }
 // Phoenix deep frames are ~10x a float32 frame, so refinement stops at this
 // many samples instead of SAMPLE_COUNT.
@@ -926,31 +935,40 @@ function createFractalRenderer(canvas) {
   // a deep view where float32 gets every pixel wrong and checks each pixel's
   // root and iteration count against float64. The real frame drawn right
   // after covers the corner.
+  // Two views: one far from the pole, and one ~0.01 from it, where orbits
+  // pass close to 0 and run in u = 1/z (a version without u-mode passed the
+  // far view and got 5% of the near one).
+  const NEWTON_TEST_VIEWS = [
+    { cx: 0.4637970443508781, cy: 0.6374591385438365, scale: 1e-9, rotation: 0, maxIter: 300 },
+    { cx: 0.008882243030414086, cy: 0.004594100428665051, scale: 1e-9, rotation: 0, maxIter: 300 },
+  ];
   function newtonDeepSelfTest() {
     const n = 16;
-    const view = { cx: 0.4637970443508781, cy: 0.6374591385438365, scale: 1e-9, rotation: 0, maxIter: 300 };
-    setNewtonDeepUniforms(view, n, n, [0, 0]);
-    gl.uniform1i(newtonDeep.u.testMode, 1);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.viewport(0, 0, n, n);
-    gl.disable(gl.BLEND);
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
-    const px = new Uint8Array(n * n * 4);
-    gl.readPixels(0, 0, n, n, gl.RGBA, gl.UNSIGNED_BYTE, px);
-    gl.uniform1i(newtonDeep.u.testMode, 0);
-    gl.viewport(0, 0, canvas.width, canvas.height);
-    let ok = 0;
-    for (let y = 0; y < n; y++) {
-      for (let x = 0; x < n; x++) {
-        const uvx = (x + 0.5 - 0.5 * n) / n, uvy = (y + 0.5 - 0.5 * n) / n;
-        const ref = newtonOrbitF64(view.cx + uvx * view.scale * 2, view.cy + uvy * view.scale * 2, view.maxIter);
-        const i = (y * n + x) * 4;
-        const used = px[i] + 256 * px[i + 1], root = px[i + 2] - 1;
-        if (root === ref.root && Math.abs(used - ref.used) <= 1) ok++;
+    for (const view of NEWTON_TEST_VIEWS) {
+      setNewtonDeepUniforms(view, n, n, [0, 0]);
+      gl.uniform1i(newtonDeep.u.testMode, 1);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, n, n);
+      gl.disable(gl.BLEND);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+      const px = new Uint8Array(n * n * 4);
+      gl.readPixels(0, 0, n, n, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      gl.uniform1i(newtonDeep.u.testMode, 0);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      let ok = 0;
+      for (let y = 0; y < n; y++) {
+        for (let x = 0; x < n; x++) {
+          const uvx = (x + 0.5 - 0.5 * n) / n, uvy = (y + 0.5 - 0.5 * n) / n;
+          const ref = newtonOrbitF64(view.cx + uvx * view.scale * 2, view.cy + uvy * view.scale * 2, view.maxIter);
+          const i = (y * n + x) * 4;
+          const used = px[i] + 256 * px[i + 1], root = px[i + 2] - 1;
+          if (root === ref.root && Math.abs(used - ref.used) <= 1) ok++;
+        }
       }
+      // 98-100% agreed in testing; float32 gets 0-5%.
+      if (ok < 0.9 * n * n) return false;
     }
-    // 99.8% agreed in testing; float32 gets 0%.
-    return ok >= 0.95 * n * n;
+    return true;
   }
 
   // Phoenix's deep zoom (PHOENIX_DEEP_FRAG_SRC), same lifecycle as Newton's.
@@ -1217,6 +1235,7 @@ function createFractalRenderer(canvas) {
     // Until its first use, an optimistic yes on WebGL2 (see newtonDeep).
     get newtonDeepSupported() { return newtonDeep !== false; },
     get phoenixDeepSupported() { return phoenixDeep !== false; },
+    webgl2: isWebGL2,
     get dpr() { return dpr; },
   };
 }
@@ -1694,11 +1713,16 @@ function updateHud() {
   } else if (lastMainDeepPath) {
     precision = `${lastMainDeepPath} (deep zoom)`;
   } else if (s.scale < DEEP_ZOOM_THRESHOLD) {
+    // Newton near 0 and Phoenix above 1e-4 are float32 by design (see
+    // newtonDeepEligible, PHOENIX_DEEP_THRESHOLD); past that, say why the
+    // fixed-point path isn't drawing.
+    const fixedReason = mainRenderer.webgl2
+      ? "float32 (deep zoom unavailable: failed its self-test on this device)"
+      : "float32 (deep zoom unavailable: needs WebGL2)";
     if (s.ftype === FTYPE.NEWTON) {
-      // Near 0, float32 is exact anyway (see newtonDeepEligible).
-      if (newtonDeepEligible(s)) precision = "float32 (deep zoom unavailable: needs WebGL2)";
+      if (newtonDeepEligible(s)) precision = fixedReason;
     } else if (s.ftype === FTYPE.PHOENIX) {
-      precision = "float32 (deep zoom unavailable: needs WebGL2)";
+      if (phoenixDeepEligible(s)) precision = fixedReason;
     } else if (!mainRenderer.perturbationSupported) {
       precision = "float32 (deep zoom unavailable: no float texture support)";
     } else if (!eligibleType) {
@@ -3463,8 +3487,9 @@ function parseShareHash(hash) {
         cm: cmIndex(), dual: false };
       if (p.get("d") === "1" && FRACTAL_CONFIGS[name].dual) {
         st.dual = true;
-        st.julia = { juliaC: [num("jcx"), num("jcy")], cx: num("jx"), cy: num("jy"), scale: num("js", pos),
-          rotation: normalizeAngle(num("jr", big)), maxIter: int("ji", 50, 2000), baseScale: num("jb", pos) };
+        st.julia = { juliaC: [num("jcx", big), num("jcy", big)], cx: num("jx", big), cy: num("jy", big),
+          scale: num("js", (v) => pos(v) && big(v)), rotation: normalizeAngle(num("jr", big)),
+          maxIter: int("ji", 50, 2000), baseScale: num("jb", (v) => pos(v) && big(v)) };
       }
       return st;
     }
