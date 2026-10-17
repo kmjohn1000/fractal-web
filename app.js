@@ -102,6 +102,9 @@ const TELEPORT_DESTINATIONS = [
   // Pinwheel is the user's place as well, framed as given: dendrite arms
   // spiraling around one center.
   { fractal: "Mandelbrot", label: "Pinwheel", re: "-0.5360670633819427", im: "-0.5255257785409202", scale: 5.1991824685514734e-9, rotation: 0 },
+  // Sunburst Fan, also the user's, framed as given: rows of filament arms
+  // fanning out from a hub, ~7e-12 deep, near the perturbation path's limit.
+  { fractal: "Mandelbrot", label: "Sunburst Fan", re: "0.33698444648740383", im: "0.048778219678026105", scale: 7.178441004711243e-12, rotation: 0 },
   // Burning Ship is drawn in math orientation (+im up), which hangs every
   // ship's masts below its hull; rotation (radians, optional) turns the
   // landed view ship-side up. A half turn also mirrors left-right compared

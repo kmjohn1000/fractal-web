@@ -76,7 +76,7 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       (state in float textures, see the Later item) instead of one long
       loop per pixel
 - [ ] Listing copy: the 1.30.0 listing files still say 31 places; it's
-      56 as of 1.33.2 (description, What's New, promo text and caption)
+      57 as of 1.33.3 (description, What's New, promo text and caption)
 - [ ] Playful Surprise-me ideas (same research, 2026-10-15):
       - Top 3:
         - Rare "golden" places drawn about 1 in 15 taps, with a gold "Rare
