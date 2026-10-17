@@ -408,10 +408,14 @@ function perturbationEligibleType(state) {
 // center c to ~|c| * 1e-7, so a view within NEWTON_FLOAT32_REACH half-heights
 // of 0 still renders exactly in float32 -- Pole Star's dive into 0 stays on
 // that path the whole way down, with the live frames its spin needs.
+// Fixed point also only pays off where its fixed 2^-48 step is finer than
+// float32's ~|c| * 2^-23: within ~3e-8 of 0 float32 is the finer one (a
+// dive centered 1e-16 from 0 went blank at 2e-19 in fixed point).
 const NEWTON_FLOAT32_REACH = 1000;
 function newtonDeepEligible(state) {
+  const r = Math.hypot(state.cx, state.cy);
   return state.ftype === FTYPE.NEWTON && state.scale < DEEP_ZOOM_THRESHOLD
-    && Math.hypot(state.cx, state.cy) > NEWTON_FLOAT32_REACH * state.scale;
+    && r > NEWTON_FLOAT32_REACH * state.scale && r * 2 ** -23 > 2 ** -48;
 }
 
 // A float64 value as NEWTON_DEEP_FRAG_SRC's 16.48 fixed point: four 16-bit

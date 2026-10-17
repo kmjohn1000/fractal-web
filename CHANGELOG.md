@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.33.4 — 2026-10-16
+- Fixed: zooming Newton's method extremely deep right next to its center (past about 10⁻¹⁵) went blank since 1.33.0. There it uses its regular math again, which is sharper that close to the center.
+
 ## 1.33.3 — 2026-10-16
 - Surprise me on the Mandelbrot set: Sunburst Fan, rows of filament arms fanning out from a hub, over 100 billion times deep (57 places in all).
 

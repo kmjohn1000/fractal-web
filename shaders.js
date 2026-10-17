@@ -533,24 +533,17 @@ void main() {
 }
 `;
 
-// ---------------------------------------------------------------- Newton deep zoom
-// Newton's map isn't an escape-time iteration, so perturbation doesn't apply;
-// below the deep-zoom threshold (away from the origin, see
-// newtonDeepEligible in app.js) it runs in exact 16.48 fixed point instead:
-// a value is a 64-bit two's-complement integer over 2^48, kept as four
-// 16-bit limbs in a uvec4, .x most significant. 16x16-bit partial products
-// fit a 32-bit uint exactly, so every operation is exact integer math,
-// which no compiler optimization can change -- unlike the dual-float
-// tricks (see the comment above FRAG_SRC). Resolution is 2^-48 (~3.6e-15),
-// so views stay sharp to a scale of ~1e-11. Measured on an iPhone 15: ~12 ms
-// per 256x256 pass at 1e-9, about 0.2 s full screen. Phoenix in the same
-// fixed point was ~20x slower, too slow to ship.
-//
-// Near the pole at 0 the 1/z^2 term outgrows the 16-bit integer part, so a
-// pixel whose orbit gets within 1/64 of 0 (or past |z| = 128) finishes in
-// float32 -- which is accurate there: values near 0 have no large integer
-// part eating their precision, which is also why Pole Star's dive stays on
-// the plain float32 path.
+// ---------------------------------------------------------------- fixed-point deep zoom
+// Newton and Phoenix have no perturbation path of the kind above (Newton
+// isn't escape-time; Phoenix's two-term recurrence can't rebase), so their
+// deep views use exact 16.48 fixed point (WebGL2 only): a value is a 64-bit
+// two's-complement integer over 2^48, kept as four 16-bit limbs in a uvec4,
+// .x most significant. 16x16-bit partial products fit a 32-bit uint
+// exactly, so every operation is exact integer math, which no compiler
+// optimization can change -- unlike the dual-float tricks (see the comment
+// above FRAG_SRC). Resolution is 2^-48 (~3.6e-15), so views stay sharp to a
+// scale of ~1e-11. The integer part is 16 bits (|x| < 32768), so callers
+// keep values well inside that.
 const VERT_SRC_300 = `#version 300 es
 in vec2 a_pos;
 void main() {
@@ -558,29 +551,10 @@ void main() {
 }
 `;
 
-const NEWTON_DEEP_FRAG_SRC = `#version 300 es
-precision highp float;
-precision highp int;
-
-uniform vec2  u_resolution;
-uniform vec2  u_jitter;
-uniform float u_rotCos;
-uniform float u_rotSin;
-uniform float u_scale;
-uniform int   u_maxIter;
-uniform uvec4 u_cx;      // view center, fixed point (fixedLimbs in app.js)
-uniform uvec4 u_cy;
-uniform uvec4 u_third;   // 1/3 in fixed point
-// Self-test output (see newtonDeepSelfTest in app.js): iteration count and
-// root as bytes instead of a color.
-uniform bool  u_testMode;
-uniform sampler2D u_lut;
-out vec4 fragColor;
-
+// Shared by NEWTON_DEEP_FRAG_SRC and PHOENIX_DEEP_FRAG_SRC, which declare
+// u_lut before including it.
+const FIXED_POINT_GLSL = `
 const uint M = 0xFFFFu;
-const vec2 NEWTON_ROOT0 = vec2( 1.0,  0.0);
-const vec2 NEWTON_ROOT1 = vec2(-0.5,  0.8660254037844386);
-const vec2 NEWTON_ROOT2 = vec2(-0.5, -0.8660254037844386);
 
 uvec4 fxAdd(uvec4 a, uvec4 b) {
   uint w = a.w + b.w; uint c = w >> 16u; w &= M;
@@ -592,6 +566,11 @@ uvec4 fxAdd(uvec4 a, uvec4 b) {
 uvec4 fxNeg(uvec4 a) { return fxAdd(a ^ uvec4(M), uvec4(0u, 0u, 0u, 1u)); }
 bool fxIsNeg(uvec4 a) { return (a.x & 0x8000u) != 0u; }
 uvec4 fxAbs(uvec4 a) { return fxIsNeg(a) ? fxNeg(a) : a; }
+// a / 2, rounding toward -infinity (arithmetic shift).
+uvec4 fxHalf(uvec4 a) {
+  return uvec4((a.x >> 1u) | (a.x & 0x8000u), (a.y >> 1u) | ((a.x & 1u) << 15u),
+               (a.z >> 1u) | ((a.y & 1u) << 15u), (a.w >> 1u) | ((a.z & 1u) << 15u));
+}
 
 // |a| * |b| >> 48: column sums of the 16 partial products' 16-bit halves
 // (each column well under 2^32), then one carry pass. Truncates the bits
@@ -638,7 +617,41 @@ vec3 lutColor(float t) {
   float u = abs(t - 1.0) < 1e-5 ? 255.5 / 256.0 : fract(t);
   return texture(u_lut, vec2(u, 0.5)).rgb;
 }
+`;
 
+// Newton: below the deep-zoom threshold and away from the origin (see
+// newtonDeepEligible in app.js). Measured on an iPhone 15: ~12 ms per
+// 256x256 pass at 1e-9, about 0.2 s full screen.
+//
+// Near the pole at 0 the 1/z^2 term outgrows the 16-bit integer part, so a
+// pixel whose orbit gets within 1/64 of 0 (or past |z| = 128) finishes in
+// float32 -- which is accurate there: values near 0 have no large integer
+// part eating their precision, which is also why Pole Star's dive stays on
+// the plain float32 path.
+
+const NEWTON_DEEP_FRAG_SRC = `#version 300 es
+precision highp float;
+precision highp int;
+
+uniform vec2  u_resolution;
+uniform vec2  u_jitter;
+uniform float u_rotCos;
+uniform float u_rotSin;
+uniform float u_scale;
+uniform int   u_maxIter;
+uniform uvec4 u_cx;      // view center, fixed point (fixedLimbs in app.js)
+uniform uvec4 u_cy;
+uniform uvec4 u_third;   // 1/3 in fixed point
+// Self-test output (see newtonDeepSelfTest in app.js): iteration count and
+// root as bytes instead of a color.
+uniform bool  u_testMode;
+uniform sampler2D u_lut;
+out vec4 fragColor;
+
+const vec2 NEWTON_ROOT0 = vec2( 1.0,  0.0);
+const vec2 NEWTON_ROOT1 = vec2(-0.5,  0.8660254037844386);
+const vec2 NEWTON_ROOT2 = vec2(-0.5, -0.8660254037844386);
+${FIXED_POINT_GLSL}
 void main() {
   vec2 uv = (gl_FragCoord.xy + u_jitter - 0.5 * u_resolution) / u_resolution.y;
   uv = vec2(uv.x * u_rotCos - uv.y * u_rotSin, uv.x * u_rotSin + uv.y * u_rotCos);
