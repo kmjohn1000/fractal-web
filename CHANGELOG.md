@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.35.3 — 2026-10-16
+- Surprise me: Elephant Valley lands upside down, so the elephants march along the top of the set; Cauliflower is zoomed out so the whole shape fits on a phone; Bird's Eye and Butterfly Crest are zoomed out a little to show more around them.
+
 ## 1.35.2 — 2026-10-16
 - If the browser has turned graphics off for the page (iOS Safari can do this for a while after a graphics crash), the app now says so and how to recover, instead of showing "Error: null".
 

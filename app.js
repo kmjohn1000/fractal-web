@@ -79,7 +79,7 @@ function slugify(text) {
 // 1.032247108923i), shifted onto its body's visual center.
 const TELEPORT_DESTINATIONS = [
   { fractal: "Mandelbrot", label: "Seahorse Valley", re: "-0.743643887037151", im: "0.131825904205330", scale: 4e-10 },
-  { fractal: "Mandelbrot", label: "Elephant Valley", re: "0.2825", im: "0.0105", scale: 1.2e-2 },
+  { fractal: "Mandelbrot", label: "Elephant Valley", re: "0.2825", im: "0.0105", scale: 1.2e-2, rotation: Math.PI },
   { fractal: "Mandelbrot", label: "Mini Mandelbrot", re: "-1.749003357223038", im: "0.0", scale: 1.5e-12 },
   { fractal: "Mandelbrot", label: "Spiral Cluster", re: "-0.7451580638016195553", im: "0.1125749162054165212", scale: 1e-3 },
   { fractal: "Mandelbrot", label: "Double Spiral", re: "-0.774931608855056", im: "-0.13706041846077", scale: 1e-8 },
@@ -90,15 +90,16 @@ const TELEPORT_DESTINATIONS = [
   // Starburst is Frond Thicket's spot ~1000x deeper, framed by the user; its
   // rotation keeps their framing.
   { fractal: "Mandelbrot", label: "Starburst", re: "-0.16070135134000138", im: "1.0375666168602689", scale: 5.107413907207074e-10, rotation: -1.6580627893946112 },
-  // Bird's Eye is the user's place, framed exactly as they gave it (not
-  // recentered on the eye). maxIter (optional) lands with detail locked
+  // Bird's Eye is the user's place, centered as they gave it (not recentered
+  // on the eye) and zoomed out 1.5x at their request. maxIter (optional)
+  // lands with detail locked
   // there instead of auto: auto gives ~1400 here, which leaves a much
   // bigger black hole in the eye than the 2000 maximum does.
-  { fractal: "Mandelbrot", label: "Bird's Eye", re: "-0.7499608238178327", im: "0.010995666098898458", scale: 5.59389760808153e-6, rotation: 0, maxIter: 2000 },
-  // Butterfly Crest is the user's place too, framed as they gave it: a
-  // minibrot in its halo on the real axis, ringed by mirrored butterfly and
-  // seahorse curls.
-  { fractal: "Mandelbrot", label: "Butterfly Crest", re: "-1.7498024610968186", im: "-4.2378297315393065e-11", scale: 4.9499706813632855e-8, rotation: 0 },
+  { fractal: "Mandelbrot", label: "Bird's Eye", re: "-0.7499608238178327", im: "0.010995666098898458", scale: 8.4e-6, rotation: 0, maxIter: 2000 },
+  // Butterfly Crest is the user's place too, centered as they gave it and
+  // zoomed out 1.5x at their request: a minibrot in its halo on the real
+  // axis, ringed by mirrored butterfly and seahorse curls.
+  { fractal: "Mandelbrot", label: "Butterfly Crest", re: "-1.7498024610968186", im: "-4.2378297315393065e-11", scale: 7.4e-8, rotation: 0 },
   // Pinwheel is the user's place as well, framed as given: dendrite arms
   // spiraling around one center.
   { fractal: "Mandelbrot", label: "Pinwheel", re: "-0.5360670633819427", im: "-0.5255257785409202", scale: 5.1991824685514734e-9, rotation: 0 },
@@ -109,7 +110,7 @@ const TELEPORT_DESTINATIONS = [
   // a portrait phone): Cauliflower and Twin Medallions are embedded Julia
   // sets from mrob.com's Mandelbrot glossary, Sea Urchin a minibrot in
   // radiating filaments, Cross Medallion mrob's "branch medallion".
-  { fractal: "Mandelbrot", label: "Cauliflower", re: "-1.74876455", im: "0", scale: 1.2e-5 },
+  { fractal: "Mandelbrot", label: "Cauliflower", re: "-1.74876455", im: "0", scale: 1.6e-5 },
   { fractal: "Mandelbrot", label: "Twin Medallions", re: "-1.768620774", im: "0.002428273", scale: 4.5e-6 },
   { fractal: "Mandelbrot", label: "Sea Urchin", re: "0.370624233423", im: "-0.670428331878", scale: 1e-6 },
   { fractal: "Mandelbrot", label: "Cross Medallion", re: "-1.7576852691", im: "0.0176750996", scale: 1.9e-7 },
