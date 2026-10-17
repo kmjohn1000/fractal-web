@@ -2,6 +2,11 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.36.0 — 2026-10-17
+- New fractal: the Apollonian gasket, circles packed inside circles, made by repeatedly reflecting through four circles. It zooms as deep as the Sierpinski gasket, about a quadrillion times.
+- Its info card names the curvature of the circle under the center: in this packing every circle's curvature is a whole number.
+- Six Surprise-me places for it, including Golden Dive, a point whose view repeats every 17.9× of zoom, 460 billion times deep.
+
 ## 1.35.4 — 2026-10-16
 - Surprise me on the Tricorn: Antenna Talons and Baby Tricorn are recentered and zoomed out so the whole shape fits on a phone, tails included.
 

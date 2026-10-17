@@ -11,7 +11,8 @@ same commit. The Key column is the `FRACTAL_CONFIGS` key (share-link `f=`) or
 the `EXTRA_MODES` key (share-link `m=`), so rows stay matched to the code
 even if display labels change.
 
-Last verified: 2026-10-13 (all 23 entries; see "Verifying" below).
+Last verified: 2026-10-13 (all 23 entries then; Apollonian added and
+verified 2026-10-17; see "Verifying" below).
 
 ## Links
 
@@ -35,6 +36,7 @@ broader article, **None** = no suitable article, hide the link.
 | `Newton z³` | Newton's method | https://en.wikipedia.org/wiki/Newton_fractal | Article | |
 | `Carpet` | Sierpinski carpet | https://en.wikipedia.org/wiki/Sierpi%C5%84ski_carpet | Article | |
 | `Gasket` | Sierpinski gasket | https://en.wikipedia.org/wiki/Sierpi%C5%84ski_triangle | Article | "Sierpiński gasket" redirects here |
+| `Apollonian` | Apollonian gasket | https://en.wikipedia.org/wiki/Apollonian_gasket | Article | Its "Integral Apollonian circle packings" section pictures the app's (−1, 2, 2, 3) packing |
 
 ### Pattern modes (`EXTRA_MODES`)
 
