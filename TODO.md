@@ -426,6 +426,19 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       content, not awareness promos, so the event needs a real seasonal
       feature, e.g. snowfall on the Koch view; approval isn't
       guaranteed. Submit in November to start Dec 1
+- [ ] Sharper picker thumbnails (2026-10-17): icons/thumbs/*.webp are
+      192px, but a picker tile is ~110pt wide on a 393pt phone, ~330
+      device px at 3x, so they're upscaled ~1.7x. (Checked against
+      index.html 2026-10-17: the panel's content box is 347pt after the
+      10px insets, 1px border and 12px padding, and `minmax(96px, 1fr)`
+      with 10px gaps gives 3 columns of 109pt.) Render at 384px in
+      scripts/render_thumbs.mjs (`SIZE`; its "2x a ~96px tile" comment
+      is stale) (the whole set is ~180 KB today; expect several times
+      that). SVG was considered and rejected: 13 of 23 are escape-time
+      renders with no vector form, and the fern is 1M points. Optional
+      later: thumbnails that follow the current colormap, by storing
+      grayscale iteration maps and colorizing them with the LUT when the
+      picker opens.
 
 ## Later — big bets
 Flexible scope and timing. Chains: new types → formula editor → Fractint importer;
