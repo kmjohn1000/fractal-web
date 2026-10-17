@@ -703,3 +703,140 @@ void main() {
   fragColor = vec4(lutColor(t), 1.0);
 }
 `;
+
+// Phoenix (z' = z^2 + c + p*z_prev) deep zoom, both parameter space and
+// Julia mode, below the deep-zoom threshold (phoenixDeepEligible in app.js).
+// All-fixed-point Phoenix was exact but ~20x too slow on an iPhone 15, and
+// its long draws made the phone drop the WebGL context. So each pixel runs
+// the cheap float32 perturbation delta first,
+//   d' = 2*Z*d + d^2 + dc + p*d_prev,
+// against one float64 reference orbit Z (u_ref row 0, see
+// phoenixReference in app.js), and only a pixel that glitches -- its value
+// Z+d smaller than d, the point where a delta stops being small -- or that
+// outlives the reference switches to exact fixed point. It switches from
+// Z[m] + d, which is exact at that moment because u_ref rows 1-2 hold Z[m]
+// as fixed-point limbs. Phoenix can't rebase like renderEscapePerturbation
+// (it would need z AND z_prev near the reference's start), which is why the
+// fallback is fixed point. On an iPhone 15 this matched float64 on 100% of
+// pixels at 1e-9, ~0.3 s full screen at maxIter 2000.
+//
+// The exact stretch runs until |z| > 8 (no overflow risk: |z^2 + c + p z| <
+// 100), then float32 finishes the escape, where precision no longer matters.
+// u_exactCap bounds each pixel's exact steps so no draw runs long enough to
+// trip the GPU watchdog; a pixel past the cap finishes in float32.
+// Assumes PHOENIX_P = (-0.5, 0): p*z_prev is a halving and a negation.
+const PHOENIX_DEEP_FRAG_SRC = `#version 300 es
+precision highp float;
+precision highp int;
+
+uniform vec2  u_resolution;
+uniform vec2  u_jitter;
+uniform float u_rotCos;
+uniform float u_rotSin;
+uniform float u_scale;
+uniform int   u_maxIter;
+uniform bool  u_isJulia;
+uniform uvec4 u_cx;          // view center, fixed point
+uniform uvec4 u_cy;
+uniform uvec4 u_jcx;         // Julia mode's c, fixed point
+uniform uvec4 u_jcy;
+uniform highp sampler2D u_ref;
+uniform int   u_refLen;
+uniform vec2  u_refOff;      // reference point minus view center
+uniform int   u_exactCap;
+uniform bool  u_testMode;    // iteration count and escape as bytes (phoenixDeepSelfTest)
+uniform sampler2D u_lut;
+out vec4 fragColor;
+
+const float P = -0.5;
+// Must match ESCAPE_RADIUS_SQ in FRAG_SRC.
+const float ESCAPE_RADIUS_SQ = 65536.0;
+${FIXED_POINT_GLSL}
+// Must match escapeColor in FRAG_SRC (Phoenix is power 2: log base 2).
+vec3 escapeColor(int iter, vec2 z) {
+  float n = max(float(iter) + 1.0 - log2(log2(sqrt(dot(z, z)))), 0.0);
+  return lutColor(n * 0.025);
+}
+
+vec2 cMul(vec2 a, vec2 b) {
+  return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
+}
+vec2 refZ(int m) { return texelFetch(u_ref, ivec2(m, 0), 0).xy; }
+uvec4 refLimbs(int m, int row) {
+  vec4 t = texelFetch(u_ref, ivec2(m, row), 0);
+  return uvec4(uint(t.x), uint(t.y), uint(t.z), uint(t.w));
+}
+
+vec4 result(int iter, bool escaped, vec2 z) {
+  if (u_testMode) {
+    float it = float(iter);
+    return vec4(mod(it, 256.0) / 255.0, floor(it / 256.0) / 255.0, escaped ? 1.0 / 255.0 : 0.0, 1.0);
+  }
+  return vec4(escaped ? escapeColor(iter, z) : vec3(0.0), 1.0);
+}
+
+void main() {
+  vec2 uv = (gl_FragCoord.xy + u_jitter - 0.5 * u_resolution) / u_resolution.y;
+  uv = vec2(uv.x * u_rotCos - uv.y * u_rotSin, uv.x * u_rotSin + uv.y * u_rotCos);
+  vec2 off = uv * u_scale * 2.0;
+  vec2 rel = off - u_refOff;
+  // Parameter mode: the offset is in c, z starts at 0 like the reference.
+  // Julia mode: c is fixed and the offset is in the starting z.
+  vec2 dc = u_isJulia ? vec2(0.0) : rel;
+  vec2 d = u_isJulia ? rel : vec2(0.0);
+  vec2 dp = vec2(0.0);
+  vec2 Z = refZ(0);
+  int m = 0;
+  int i = 0;
+  bool glitched = false;
+  for (; i < 2000; i++) {
+    if (i >= u_maxIter) break;
+    vec2 dn = 2.0 * cMul(Z, d) + cMul(d, d) + dc + P * dp;
+    dp = d;
+    d = dn;
+    m++;
+    Z = refZ(m);
+    vec2 full = Z + d;
+    float f2 = dot(full, full);
+    if (f2 > ESCAPE_RADIUS_SQ) { fragColor = result(i, true, full); return; }
+    // Stop before the reference's last (escaped, possibly huge) point, so
+    // its limbs are always in fixed-point range.
+    if (f2 < dot(d, d) || m >= u_refLen - 2) { glitched = true; break; }
+  }
+  if (!glitched) { fragColor = result(u_maxIter - 1, false, vec2(0.0)); return; }
+
+  // Exact from here: z = Z[m] + d, z_prev = Z[m-1] + dp, c = center + offset.
+  uvec4 zx = fxAdd(refLimbs(m, 1), fxFromFloat(d.x));
+  uvec4 zy = fxAdd(refLimbs(m, 2), fxFromFloat(d.y));
+  uvec4 zpx = fxAdd(refLimbs(m - 1, 1), fxFromFloat(dp.x));
+  uvec4 zpy = fxAdd(refLimbs(m - 1, 2), fxFromFloat(dp.y));
+  uvec4 cx = u_isJulia ? u_jcx : fxAdd(u_cx, fxFromFloat(off.x));
+  uvec4 cy = u_isJulia ? u_jcy : fxAdd(u_cy, fxFromFloat(off.y));
+  vec2 z = vec2(fxToFloat(zx), fxToFloat(zy));
+  i++;
+  for (int k = 0; k < 2000; k++) {
+    if (i >= u_maxIter || k >= u_exactCap || dot(z, z) > 64.0) break;
+    uvec4 re = fxAdd(fxMul(zx, zx), fxNeg(fxMul(zy, zy)));
+    uvec4 xy = fxMul(zx, zy);
+    uvec4 nx = fxAdd(re, fxAdd(cx, fxNeg(fxHalf(zpx))));
+    uvec4 ny = fxAdd(fxAdd(xy, xy), fxAdd(cy, fxNeg(fxHalf(zpy))));
+    zpx = zx; zpy = zy; zx = nx; zy = ny;
+    z = vec2(fxToFloat(zx), fxToFloat(zy));
+    if (dot(z, z) > ESCAPE_RADIUS_SQ) { fragColor = result(i, true, z); return; }
+    i++;
+  }
+
+  // float32 for the rest: the escape from |z| > 8, or past u_exactCap.
+  vec2 zp = vec2(fxToFloat(zpx), fxToFloat(zpy));
+  vec2 c = vec2(fxToFloat(cx), fxToFloat(cy));
+  for (int k = 0; k < 2000; k++) {
+    if (i >= u_maxIter) break;
+    vec2 zn = cMul(z, z) + c + P * zp;
+    zp = z;
+    z = zn;
+    if (dot(z, z) > ESCAPE_RADIUS_SQ) { fragColor = result(i, true, z); return; }
+    i++;
+  }
+  fragColor = result(u_maxIter - 1, false, vec2(0.0));
+}
+`;

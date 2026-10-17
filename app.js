@@ -130,8 +130,8 @@ const TELEPORT_DESTINATIONS = [
   { fractal: "Tricorn", label: "Antenna Talons", re: "-1.9990956613", im: "0.0", scale: 6.75e-7 },
   { fractal: "Tricorn", label: "Flame Minibrot", re: "-1.9997740533", im: "0.0", scale: 3e-8 },
   // The Phoenix Julia set is mirror-symmetric top to bottom, so every place
-  // is in the upper lobe. Phoenix has no perturbation path: float32 blurs
-  // below a scale of ~1e-4, so Ember Spiral (5e-4) is as deep as it goes.
+  // is in the upper lobe. These were picked when Phoenix stopped at ~1e-4
+  // in float32; since 1.34.0 it zooms deeper (phoenixDeepEligible).
   { fractal: "Julia:Phoenix", label: "Flame Column", re: "-0.47", im: "1.07", scale: 0.25 },
   { fractal: "Julia:Phoenix", label: "Firebird Isle", re: "-0.6457", im: "0.8416", scale: 5e-2, rotation: Math.PI / 2 },
   { fractal: "Julia:Phoenix", label: "Fire Seahorse", re: "0.315", im: "0.612", scale: 4.5e-2 },
@@ -172,8 +172,8 @@ const TELEPORT_DESTINATIONS = [
   { fractal: "Multibrot³", label: "Twin-Disk Minibrot", re: "0.6", im: "0.6847", scale: 2.5e-2 },
   { fractal: "Multibrot³", label: "Seahorse Curl", re: "0.1854", im: "0.8406", scale: 4e-3 },
   { fractal: "Multibrot³", label: "Spiral Galaxy", re: "0.2203299273540233", im: "1.1863292989343286", scale: 1e-5 },
-  // Phoenix has no perturbation, so these stay at or above 3e-3. Whirlpool
-  // is centered on its spiral's eye.
+  // Chosen at or above 3e-3, Phoenix's old float32 floor (it zooms deeper
+  // since 1.34.0). Whirlpool is centered on its spiral's eye.
   { fractal: "Phoenix", label: "Whirlpool", re: "-0.60463", im: "0.49775", scale: 3e-3 },
   { fractal: "Phoenix", label: "Firebird", re: "-1.902", im: "0", scale: 8e-3 },
   { fractal: "Phoenix", label: "Ember Swarm", re: "-0.3599", im: "0.6771", scale: 8e-3 },
@@ -430,6 +430,89 @@ const FIXED_THIRD = (() => {
   const b = (1n << 48n) / 3n;
   return [48n, 32n, 16n, 0n].map((s) => Number((b >> s) & 0xFFFFn));
 })();
+
+// Phoenix's deep zoom (PHOENIX_DEEP_FRAG_SRC: float32 perturbation, exact
+// fixed point for glitched pixels), in both modes.
+function phoenixDeepEligible(state) {
+  return state.ftype === FTYPE.PHOENIX && state.scale < DEEP_ZOOM_THRESHOLD;
+}
+// Phoenix deep frames are ~10x a float32 frame, so refinement stops at this
+// many samples instead of SAMPLE_COUNT.
+const PHOENIX_DEEP_SAMPLES = 4;
+// Exact steps per pixel before it finishes in float32: bounds a draw's
+// worst case (all-exact Phoenix lost the WebGL context on an iPhone 15).
+const PHOENIX_EXACT_CAP = 600;
+
+// One float64 Phoenix orbit from (zr, zi) with z_prev = 0: the escape
+// iteration (as the shaders count it), or Infinity if it never escapes.
+function phoenixEscapeF64(zr, zi, cr, ci, maxIter) {
+  const [pr0, pi0] = PHOENIX_P;
+  let pr = 0, pi = 0;
+  for (let n = 0; n < maxIter; n++) {
+    const nr = zr * zr - zi * zi + cr + pr0 * pr - pi0 * pi;
+    const ni = 2 * zr * zi + ci + pr0 * pi + pi0 * pr;
+    pr = zr; pi = zi; zr = nr; zi = ni;
+    if (zr * zr + zi * zi > ESCAPE_RADIUS_SQ) return n;
+  }
+  return Infinity;
+}
+
+// Phoenix's reference: like chooseReference, the view center if it never
+// escapes, else the longest-surviving point of a coarse grid. Returns its
+// offset from the center and its float64 orbit as a 3-row texture: row 0
+// Z as float32 (the delta step), rows 1-2 Z's x and y as fixed-point limbs
+// (the exact switch-over; 16-bit integers are exact in float32).
+function phoenixReference(state, widthPx, heightPx) {
+  const cFor = (pr, pi) => (state.isJulia ? state.juliaC : [pr, pi]);
+  const survive = (pr, pi) => {
+    const [cr, ci] = cFor(pr, pi);
+    return state.isJulia ? phoenixEscapeF64(pr, pi, cr, ci, state.maxIter) : phoenixEscapeF64(0, 0, cr, ci, state.maxIter);
+  };
+  let best = { dx: 0, dy: 0, iter: survive(state.cx, state.cy) };
+  if (best.iter !== Infinity) {
+    const rot = state.rotation || 0;
+    const rc = Math.cos(rot), rs = Math.sin(rot);
+    const halfW = 0.5 * widthPx / heightPx;
+    for (let gy = 0; gy < REFERENCE_GRID && best.iter !== Infinity; gy++) {
+      for (let gx = 0; gx < REFERENCE_GRID; gx++) {
+        const uvx = ((gx + 0.5) / REFERENCE_GRID * 2 - 1) * halfW;
+        const uvy = ((gy + 0.5) / REFERENCE_GRID * 2 - 1) * 0.5;
+        const dx = (uvx * rc - uvy * rs) * state.scale * 2.0;
+        const dy = (uvx * rs + uvy * rc) * state.scale * 2.0;
+        const iter = survive(state.cx + dx, state.cy + dy);
+        if (iter > best.iter) {
+          best = { dx, dy, iter };
+          if (iter === Infinity) break;
+        }
+      }
+    }
+  }
+  const rx = state.cx + best.dx, ry = state.cy + best.dy;
+  const [cr, ci] = cFor(rx, ry);
+  const [pr0, pi0] = PHOENIX_P;
+  let zr = state.isJulia ? rx : 0, zi = state.isJulia ? ry : 0, pr = 0, pi = 0;
+  const orbit = [zr, zi];
+  for (let n = 0; n < state.maxIter; n++) {
+    const nr = zr * zr - zi * zi + cr + pr0 * pr - pi0 * pi;
+    const ni = 2 * zr * zi + ci + pr0 * pi + pi0 * pr;
+    pr = zr; pi = zi; zr = nr; zi = ni;
+    orbit.push(zr, zi);
+    if (zr * zr + zi * zi > ESCAPE_RADIUS_SQ) break;
+  }
+  const len = orbit.length / 2;
+  const data = new Float32Array(len * 3 * 4);
+  for (let k = 0; k < len; k++) {
+    const x = orbit[2 * k], y = orbit[2 * k + 1];
+    data[k * 4] = x; data[k * 4 + 1] = y;
+    // The escaped last point can be past the fixed-point range; the shader
+    // never switches there (see PHOENIX_DEEP_FRAG_SRC).
+    if (Math.abs(x) < 2 ** 14 && Math.abs(y) < 2 ** 14) {
+      data.set(fixedLimbs(x), (len + k) * 4);
+      data.set(fixedLimbs(y), (2 * len + k) * 4);
+    }
+  }
+  return { dx: best.dx, dy: best.dy, len, data };
+}
 
 // Newton's map in float64, as the self-test's reference: iterations used and
 // root index (-1 if none), same loop as renderNewton/NEWTON_DEEP_FRAG_SRC.
@@ -810,6 +893,101 @@ function createFractalRenderer(canvas) {
     return ok >= 0.95 * n * n;
   }
 
+  // Phoenix's deep zoom (PHOENIX_DEEP_FRAG_SRC), same lifecycle as Newton's.
+  let phoenixDeep = isWebGL2 ? null : false;
+  const phoenixRefTex = isWebGL2 ? gl.createTexture() : null;
+  if (phoenixRefTex) {
+    gl.bindTexture(gl.TEXTURE_2D, phoenixRefTex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  }
+  let phoenixRefKey = "";
+  let phoenixRef = null;
+  function phoenixDeepProgram() {
+    if (phoenixDeep !== null) return phoenixDeep;
+    try {
+      const p = link(PHOENIX_DEEP_FRAG_SRC, VERT_SRC_300);
+      const names = ["resolution", "jitter", "rotCos", "rotSin", "scale", "maxIter", "isJulia", "cx", "cy",
+        "jcx", "jcy", "ref", "refLen", "refOff", "exactCap", "testMode", "lut"];
+      const pu = Object.fromEntries(names.map((n) => [n, gl.getUniformLocation(p, `u_${n}`)]));
+      phoenixDeep = { prog: p, u: pu };
+      if (!phoenixDeepSelfTest()) phoenixDeep = false;
+    } catch (e) {
+      console.warn("Phoenix deep zoom unavailable:", e);
+      phoenixDeep = false;
+    }
+    return phoenixDeep;
+  }
+
+  function setPhoenixDeepUniforms(state, w, h, jitter) {
+    const { u: pu } = phoenixDeep;
+    gl.useProgram(phoenixDeep.prog);
+    gl.uniform2f(pu.resolution, w, h);
+    gl.uniform2f(pu.jitter, jitter[0], jitter[1]);
+    const rot = state.rotation || 0;
+    gl.uniform1f(pu.rotCos, Math.cos(rot));
+    gl.uniform1f(pu.rotSin, Math.sin(rot));
+    gl.uniform1f(pu.scale, state.scale);
+    gl.uniform1i(pu.maxIter, state.maxIter | 0);
+    gl.uniform1i(pu.isJulia, state.isJulia ? 1 : 0);
+    gl.uniform4ui(pu.cx, ...fixedLimbs(state.cx));
+    gl.uniform4ui(pu.cy, ...fixedLimbs(state.cy));
+    gl.uniform4ui(pu.jcx, ...fixedLimbs(state.juliaC[0]));
+    gl.uniform4ui(pu.jcy, ...fixedLimbs(state.juliaC[1]));
+    gl.uniform1i(pu.exactCap, PHOENIX_EXACT_CAP);
+    // The reference orbit, recomputed only when the view changes (the
+    // refinement passes reuse it, as with refCacheKey).
+    const key = [state.cx, state.cy, state.scale, state.rotation || 0, state.maxIter, state.isJulia,
+      state.juliaC[0], state.juliaC[1], w, h].join(",");
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, phoenixRefTex);
+    if (key !== phoenixRefKey) {
+      phoenixRef = phoenixReference(state, w, h);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, phoenixRef.len, 3, 0, gl.RGBA, gl.FLOAT, phoenixRef.data);
+      phoenixRefKey = key;
+    }
+    gl.uniform1i(pu.ref, 2);
+    gl.uniform1i(pu.refLen, phoenixRef.len);
+    gl.uniform2f(pu.refOff, phoenixRef.dx, phoenixRef.dy);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, lutTex);
+    gl.uniform1i(pu.lut, 0);
+  }
+
+  // Same idea as newtonDeepSelfTest: a 16x16 corner of a deep parameter-
+  // space view where float32 gets ~half the pixels wrong, checked against
+  // float64 escape counts.
+  function phoenixDeepSelfTest() {
+    const n = 16;
+    const view = { cx: -0.6034929369570187, cy: 0.4995077460562414, scale: 1e-9, rotation: 0,
+      maxIter: 2000, isJulia: false, juliaC: [0, 0] };
+    setPhoenixDeepUniforms(view, n, n, [0, 0]);
+    gl.uniform1i(phoenixDeep.u.testMode, 1);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, n, n);
+    gl.disable(gl.BLEND);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    const px = new Uint8Array(n * n * 4);
+    gl.readPixels(0, 0, n, n, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    gl.uniform1i(phoenixDeep.u.testMode, 0);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    phoenixRefKey = ""; // the test's reference isn't the real view's
+    let ok = 0;
+    for (let y = 0; y < n; y++) {
+      for (let x = 0; x < n; x++) {
+        const uvx = (x + 0.5 - 0.5 * n) / n, uvy = (y + 0.5 - 0.5 * n) / n;
+        const iter = phoenixEscapeF64(0, 0, view.cx + uvx * view.scale * 2, view.cy + uvy * view.scale * 2, view.maxIter);
+        const i = (y * n + x) * 4;
+        const escaped = px[i + 2] === 1, used = px[i] + 256 * px[i + 1];
+        if (escaped ? iter !== Infinity && Math.abs(used - iter) <= 1 : iter === Infinity) ok++;
+      }
+    }
+    // 100% agreed in testing; float32 gets ~48%.
+    return ok >= 0.95 * n * n;
+  }
+
   // sampleIndex selects the sub-pixel offset from SAMPLE_OFFSETS; see there
   // and drawToCanvas for how successive samples accumulate.
   // The view the canvas's current accurate frame was drawn for, and whether
@@ -833,6 +1011,14 @@ function createFractalRenderer(canvas) {
       setNewtonDeepUniforms(state, canvas.width, canvas.height, SAMPLE_OFFSETS[sampleIndex]);
       drawToCanvas(sampleIndex);
       return "fixed point";
+    }
+    if (!isInteracting && phoenixDeepEligible(state) && phoenixDeepProgram()) {
+      // Past PHOENIX_DEEP_SAMPLES the canvas keeps its average so far.
+      if (sampleIndex < PHOENIX_DEEP_SAMPLES) {
+        setPhoenixDeepUniforms(state, canvas.width, canvas.height, SAMPLE_OFFSETS[sampleIndex]);
+        drawToCanvas(sampleIndex);
+      }
+      return "perturbation + fixed point";
     }
     gl.useProgram(prog);
     const jitter = SAMPLE_OFFSETS[sampleIndex];
@@ -970,6 +1156,7 @@ function createFractalRenderer(canvas) {
     canvas, render, renderPreview, setLUT, resize, perturbationSupported,
     // Until its first use, an optimistic yes on WebGL2 (see newtonDeep).
     get newtonDeepSupported() { return newtonDeep !== false; },
+    get phoenixDeepSupported() { return phoenixDeep !== false; },
     get dpr() { return dpr; },
   };
 }
@@ -1213,7 +1400,8 @@ function deepZoomEligible(renderer, state) {
   return (renderer.perturbationSupported
     && perturbationEligibleType(state)
     && state.scale < DEEP_ZOOM_THRESHOLD)
-    || (renderer.newtonDeepSupported && newtonDeepEligible(state));
+    || (renderer.newtonDeepSupported && newtonDeepEligible(state))
+    || (renderer.phoenixDeepSupported && phoenixDeepEligible(state));
 }
 
 function renderAll() {
@@ -1449,6 +1637,8 @@ function updateHud() {
     if (s.ftype === FTYPE.NEWTON) {
       // Near 0, float32 is exact anyway (see newtonDeepEligible).
       if (newtonDeepEligible(s)) precision = "float32 (deep zoom unavailable: needs WebGL2)";
+    } else if (s.ftype === FTYPE.PHOENIX) {
+      precision = "float32 (deep zoom unavailable: needs WebGL2)";
     } else if (!mainRenderer.perturbationSupported) {
       precision = "float32 (deep zoom unavailable: no float texture support)";
     } else if (!eligibleType) {

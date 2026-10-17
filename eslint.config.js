@@ -18,6 +18,7 @@ const sharedGlobals = {
   PREVIEW_FRAG_SRC: "readonly",
   VERT_SRC_300: "readonly",
   NEWTON_DEEP_FRAG_SRC: "readonly",
+  PHOENIX_DEEP_FRAG_SRC: "readonly",
   // koch.js / pythagoras.js / dragon.js / fern.js
   createKochView: "readonly",
   createPythagorasTreeView: "readonly",
