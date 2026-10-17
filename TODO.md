@@ -194,10 +194,32 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       NonInteractive`); the app would open a second WKWebView in it on a
       TV page from the same bundle, and the two web views talk through a
       small native plugin (`platform.js`). Without this, AirPlay already
-      mirrors the phone screen, toolbar included. Needs an Info.plist
-      scene-manifest entry; check the second web view's memory/GPU cost
-      at 4K, maybe render at 1080p. Nothing comparable on the web build
-      (Safari's Remote Playback only covers video)
+      mirrors the phone screen, toolbar included. Nothing comparable on
+      the web build (Safari's Remote Playback only covers video, and
+      AirPlay of a canvas captureStream video is broken, WebKit bug 281693).
+      Research 2026-10-16 (agent, sources in that session):
+      - iOS 27 SDK: the Info.plist role alone no longer gets the TV scene;
+        register `UISceneAccessory.externalNonInteractive` via
+        `registerSceneAccessory` (iOS 27+), plus the role branch in
+        `AppDelegate.application(_:configurationForConnecting:)` for
+        iOS 15–26
+      - TV web view loads `capacitor://localhost/index.html?tv=1` (same
+        origin, no second bridge); sync the view with the existing share
+        hash (`buildShareHash`/`applyShareLink`, exact doubles); a small
+        `TVDisplay` plugin relays it. Render the TV at 1080p, and let the
+        phone show a cheap preview while connected; keep the phone awake
+        (`isIdleTimerDisabled`)
+      - Video route (AVPlayer/HLS) rejected: seconds of latency, no live
+        control
+      - Test without an Apple TV: the Mac as an AirPlay receiver (Screen
+        Mirroring), or `xcrun simctl io booted screenConfig --display=2`
+      - Size: ~150–200 lines Swift + ~150–250 JS. Risks: new iOS 27 API,
+        GPU contention between two web views, AirPlay compression on motion
+- [ ] Check (unverified bug): `AppDelegate.configurationForConnecting`
+      hands `SceneDelegate` to every scene role, so on iOS 16–26 AirPlay
+      Screen Mirroring may put a second, non-interactive copy of the whole
+      app on the TV instead of a mirror. Try it with the Mac as the AirPlay
+      receiver
 - [ ] Native tvOS app (asked 2026-10-14): the tvOS SDK has no WebKit, so
       Capacitor can't target it. It would be a separate Swift + Metal app
       (port shaders.js to Metal, the reference orbit and cell rebasing to
