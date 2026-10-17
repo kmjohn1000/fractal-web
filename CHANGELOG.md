@@ -2,6 +2,12 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.35.1 — 2026-10-16
+- Fixed: deep zooms of Newton's method near its central star, and near the smaller copies of it, turned blocky with the wrong colors. They now stay sharp there too.
+- Phoenix switches to its deep-zoom math later, below 1/10,000 instead of 1/1,000. Places in between, like Ember Spiral, now render as before: live while you drag, with full smoothing.
+- Fixed: a share link with an enormous coordinate could stop Newton's method or Phoenix from drawing.
+- The info card now says why deep zoom is unavailable on a device (no WebGL2, or a failed self-test).
+
 ## 1.35.0 — 2026-10-16
 - Surprise me has 35 new places, on every zoom fractal except the Rabbit (92 in all):
   - Mandelbrot: Cauliflower, Twin Medallions, Sea Urchin, Cross Medallion
