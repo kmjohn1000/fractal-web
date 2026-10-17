@@ -391,12 +391,15 @@ distance estimation → zoom-to-minibrot / AI discovery.
       needs the pixel's z AND z_prev near the reference's (0, 0), and
       z_prev usually isn't, so dz_prev enters as an O(1) term and float32
       loses the pixel offset. Needs a two-state rebase condition or
-      multi-reference fallback; prototype against a float64 reference
-- [ ] Newton perturbation (rational-function deltas near root
-      singularities; harder than Phoenix, do after it; the difference
-      factors without cancellation as
-      N(Z+δ) − N(Z) = δ(2Z⁴ + 4Z³δ + 2Z²δ² − 2Z − δ) / (3Z²(Z+δ)²);
-      less established than escape-time perturbation — prototype first)
+      multi-reference fallback; prototype against a float64 reference.
+      Precision spike 2026-10-16 (`scripts/precision-spike.html`, not
+      committed): the fixed point Newton uses (1.33.0) is exact for Phoenix
+      too, but costs ~230 ms per 256x256 pass on an iPhone 15 at 1e-9
+      (2-4 s full screen): too slow (user). Dual-float fails on Apple GPUs;
+      CPU float64 is slower still. NEXT, user-approved: spike a hybrid,
+      float32 perturbation, switching a pixel to exact fixed point (from
+      Z[m] + dz, exact) only once it glitches; measure how many pixels
+      glitch and the phone time before building
 - [ ] Periodicity checking (Brent-style: save z every so often, stop when
       the orbit returns within eps) so interior pixels stop early instead of
       running all of maxIter. Only real speedup where the cardioid/bulb skip
@@ -429,6 +432,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
+- Newton deep zoom (1.33.0), in place of the "Newton perturbation" item: away from the origin, deep views render in exact 16.48 fixed point (WebGL2 uints) and stay sharp to ~1e-11 (float32 blurred past ~1e-4). ~0.2 s per full-screen pass on an iPhone 15; self-tested on first use, float32 fallback. The renderer now asks for WebGL2 first — `6672769`
 - Surprise me on every zoom fractal (1.31.0): 21 places from the 2026-10-15 research on Celtic, Multibrot³, Phoenix and the Rabbit, Dragon and Spiral Julia sets. Three of them are spiral dives (Rabbit Hole, Into the Eye, Into the Galaxy) that land at 1e-3, so the whole flight renders live. Auto detail now follows the zoom during spiral dives. Earlier the same day: Pole Star on Newton (1.30.1) and spiral-out on fractals with one place (1.30.2) — `238ee7e`
 - New App Store screenshots for 1.25.0 (2026-10-15): six captioned shots per device in git-ignored `appstore-screenshots/1.25.0/` (iPhone 6.5" 1284x2778, iPad 13" 2064x2752), rendered from the web app in headless Chrome: Mini Mandelbrot with the legend card, the picker, Spiral Julia in dual view, Lace Tricorn, Armada, Pythagoras tree with play. Sierpinski deep zoom was tried and dropped: flat-looking at depth. Re-rendered 2026-10-15 for the 1.30.0 toolbar in `appstore-screenshots/1.30.0/`. What's New and a copy review are in `appstore-screenshots/copy/whats-new-1.30.0.md`; the full paste-ready English and French listing is `copy/listing-1.30.0.md`. Upload with the 1.30.0 release
 - 1.20.0 (build 174) live on the App Store 2026-10-14 (iTunes lookup API); user checked Carpet/Gasket deep zoom, the legend card and the colormap menu on a real phone 2026-10-15. Hold-and-slide depth speed (1.25.0) also checked on the phone ahead of the next release
