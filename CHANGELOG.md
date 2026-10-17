@@ -2,6 +2,18 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.35.0 — 2026-10-16
+- Surprise me has 35 new places, on every zoom fractal except the Rabbit (92 in all):
+  - Mandelbrot: Cauliflower, Twin Medallions, Sea Urchin, Cross Medallion
+  - Burning Ship: Clipper, Needle Forest, Stingray
+  - Tricorn: Sunburst Minibrot, Storm Minibrot, Three Horns
+  - Celtic: Celtic Heart, Celtic Arrow
+  - Multibrot³: Haloed Minibrot, Coral Minibrot, Sideways Minibrot
+  - Phoenix: Triskelion, Black Lotus, Sunrise Fringe
+  - Julia sets: Twin Curl, Fire Tendrils, Vortex, Serpent (Phoenix); Snowflake, Frost Cluster (Dragon); Spiral Cloak, Lagoon Spiral (Spiral)
+  - Newton's method: Quarter Turn (a spiral dive), Deep Necklace (ten billion times deep), Basin Triad
+  - Spiral dives on the Sierpinski carpet (Center Line, Corner Hop, Triple Turn) and gasket (Stair Dive, Long Step, Hypotenuse Slide)
+
 ## 1.34.0 — 2026-10-16
 - The Phoenix fractal and its Julia set now zoom far deeper: they stay sharp down to about a billion times, where they used to blur past about 10,000 times. Deep views use fast math for most pixels and switch to exact 64-bit math only where it's needed, and the app checks the exact math first; if the check fails, it keeps the old behavior.
 
