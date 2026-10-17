@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.34.0 — 2026-10-16
+- The Phoenix fractal and its Julia set now zoom far deeper: they stay sharp down to about a billion times, where they used to blur past about 10,000 times. Deep views use fast math for most pixels and switch to exact 64-bit math only where it's needed, and the app checks the exact math first; if the check fails, it keeps the old behavior.
+
 ## 1.33.4 — 2026-10-16
 - Fixed: zooming Newton's method extremely deep right next to its center (past about 10⁻¹⁵) went blank since 1.33.0. There it uses its regular math again, which is sharper that close to the center.
 
