@@ -68,6 +68,26 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         Mandelbrot link opened afterwards is light, ~38 ms/pass on M3;
         Phoenix and Newton deep checked fine on the phone later). If it
         recurs, note what was on screen just before
+- [ ] WebGPU renderer (plan sketched 2026-10-16, not approved to build;
+      chosen over a full Metal rewrite, which would split the code in two).
+      Goal: faster deep zoom, no watchdog context loss, detail past 2000,
+      one codebase for web and app.
+      - Spike first (test page): is `navigator.gpu` available in iOS Safari
+        AND the app's WKWebView? Phoenix hybrid / Newton fixed point as
+        compute shaders vs WebGL's ~0.3 / 0.2 s; Mandelbrot perturbation
+        with BLA; does double-float survive WGSL's compiler; do time-
+        budgeted tile dispatches survive Bird's Eye at 8000. Go only if it
+        runs in WKWebView and is clearly faster on the phone
+      - Build: `createGpuRenderer` with createFractalRenderer's interface,
+        WebGL kept as fallback (app supports iOS 15); port shaders.js to
+        WGSL; tiled compute passes under a ~30 ms frame budget;
+        quarter-res first pass; supersampling in a float accumulation
+        texture; reference orbit in a storage buffer (no texture-width
+        cap); BLA iteration skipping for the Mandelbrot family
+      - Re-check preview snapshots, Save/Share readback (WebGPU canvases
+        don't keep their frame), device-loss recovery; thumbnails stay on
+        WebGL
+      - Size: ~1000-1500 lines JS + ~900 WGSL; spike a few hours
 - [ ] New escape-time types: Buffalo, Lambda (Celtic is done, see Done)
       (single-state iteration, reuse existing shader/perturbation/
       supersampling pipeline with no structural changes)
