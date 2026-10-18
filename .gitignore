@@ -8,3 +8,6 @@ appstore-screenshots/
 .claude/
 .claude-session-state.md
 .playwright-mcp/
+test-results/
+# Golden screenshots for the visual suite (~200 MB): local only, see tests/README.md.
+tests/baselines/

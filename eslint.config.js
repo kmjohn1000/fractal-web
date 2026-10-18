@@ -58,8 +58,13 @@ export default [
     },
   },
   {
-    files: ["scripts/**/*.mjs"],
+    files: ["scripts/**/*.mjs", "tests/**/*.mjs", "playwright.config.mjs"],
     languageOptions: { globals: globals.node },
+  },
+  {
+    // Playwright specs pass functions to page.evaluate, which run in the page.
+    files: ["tests/**/*.spec.mjs"],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
   },
   {
     files: ["sw.js"],

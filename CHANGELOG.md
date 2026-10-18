@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.36.1 — 2026-10-17
+- Website: the installed web app now refreshes its offline copy whenever the app changes, so it never keeps an old version.
+
 ## 1.36.0 — 2026-10-17
 - New fractal: the Apollonian gasket, circles packed inside circles, made by repeatedly reflecting through four circles. It zooms as deep as the Sierpinski gasket, about a quadrillion times.
 - Its info card names the curvature of the circle under the center: in this packing every circle's curvature is a whole number.
