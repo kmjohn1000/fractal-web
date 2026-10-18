@@ -40,7 +40,7 @@ const sharedGlobals = {
 };
 
 export default [
-  { ignores: ["node_modules/", "www/", "ios/"] },
+  { ignores: ["node_modules/", "www/", "ios/", "store-assets/"] },
   js.configs.recommended,
   {
     files: ["**/*.js"],
