@@ -82,6 +82,28 @@ function simulatorFor(deviceName) {
   return simctl("create", deviceName, type.identifier, runtimes[0]).trim();
 }
 
+const SAFARI = "com.apple.mobilesafari";
+const isRunning = (udid, id) => run("xcrun", ["simctl", "spawn", udid, "launchctl", "list"]).includes(`UIKitApplication:${id}[`);
+const terminate = (udid, id) => spawnSync("xcrun", ["simctl", "terminate", udid, id], { stdio: "ignore" });
+
+// Opens a share link in the app. Right after an install, iOS hasn't yet
+// associated the app with the link's domain (it fetches the domain's
+// apple-app-site-association in the background), so the link opens in
+// Safari instead: close Safari, wait and retry until the app gets it.
+async function openInApp(udid, id, url) {
+  for (let attempt = 1; attempt <= 12; attempt++) {
+    terminate(udid, SAFARI);
+    terminate(udid, id);
+    simctl("openurl", udid, url);
+    await sleep(3000);
+    if (!isRunning(udid, SAFARI) && isRunning(udid, id)) return;
+    console.log(`  link opened in Safari, not the app (attempt ${attempt}); waiting for the domain association`);
+    terminate(udid, SAFARI);
+    await sleep(10000);
+  }
+  throw new Error(`share links keep opening in Safari on ${udid}: universal links aren't associated`);
+}
+
 function bundleId() {
   return JSON.parse(readFileSync(join(root, "capacitor.config.json"), "utf8")).appId;
 }
@@ -112,11 +134,15 @@ async function screenshots(outDir) {
     simctl("status_bar", udid, "override", "--time", "9:41", "--dataNetwork", "wifi", "--wifiMode", "active",
       "--wifiBars", "3", "--cellularMode", "active", "--cellularBars", "4", "--batteryState", "charged", "--batteryLevel", "100");
     simctl("install", udid, join(products, app));
+    // Settle the universal-link association before any shot that needs it.
+    const firstLink = SHOTS.find((s) => s.url);
+    if (firstLink) await openInApp(udid, id, firstLink.url);
     const dir = join(outDir, size.slot);
     mkdirSync(dir, { recursive: true });
     for (const shot of SHOTS) {
-      spawnSync("xcrun", ["simctl", "terminate", udid, id], { stdio: "ignore" });
-      if (shot.url) simctl("openurl", udid, shot.url);
+      terminate(udid, SAFARI);
+      terminate(udid, id);
+      if (shot.url) await openInApp(udid, id, shot.url);
       else simctl("launch", udid, id);
       await sleep(9000); // launch, first frame, supersampling / IFS fill
       const file = join(dir, `${shot.name}.png`);
