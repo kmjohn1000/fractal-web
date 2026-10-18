@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## Unreleased
+- Website: the app's files now load with the version number in their address, so a browser can never mix files from two versions.
+
 ## 1.36.1 — 2026-10-17
 - Website: the installed web app now refreshes its offline copy whenever the app changes, so it never keeps an old version.
 

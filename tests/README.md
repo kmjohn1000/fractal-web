@@ -23,9 +23,11 @@ if:
 - the screenshot differs from the golden baseline in
   `tests/baselines/<project>/` by more than 1% of pixels.
 
-`sw.spec.mjs` checks that `sw.js`'s `CACHE_NAME` matches the app files
-(`npm run stamp:sw` updates it) and that `APP_SHELL` lists everything
-`index.html` loads.
+`sw.spec.mjs` checks the freshness stamps `npm run stamp` writes: `sw.js`'s
+`CACHE_NAME` matches the app files, and `package.json` and `index.html`'s
+`?v=` queries carry the CHANGELOG version. It also checks that `APP_SHELL`
+lists everything `index.html` loads and that the installed web app starts
+offline.
 
 `scripts/test-visual.mjs` kills leftover Playwright browsers and test
 servers before and after each run and runs with stdin closed. The git

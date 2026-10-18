@@ -8,8 +8,8 @@
     "ios:sync": "npm run build:www && cap sync ios",
     "ios:open": "cap open ios",
     "test:visual": "node scripts/test-visual.mjs",
-    "stamp:sw": "node scripts/stamp-sw.mjs",
-    "prepare": "git config core.hooksPath .githooks"
+    "prepare": "git config core.hooksPath .githooks",
+    "stamp": "node scripts/stamp.mjs"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.2",
@@ -28,5 +28,6 @@
     "@capacitor/ios": "^8.5.2",
     "@capacitor/share": "^8.0.2",
     "@capacitor/splash-screen": "^8.0.2"
-  }
+  },
+  "version": "1.36.1"
 }

@@ -9,5 +9,7 @@ appstore-screenshots/
 .claude-session-state.md
 .playwright-mcp/
 test-results/
+# Release outputs (/release): simulator screenshots, archive, IPA.
+store-assets/
 # Golden screenshots for the visual suite (~200 MB): local only, see tests/README.md.
 tests/baselines/

@@ -10,7 +10,7 @@
 // when online (so "open the app" == "get the latest push"), and only falls
 // back to the cache when there's no network, which is still enough for
 // real offline support since every asset here is static.
-const CACHE_NAME = "fractal-atlas-3b67ead3b724";
+const CACHE_NAME = "fractal-atlas-721483a63518";
 
 const APP_SHELL = [
   "./",
@@ -74,6 +74,8 @@ self.addEventListener("fetch", (event) => {
         }
         return response;
       })
-      .catch(() => caches.match(event.request))
+      // ignoreSearch: index.html loads app files as app.js?v=<version>
+      // (scripts/stamp.mjs), while APP_SHELL precaches them as app.js.
+      .catch(() => caches.match(event.request, { ignoreSearch: true }))
   );
 });
