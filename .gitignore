@@ -9,7 +9,17 @@ appstore-screenshots/
 .claude-session-state.md
 .playwright-mcp/
 test-results/
+# Product and strategy notes: local only (this repo is public). See
+# .githooks/pre-commit.
+/STRATEGY*.md
 # Release outputs (/release): simulator screenshots, archive, IPA.
 store-assets/
+# The same, in case release-ios.mjs is pointed outside store-assets/.
+*.ipa
+*.xcarchive/
+*.mobileprovision
+*.p8
+*.p12
+ExportOptions.plist
 # Golden screenshots for the visual suite (~200 MB): local only, see tests/README.md.
 tests/baselines/

@@ -1,0 +1,29 @@
+#!/bin/sh
+# Refuses a commit that would publish private files (this repo is public).
+# Enabled with pre-push (package.json's prepare script sets core.hooksPath
+# to .githooks). Catches `git add -f` on ignored private paths, and any
+# staged line carrying STRATEGY.md's marker (a renamed or pasted copy).
+# Removing a private file from the index (`git rm --cached`) is allowed.
+
+# Built from two strings so this file doesn't contain the marker itself.
+marker="PRIVATE-""STRATEGY"
+
+private=$(git diff --cached --name-only --diff-filter=ACMR | grep -i -E \
+  -e '(^|/)STRATEGY[^/]*\.md$' \
+  -e '(^|/)CLAUDE\.md$' \
+  -e '(^|/)\.claude-session-state\.md$' \
+  -e '^\.claude/' \
+  -e '^appstore-screenshots/' \
+  -e '^store-assets/')
+if [ -n "$private" ]; then
+  echo "pre-commit: refusing to commit private files:"
+  printf '%s\n' "$private" | sed 's/^/  /'
+  echo "Unstage them with: git restore --staged <file>"
+  exit 1
+fi
+
+if git diff --cached -U0 --diff-filter=ACMR | grep '^+' | grep -q "$marker"; then
+  echo "pre-commit: a staged line contains the $marker marker (text from"
+  echo "STRATEGY.md). Find it with: git diff --cached | grep -n $marker"
+  exit 1
+fi
