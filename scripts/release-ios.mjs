@@ -3,11 +3,14 @@
 // Run `npm run ios:sync` first so www/ and ios/version.xcconfig are current.
 //
 //   node scripts/release-ios.mjs screenshots <outDir>
-//       Builds for the simulator, then for each App Store size boots a
-//       simulator (creating one if needed), installs and launches the app
-//       and saves bare-screen PNGs to <outDir>/<size>/, checking their
-//       pixel size. Each shot after the first opens a share link, which the
-//       app receives as a launch URL (Platform.onOpenUrl).
+//       Checks the real iOS build: builds for the simulator, then for the
+//       iPhone and iPad App Store slots boots a simulator (creating one if
+//       needed), installs and launches the app and saves PNGs to
+//       <outDir>/<slot>/, checking their pixel size. Each shot after the
+//       first opens a share link, which the app receives as a launch URL
+//       (Platform.onOpenUrl). The listing's upload set comes from
+//       scripts/store-screenshots.mjs, which can open the picker and info
+//       card (simctl can't tap).
 //
 //   node scripts/release-ios.mjs archive <outDir>
 //       Archives a Release build and exports an App Store Connect IPA to
@@ -25,13 +28,12 @@ const PROJECT = join(root, "ios/App/App.xcodeproj");
 const SCHEME = "App";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// App Store Connect iPhone slots: the simulator that renders each at its
-// exact pixel size. 6.3" is what the iPhone slot accepted on 2026-10-15
-// (it rejected 6.5"), so it's captured too.
+// App Store Connect's slots (named as in scripts/store-screenshots.mjs) and
+// the simulator that renders each at its exact pixel size. The iPhone slot
+// takes 6.3" (it rejected 6.5" on 2026-10-15); the iPad slot is 13".
 const SIZES = [
-  { slot: "6.9", device: "iPhone 17 Pro Max", width: 1320, height: 2868 },
-  { slot: "6.5", device: "iPhone 14 Plus", width: 1284, height: 2778 },
-  { slot: "6.3", device: "iPhone 17 Pro", width: 1206, height: 2622 },
+  { slot: "iphone-6.3", device: "iPhone 17 Pro", width: 1206, height: 2622 },
+  { slot: "ipad-13", device: "iPad Pro 13-inch (M5)", width: 2064, height: 2752 },
 ];
 
 // What each screenshot shows: the opening view, then share links (made by
@@ -150,7 +152,7 @@ async function screenshots(outDir) {
       const px = pngSize(file);
       const ok = px.width === size.width && px.height === size.height;
       results.push({ file, ...px, ok });
-      console.log(`${ok ? "ok " : "BAD"} ${size.slot}" ${shot.name}: ${px.width}x${px.height}`);
+      console.log(`${ok ? "ok " : "BAD"} ${size.slot} ${shot.name}: ${px.width}x${px.height}`);
     }
     simctl("status_bar", udid, "clear");
     simctl("shutdown", udid);
