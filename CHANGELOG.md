@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.37.0 — 2026-10-18
+- Maintenance release: rebuilt for the App Store.
+
 ## 1.36.2 — 2026-10-17
 - Website: the app's files now load with the version number in their address, so a browser can never mix files from two versions.
 
