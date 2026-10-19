@@ -12,6 +12,8 @@ test-results/
 # Product and strategy notes: local only (this repo is public). See
 # .githooks/pre-commit.
 /STRATEGY*.md
+# Competitor research lives in appstore-screenshots/reports/ now.
+/research/
 # Release outputs (/release): simulator screenshots, archive, IPA.
 store-assets/
 # The same, in case release-ios.mjs is pointed outside store-assets/.

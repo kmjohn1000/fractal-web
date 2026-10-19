@@ -2,7 +2,7 @@
 # Runs the visual regression suite (npm run test:visual) before a push.
 # Enabled by `npm install` (package.json's prepare script sets
 # core.hooksPath to .githooks). Pushes whose new commits only touch docs
-# (*.md, docs/, research/) skip it; SKIP_VISUAL=1 git push skips it once.
+# (*.md, docs/) skip it; SKIP_VISUAL=1 git push skips it once.
 
 [ -n "$SKIP_VISUAL" ] && { echo "pre-push: SKIP_VISUAL set, not running the visual suite"; exit 0; }
 
@@ -20,7 +20,7 @@ while read -r _ local_sha _ remote_sha; do
 $files"
 done
 
-if [ -n "$(printf '%s\n' "$changed" | grep -v -e '^$' -e '\.md$' -e '^docs/' -e '^research/')" ]; then
+if [ -n "$(printf '%s\n' "$changed" | grep -v -e '^$' -e '\.md$' -e '^docs/')" ]; then
   npm run test:visual </dev/null || {
     echo "pre-push: visual suite failed; see test-results/report/index.html. Push aborted."
     exit 1

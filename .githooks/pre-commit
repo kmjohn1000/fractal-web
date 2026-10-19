@@ -13,6 +13,7 @@ private=$(git diff --cached --name-only --diff-filter=ACMR | grep -i -E \
   -e '(^|/)CLAUDE\.md$' \
   -e '(^|/)\.claude-session-state\.md$' \
   -e '^\.claude/' \
+  -e '^research/' \
   -e '^appstore-screenshots/' \
   -e '^store-assets/')
 if [ -n "$private" ]; then
