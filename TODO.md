@@ -215,7 +215,12 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       perturbation can handle (abs-folds need `diffabs`) before promising
       deep zoom. Any addition changes the fractal count in the store
       listing (2026-10-09)
-- [ ] Burning Ship looks like a ship: the standard images show it upright,
+- [ ] Burning Ship looks like a ship. Partly done: the Surprise-me places
+      land ship-side up by turning the view 180° (`rotation: Math.PI`,
+      1.21.0; the compass turns it back). Still open: the default Opening
+      view, the picker thumbnail and a plain pick of Burning Ship are
+      still drawn masts-down, and a half turn mirrors left-right compared
+      with the classic picture. The standard images show it upright,
       which means mirroring the imaginary axis (the set sits at y < 0 and
       the picker thumbnail shows the hull on top, upside down), plus a fire
       default palette (Ember/Hot) for this fractal only. Caveats: existing
