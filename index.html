@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Fractal Atlas&trade;</title>
 
-<link rel="manifest" href="manifest.webmanifest?v=1.37.0">
+<link rel="manifest" href="manifest.webmanifest?v=1.38.0">
 <meta name="theme-color" content="#111111">
-<link rel="icon" href="icons/favicon-32.png?v=1.37.0" sizes="32x32" type="image/png">
+<link rel="icon" href="icons/favicon-32.png?v=1.38.0" sizes="32x32" type="image/png">
 
 <!-- iOS Safari ignores the manifest entirely for install/homescreen purposes
      and needs its own meta tags + a dedicated (non-transparent) icon. -->
@@ -15,11 +15,23 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fractal Atlas">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.37.0">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.38.0">
 
 <!-- Smart App Banner: Safari on iPhone/iPad offers the App Store app.
      Ignored everywhere else, including the app's own web view. -->
 <meta name="apple-itunes-app" content="app-id=6816481394">
+
+<!-- Search and link previews (Messages, Slack, social). The image URL must be
+     absolute, so it points at the public site. -->
+<meta name="description" content="Zoom deep into the Mandelbrot set and other fractals, and fly to named places. Free, no ads, no account.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Fractal Atlas">
+<meta property="og:description" content="Zoom deep into the Mandelbrot set and other fractals, and fly to named places. Free, no ads, no account.">
+<meta property="og:url" content="https://kmjohn1000.github.io/fractal-web/">
+<meta property="og:image" content="https://kmjohn1000.github.io/fractal-web/icons/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <style>
   /* Every UI font size is in rem, so they all scale together off this one
      root size. --text-scale is 1 on the web; in the iOS app
@@ -111,6 +123,48 @@
     font: 0.625rem/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
     color: rgba(255,255,255,0.55); white-space: pre-wrap;
   }
+  /* Website welcome card (web only; platform.js never shows it in the app):
+     what this is, a link to the app, and the privacy/support pages. An
+     overlay floating above the toolbar, so showing or dismissing it never
+     resizes the canvas; the info card sits at the top, clear of it. Same
+     frosted look as #hud, but it takes taps (pointer-events) since it holds
+     links. */
+  #welcome {
+    position: absolute; z-index: 11;
+    bottom: 10px; left: 50%; transform: translateX(-50%);
+    width: min(420px, calc(100% - 20px)); box-sizing: border-box;
+    padding: 12px 40px 12px 14px; border-radius: 14px;
+    background: rgba(20,20,22,0.72);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4);
+    box-shadow: 0 0 0 0.5px rgba(255,255,255,0.12);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+  }
+  #welcome .welcomeTitle {
+    font: italic 400 1.25rem/1.15 ui-serif, "New York", Georgia, serif; color: #fff;
+  }
+  #welcome .welcomeText {
+    margin: 4px 0 10px; font: 0.8125rem/1.35 -apple-system, system-ui, sans-serif;
+    color: rgba(255,255,255,0.88);
+  }
+  #welcome .welcomeApp {
+    display: inline-block; padding: 8px 16px; border-radius: 999px;
+    background: #fff; color: #111; text-decoration: none; text-shadow: none;
+    font: 600 0.8125rem/1 -apple-system, system-ui, sans-serif;
+  }
+  #welcome .welcomeLinks {
+    margin-top: 10px; font: 0.75rem/1.3 -apple-system, system-ui, sans-serif;
+    color: rgba(255,255,255,0.6);
+  }
+  #welcome .welcomeLinks a { color: rgba(255,255,255,0.8); }
+  /* The global button rule styles the close button like the toolbar's; this
+     one is a bare corner glyph with a 44px tap area. */
+  #welcome .welcomeClose {
+    position: absolute; top: 0; right: 0; width: 44px; height: 44px; padding: 0;
+    border: none; background: none; color: rgba(255,255,255,0.7);
+    font: 1rem/1 -apple-system, system-ui, sans-serif;
+  }
+  #welcome .welcomeClose:active { background: none; transform: none; color: #fff; }
+
   /* Dual view: names the Julia pane, in the card's style. */
   #juliaLabel {
     position: absolute; z-index: 10; pointer-events: none;
@@ -461,6 +515,13 @@
     width: var(--sl-hit); height: var(--sl-hit); border: none; border-radius: 50%;
     background: var(--sl-thumb-bg);
   }
+  /* Wide website windows: keep the button rows in a centered column instead
+     of buttons at the far left under a slider spanning the whole width.
+     Web only (platform.js sets html.web): the app's iPad layout is left
+     alone. The left/right split from .trailStart stays inside the column. */
+  @media (min-width: 900px) {
+    html.web .control-row { max-width: 760px; margin-inline: auto; }
+  }
   /* Must stay the last rule in this sheet: it overrides .control-row at
      equal specificity. Narrow phones: tighter gaps so the busiest row (9
      buttons on Mandelbrot) fits one line down to 360px:
@@ -491,6 +552,13 @@
 </script>
 <div id="canvasArea">
   <div id="hud" class="hidden"><div class="hudName"></div><div class="hudPlain"></div><div class="hudScale"><span class="hudBar"></span><span class="hudScaleText"></span></div><div class="hudCenter"></div><div class="hudStats"></div></div>
+  <div id="welcome" class="hidden" role="region" aria-label="About Fractal Atlas">
+    <button id="welcomeClose" class="welcomeClose" aria-label="Close" title="Close">&#x2715;</button>
+    <div class="welcomeTitle">Fractal Atlas</div>
+    <p id="welcomeText" class="welcomeText"></p>
+    <a class="welcomeApp" href="https://apps.apple.com/us/app/fractal-atlas/id6816481394" target="_blank" rel="noopener">Free on iPhone</a>
+    <div class="welcomeLinks"><a href="privacy.html">Privacy</a> &middot; <a href="support.html">Support</a></div>
+  </div>
   <div id="juliaLabel" class="hidden">Julia set of the center point</div>
   <canvas id="mainCanvas"></canvas>
   <canvas id="juliaCanvas" class="hidden"></canvas>
@@ -737,15 +805,15 @@
   </div>
 </div>
 
-<script src="colormaps.js?v=1.37.0"></script>
-<script src="shaders.js?v=1.37.0"></script>
-<script src="lsystem.js?v=1.37.0"></script>
-<script src="koch.js?v=1.37.0"></script>
-<script src="pythagoras.js?v=1.37.0"></script>
-<script src="dragon.js?v=1.37.0"></script>
-<script src="fern.js?v=1.37.0"></script>
-<script src="platform.js?v=1.37.0"></script>
-<script src="app.js?v=1.37.0"></script>
+<script src="colormaps.js?v=1.38.0"></script>
+<script src="shaders.js?v=1.38.0"></script>
+<script src="lsystem.js?v=1.38.0"></script>
+<script src="koch.js?v=1.38.0"></script>
+<script src="pythagoras.js?v=1.38.0"></script>
+<script src="dragon.js?v=1.38.0"></script>
+<script src="fern.js?v=1.38.0"></script>
+<script src="platform.js?v=1.38.0"></script>
+<script src="app.js?v=1.38.0"></script>
 <script>
   // Service workers only register on secure origins or localhost, so this is
   // a silent no-op during phone-over-LAN dev testing (plain http://<lan-ip>)

@@ -1436,6 +1436,9 @@ const els = {
   hudScaleText: document.querySelector("#hud .hudScaleText"),
   hudCenter: document.querySelector("#hud .hudCenter"),
   juliaLabel: document.getElementById("juliaLabel"),
+  welcome: document.getElementById("welcome"),
+  welcomeText: document.getElementById("welcomeText"),
+  welcomeClose: document.getElementById("welcomeClose"),
   fractalTypeRow: document.getElementById("fractalTypeRow"),
   fractalControls: document.getElementById("fractalControls"),
   kochControls: document.getElementById("kochControls"),
@@ -1774,10 +1777,10 @@ function formatZoom(baseScale, scale) {
 }
 
 // How deep the view is, for the info card: "415× deeper", "1.8 trillion
-// times deeper", "Opening view", or "Zoomed out 2×".
+// times deeper", "The whole shape", or "Zoomed out 2×".
 function zoomPhrase(baseScale, scale) {
   const z = baseScale / scale;
-  if (Math.abs(Math.log(z)) < 0.05) return "opening view";
+  if (Math.abs(Math.log(z)) < 0.05) return "the whole shape";
   return z < 1 ? `zoomed out ${formatZoom(scale, baseScale)}` : `${formatZoom(baseScale, scale)} deeper`;
 }
 
@@ -2965,6 +2968,19 @@ document.querySelectorAll(".hudToggleBtn").forEach((b) => b.addEventListener("cl
 }));
 applyHudVisibility();
 
+// Website welcome card (never shown in the app, see platform.js). The
+// fractal count comes from the picker's tiles so it can't go stale.
+function initWelcomeCard() {
+  if (Platform.welcome.isDismissed()) return;
+  const n = els.fractalTypeRow.querySelectorAll("button[data-name], button[data-mode]").length;
+  els.welcomeText.textContent = `Zoom into ${n} fractals. Pinch, drag, or tap the die to fly somewhere new.`;
+  els.welcome.classList.remove("hidden");
+}
+els.welcomeClose.addEventListener("click", () => {
+  Platform.welcome.dismiss();
+  els.welcome.classList.add("hidden");
+});
+
 // ---------------------------------------------------------------- UI wiring
 
 // Picker: a grid of tiles, each a pre-rendered thumbnail plus the name
@@ -3189,6 +3205,12 @@ function teleport() {
     }
   }
 
+  flyTo(st, d, target, landingIndex, spinSign);
+}
+
+// The flight itself, shared by Surprise me and the web's first-visit cold
+// open (flyToPlace).
+function flyTo(st, d, target, landingIndex, spinSign) {
   // A destination with a rotation lands turned to it (Burning Ship's ships
   // are drawn masts-down in math orientation); one without leaves the
   // view's rotation alone, as before. The turn takes the shorter way round.
@@ -3254,6 +3276,35 @@ function teleport() {
     if (t < 1) requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
+}
+
+// Flies the main view to one named place, as Surprise me does.
+function flyToPlace(i) {
+  const d = TELEPORT_DESTINATIONS[i];
+  lastTeleportIndex = i;
+  flyTo(mainState, d, { cx: Number(d.re), cy: Number(d.im), scale: d.scale }, i, 1);
+}
+
+// The website's first visit (no share link): instead of a small plain
+// Mandelbrot, fly from the whole set to one of a few showpiece places with
+// the info card open. Waits a beat after the first painted frame so the
+// whole set registers first; any touch (pointerdown bumps the generation)
+// before then, or during the flight, wins. A renamed label throws here
+// rather than silently skipping the flight.
+const COLD_OPEN_PLACES = ["Seahorse Valley", "Mini Mandelbrot", "Elephant Valley", "Double Spiral", "Sunburst Fan"];
+function coldOpen() {
+  const gen = teleportGeneration;
+  requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(() => {
+    if (gen !== teleportGeneration || mode !== "fractal" || currentName !== "Mandelbrot") return;
+    const places = COLD_OPEN_PLACES.map((label) => {
+      const i = TELEPORT_DESTINATIONS.findIndex((d) => d.fractal === "Mandelbrot" && d.label === label);
+      if (i < 0) throw new Error(`Cold open place "${label}" is not in TELEPORT_DESTINATIONS`);
+      return i;
+    });
+    hudVisible = true;
+    applyHudVisibility();
+    flyToPlace(places[Math.floor(Math.random() * places.length)]);
+  }, 600)));
 }
 
 // Dual view's tap: glide the main view so (x, y) lands at the center, which
@@ -4003,8 +4054,14 @@ updateLUT(); // first: Carpet/Gasket renders read the LUT on the CPU
 selectFractal(currentName, { fresh: true });
 updateColorSwatches();
 requestRender();
+// Read before applyShareHashFromUrl strips the hash: a visitor who arrived
+// by share link gets that view, not the cold open.
+const arrivedByLink = !!parseShareHash(location.hash);
 applyShareHashFromUrl();
 Platform.onOpenUrl(applyShareLink); // before hideLaunchScreen, which waits on it
+if (!arrivedByLink && Platform.welcome.isFirstVisit()) coldOpen();
+Platform.welcome.markVisited();
+initWelcomeCard();
 // requestRender draws on the next animation frame; one frame after that it
 // has been painted, so the app's launch screen can fade into it (no-op on
 // the web, see platform.js).

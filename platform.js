@@ -128,6 +128,31 @@ const Platform = (() => {
   }
   if (isNative) setTimeout(forceHideLaunchScreen, 10000);
 
+  // CSS hook for layout that only the website wants (index.html scopes the
+  // wide-screen toolbar cap to html.web, so the app's iPad layout is
+  // untouched).
+  document.documentElement.classList.toggle("web", !isNative);
+
+  // First-visit state for the website's cold open and welcome card. The app
+  // never flies or shows the card: isFirstVisit() is false and isDismissed()
+  // is true there. localStorage can throw (private mode, blocked storage);
+  // a failed read counts as a return visit that hasn't dismissed the card,
+  // so nothing flies but the card still shows.
+  const VISITED_KEY = "fractalAtlas.visited";
+  const DISMISSED_KEY = "fractalAtlas.welcomeDismissed";
+  const readFlag = (key) => {
+    try { return localStorage.getItem(key) === "1"; } catch { return null; }
+  };
+  const writeFlag = (key) => {
+    try { localStorage.setItem(key, "1"); } catch { /* storage blocked: stay stateless */ }
+  };
+  const welcome = {
+    isFirstVisit: () => !isNative && readFlag(VISITED_KEY) === false,
+    markVisited: () => { if (!isNative) writeFlag(VISITED_KEY); },
+    isDismissed: () => isNative || readFlag(DISMISSED_KEY) === true,
+    dismiss: () => writeFlag(DISMISSED_KEY),
+  };
+
   // ------------------------------------------------------------ API
 
   return {
@@ -135,6 +160,7 @@ const Platform = (() => {
     shareBaseUrl,
     hideLaunchScreen,
     onOpenUrl,
+    welcome,
 
     saveImageLabel: isNative ? "Save to Photos" : "Save image",
 

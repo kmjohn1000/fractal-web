@@ -164,6 +164,14 @@ async function render(browser, size, shot) {
     viewport: { width: size.width, height: size.height },
     deviceScaleFactor: size.dpr, isMobile: true, hasTouch: true, serviceWorkers: "block",
   });
+  // A return visitor who closed the welcome card: no cold-open flight and no
+  // card over the shots.
+  await context.addInitScript(() => {
+    try {
+      localStorage.setItem("fractalAtlas.visited", "1");
+      localStorage.setItem("fractalAtlas.welcomeDismissed", "1");
+    } catch { /* storage blocked */ }
+  });
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));

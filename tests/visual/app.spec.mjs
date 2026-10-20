@@ -24,6 +24,12 @@ test.beforeEach(async ({ page }) => {
   pageErrors = [];
   page.on("pageerror", (e) => pageErrors.push(e.message));
   await page.addInitScript(() => {
+    // Return visitor who has closed the welcome card: no cold-open flight,
+    // no card over the baselines (cold-open.spec.mjs covers both).
+    try {
+      localStorage.setItem("fractalAtlas.visited", "1");
+      localStorage.setItem("fractalAtlas.welcomeDismissed", "1");
+    } catch { /* storage blocked */ }
     // Seeded Math.random (mulberry32): the chaos-game modes (fern.js) plot
     // random points, so without this every run draws a different scatter.
     let seed = 0x9e3779b9;

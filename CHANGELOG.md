@@ -2,6 +2,13 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.38.0 — 2026-10-20
+- On the website, a first visit now flies from the whole set to one of a few showpiece places with the info card open.
+- On the website, a welcome card says what Fractal Atlas is and links to the App Store, the privacy page and the support page. Close it and it stays closed.
+- Shared links now show a title, description and picture in Messages, Slack and social posts.
+- The info card calls the starting view "The whole shape" instead of "Opening view".
+- On wide website windows, the toolbar buttons sit in a centered column.
+
 ## 1.37.0 — 2026-10-18
 - Maintenance release: rebuilt for the App Store.
 

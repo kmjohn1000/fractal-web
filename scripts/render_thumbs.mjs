@@ -67,6 +67,11 @@ try {
   const setHeight = (height) => send("Emulation.setDeviceMetricsOverride", { width: WIDTH, height, deviceScaleFactor: 1, mobile: false });
 
   await setHeight(640);
+  // A return visitor who closed the welcome card: no cold-open flight and no
+  // card over the thumbnails.
+  await send("Page.addScriptToEvaluateOnNewDocument", {
+    source: `try { localStorage.setItem("fractalAtlas.visited", "1"); localStorage.setItem("fractalAtlas.welcomeDismissed", "1"); } catch {}`,
+  });
   await send("Page.navigate", { url: appUrl });
   await sleep(2500);
 
