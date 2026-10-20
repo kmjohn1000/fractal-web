@@ -11,10 +11,13 @@ git-ignored file.
       flight and the welcome card's placement above the toolbar; whether
       Back looks enabled or disabled on a cold open from a share link; a
       link preview in Messages and Slack (previews are cached, so try a
-      fresh URL). The app side (no flight, no card, no toolbar cap, "The
-      whole shape") was only checked with a faked Capacitor in headless
-      Chromium: run it in the simulator or on a phone before the next
-      release. Relates to the portrait-rotation item under Next.
+      fresh URL). The app side was checked 2026-10-20 in the simulator
+      (iPhone 17 Pro and iPad Pro 13", build 258): opens on the whole set
+      with no flight and no card, the iPad toolbar is unchanged, no crash
+      or error banner. Still unseen on screen in the app: the info card's
+      "The whole shape" line (simctl can't tap; check it on a phone or in
+      Xcode before the next release). Relates to the portrait-rotation
+      item under Next.
 
 ## Next — discovery and delight
 Help people find beautiful places, and give them more ways to see them.
@@ -517,7 +520,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
-- First-visit experience on the web and link previews (1.38.0): a first web visit with no share link flies from the whole set to one of five showpiece Mandelbrot places (Seahorse Valley, Mini Mandelbrot, Elephant Valley, Double Spiral, Sunburst Fan) with the info card open; a dismissible welcome card (name, one line, App Store link, Privacy · Support; shown every web visit until closed, never in the app); `<meta name="description">` plus `og:` and `twitter:card` tags with `icons/og-image.jpg`; the opening view reads "The whole shape"; on website windows 900px and wider the toolbar rows sit in a centered 760px column (web only, `html.web`, so the iPad app is unchanged). Visit state lives in `Platform.welcome` (`platform.js`); `tests/visual/cold-open.spec.mjs` covers the three paths, and the visual suite, store-screenshots and thumbnail scripts pre-set the storage keys. Real-simulator check of the app and a phone check not done (the native gating was checked with a faked Capacitor in headless Chromium) — `189e823`
+- First-visit experience on the web and link previews (1.38.0): a first web visit with no share link flies from the whole set to one of five showpiece Mandelbrot places (Seahorse Valley, Mini Mandelbrot, Elephant Valley, Double Spiral, Sunburst Fan) with the info card open; a dismissible welcome card (name, one line, App Store link, Privacy · Support; shown every web visit until closed, never in the app); `<meta name="description">` plus `og:` and `twitter:card` tags with `icons/og-image.jpg`; the opening view reads "The whole shape"; on website windows 900px and wider the toolbar rows sit in a centered 760px column (web only, `html.web`, so the iPad app is unchanged). Visit state lives in `Platform.welcome` (`platform.js`); `tests/visual/cold-open.spec.mjs` covers the three paths, and the visual suite, store-screenshots and thumbnail scripts pre-set the storage keys. App checked in the iPhone and iPad simulators (no flight, no card, iPad toolbar unchanged); the phone checks and the info card's new line on screen in the app are still open (see Now) — `189e823`
 - 1.37.0 (build 245) submitted for App Review 2026-10-19 with the listing copy updated to 24 fractals and 98 places in English and French (`appstore-screenshots/copy/listing-1.37.0.md`), Spanish added (`copy/listing-es.md`), What's New covering 1.30.1–1.37.0, the new `2-picker` screenshots (iPhone 6.3", iPad 13") and the app preview videos. Screenshots and promo images now come from `scripts/store-screenshots.mjs` — `82cf394`
 - Apollonian gasket (1.36.0, user idea 2026-10-17): the (−1, 2, 2, 3) packing by iterated inversion in its four dual circles, colored by inversion count (mirrored cycle of 24, offset 6 so Inferno's big disks are purple, not black; capped at 500 per pixel, capped pixels get the colormap's average). Deep zoom composes the inversions the whole view shares into one Möbius map in float64 (`apolloFrame`); checked sharp at 1.4e15× in headless Chrome. Info card shows the integer curvature of the circle under the center when it's visible. Six Surprise-me places, five of them repelling fixed points of three-inversion words (they repeat every φ⁶ ≈ 17.94×), including the 4.7e-12 spiral dive Golden Dive. Not yet checked on a phone. The listing's "23 fractals" is now 24 — `9e5abfe`
 - Phoenix deep zoom (1.34.0): float32 perturbation against one float64 reference, and a pixel that glitches continues in exact fixed point from Z[m] + d. 100% agreement with float64 at 1e-9 and ~0.3 s full screen on an iPhone 15 in the spike (`scripts/precision-spike.html`, not committed); all-fixed-point was 2–4 s and its long draws lost the phone's WebGL context. Exact steps capped at 600 per pixel, 4 refinement samples, self-test on first use. Checked by the user on their iPhone 15 (website, 1.35.2): Phoenix and Newton (incl. near the central star, 1.35.1) both sharp at depth — `362a355`
