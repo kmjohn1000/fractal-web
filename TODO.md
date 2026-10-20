@@ -28,8 +28,8 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       1e-3, perturbation). Shallower views already re-render live every
       drag frame. At depth a drag moves a snapshot of the last frame
       (`renderPreview`), and anything outside it is flat gray (#111) until
-      the gesture settles and re-renders. That's slower now that detail
-      goes to 8000. Approach:
+      the gesture settles and re-renders. Approach (detail tops out at
+      2000 since the 8000 build was rolled back in 1.32.1):
       - Snapshot into an offscreen framebuffer bigger than the screen (a
         margin of ~25% per side), and have `renderPreview` sample it
         (`u_snapRes`/offset already handle a snapshot of a different
@@ -99,6 +99,54 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
           heavier exact paths), not precision. Next if pursued: batched
           tiles, and BLA for the Mandelbrot family (also possible in
           WebGL)
+- [ ] Rendering speed, depth and robustness (research 2026-10-20; full
+      report, sources and scratch simulations in the git-ignored
+      `docs/render-research-2026-10-20.md`; not approved to build). The
+      timings below are the research's models, not phone measurements:
+      measure each on the phone first (headless SwiftShader doesn't
+      predict it). Rough order, cheapest first:
+      - Phone telemetry (~50 lines): log GL extensions (`EXT_color_buffer_float`,
+        `EXT_float_blend`, `KHR_parallel_shader_compile`,
+        `EXT_disjoint_timer_query_webgl2`), shader link time, per-pass
+        fence latency and WebGPU `adapter.features` on the iPhone. Decides
+        most of the items below
+      - Interior skip + variance-adaptive supersampling (~100-180 lines in
+        `render`, `scheduleRefinement`, a mask pass): after pass 0 mask the
+        interior; after pass 3 keep refining only where samples still differ
+        by more than ~12 levels. Modeled work 51-98% of today's across five
+        views. Output stops being bit-identical, so re-record the visual
+        baselines. Subsumes "Skip the black interior" step 1 above
+      - Per-fractal shader variants (~60-100 lines in `link()`): `#define`
+        variants compiled lazily, with `KHR_parallel_shader_compile` where
+        present. Pass: pixel-identical output and >=15% faster pass or >=30%
+        faster link on the phone
+      - Fence-paced rendering (~80-150 lines): time each pass with
+        `fenceSync`, adapt passes per frame (several cheap passes per
+        frame, one strip per frame for heavy ones). The route to retrying
+        Bird's Eye at 8000, together with multi-pass iteration state in
+        float textures (+150-250 lines; see Deep-zoom engine). Test: 20
+        zoom-ins at 8000 without context loss
+      - Offscreen float accumulation buffer instead of
+        `preserveDrawingBuffer` + `alpha:false` (~100-140 lines). Enables
+        the two items above and "Render past the screen edges"; touches
+        Save/Share readback and the preview snapshot path
+      - Dynamic resolution during live float32 gestures, driven by frame
+        time (~50 lines)
+      - Vector modes: Pythagoras issues ~16k canvas calls per frame at depth
+        12 (batch into 2 paths, add culling); Koch and dragon allocate an
+        array per vertex and never cull (flat arrays, culling, sub-pixel
+        level of detail). ~40-90 lines, not benchmarked
+      - GPU chaos game for the point-based IFS modes: WebGL2 point splats,
+        additive blend into RGBA16F (~150-220 lines; low confidence)
+      - WebGPU spike v2: batch many tiles per queue submit (the first spike
+        awaited every tile, which Apple's forums say costs 2-4x). Go only
+        if Newton full screen <= 250 ms and all-exact Phoenix survives;
+        otherwise shelve. WGSL has no f64, so 16-bit-limb fixed point
+        stays the only exact path
+      - Researched and not worth it at today's depth and 2000 cap: BLA /
+        series approximation (0 steps skipped at float64, 0-25% at float32
+        in a simulation of the app's own places), native Metal, threads /
+        `SharedArrayBuffer`, GPU Mariani-Silver, wavefront compaction, f16
 - [ ] New escape-time types: Buffalo, Lambda (Celtic is done, see Done)
       (single-state iteration, reuse existing shader/perturbation/
       supersampling pipeline with no structural changes)
@@ -484,7 +532,14 @@ distance estimation → zoom-to-minibrot / AI discovery.
       feature; the reference orbit is CPU/JS work (BigInt fixed-point),
       but past ~1e-35 the shader's float32 deltas also underflow, so it
       also needs extended-exponent deltas, plus BLA iteration skipping and
-      2D reference-orbit textures past MAX_TEXTURE_SIZE)
+      2D reference-orbit textures past MAX_TEXTURE_SIZE). Research
+      2026-10-20 (see `docs/render-research-2026-10-20.md`): a BigInt
+      orbit of 2000 iterations took 0.3 ms at 128 bits, 1.1 ms at 1024
+      bits, 10.8 ms at 4096 bits (M3), so the orbit isn't the bottleneck;
+      float32 deltas should hold to ~scale 1e-30 (inference); BLA wasn't
+      worth it at this iteration cap. Needs a share-link v2 and a
+      `chooseReference` redesign (scan candidates as float64 deltas against
+      the BigInt center orbit); ~250-400 lines
 - [ ] maxIter past 8000 (the cap planned for Bird's Eye, see Next): one
       draw looping 10⁴–10⁶ times needs multi-pass iteration, saving
       per-pixel state (z, dz, reference index) in float textures between
