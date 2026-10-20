@@ -47,8 +47,12 @@ const SHOTS = [
   { name: "04-fern", url: `${LINK}#v=1&m=fern&x=0.25&y=5.025&s=5.225&r=0&n=1000000&c=0` },
 ];
 
-function run(cmd, args, log) {
-  const r = spawnSync(cmd, args, { stdio: ["ignore", "pipe", "pipe"], maxBuffer: 1 << 28 });
+// timeoutMs (optional) kills a call that stalls: without it spawnSync waits
+// forever, and `simctl openurl` can block for a minute or more while the
+// simulator's link service is busy (see openInApp).
+function run(cmd, args, log, timeoutMs) {
+  const r = spawnSync(cmd, args, { stdio: ["ignore", "pipe", "pipe"], maxBuffer: 1 << 28, timeout: timeoutMs });
+  if (r.error?.code === "ETIMEDOUT") throw new Error(`${cmd} ${args.slice(0, 2).join(" ")} timed out after ${timeoutMs / 1000}s`);
   const out = (r.stdout?.toString() || "") + (r.stderr?.toString() || "");
   if (log) writeFileSync(log, out);
   if (r.status !== 0) {
@@ -58,6 +62,7 @@ function run(cmd, args, log) {
   return out;
 }
 const simctl = (...args) => run("xcrun", ["simctl", ...args]);
+const simctlWithin = (timeoutMs, ...args) => run("xcrun", ["simctl", ...args], undefined, timeoutMs);
 
 function devices() {
   return Object.entries(JSON.parse(simctl("list", "devices", "available", "-j")).devices)
@@ -85,25 +90,37 @@ function simulatorFor(deviceName) {
 }
 
 const SAFARI = "com.apple.mobilesafari";
-const isRunning = (udid, id) => run("xcrun", ["simctl", "spawn", udid, "launchctl", "list"]).includes(`UIKitApplication:${id}[`);
-const terminate = (udid, id) => spawnSync("xcrun", ["simctl", "terminate", udid, id], { stdio: "ignore" });
+const isRunning = (udid, id) => run("xcrun", ["simctl", "spawn", udid, "launchctl", "list"], undefined, 20_000).includes(`UIKitApplication:${id}[`);
+const terminate = (udid, id) => spawnSync("xcrun", ["simctl", "terminate", udid, id], { stdio: "ignore", timeout: 20_000 });
 
 // Opens a share link in the app. Right after an install, iOS hasn't yet
 // associated the app with the link's domain (it fetches the domain's
 // apple-app-site-association in the background), so the link opens in
 // Safari instead: close Safari, wait and retry until the app gets it.
+// That fetch can take several minutes (4+ on 2026-10-20, via Apple's CDN),
+// and `simctl openurl` itself can stall or fail while it runs, so the wait
+// is a time budget, not a count, every call has a timeout, and a failed
+// openurl counts as one more attempt. Each attempt says how long it's been.
+const LINK_WAIT_MS = 8 * 60 * 1000;
 async function openInApp(udid, id, url) {
-  for (let attempt = 1; attempt <= 12; attempt++) {
+  const start = Date.now();
+  for (let attempt = 1; Date.now() - start < LINK_WAIT_MS; attempt++) {
     terminate(udid, SAFARI);
     terminate(udid, id);
-    simctl("openurl", udid, url);
+    let problem = "";
+    try {
+      simctlWithin(40_000, "openurl", udid, url);
+    } catch (err) {
+      problem = `; openurl: ${String(err.message).split("\n")[0]}`;
+    }
     await sleep(3000);
     if (!isRunning(udid, SAFARI) && isRunning(udid, id)) return;
-    console.log(`  link opened in Safari, not the app (attempt ${attempt}); waiting for the domain association`);
+    const secs = Math.round((Date.now() - start) / 1000);
+    console.log(`  link opened in Safari, not the app (attempt ${attempt}, ${secs}s in); waiting for the domain association${problem}`);
     terminate(udid, SAFARI);
     await sleep(10000);
   }
-  throw new Error(`share links keep opening in Safari on ${udid}: universal links aren't associated`);
+  throw new Error(`share links still open in Safari on ${udid} after ${LINK_WAIT_MS / 60000} minutes: universal links aren't associated`);
 }
 
 function bundleId() {
