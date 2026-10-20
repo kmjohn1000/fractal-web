@@ -202,7 +202,9 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       small ftype branch on the shared pipeline; check which ones
       perturbation can handle (abs-folds need `diffabs`) before promising
       deep zoom. Any addition changes the fractal count in the store
-      listing (2026-10-09)
+      listing (2026-10-09). Candidate formulas (mostly unconfirmed: check
+      each against a source before building) and a comparison render are in
+      the local `docs/mandelbrot-variants/` (2026-10-20)
 - [ ] Burning Ship looks like a ship. Partly done: the Surprise-me places
       land ship-side up by turning the view 180° (`rotation: Math.PI`,
       1.21.0; the compass turns it back). Still open: the default Opening

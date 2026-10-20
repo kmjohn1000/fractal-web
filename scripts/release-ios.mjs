@@ -20,7 +20,7 @@
 //
 // Logs from xcodebuild go to <outDir>/*.log; only the tail is printed on failure.
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 const root = new URL("..", import.meta.url).pathname;
@@ -132,6 +132,28 @@ function pngSize(file) {
   return { width: Number(out.match(/pixelWidth: (\d+)/)[1]), height: Number(out.match(/pixelHeight: (\d+)/)[1]) };
 }
 
+// A shot of a frame the app hasn't drawn yet (black canvas, empty toolbar)
+// compresses to about 0.02 bytes per pixel; the sparsest real shot (the fern
+// on black) is about 0.12. Anything under this counts as blank. Cheap and
+// dependency-free, but it can't see a half-drawn frame.
+const MIN_BYTES_PER_PIXEL = 0.06;
+const DRAW_WAIT_MS = 90_000;
+// Takes the screenshot, retrying every 5 s while the frame looks blank: a
+// cold launch on the iPad's iOS 27.0 simulator takes longer than the fixed
+// wait before it. Returns the last attempt's pixel size and whether it is
+// still blank after DRAW_WAIT_MS.
+async function screenshotWhenDrawn(udid, file) {
+  const start = Date.now();
+  for (;;) {
+    simctlWithin(30_000, "io", udid, "screenshot", "--type=png", file);
+    const px = pngSize(file);
+    const blank = statSync(file).size / (px.width * px.height) < MIN_BYTES_PER_PIXEL;
+    if (!blank || Date.now() - start >= DRAW_WAIT_MS) return { ...px, blank };
+    console.log(`  frame still blank (${Math.round((Date.now() - start) / 1000)}s in); waiting for the app to draw`);
+    await sleep(5000);
+  }
+}
+
 async function screenshots(outDir) {
   mkdirSync(outDir, { recursive: true });
   const derived = join(outDir, "DerivedData");
@@ -165,16 +187,15 @@ async function screenshots(outDir) {
       else simctl("launch", udid, id);
       await sleep(9000); // launch, first frame, supersampling / IFS fill
       const file = join(dir, `${shot.name}.png`);
-      simctl("io", udid, "screenshot", "--type=png", file);
-      const px = pngSize(file);
-      const ok = px.width === size.width && px.height === size.height;
+      const px = await screenshotWhenDrawn(udid, file);
+      const ok = px.width === size.width && px.height === size.height && !px.blank;
       results.push({ file, ...px, ok });
-      console.log(`${ok ? "ok " : "BAD"} ${size.slot} ${shot.name}: ${px.width}x${px.height}`);
+      console.log(`${ok ? "ok " : "BAD"} ${size.slot} ${shot.name}: ${px.width}x${px.height}${px.blank ? " (still blank)" : ""}`);
     }
     simctl("status_bar", udid, "clear");
     simctl("shutdown", udid);
   }
-  if (results.some((r) => !r.ok)) throw new Error("some screenshots have the wrong pixel size");
+  if (results.some((r) => !r.ok)) throw new Error("some screenshots have the wrong pixel size or are still blank");
 }
 
 function teamId() {
