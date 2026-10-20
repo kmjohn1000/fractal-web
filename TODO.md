@@ -356,6 +356,16 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       on a successful save. Candidates: Surprise me landing, the compass
       snapping to upright, picking a colormap, Reset, crossing 0° while
       rotating. Keep them subtle, through `platform.js`
+- [ ] Shake to roll the dice (user idea 2026-10-20): shaking the phone does
+      what the Surprise-me die does. App-only. Likely route: override
+      `motionEnded` for `.motionShake` in `FractalBridgeViewController.swift`
+      and forward it to the web app through a small plugin in `platform.js`;
+      that needs no motion-permission prompt (verify), unlike web
+      `devicemotion`, which iOS gates behind `requestPermission()`. Open
+      design points: a Settings toggle so it can't fire while walking or
+      panning, ignoring shakes during a flight or open dialog, a haptic on
+      the shake, and the die button stays as the VoiceOver and non-shake
+      path. Mention it in the listing if it ships (guideline 2.3.1)
 - [ ] Home Screen quick actions (long-press the icon): Surprise me, last
       view, random colormap. Swift in the app/scene delegate plus a hook
       into the web app
