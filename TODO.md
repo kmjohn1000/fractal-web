@@ -267,6 +267,15 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       selector"; benchmarked against fractal.garden, MIT,
       github.com/trebeljahr/fractal-garden, utils/escapeTimeColoring.ts and
       utils/shaders/escape-time.frag, read 2026-10-17):
+      - Status (2026-10-21): in progress, behind a flag so the live
+        site's output doesn't change: `localStorage["fractalAtlas.styles"]
+        = "1"`, or open the page once with `#styles` in the address
+        (`#styles=0` turns it off). Shipped so far: the shader plumbing
+        (style, bands and shift uniforms; Bands style). Checks: `node
+        scripts/default-identity.mjs check` (default output identical to
+        before, zero differing pixels), `node scripts/oracle-compare.mjs`
+        (app against a float64 reference, `scripts/oracle/oracle.py`),
+        `node scripts/style-bench.mjs` (headless frame time).
       - Styles: smooth (today); exterior distance estimate; stripe
         average (Härkönen: 0.5+0.5·sin(5·arg z) averaged over the orbit,
         blended between the last two averages by the smooth fraction);

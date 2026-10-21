@@ -95,6 +95,33 @@ void main() {
 }
 `;
 
+// Color styles (COLOR_STYLES in app.js). Shared by FRAG_SRC and
+// PHOENIX_DEEP_FRAG_SRC, which each define lutColor before including this. A
+// style picks the colormap coordinate t; bands and shift then treat every
+// style alike, lutColor(t * u_density + u_offset), which at 1 and 0 is
+// exactly lutColor(t) (x * 1.0 + 0.0 loses no bit), so the default Smooth
+// output is unchanged. Each shader's escapeColor picks t: Smooth is the
+// continuous count (see escapeColor in FRAG_SRC for the formula) and Bands
+// the whole-number count with its hard edges; the other styles are in
+// FRAG_SRC. Shader compilers are touchy about float32 perturbation loops: a
+// reshaped escapeColor once changed 10% of a deep Phoenix frame, so any edit
+// here must pass scripts/default-identity.mjs (zero differing pixels).
+const COLOR_STYLE_GLSL = `
+const int STYLE_SMOOTH  = 0;
+const int STYLE_BANDS   = 1;
+const int STYLE_GLOW    = 2;
+const int STYLE_STRIPES = 3;
+const int STYLE_POINT   = 4;
+const int STYLE_CROSS   = 5;
+uniform int   u_style;
+uniform float u_density;   // bands: colormap cycles per unit of t (1 = today's 40 iterations per cycle)
+uniform float u_offset;    // shift: where in the colormap t = 0 starts, 0..1
+
+vec3 styleColor(float t) {
+  return lutColor(t * u_density + u_offset);
+}
+`;
+
 const FRAG_SRC = `
 precision highp float;
 
@@ -183,7 +210,7 @@ vec3 lutColor(float t) {
   float u = abs(t - 1.0) < 1e-5 ? 255.5 / 256.0 : fract(t);
   return texture2D(u_lut, vec2(u, 0.5)).rgb;
 }
-
+${COLOR_STYLE_GLSL}
 // Escape radius 256 (squared here), not the minimal 2: the smooth count below
 // assumes |z| is large enough that z^P + c ~ z^P, and with a small radius that
 // approximation shows up as faint ripples across each iteration band. A bigger
@@ -201,8 +228,9 @@ const float ESCAPE_RADIUS_SQ = 65536.0;
 // wrap that to the TOP of the colormap (inferno's pale yellow in the corners).
 vec3 escapeColor(int iter, vec2 z) {
   float logBase = u_power > 2.5 ? log2(3.0) : 1.0;
+  if (u_style == STYLE_BANDS) return styleColor(floor(float(iter) + 1.0) * 0.025);
   float n = max(float(iter) + 1.0 - log2(log2(sqrt(dot(z, z)))) / logBase, 0.0);
-  return lutColor(n * 0.025);
+  return styleColor(n * 0.025);
 }
 
 // Sierpinski carpet and Sierpinski gasket are the same construction at two
@@ -899,10 +927,15 @@ const float P = -0.5;
 // Must match ESCAPE_RADIUS_SQ in FRAG_SRC.
 const float ESCAPE_RADIUS_SQ = 65536.0;
 ${FIXED_POINT_GLSL}
-// Must match escapeColor in FRAG_SRC (Phoenix is power 2: log base 2).
+${COLOR_STYLE_GLSL}
+// Must match escapeColor in FRAG_SRC (Phoenix is power 2: log base 2). Only
+// Smooth and Bands exist for Phoenix (styleDrawn in app.js). Kept in this
+// exact shape: the version that called a shared helper changed the compiled
+// perturbation loop (see COLOR_STYLE_GLSL).
 vec3 escapeColor(int iter, vec2 z) {
   float n = max(float(iter) + 1.0 - log2(log2(sqrt(dot(z, z)))), 0.0);
-  return lutColor(n * 0.025);
+  float t = u_style == STYLE_BANDS ? floor(float(iter) + 1.0) * 0.025 : n * 0.025;
+  return lutColor(t * u_density + u_offset);
 }
 
 vec2 cMul(vec2 a, vec2 b) {

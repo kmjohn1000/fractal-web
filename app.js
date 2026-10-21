@@ -964,6 +964,9 @@ function createFractalRenderer(canvas) {
     juliaC: gl.getUniformLocation(prog, "u_juliaC"),
     phoenixP: gl.getUniformLocation(prog, "u_phoenixP"),
     lut: gl.getUniformLocation(prog, "u_lut"),
+    style: gl.getUniformLocation(prog, "u_style"),
+    density: gl.getUniformLocation(prog, "u_density"),
+    offset: gl.getUniformLocation(prog, "u_offset"),
     digitDepth: gl.getUniformLocation(prog, "u_digitDepth"),
     digitLevel: gl.getUniformLocation(prog, "u_digitLevel"),
     digitCenter: gl.getUniformLocation(prog, "u_digitCenter"),
@@ -1154,7 +1157,7 @@ function createFractalRenderer(canvas) {
     try {
       const p = link(PHOENIX_DEEP_FRAG_SRC, VERT_SRC_300);
       const names = ["resolution", "jitter", "rotCos", "rotSin", "scale", "maxIter", "isJulia", "cx", "cy",
-        "jcx", "jcy", "ref", "refLen", "refOff", "exactCap", "testMode", "lut"];
+        "jcx", "jcy", "ref", "refLen", "refOff", "exactCap", "testMode", "lut", "style", "density", "offset"];
       const pu = Object.fromEntries(names.map((n) => [n, gl.getUniformLocation(p, `u_${n}`)]));
       phoenixDeep = { prog: p, u: pu };
       if (!phoenixDeepSelfTest()) phoenixDeep = false;
@@ -1181,6 +1184,10 @@ function createFractalRenderer(canvas) {
     gl.uniform4ui(pu.jcx, ...fixedLimbs(state.juliaC[0]));
     gl.uniform4ui(pu.jcy, ...fixedLimbs(state.juliaC[1]));
     gl.uniform1i(pu.exactCap, PHOENIX_EXACT_CAP);
+    const cs = colorStyleFor(state);
+    gl.uniform1i(pu.style, cs.glsl);
+    gl.uniform1f(pu.density, cs.density);
+    gl.uniform1f(pu.offset, cs.offset);
     // The reference orbit, recomputed only when the view changes (the
     // refinement passes reuse it, as with refCacheKey).
     const key = [state.cx, state.cy, state.scale, state.rotation || 0, state.maxIter, state.isJulia,
@@ -1279,6 +1286,10 @@ function createFractalRenderer(canvas) {
     gl.uniform1i(u.isJulia, state.isJulia ? 1 : 0);
     gl.uniform2f(u.juliaC, state.juliaC[0], state.juliaC[1]);
     gl.uniform2f(u.phoenixP, PHOENIX_P[0], PHOENIX_P[1]);
+    const cs = colorStyleFor(state);
+    gl.uniform1i(u.style, cs.glsl);
+    gl.uniform1f(u.density, cs.density);
+    gl.uniform1f(u.offset, cs.offset);
     // Per view, not per pass: every later sample in a refinement chain is
     // the same view (any change restarts at sample 0), and the program
     // keeps its uniforms between draws.
@@ -1485,6 +1496,71 @@ const els = {
 
 let mode = "fractal"; // "fractal" | "koch" | "tree" | a LINE_CURVES key ("dragon", ...) | an IFS_SYSTEMS key ("fern", ...)
 let colormapIndex = 0;
+
+// ---------------------------------------------------------------- color styles
+
+// How an escape-time pixel picks its colormap coordinate (see
+// COLOR_STYLE_GLSL in shaders.js). Like the colormap, the style is global:
+// one choice for every fractal that can draw it, kept across fractal
+// switches. `bands` and `shift` apply to every style as
+// lutColor(t * bands + shift); Smooth at bands 1 and shift 0 is exactly
+// today's coloring. `glsl` is the style's number in the shaders.
+const COLOR_STYLES = [
+  { id: "smooth", glsl: 0, label: "Smooth" },
+  { id: "bands", glsl: 1, label: "Bands" },
+];
+const COLOR_BANDS_RANGE = [0.25, 8];
+const colorStyle = { style: "smooth", density: 1, offset: 0 };
+
+// Styles are being built behind a flag (see TODO.md): the new controls stay
+// hidden and shared links ignore the style fields until it's on. Turn it on
+// with localStorage["fractalAtlas.styles"] = "1" or by opening the page once
+// with #styles in the address ("#styles=0" turns it off again); the hash is
+// read here, before applyShareHashFromUrl strips it.
+const stylesEnabled = (() => {
+  try {
+    const p = new URLSearchParams(location.hash.slice(1));
+    if (p.has("styles")) {
+      if (p.get("styles") === "0") localStorage.removeItem("fractalAtlas.styles");
+      else localStorage.setItem("fractalAtlas.styles", "1");
+    }
+    return localStorage.getItem("fractalAtlas.styles") === "1";
+  } catch {
+    return false; // storage blocked
+  }
+})();
+
+// The style a view actually draws: the chosen one if its fractal can do it,
+// otherwise Smooth. Newton, Carpet, Gasket and Apollonian color by their own
+// schemes (the shaders never read the style), and Phoenix only has the two
+// styles that need no per-iteration state.
+function styleDrawn(id, state) {
+  const ft = state.ftype;
+  if (ft === undefined || ft === FTYPE.NEWTON || ft === FTYPE.CARPET || ft === FTYPE.GASKET || ft === FTYPE.APOLLONIAN) return "smooth";
+  if (ft === FTYPE.PHOENIX) return id === "bands" ? "bands" : "smooth";
+  return COLOR_STYLES.some((s) => s.id === id) ? id : "smooth";
+}
+
+// What the renderer sends the shaders for one view.
+function colorStyleFor(state) {
+  const id = styleDrawn(colorStyle.style, state);
+  return { glsl: COLOR_STYLES.find((s) => s.id === id).glsl, density: colorStyle.density, offset: colorStyle.offset };
+}
+
+// Strict: anything unknown or out of range falls back to today's coloring
+// (or keeps the current value for a field left out), never throws.
+function setColorStyle(next = {}) {
+  const prev = { ...colorStyle };
+  if (next.style !== undefined) colorStyle.style = COLOR_STYLES.some((s) => s.id === next.style) ? next.style : "smooth";
+  if (next.density !== undefined) {
+    colorStyle.density = Number.isFinite(next.density)
+      ? Math.min(COLOR_BANDS_RANGE[1], Math.max(COLOR_BANDS_RANGE[0], next.density)) : 1;
+  }
+  if (next.offset !== undefined) {
+    colorStyle.offset = Number.isFinite(next.offset) ? ((next.offset % 1) + 1) % 1 : 0;
+  }
+  if (prev.style !== colorStyle.style || prev.density !== colorStyle.density || prev.offset !== colorStyle.offset) requestRender();
+}
 let currentName = "Mandelbrot";
 let dualActive = false;
 let boxZoomActive = false;
