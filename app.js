@@ -1587,6 +1587,7 @@ let juliaState = null; // populated when dual mode is entered
 let mainHistory = [];
 let juliaHistory = [];
 
+const curveBoxCache = new Map(); // vectorViewBox's boxes for the line curves, by curve and depth
 const kochState = { depth: 4, fill: true };
 const treeState = { depth: 9 };
 // Each line curve keeps its own depth; dragonState.depth reads/writes the
@@ -1691,13 +1692,17 @@ function renderAll() {
     updateHud();
     scheduleRefinement();
   } else if (mode === "koch") {
-    kochView.render({ depth: kochState.depth, fill: kochState.fill, colorIndex: vectorColors.koch });
+    kochView.render({ depth: kochState.depth, fill: kochState.fill, colorIndex: vectorColors.koch, fitHalfHeight: vectorFitHalfHeight("koch") });
     updateKochHud();
   } else if (mode === "tree") {
-    treeView.render({ depth: treeState.depth, colorIndex: vectorColors.tree });
+    treeView.render({ depth: treeState.depth, colorIndex: vectorColors.tree, fitHalfHeight: vectorFitHalfHeight("tree") });
     updateTreeHud();
   } else if (isCurveMode(mode)) {
-    dragonView.render({ depth: dragonState.depth, colorIndex: vectorColors[dragonView.curve] });
+    dragonView.render({
+      depth: dragonState.depth, colorIndex: vectorColors[dragonView.curve],
+      // Only the dragon is drawn from the viewport; the other curves have a fixed depth.
+      fitHalfHeight: dragonView.curve === "dragon" ? vectorFitHalfHeight("dragon") : undefined,
+    });
     updateDragonHud();
   } else {
     fernView.render({
@@ -1963,18 +1968,22 @@ function modeLabel(key) {
 // Scale bar for a pattern's view (Canvas2D views keep halfHeight).
 const patternBar = (view, canvas) => ({ unitsPerPx: unitsPerCssPx(view.halfHeight, canvas) });
 
+// "Depth 8" plus, once zooming in has added levels beyond the slider's, the
+// number added: "Depth 8 (+3 from zoom)".
+const depthHudText = (depth, extraLevels) => `Depth ${depth}${extraLevels > 0 ? ` (+${extraLevels} from zoom)` : ""}`;
+
 function updateKochHud() {
-  setHud(modeLabel("koch"), [`Depth ${kochState.depth}, ${kochState.fill ? "filled" : "outline"}`, rotationHudText(kochView.view.rotation)],
+  setHud(modeLabel("koch"), [`${depthHudText(kochState.depth, kochView.extraLevels)}, ${kochState.fill ? "filled" : "outline"}`, rotationHudText(kochView.view.rotation)],
     patternBar(kochView.view, els.kochCanvas));
 }
 
 function updateTreeHud() {
-  setHud(modeLabel("tree"), [`Depth ${treeState.depth}`, rotationHudText(treeView.view.rotation)],
+  setHud(modeLabel("tree"), [depthHudText(treeState.depth, treeView.extraLevels), rotationHudText(treeView.view.rotation)],
     patternBar(treeView.view, els.treeCanvas));
 }
 
 function updateDragonHud() {
-  setHud(modeLabel(dragonView.curve), [`Depth ${dragonState.depth}`, rotationHudText(dragonView.view.rotation)],
+  setHud(modeLabel(dragonView.curve), [depthHudText(dragonState.depth, dragonView.extraLevels), rotationHudText(dragonView.view.rotation)],
     patternBar(dragonView.view, els.dragonCanvas));
 }
 
@@ -2698,12 +2707,20 @@ function vectorViewBox(modeKey) {
     const m = 0.04 * Math.max(x1 - x0, y1 - y0);
     return [x0 - m, x1 + m, y0 - m, y1 + m];
   }
-  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
-  for (const [x, y] of LINE_CURVES[modeKey].points(dragonState.depth)) {
-    x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+  // Every render asks (vectorFitHalfHeight), so the box is cached per curve
+  // and depth; computing it walks all the curve's points.
+  const key = `${modeKey},${dragonState.depth}`;
+  let box = curveBoxCache.get(key);
+  if (!box) {
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (const [x, y] of LINE_CURVES[modeKey].points(dragonState.depth)) {
+      x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+    }
+    const m = 0.06 * Math.max(x1 - x0, y1 - y0);
+    box = [x0 - m, x1 + m, y0 - m, y1 + m];
+    curveBoxCache.set(key, box);
   }
-  const m = 0.06 * Math.max(x1 - x0, y1 - y0);
-  return [x0 - m, x1 + m, y0 - m, y1 + m];
+  return box;
 }
 
 const VECTOR_VIEWS = {
@@ -2715,13 +2732,20 @@ const VECTOR_VIEWS = {
   arrowhead: [dragonView, els.dragonCanvas],
 };
 const fittedVectorModes = new Set();
-function fitVectorView(modeKey) {
-  const [vectorView, canvas] = VECTOR_VIEWS[modeKey];
+// The framing Reset gives a pattern mode on its canvas as it is now.
+function vectorFitView(modeKey) {
+  const canvas = VECTOR_VIEWS[modeKey][1];
   const aspect = canvas.clientWidth > 0 && canvas.clientHeight > 0 ? canvas.clientWidth / canvas.clientHeight : 1;
-  const v = viewFromBounds(vectorViewBox(modeKey), aspect);
-  Object.assign(vectorView.view, { cx: v.cx, cy: v.cy, halfHeight: v.scale, rotation: 0 });
+  return viewFromBounds(vectorViewBox(modeKey), aspect);
+}
+function fitVectorView(modeKey) {
+  const v = vectorFitView(modeKey);
+  Object.assign(VECTOR_VIEWS[modeKey][0].view, { cx: v.cx, cy: v.cy, halfHeight: v.scale, rotation: 0 });
   fittedVectorModes.add(modeKey);
 }
+// Koch, tree and dragon add detail beyond the depth slider as you zoom in
+// past this framing's half-height, so the views are told what it is.
+const vectorFitHalfHeight = (modeKey) => vectorFitView(modeKey).scale;
 
 const kochNav = attachVectorViewInteraction(els.kochCanvas, kochView);
 const treeNav = attachVectorViewInteraction(els.treeCanvas, treeView);

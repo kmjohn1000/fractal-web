@@ -2,6 +2,11 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.39.0 — 2026-10-21
+- Koch snowflake, Pythagoras tree and dragon curve now keep revealing detail as you zoom in, instead of running out at about 13×, 2× and 1×. The info card says how many levels the zoom added beyond the depth slider's.
+- Koch, tree and dragon draw only what's on screen, so deep depths are much lighter on the device and drag more smoothly.
+- The Hilbert, Gosper and arrowhead curves draw faster too.
+
 ## 1.38.0 — 2026-10-20
 - On the website, a first visit now flies from the whole set to one of a few showpiece places with the info card open.
 - On the website, a welcome card says what Fractal Atlas is and links to the App Store, the privacy page and the support page. Close it and it stays closed.

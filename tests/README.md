@@ -23,6 +23,17 @@ if:
 - the screenshot differs from the golden baseline in
   `tests/baselines/<project>/` by more than 1% of pixels.
 
+`vector.spec.mjs` covers the Koch, Pythagoras tree and dragon views, which
+are drawn from the viewport (`kochAdaptive`, `treeAdaptive`,
+`dragonAdaptive`): their geometry must equal the plain full-detail
+generators' (`kochSnowflake`, `pythagorasTree`, `dragonCurve`) at depths
+0-6 / 0-10 / 0-14; culling must not change a pixel of what's on screen (the
+same view on a canvas twice the size, compared in the middle); zooming
+in must add levels beyond the depth slider's and say so in the info card; a
+two-finger twist must still work at depth; a nonsense view from a
+hand-edited link must render quickly without errors; and three deep-zoom
+screenshots are compared with baselines.
+
 `sw.spec.mjs` checks the freshness stamps `npm run stamp` writes: `sw.js`'s
 `CACHE_NAME` matches the app files, and `package.json` and `index.html`'s
 `?v=` queries carry the CHANGELOG version. It also checks that `APP_SHELL`

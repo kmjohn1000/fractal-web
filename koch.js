@@ -15,6 +15,9 @@
 // the list is reversed to keep the same vertex order. Checked point for
 // point against the old kochSegment/kochSnowflake at depths 0-8 (max
 // difference 1.6e-13) before they were removed.
+// The view no longer draws from this list (kochAdaptive below builds only
+// what's on screen, at any zoom); it stays as the plain full-detail
+// reference that tests/visual/vector.spec.mjs checks kochAdaptive against.
 function kochSnowflake(depth) {
   const [verts] = lsystemPolylines(KOCH_SNOWFLAKE, depth, {
     start: [0, 1], startHeadingDeg: -60, step: Math.sqrt(3) / Math.pow(3, depth),
@@ -22,12 +25,82 @@ function kochSnowflake(depth) {
   return verts.reverse();
 }
 
+const KOCH_EDGE = Math.sqrt(3);   // world length of the depth-0 triangle's sides
+const KOCH_FIT_HH = 1.08;         // half-height of the Reset framing on a wide canvas; render's opts.fitHalfHeight overrides it
+const KOCH_PX_MIN = 1;            // CSS px: a piece whose thirds would be shorter stays one straight line
+const KOCH_ZOOM_SLACK = 1.5;      // zoom headroom before a level beyond the slider's depth is added
+const KOCH_BUDGET = 100000;       // vertices per frame; past it the pixel limit grows by half and the frame is redone
+const KOCH_MAX_LEVEL = 40;        // 3^-40 is already below double precision for any view
+
+// The snowflake as the viewport needs it, in the order and orientation of
+// kochSnowflake(depth) (counter-clockwise from the top vertex), written to
+// buf as canvas-pixel x, y pairs. Each side is split recursively:
+//   - a piece wholly off screen stays a straight chord. A Koch piece lies
+//     inside the triangle on its chord, which sits inside the disc around
+//     the chord's midpoint with the chord as diameter, so the chord and the
+//     piece differ only off screen (the fill stays right);
+//   - a piece splits while the slider asks for it (level < depth), and
+//     beyond that while it is still longer than refPx, so zooming in keeps
+//     adding levels instead of showing straight edges. Pass Infinity for
+//     refPx to get exactly depth levels;
+//   - a piece whose thirds would be shorter than pxMin stays one line: its
+//     bump is under a pixel high.
+// Returns { n: vertex count, leaves, leafPx: summed on-screen leaf length,
+// maxLevel, overflow: the budget ran out and buf is incomplete }.
+function kochAdaptive(aff, buf, depth, pxMin, refPx) {
+  const { k, a, b, c, d, cx, cy, hw, hh, w, h } = aff;
+  const cap = buf.length / 2 - 2;
+  let n = 0, leaves = 0, leafPx = 0, maxLevel = 0, overflow = false;
+
+  function emit(x, y) {
+    const dx = x - cx, dy = y - cy;
+    buf[2 * n] = hw + a * dx + b * dy;
+    buf[2 * n + 1] = hh + c * dx + d * dy;
+    n++;
+  }
+
+  // Draws A->B's piece, ending at B. len is the chord's world length.
+  function piece(ax, ay, bx, by, level, len) {
+    if (overflow) return;
+    if (n >= cap) { overflow = true; return; }
+    const mx = (ax + bx) / 2 - cx, my = (ay + by) / 2 - cy;
+    const sx = hw + a * mx + b * my, sy = hh + c * mx + d * my;
+    const px = len * k;
+    const r = px / 2 + VECTOR_CULL_MARGIN;
+    if (sx + r < 0 || sx - r > w || sy + r < 0 || sy - r > h) { emit(bx, by); return; }
+    if (level < KOCH_MAX_LEVEL && px / 3 >= pxMin && (level < depth || px > refPx)) {
+      const ux = (bx - ax) / 3, uy = (by - ay) / 3;
+      const p1x = ax + ux, p1y = ay + uy, p2x = p1x + ux, p2y = p1y + uy;
+      // The bump turns the middle third a sixth of a turn to the right,
+      // which is outward for a counter-clockwise outline.
+      const tx = p1x + ux * 0.5 + uy * (Math.sqrt(3) / 2), ty = p1y + uy * 0.5 - ux * (Math.sqrt(3) / 2);
+      const l3 = len / 3;
+      piece(ax, ay, p1x, p1y, level + 1, l3);
+      piece(p1x, p1y, tx, ty, level + 1, l3);
+      piece(tx, ty, p2x, p2y, level + 1, l3);
+      piece(p2x, p2y, bx, by, level + 1, l3);
+    } else {
+      leaves++;
+      leafPx += px;
+      if (level > maxLevel) maxLevel = level;
+      emit(bx, by);
+    }
+  }
+
+  const half = KOCH_EDGE / 2;
+  emit(0, 1);
+  piece(0, 1, -half, -0.5, 0, KOCH_EDGE);
+  piece(-half, -0.5, half, -0.5, 0, KOCH_EDGE);
+  piece(half, -0.5, 0, 1, 0, KOCH_EDGE);
+  return { n, leaves, leafPx, maxLevel, overflow };
+}
+
 function createKochView(canvas) {
   const ctx = canvas.getContext("2d");
   const view = { cx: 0, cy: 0, halfHeight: 1.4, rotation: 0 };
   let dpr = Math.min(window.devicePixelRatio || 1, 2);
-  let cachedDepth = -1;
-  let cachedVerts = null;
+  const buf = new Float64Array(2 * (KOCH_BUDGET + 2));
+  let extraLevels = 0;
 
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -67,19 +140,28 @@ function createKochView(canvas) {
 
   function render(opts) {
     resize();
-    if (cachedDepth !== opts.depth) {
-      cachedVerts = kochSnowflake(opts.depth);
-      cachedDepth = opts.depth;
-    }
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    extraLevels = 0;
+    const aff = vectorAffine(view, canvas.width, canvas.height);
+    if (!aff.ok) return;
+
+    // refPx: how long a piece may stay at the slider's depth: the length a
+    // depth-sized piece has when the shape is fitted to this canvas (the
+    // half-height app.js's Reset framing uses), with some headroom. It
+    // doesn't change as you zoom, so zooming in is what adds levels.
+    const refPx = KOCH_EDGE * Math.pow(1 / 3, opts.depth) * (canvas.height / 2 / (opts.fitHalfHeight || KOCH_FIT_HH)) * KOCH_ZOOM_SLACK;
+    let pxMin = KOCH_PX_MIN * dpr;
+    let r = kochAdaptive(aff, buf, opts.depth, pxMin, refPx);
+    for (let tries = 0; r.overflow && tries < 12; tries++) {
+      pxMin *= 1.5;
+      r = kochAdaptive(aff, buf, opts.depth, pxMin, refPx);
+    }
+    extraLevels = Math.max(0, r.maxLevel - opts.depth);
 
     ctx.beginPath();
-    cachedVerts.forEach((v, i) => {
-      const [sx, sy] = worldToScreen(v[0], v[1]);
-      if (i === 0) ctx.moveTo(sx, sy);
-      else ctx.lineTo(sx, sy);
-    });
+    ctx.moveTo(buf[0], buf[1]);
+    for (let i = 1; i < r.n; i++) ctx.lineTo(buf[2 * i], buf[2 * i + 1]);
     ctx.closePath();
 
     const color = solidCss(opts.colorIndex);
@@ -90,15 +172,18 @@ function createKochView(canvas) {
       ctx.lineWidth = 1;
       ctx.stroke();
     } else {
-      // Every edge is the same length, so the first one sets the width.
-      const [ax, ay] = worldToScreen(cachedVerts[0][0], cachedVerts[0][1]);
-      const [bx, by] = worldToScreen(cachedVerts[1][0], cachedVerts[1][1]);
+      // The pieces are all about one length, so their mean sets the width.
       ctx.strokeStyle = color;
-      ctx.lineWidth = strokeWidthFor(Math.hypot(bx - ax, by - ay), dpr);
+      ctx.lineWidth = strokeWidthFor(r.leaves ? r.leafPx / r.leaves : 0, dpr);
       ctx.lineJoin = "round";
       ctx.stroke();
     }
   }
 
-  return { view, resize, render, worldToScreen, screenToWorld, get dpr() { return dpr; } };
+  return {
+    view, resize, render, worldToScreen, screenToWorld,
+    get dpr() { return dpr; },
+    // Levels the last render added beyond the depth slider because of zoom.
+    get extraLevels() { return extraLevels; },
+  };
 }

@@ -19,6 +19,10 @@ const sharedGlobals = {
   VERT_SRC_300: "readonly",
   NEWTON_DEEP_FRAG_SRC: "readonly",
   PHOENIX_DEEP_FRAG_SRC: "readonly",
+  // vectorgeom.js
+  VECTOR_CULL_MARGIN: "readonly",
+  vectorAffine: "readonly",
+  vectorDiscOffscreen: "readonly",
   // koch.js / pythagoras.js / dragon.js / fern.js
   createKochView: "readonly",
   createPythagorasTreeView: "readonly",
