@@ -7,7 +7,8 @@
 import { test, expect } from "@playwright/test";
 import { PNG } from "pngjs";
 
-/* global setColorStyle, colorStyle, colorStyleFor, mainState, enterDual, mainRenderer, markInteracting, renderAll */
+/* global setColorStyle, colorStyle, colorStyleFor, mainState, enterDual, mainRenderer, markInteracting, renderAll,
+   COLORMAPS */
 
 const DRIVER = new URL("../driver.js", import.meta.url).pathname;
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
@@ -185,5 +186,26 @@ test.describe("Bands", () => {
   test("bands 2.5 and shift 0.25 on Burning Ship", async ({ page }) => {
     await page.evaluate(() => { window["__vt"].fractal("Burn. Ship"); setColorStyle({ density: 2.5, offset: 0.25 }); });
     await checkStyled(page, "style-density-shift-ship");
+  });
+});
+
+test.describe("Stripes", () => {
+  const glacier = () => COLORMAPS.findIndex((c) => c.name === "Glacier");
+  for (const [name, fractal] of [["mandelbrot", "Mandelbrot"], ["ship", "Burn. Ship"], ["tricorn", "Tricorn"], ["celtic", "Celtic"],
+    ["multibrot", "Multibrot³"], ["julia-rabbit", "Julia:Rabbit"]]) {
+    test(`${fractal} opening view`, async ({ page }) => {
+      await page.evaluate(([f, g]) => { window["__vt"].fractal(f, g); setColorStyle({ style: "stripes" }); }, [fractal, await page.evaluate(glacier)]);
+      await checkStyled(page, `style-stripes-${name}`);
+    });
+  }
+
+  test("Seahorse Valley (deep, perturbation)", async ({ page }) => {
+    await page.evaluate(`${place("Seahorse Valley")}; colormapIndex = COLORMAPS.findIndex((c) => c.name === "Glacier"); updateLUT(); setColorStyle({ style: "stripes" })`);
+    await checkStyled(page, "style-stripes-seahorse");
+  });
+
+  test("Phoenix draws Smooth", async ({ page }) => {
+    await page.evaluate(() => { window["__vt"].fractal("Phoenix"); setColorStyle({ style: "stripes" }); });
+    expect(await page.evaluate(() => colorStyleFor(mainState).glsl)).toBe(0);
   });
 });

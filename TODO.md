@@ -272,7 +272,7 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         = "1"`, or open the page once with `#styles` in the address
         (`#styles=0` turns it off). Shipped so far: the shader plumbing
         (style, bands and shift uniforms; Bands style), and the Glow
-        (exterior distance estimate) style. Checks: `node
+        (exterior distance estimate) and Stripes styles. Checks: `node
         scripts/default-identity.mjs check` (default output identical to
         before, zero differing pixels), `node scripts/oracle-compare.mjs`
         (app against a float64 reference, `scripts/oracle/oracle.py`),

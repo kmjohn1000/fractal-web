@@ -21,7 +21,8 @@ Needs python3 with numpy and Pillow (`python3 -c "import numpy, PIL"`).
 
   oracle.py views                          the views as JSON (for oracle-compare.mjs)
   oracle.py render VIEW STYLE CMAP OUT.png [--density D] [--shift S] [--size PX]
-            [--ss N] [--trap X Y] [--stripe atan|alg]
+            [--ss N] [--trap X Y]
+  STYLE is one of smooth, bands, glow, stripes, stripes_atan, point, cross
       writes OUT.png and OUT.mask.png (white = escaped); fields are cached in
       test-results/oracle/ (git-ignored)
 """
@@ -39,7 +40,7 @@ ROOT = Path(__file__).resolve().parents[2]
 CACHE = ROOT / "test-results" / "oracle"
 
 ESC_SQ = 65536.0
-STRIPE_K = 5.0       # frequency of the atan stripe average
+STRIPE_K = 5.0       # frequency of the atan stripe average (the style stripes_atan; the app uses the k = 4 algebraic one)
 STRIPE_LAM = 0.85    # decay of the windowed stripe average (~7 iterations of memory)
 STRIPE_GAIN = 2.2    # contrast gain around 0.5
 DE_RANGE = 40.0      # distance estimate: glow fades out over this many CSS pixels
@@ -238,10 +239,11 @@ def style_t(F, P, style):
             b = 2 * F["zabs"] * np.log(F["zabs"]) / (10.0 ** F["logD"])
         dist_px = b / P["ps_out"]
         return 1.0 - np.clip(np.log1p(dist_px) / np.log1p(DE_RANGE), 0, 1), esc
-    if style in ("stripes", "stripes_alg"):
+    if style in ("stripes", "stripes_atan"):
+        # "stripes" is what the app draws (the algebraic k = 4 stripe); stripes_atan is the k = 5 atan version it replaced
         n = smooth_n(F, P)
         f = n - np.floor(n)
-        e, ep = (F["E"], F["Eprev"]) if style == "stripes" else (F["Ea"], F["Eaprev"])
+        e, ep = (F["Ea"], F["Eaprev"]) if style == "stripes" else (F["E"], F["Eprev"])
         A = ep + (e - ep) * f
         return np.clip(0.5 + (A - 0.5) * STRIPE_GAIN, 0, 1), esc
     if style == "point":
@@ -251,7 +253,7 @@ def style_t(F, P, style):
     raise ValueError(style)
 
 
-STYLES = ("smooth", "bands", "glow", "stripes", "stripes_alg", "point", "cross")
+STYLES = ("smooth", "bands", "glow", "stripes", "stripes_atan", "point", "cross")
 
 
 def colorize(F, meta, style, lut, density=1.0, shift=0.0):

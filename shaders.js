@@ -293,6 +293,36 @@ vec3 glowColor(vec2 z, vec4 D) {
   float t = 1.0 - clamp(log(1.0 + distPx) / log(1.0 + COLOR_DE_RANGE), 0.0, 1.0);
   return styleColor(t);
 }
+#elif COLOR_VARIANT == 2
+// Stripes: Härkönen's stripe average. Each iterate z contributes
+// a = 0.5 + 0.5 sin(4 arg z), computed from x and y alone (sin 4t = 2 sin 2t
+// cos 2t, no trig: the atan version with frequency 5 looked the same in
+// side-by-side renders and costs an atan and a sin per iteration). The
+// average is over a decaying window (decay 0.85, about 7 iterations of
+// memory) rather than every iteration: the plain average washes out to flat
+// orange at depth. S = (raw sum, 0.85^n, E_n, E_(n-1)) with the bias-corrected
+// average E_n = raw / (1 - 0.85^n); the pixel's value blends the last two
+// averages by the smooth iteration count's fraction, so it's continuous
+// across iteration bands.
+const float STRIPE_LAM = 0.85;
+const float STRIPE_GAIN = 2.2;       // contrast around 0.5
+
+vec4 stripeStart() { return vec4(0.0, 1.0, 0.0, 0.0); }
+
+vec4 stripeStep(vec4 S, vec2 z) {
+  float r2 = max(dot(z, z), 1e-30);
+  float a = 0.5 + 0.5 * (2.0 * (2.0 * z.x * z.y / r2) * ((z.x * z.x - z.y * z.y) / r2));
+  float raw = STRIPE_LAM * S.x + (1.0 - STRIPE_LAM) * a;
+  float lp = S.y * STRIPE_LAM;
+  return vec4(raw, lp, raw / (1.0 - lp), S.z);
+}
+
+vec3 stripeColor(int iter, vec2 z, vec4 S) {
+  float logBase = u_power > 2.5 ? log2(3.0) : 1.0;
+  float n = max(float(iter) + 1.0 - log2(log2(sqrt(dot(z, z)))) / logBase, 0.0);
+  float A = S.w + (S.z - S.w) * (n - floor(n));
+  return styleColor(clamp(0.5 + (A - 0.5) * STRIPE_GAIN, 0.0, 1.0));
+}
 #endif
 
 // Sierpinski carpet and Sierpinski gasket are the same construction at two
@@ -498,6 +528,8 @@ vec3 renderEscapeFast(vec2 p) {
   vec2 zPrev = vec2(0.0);
 #if COLOR_VARIANT == 1
   vec4 D = glowStart();
+#elif COLOR_VARIANT == 2
+  vec4 S = stripeStart();
 #endif
 
   for (int i = 0; i < 2000; i++) {
@@ -529,6 +561,9 @@ vec3 renderEscapeFast(vec2 p) {
     }
     z = zNext;
     iter = i;
+#if COLOR_VARIANT == 2
+    S = stripeStep(S, z);
+#endif
     if (dot(z, z) > ESCAPE_RADIUS_SQ) { escaped = true; break; }
   }
 
@@ -536,6 +571,8 @@ vec3 renderEscapeFast(vec2 p) {
 
 #if COLOR_VARIANT == 1
   return glowColor(z, D);
+#elif COLOR_VARIANT == 2
+  return stripeColor(iter, z, S);
 #else
   return escapeColor(iter, z);
 #endif
@@ -624,6 +661,8 @@ vec3 renderEscapePerturbation(vec2 uv) {
   vec2 fullAtEscape = vec2(0.0);
 #if COLOR_VARIANT == 1
   vec4 D = glowStart();
+#elif COLOR_VARIANT == 2
+  vec4 S = stripeStart();
 #endif
 
   for (int i = 0; i < 2000; i++) {
@@ -638,6 +677,9 @@ vec3 renderEscapePerturbation(vec2 uv) {
     Zm = refOrbitAt(base + m);
     vec2 full = Zm + dz;
     iter = i;
+#if COLOR_VARIANT == 2
+    S = stripeStep(S, full);
+#endif
 
     if (dot(full, full) > ESCAPE_RADIUS_SQ) {
       escaped = true;
@@ -660,6 +702,8 @@ vec3 renderEscapePerturbation(vec2 uv) {
   if (!escaped) return vec3(0.0);
 #if COLOR_VARIANT == 1
   return glowColor(fullAtEscape, D);
+#elif COLOR_VARIANT == 2
+  return stripeColor(iter, fullAtEscape, S);
 #else
   return escapeColor(iter, fullAtEscape);
 #endif

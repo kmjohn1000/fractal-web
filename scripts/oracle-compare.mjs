@@ -121,7 +121,7 @@ const BLUR_GATE = 3; // of 255; Smooth measures 0.16-1.60 over the gate views (s
 // Views whose orbits stay low (no chaotic filament zones at this size), so
 // a per-pixel comparison means something there; the rest are judged on the
 // blocked average and the black masks only.
-const CALM_VIEWS = new Set(["mandelbrot", "ship", "rabbit", "tricorn", "celtic", "multibrot", "elephant"]);
+const CALM_VIEWS = new Set(["mandelbrot", "ship", "rabbit", "tricorn", "celtic", "multibrot"]);
 function blockedDiff(a, b) {
   let sum = 0, count = 0;
   for (let by = 0; by + BLOCK <= a.height; by += BLOCK) {

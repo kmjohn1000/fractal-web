@@ -1497,8 +1497,11 @@ const ESCAPE_TIME_TYPES = [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC
 const COLOR_STYLES = [
   { id: "smooth", glsl: 0, variant: 0, label: "Smooth" },
   { id: "bands", glsl: 1, variant: 0, label: "Bands" },
-  // Phoenix's two-term recurrence has no derivative worked out here.
+  // Phoenix is left out of the styles that track state per iteration: its
+  // two-term recurrence has no derivative worked out, and its deep path is a
+  // separate fixed-point shader.
   { id: "glow", glsl: 2, variant: 1, label: "Glow", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
+  { id: "stripes", glsl: 3, variant: 2, label: "Stripes", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
 ];
 const COLOR_BANDS_RANGE = [0.25, 8];
 const colorStyle = { style: "smooth", density: 1, offset: 0 };
