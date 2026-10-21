@@ -4,6 +4,7 @@ Newest version at the top. See CLAUDE.md for when and how to bump.
 
 ## Unreleased
 - Groundwork for color styles (not visible yet): the shaders can draw the whole-number "bands" coloring and take a bands and shift setting. Nothing changes on screen yet.
+- Groundwork for color styles (not visible yet): a "glow" style that draws the distance to the set's boundary, so thin filaments stay crisp at any depth.
 
 ## 1.39.0 — 2026-10-21
 - Koch snowflake, Pythagoras tree and dragon curve now keep revealing detail as you zoom in, instead of running out at about 13×, 2× and 1×. The info card says how many levels the zoom added beyond the depth slider's.

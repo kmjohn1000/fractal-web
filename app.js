@@ -926,9 +926,29 @@ function createFractalRenderer(canvas) {
     if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
     return p;
   }
-  const prog = link(FRAG_SRC);
+  // The escape-time program comes in variants (COLOR_VARIANT in FRAG_SRC),
+  // one per kind of per-iteration color work: 0 is Smooth and Bands, which
+  // need none and which everything but the other styles draws with, so its
+  // code stays exactly what it was. The others (see colorStyleFor) compile
+  // the first time a style asks for them.
+  const programs = new Map();
+  const UNIFORMS = ["resolution", "center", "scale", "rotCos", "rotSin", "maxIter", "ftype", "power", "isJulia",
+    "juliaC", "phoenixP", "lut", "style", "density", "offset", "pixelSize", "digitDepth", "digitLevel",
+    "digitCenter", "digitScale", "cellHole", "digitCycle", "subPixelColor", "apoW0", "apoK", "apoL", "apoFlip",
+    "apoSteps", "apoCapColor", "jitter", "usePerturbation", "refOrbitTex", "refOrbitLen", "critOffset",
+    "critLen", "refTexWidth", "refOffset"];
+  function fractalProgram(variant) {
+    let entry = programs.get(variant);
+    if (!entry) {
+      const p = link(`#define COLOR_VARIANT ${variant}\n${FRAG_SRC}`);
+      entry = { prog: p, u: Object.fromEntries(UNIFORMS.map((n) => [n, gl.getUniformLocation(p, `u_${n}`)])) };
+      programs.set(variant, entry);
+    }
+    return entry;
+  }
+  fractalProgram(0);
   const previewProg = link(PREVIEW_FRAG_SRC);
-  gl.useProgram(prog);
+  gl.useProgram(programs.get(0).prog);
 
   const quad = new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]);
   const buf = gl.createBuffer();
@@ -950,45 +970,6 @@ function createFractalRenderer(canvas) {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-
-  const u = {
-    resolution: gl.getUniformLocation(prog, "u_resolution"),
-    center: gl.getUniformLocation(prog, "u_center"),
-    scale: gl.getUniformLocation(prog, "u_scale"),
-    rotCos: gl.getUniformLocation(prog, "u_rotCos"),
-    rotSin: gl.getUniformLocation(prog, "u_rotSin"),
-    maxIter: gl.getUniformLocation(prog, "u_maxIter"),
-    ftype: gl.getUniformLocation(prog, "u_ftype"),
-    power: gl.getUniformLocation(prog, "u_power"),
-    isJulia: gl.getUniformLocation(prog, "u_isJulia"),
-    juliaC: gl.getUniformLocation(prog, "u_juliaC"),
-    phoenixP: gl.getUniformLocation(prog, "u_phoenixP"),
-    lut: gl.getUniformLocation(prog, "u_lut"),
-    style: gl.getUniformLocation(prog, "u_style"),
-    density: gl.getUniformLocation(prog, "u_density"),
-    offset: gl.getUniformLocation(prog, "u_offset"),
-    digitDepth: gl.getUniformLocation(prog, "u_digitDepth"),
-    digitLevel: gl.getUniformLocation(prog, "u_digitLevel"),
-    digitCenter: gl.getUniformLocation(prog, "u_digitCenter"),
-    digitScale: gl.getUniformLocation(prog, "u_digitScale"),
-    cellHole: gl.getUniformLocation(prog, "u_cellHole"),
-    digitCycle: gl.getUniformLocation(prog, "u_digitCycle"),
-    subPixelColor: gl.getUniformLocation(prog, "u_subPixelColor"),
-    apoW0: gl.getUniformLocation(prog, "u_apoW0"),
-    apoK: gl.getUniformLocation(prog, "u_apoK"),
-    apoL: gl.getUniformLocation(prog, "u_apoL"),
-    apoFlip: gl.getUniformLocation(prog, "u_apoFlip"),
-    apoSteps: gl.getUniformLocation(prog, "u_apoSteps"),
-    apoCapColor: gl.getUniformLocation(prog, "u_apoCapColor"),
-    jitter: gl.getUniformLocation(prog, "u_jitter"),
-    usePerturbation: gl.getUniformLocation(prog, "u_usePerturbation"),
-    refOrbitTex: gl.getUniformLocation(prog, "u_refOrbitTex"),
-    refOrbitLen: gl.getUniformLocation(prog, "u_refOrbitLen"),
-    critOffset: gl.getUniformLocation(prog, "u_critOffset"),
-    critLen: gl.getUniformLocation(prog, "u_critLen"),
-    refTexWidth: gl.getUniformLocation(prog, "u_refTexWidth"),
-    refOffset: gl.getUniformLocation(prog, "u_refOffset"),
-  };
 
   const lutTex = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, lutTex);
@@ -1271,6 +1252,8 @@ function createFractalRenderer(canvas) {
       }
       return "perturbation + fixed point";
     }
+    const cs = colorStyleFor(state);
+    const { prog, u } = fractalProgram(cs.variant);
     gl.useProgram(prog);
     const jitter = SAMPLE_OFFSETS[sampleIndex];
     gl.uniform2f(u.jitter, jitter[0], jitter[1]);
@@ -1286,10 +1269,12 @@ function createFractalRenderer(canvas) {
     gl.uniform1i(u.isJulia, state.isJulia ? 1 : 0);
     gl.uniform2f(u.juliaC, state.juliaC[0], state.juliaC[1]);
     gl.uniform2f(u.phoenixP, PHOENIX_P[0], PHOENIX_P[1]);
-    const cs = colorStyleFor(state);
     gl.uniform1i(u.style, cs.glsl);
     gl.uniform1f(u.density, cs.density);
     gl.uniform1f(u.offset, cs.offset);
+    // World units per CSS pixel: the distance estimate's glow width is
+    // measured in these, so a retina phone and a laptop show the same glow.
+    gl.uniform1f(u.pixelSize, 2 * state.scale / (canvas.clientHeight || canvas.height / dpr));
     // Per view, not per pass: every later sample in a refinement chain is
     // the same view (any change restarts at sample 0), and the program
     // keeps its uniforms between draws.
@@ -1504,10 +1489,16 @@ let colormapIndex = 0;
 // one choice for every fractal that can draw it, kept across fractal
 // switches. `bands` and `shift` apply to every style as
 // lutColor(t * bands + shift); Smooth at bands 1 and shift 0 is exactly
-// today's coloring. `glsl` is the style's number in the shaders.
+// today's coloring. `glsl` is the style's number in the shaders, `variant`
+// which compiled version of the escape-time program draws it (COLOR_VARIANT
+// in FRAG_SRC: 0 needs no per-iteration work), `types` the fractal types it
+// works on (the escape-time types when left out).
+const ESCAPE_TIME_TYPES = [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC, FTYPE.PHOENIX];
 const COLOR_STYLES = [
-  { id: "smooth", glsl: 0, label: "Smooth" },
-  { id: "bands", glsl: 1, label: "Bands" },
+  { id: "smooth", glsl: 0, variant: 0, label: "Smooth" },
+  { id: "bands", glsl: 1, variant: 0, label: "Bands" },
+  // Phoenix's two-term recurrence has no derivative worked out here.
+  { id: "glow", glsl: 2, variant: 1, label: "Glow", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
 ];
 const COLOR_BANDS_RANGE = [0.25, 8];
 const colorStyle = { style: "smooth", density: 1, offset: 0 };
@@ -1532,19 +1523,16 @@ const stylesEnabled = (() => {
 
 // The style a view actually draws: the chosen one if its fractal can do it,
 // otherwise Smooth. Newton, Carpet, Gasket and Apollonian color by their own
-// schemes (the shaders never read the style), and Phoenix only has the two
-// styles that need no per-iteration state.
+// schemes (the shaders never read the style).
 function styleDrawn(id, state) {
-  const ft = state.ftype;
-  if (ft === undefined || ft === FTYPE.NEWTON || ft === FTYPE.CARPET || ft === FTYPE.GASKET || ft === FTYPE.APOLLONIAN) return "smooth";
-  if (ft === FTYPE.PHOENIX) return id === "bands" ? "bands" : "smooth";
-  return COLOR_STYLES.some((s) => s.id === id) ? id : "smooth";
+  const s = COLOR_STYLES.find((c) => c.id === id);
+  return s && (s.types || ESCAPE_TIME_TYPES).includes(state.ftype) ? s.id : "smooth";
 }
 
 // What the renderer sends the shaders for one view.
 function colorStyleFor(state) {
-  const id = styleDrawn(colorStyle.style, state);
-  return { glsl: COLOR_STYLES.find((s) => s.id === id).glsl, density: colorStyle.density, offset: colorStyle.offset };
+  const s = COLOR_STYLES.find((c) => c.id === styleDrawn(colorStyle.style, state));
+  return { glsl: s.glsl, variant: s.variant, density: colorStyle.density, offset: colorStyle.offset };
 }
 
 // Strict: anything unknown or out of range falls back to today's coloring

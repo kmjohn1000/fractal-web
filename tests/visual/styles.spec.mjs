@@ -7,7 +7,7 @@
 import { test, expect } from "@playwright/test";
 import { PNG } from "pngjs";
 
-/* global setColorStyle, colorStyle, colorStyleFor, mainState */
+/* global setColorStyle, colorStyle, colorStyleFor, mainState, enterDual, mainRenderer, markInteracting, renderAll */
 
 const DRIVER = new URL("../driver.js", import.meta.url).pathname;
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
@@ -93,6 +93,81 @@ test.describe("the style API", () => {
     });
     // Newton and Carpet color by their own schemes; Phoenix has Smooth and Bands.
     expect(r).toEqual({ mandelbrot: 1, phoenix: 1, newton: 0, carpet: 0 });
+  });
+
+  test("Glow is offered on the types with a derivative and drawn as Smooth elsewhere", async ({ page }) => {
+    const r = await page.evaluate(() => {
+      const drawn = (fractal) => { window["__vt"].fractal(fractal); setColorStyle({ style: "glow" }); return colorStyleFor(mainState); };
+      const out = {};
+      for (const f of ["Mandelbrot", "Burn. Ship", "Tricorn", "Celtic", "Multibrot³", "Julia:Rabbit", "Phoenix", "Julia:Phoenix", "Newton z³", "Carpet", "Gasket", "Apollonian"]) {
+        const c = drawn(f);
+        out[f] = `${c.glsl}/${c.variant}`;
+      }
+      return out;
+    });
+    // glsl 2 / variant 1 is Glow; 0/0 is Smooth.
+    expect(r).toEqual({ "Mandelbrot": "2/1", "Burn. Ship": "2/1", "Tricorn": "2/1", "Celtic": "2/1", "Multibrot³": "2/1",
+      "Julia:Rabbit": "2/1", "Phoenix": "0/0", "Julia:Phoenix": "0/0", "Newton z³": "0/0", "Carpet": "0/0", "Gasket": "0/0",
+      "Apollonian": "0/0" });
+  });
+});
+
+test.describe("Glow", () => {
+  for (const [name, fractal] of [["mandelbrot", "Mandelbrot"], ["ship", "Burn. Ship"], ["tricorn", "Tricorn"], ["celtic", "Celtic"],
+    ["multibrot", "Multibrot³"], ["julia-rabbit", "Julia:Rabbit"]]) {
+    test(`${fractal} opening view`, async ({ page }) => {
+      await page.evaluate((f) => { window["__vt"].fractal(f); setColorStyle({ style: "glow" }); }, fractal);
+      await checkStyled(page, `style-glow-${name}`);
+    });
+  }
+
+  test("Seahorse Valley (deep, perturbation)", async ({ page }) => {
+    await page.evaluate(`${place("Seahorse Valley")}; setColorStyle({ style: "glow" })`);
+    await checkStyled(page, "style-glow-seahorse");
+  });
+
+  test("Sunken Crown on Burning Ship (1.2e-12)", async ({ page }) => {
+    await page.evaluate(`${place("Sunken Crown")}; setColorStyle({ style: "glow" })`);
+    await checkStyled(page, "style-glow-sunken-crown");
+  });
+
+  test("the dual view's Julia pane glows too", async ({ page }) => {
+    await page.evaluate(() => { window["__vt"].fractal("Mandelbrot"); enterDual(); setColorStyle({ style: "glow" }); });
+    await checkStyled(page, "style-glow-dual");
+  });
+
+  // At depth a drag shows the last accurate frame moved with the gesture
+  // (renderPreview), so after a style change that snapshot must be the new
+  // style's frame, never the old one.
+  test("the deep-zoom drag preview shows the current style", async ({ page }) => {
+    await page.evaluate(`${place("Seahorse Valley")}; setColorStyle({ style: "smooth" })`);
+    await waitSettled(page);
+    await page.evaluate(() => setColorStyle({ style: "glow" }));
+    await waitSettled(page);
+    const r = await page.evaluate(async () => {
+      const canvas = mainRenderer.canvas;
+      const grab = () => canvas.toDataURL("image/png");
+      const settled = grab();
+      markInteracting();
+      renderAll(); // draws the snapshot, unmoved
+      const preview = grab();
+      const load = (src) => new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.src = src; });
+      const pixels = async (src) => {
+        const i = await load(src);
+        const c = document.createElement("canvas");
+        c.width = i.width; c.height = i.height;
+        const g = c.getContext("2d");
+        g.drawImage(i, 0, 0);
+        return g.getImageData(0, 0, c.width, c.height).data;
+      };
+      const [a, b] = [await pixels(settled), await pixels(preview)];
+      let sum = 0;
+      for (let k = 0; k < a.length; k += 4) sum += Math.abs(a[k] - b[k]) + Math.abs(a[k + 1] - b[k + 1]) + Math.abs(a[k + 2] - b[k + 2]);
+      return sum / (a.length / 4) / 3;
+    });
+    // The unmoved preview resamples the same frame: nearly identical (a stale
+    // Smooth snapshot would differ by tens of levels).
+    expect(r).toBeLessThan(2);
   });
 });
 

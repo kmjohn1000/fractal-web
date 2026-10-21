@@ -233,6 +233,68 @@ vec3 escapeColor(int iter, vec2 z) {
   return styleColor(n * 0.025);
 }
 
+// The styles that need work every iteration are compiled as variants of this
+// program (COLOR_VARIANT, defined ahead of the source by fractalProgram in
+// app.js; 0 is Smooth and Bands and compiles to exactly the code without
+// these blocks). Each style's math is mirrored in scripts/oracle/oracle.py;
+// change them together.
+#if COLOR_VARIANT == 1
+// Glow: exterior distance estimate. Track D = dz/dc (the derivative of the
+// orbit with respect to the pixel's c; with respect to z0 for Julia), as a
+// 2x2 matrix for the folded maps and as a complex number (D.xy) for plain
+// z^2 and z^3, where it's a rotation and scale. At escape the distance to
+// the set is about 2|z| ln|z| / |D|; the color fades with
+// log(1 + distance in CSS pixels), so thin filaments glow the same width at
+// any zoom and on any screen.
+uniform float u_pixelSize;   // world units per CSS pixel
+const float COLOR_DE_RANGE = 40.0;   // glow reaches this many CSS pixels
+const float DE_CLAMP = 1e30;         // keeps D inside float32; see glowColor
+
+vec4 glowStart() {
+  if (!u_isJulia) return vec4(0.0);
+  return u_ftype == FTYPE_ESCAPE ? vec4(1.0, 0.0, 0.0, 0.0) : vec4(1.0, 0.0, 0.0, 1.0);
+}
+
+// D after one step, where z is the value f is applied to.
+vec4 glowStep(vec4 D, vec2 z) {
+  float add = u_isJulia ? 0.0 : 1.0;
+  vec4 n;
+  if (u_ftype == FTYPE_ESCAPE) {
+    vec2 f = u_power > 2.5 ? 3.0 * cMul(z, z) : 2.0 * z;
+    n = vec4(cMul(f, D.xy) + vec2(add, 0.0), 0.0, 0.0);
+  } else {
+    // f's Jacobian (p q / r s) at z, then D = J D + add I.
+    float p, q, r, s;
+    if (u_ftype == FTYPE_SHIP) {
+      vec2 sg = vec2(z.x >= 0.0 ? 1.0 : -1.0, z.y >= 0.0 ? 1.0 : -1.0);
+      p = 2.0 * abs(z.x) * sg.x; q = -2.0 * abs(z.y) * sg.y;
+      r = 2.0 * abs(z.y) * sg.x; s = 2.0 * abs(z.x) * sg.y;
+    } else if (u_ftype == FTYPE_TRICORN) {
+      p = 2.0 * z.x; q = -2.0 * z.y; r = -2.0 * z.y; s = -2.0 * z.x;
+    } else {
+      float sg = z.x * z.x - z.y * z.y >= 0.0 ? 1.0 : -1.0;   // Celtic
+      p = sg * 2.0 * z.x; q = -sg * 2.0 * z.y; r = 2.0 * z.y; s = 2.0 * z.x;
+    }
+    n = vec4(p * D.x + q * D.z + add, p * D.y + q * D.w, r * D.x + s * D.z, r * D.y + s * D.w + add);
+  }
+  // A pixel whose |D| passes 1e30 is closer to the boundary than any pixel
+  // could show (float32's range ends near 3e38, and D grows by 2|z| a step):
+  // saturate it, which colors it as on the boundary.
+  float m = max(max(abs(n.x), abs(n.y)), max(abs(n.z), abs(n.w)));
+  return m > DE_CLAMP ? n * (DE_CLAMP / m) : n;
+}
+
+vec3 glowColor(vec2 z, vec4 D) {
+  float m = max(max(abs(D.x), abs(D.y)), max(max(abs(D.z), abs(D.w)), 1e-30));
+  vec4 d = D / m;
+  float norm = m * (u_ftype == FTYPE_ESCAPE ? length(d.xy) : length(d) * 0.70710678);
+  float r = sqrt(dot(z, z));
+  float distPx = 2.0 * r * log(r) / norm / u_pixelSize;
+  float t = 1.0 - clamp(log(1.0 + distPx) / log(1.0 + COLOR_DE_RANGE), 0.0, 1.0);
+  return styleColor(t);
+}
+#endif
+
 // Sierpinski carpet and Sierpinski gasket are the same construction at two
 // different bases: repeatedly scale the point by "base" and exclude it the
 // first time both axes' current digit equal 1.
@@ -434,9 +496,15 @@ vec3 renderEscapeFast(vec2 p) {
   // Phoenix is the one type whose recurrence needs the previous iterate
   // (z' = z^2 + c + p*z_prev, z_(-1) = 0); everything else ignores zPrev.
   vec2 zPrev = vec2(0.0);
+#if COLOR_VARIANT == 1
+  vec4 D = glowStart();
+#endif
 
   for (int i = 0; i < 2000; i++) {
     if (i >= u_maxIter) break;
+#if COLOR_VARIANT == 1
+    D = glowStep(D, z);
+#endif
     vec2 zsq;
     if (u_ftype == FTYPE_SHIP) {
       vec2 zabs = vec2(abs(z.x), abs(z.y));
@@ -466,7 +534,11 @@ vec3 renderEscapeFast(vec2 p) {
 
   if (!escaped) return vec3(0.0);
 
+#if COLOR_VARIANT == 1
+  return glowColor(z, D);
+#else
   return escapeColor(iter, z);
+#endif
 }
 
 // ---------------------------------------------------------------- perturbation
@@ -550,10 +622,16 @@ vec3 renderEscapePerturbation(vec2 uv) {
   int iter = 0;
   bool escaped = false;
   vec2 fullAtEscape = vec2(0.0);
+#if COLOR_VARIANT == 1
+  vec4 D = glowStart();
+#endif
 
   for (int i = 0; i < 2000; i++) {
     if (i >= u_maxIter) break;
 
+#if COLOR_VARIANT == 1
+    D = glowStep(D, Zm + dz);   // the orbit's value before this step
+#endif
     dz = perturbStep(Zm, dz, dc);
 
     m++;
@@ -580,7 +658,11 @@ vec3 renderEscapePerturbation(vec2 uv) {
   }
 
   if (!escaped) return vec3(0.0);
+#if COLOR_VARIANT == 1
+  return glowColor(fullAtEscape, D);
+#else
   return escapeColor(iter, fullAtEscape);
+#endif
 }
 
 void main() {
