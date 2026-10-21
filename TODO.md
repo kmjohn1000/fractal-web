@@ -132,10 +132,6 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         Save/Share readback and the preview snapshot path
       - Dynamic resolution during live float32 gestures, driven by frame
         time (~50 lines)
-      - Vector modes: Pythagoras issues ~16k canvas calls per frame at depth
-        12 (batch into 2 paths, add culling); Koch and dragon allocate an
-        array per vertex and never cull (flat arrays, culling, sub-pixel
-        level of detail). ~40-90 lines, not benchmarked
       - GPU chaos game for the point-based IFS modes: WebGL2 point splats,
         additive blend into RGBA16F (~150-220 lines; low confidence)
       - WebGPU spike v2: batch many tiles per queue submit (the first spike
@@ -377,7 +373,8 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       per-fractal memory that resets on relaunch. Store the full-precision
       location and colors; decide whether iCloud sync is worth it or
       local-only is enough. Could reuse the share-link format as the stored
-      view (2026-10-10)
+      view (2026-10-10). Design spike done 2026-10-21, see
+      `docs/saved-places/design.md` (local, git-ignored)
 - [ ] Open the Mandelbrot family rotated 90° on portrait phones: the set is
       wider than tall, so today it sits small mid-screen with ~45% empty
       space above and below. Rotation already exists; the opening view's
@@ -510,14 +507,6 @@ distance estimation → zoom-to-minibrot / AI discovery.
       recompute those on the CPU in float64 (Web Workers). This view sits
       on the antenna, where orbits run along the branch cut, so the
       fixup matters
-- [ ] Viewport-adaptive recursion for Koch/Dragon/Tree (currently the
-      only fractal family that doesn't adapt detail to zoom — Carpet/
-      Gasket compute depth from pixel size, Fern regenerates from
-      viewport, these three don't; subdivide only parts whose bounding box
-      touches the viewport, down to ~1px — detail runs out today at ~13×
-      Koch, ~1–2× Tree, ~1× Dragon; filled Koch stays correct since
-      off-screen chords lie inside their bounding triangles; Dragon moves
-      from the L-system string to its two-map IFS form)
 
 ### Discovery
 - [ ] AI-curated "find something beautiful" auto-discovery
@@ -577,6 +566,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
+- Viewport-adaptive Koch, tree and dragon, with the vector-mode speedups (1.39.0): the three views build only what's on screen each frame (a piece wholly off screen stays a chord or is skipped; pieces under a pixel stay straight; a vertex budget bounds the frame), and add levels beyond the depth slider as you zoom, so detail no longer runs out at ~13× / 2× / 1×; the info card shows "(+N from zoom)". The dragon is drawn from its two-map form (matches the L-system curve to 4e-15 at depths 0-16); Koch/dragon/other line curves use typed arrays and stroke in groups of 256 segments, the tree fills in groups of 32 squares (Canvas2D cost per path grows faster than its size). Hilbert, Gosper and arrowhead share the faster stroke path. `tests/visual/vector.spec.mjs` checks geometry against the old generators, that culling changes no pixel, zoom detail, twist at depth and nonsense views. Left open: a lighter level of detail while a gesture is in progress (the dragon at depth 16, zoomed 4×, is the heaviest frame measured) — `3232da9`
 - First-visit experience on the web and link previews (1.38.0): a first web visit with no share link flies from the whole set to one of five showpiece Mandelbrot places (Seahorse Valley, Mini Mandelbrot, Elephant Valley, Double Spiral, Sunburst Fan) with the info card open; a dismissible welcome card (name, one line, App Store link, Privacy · Support; shown every web visit until closed, never in the app); `<meta name="description">` plus `og:` and `twitter:card` tags with `icons/og-image.jpg`; the opening view reads "The whole shape"; on website windows 900px and wider the toolbar rows sit in a centered 760px column (web only, `html.web`, so the iPad app is unchanged). Visit state lives in `Platform.welcome` (`platform.js`); `tests/visual/cold-open.spec.mjs` covers the three paths, and the visual suite, store-screenshots and thumbnail scripts pre-set the storage keys. App checked in the iPhone and iPad simulators (no flight, no card, iPad toolbar unchanged); the phone checks and the info card's new line on screen in the app are still open (see Now) — `189e823`
 - 1.37.0 (build 245) submitted for App Review 2026-10-19 with the listing copy updated to 24 fractals and 98 places in English and French (`appstore-screenshots/copy/listing-1.37.0.md`), Spanish added (`copy/listing-es.md`), What's New covering 1.30.1–1.37.0, the new `2-picker` screenshots (iPhone 6.3", iPad 13") and the app preview videos. Screenshots and promo images now come from `scripts/store-screenshots.mjs` — `82cf394`
 - Apollonian gasket (1.36.0, user idea 2026-10-17): the (−1, 2, 2, 3) packing by iterated inversion in its four dual circles, colored by inversion count (mirrored cycle of 24, offset 6 so Inferno's big disks are purple, not black; capped at 500 per pixel, capped pixels get the colormap's average). Deep zoom composes the inversions the whole view shares into one Möbius map in float64 (`apolloFrame`); checked sharp at 1.4e15× in headless Chrome. Info card shows the integer curvature of the circle under the center when it's visible. Six Surprise-me places, five of them repelling fixed points of three-inversion words (they repeat every φ⁶ ≈ 17.94×), including the 4.7e-12 spiral dive Golden Dive. Not yet checked on a phone. The listing's "23 fractals" is now 24 — `9e5abfe`
