@@ -196,11 +196,16 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         `SharedArrayBuffer`, GPU Mariani-Silver, wavefront compaction, f16
 - [ ] Pre-rendering common changes (user idea 2026-10-21; the first two are
       part of the color-style speed fixes in progress, the rest not approved):
-      - Warm the shader variants in idle time (when the Color sheet opens, or
-        once the app is idle after the first frame): the Glow, Stripes, Bands
-        and trap variants, and the Julia pane's variant when dual view is
-        available, so the compile happens before the tap. One program per idle
-        callback, or parallel compile with `KHR_parallel_shader_compile`
+      - DONE (`70183b0`): warm the shader variants in idle time (when the Color
+        sheet opens, or once the app is idle after the first frame): the Glow,
+        Stripes, Bands and trap variants, and the Julia pane's variant when
+        dual view is available, so the compile happens before the tap. One
+        program per idle callback, or parallel compile with
+        `KHR_parallel_shader_compile`; each variant is also drawn once (one
+        fragment, pixel restored) so the GPU builds it before the pick. The
+        first-pick hitch it targets (~50-100 ms in the app's first run) is
+        not yet re-measured on the phone: needs a cold shader cache, i.e. a
+        reinstall
       - Keep the old image on screen (scaled) until the first new pass of a
         style change or dual toggle is ready, rather than clearing to blank
       - Frame cache: the last 3-4 finished frames of the current view, keyed by
@@ -332,14 +337,6 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       so old Burning Ship links keep opening the same place; check whether
       colormaps can have a per-fractal default today (user idea 2026-10-08);
       see "Curated palettes" below
-- [ ] Remove the styles flag once the color styles pass the phone checks
-      (iPhone 15: Smooth frame and refinement time, first-use shader compile
-      time per style, Glow at 1e-12 and 1e-15, the Color sheet's height and
-      scroll, a slider drag over a deep render, VoiceOver and the largest
-      text size, a share link with the new fields). Replace `stylesEnabled`
-      (`app.js`) with `true`, drop the flag-off tests, and fold the
-      `## Unreleased` CHANGELOG bullets into the release. Not approved to
-      ship until then.
 - [ ] More Looks (user, 2026-10-22; not approved to build). The list rework
       is done behind the styles flag (`29febe2`, `799750c`): Classic and
       Inferno left the Looks (they are Smooth plus a palette; the palettes are
@@ -670,6 +667,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
+- Color styles on for everyone (1.40.0, 2026-10-22): the styles flag is gone (`stylesEnabled`, its reload helpers, the flag-off tests and the diag panel's Styles button); the Color sheet, Looks, Custom tab and the `st`/`cd`/`co` share-link fields are always on. The `## Unreleased` notes became the 1.40.0 entry. Phone checks passed first (flags on in Safari and in the app: costs per style at the opening view and at depth, drags, flights, VoiceOver); results are in the telemetry item above. Not yet in an App Store build — `70183b0`
 - Color sheet fix pass, behind the styles flag (2026-10-22), from an independent design review and the owner's answers: the Looks are a grid with every tile on screen (four across on a phone, one row on an iPad) and both tabs are the same height, so the tab bar never moves; Classic and Inferno are palettes, so the Looks start with a Default tile (Smooth on Inferno); one set of plain names everywhere (Smooth, Bands, Edge glow, Stripes, Orbs, Rays) with the slider renamed Repeat, display names only (the `st` ids and share links are unchanged); a plain tap on the fractal closes the sheet while a drag or pinch leaves it open, and the closing tap doesn't also glide in dual view; on Newton, Carpet, Gasket and Apollonian the color button opens the same sheet with only the palette grid; Phoenix shows the style it draws; Reset, slider values on screen, roving focus in the radio groups, Done named "Done", the scroll position kept on a rebuild, the color button's name includes the Look; a 360 pt phone, landscape, 1.5x and 2x text and a centered iPad sheet; thumbnails re-rendered for the six Looks (94 KB). The Looks are about 38% of an 852 pt screen, both tabs, up from the 20% and 30% of the first rework, because Reset's 44 pt row and the grid's two rows share one height. `scripts/default-identity.mjs`: 26 states, zero differing pixels — `29febe2`, `799750c`
 - Coloring Style selector and Looks, built but dark (2026-10-21): behind `localStorage["fractalAtlas.styles"] = "1"` (or load the page with `#styles`; `#styles=0` turns it off), so the live output is unchanged (`scripts/default-identity.mjs`: 26 states, zero differing pixels). Six styles on the escape-time fractals: Smooth, Bands, Glow (exterior distance estimate, `dz/dc` as a 2x2 matrix for the folded maps, saturated at 1e30 for float32), Stripes (windowed stripe average, frequency 4 from x and y with no trig) and the Point and Cross orbit traps (offered up to ~1,000x deep, they color the interior); each costly style is a compiled variant of the escape-time shader, so the default program's code is untouched. Phoenix has Smooth and Bands; Newton, Carpet, Gasket and Apollonian keep their own schemes. A Color sheet on the color button (Looks tab: Classic, Inferno, Edge glow, Iteration bands, Stripes, Orbit trap, Cross trap with `icons/looks/` thumbnails from `scripts/render_look_thumbs.mjs`; Custom tab: style, palette, bands and shift), share-link fields `st`/`cd`/`co` (lenient, written only when not the default) and info card lines. Checked against a float64 oracle (`scripts/oracle/oracle.py`, `scripts/oracle-compare.mjs`; gates in `tests/README.md`) including the perturbation path, and by `styles.spec.mjs` and `color-sheet.spec.mjs`. Phone checks and flag removal are the item under Next — `acb3c1d`, `d37c39c`, `7592bdc`, `114a6f0`, `ce33ccb`, `0b9638a`, `45711eb`, `0677b34`
 - Viewport-adaptive Koch, tree and dragon, with the vector-mode speedups (1.39.0): the three views build only what's on screen each frame (a piece wholly off screen stays a chord or is skipped; pieces under a pixel stay straight; a vertex budget bounds the frame), and add levels beyond the depth slider as you zoom, so detail no longer runs out at ~13× / 2× / 1×; the info card shows "(+N from zoom)". The dragon is drawn from its two-map form (matches the L-system curve to 4e-15 at depths 0-16); Koch/dragon/other line curves use typed arrays and stroke in groups of 256 segments, the tree fills in groups of 32 squares (Canvas2D cost per path grows faster than its size). Hilbert, Gosper and arrowhead share the faster stroke path. `tests/visual/vector.spec.mjs` checks geometry against the old generators, that culling changes no pixel, zoom detail, twist at depth and nonsense views. Left open: a lighter level of detail while a gesture is in progress (the dragon at depth 16, zoomed 4×, is the heaviest frame measured) — `3232da9`
