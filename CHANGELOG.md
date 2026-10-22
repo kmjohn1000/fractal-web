@@ -9,6 +9,7 @@ Newest version at the top. See CLAUDE.md for when and how to bump.
 - Groundwork for color styles (not visible yet): "point" and "cross" orbit-trap styles that color by how close the orbit passes to a point or a pair of lines, up to about 1,000× deep.
 - Groundwork for color styles (hidden behind a setting for now): the color button opens a Color sheet with a Looks tab (Classic, Inferno, Edge glow, Iteration bands, Stripes, Orbit trap, Cross trap) and a Custom tab with the style, palette, and bands and shift sliders.
 - Groundwork for color styles (hidden behind a setting for now): share links carry the style, bands and shift when they aren't the default, and the info card names the Look or the custom style.
+- Color sheet rework (hidden behind a setting for now): the sheet is about a third of the screen tall at most, so the fractal stays in view and live while you change bands and shift; a tap on the fractal, Done, the color button or Escape closes it. The Looks are small swatches in one scrolling strip (the next one peeks past the edge), all the palettes show at once as a grid with the current one ticked, and the sheet is built ahead of time so it opens at once. Greyed-out Point and Cross now say how deep the view is.
 
 ## 1.39.1 — 2026-10-21
 - Pinch-zooming or dragging the dragon curve (and the Koch snowflake and tree) is smooth at high depths, including after pressing Play: while your fingers are down it draws a lighter version, then fills in the full detail the moment you let go.

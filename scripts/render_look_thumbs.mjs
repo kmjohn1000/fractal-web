@@ -1,12 +1,13 @@
-// Renders the Color sheet's Look thumbnails into icons/looks/<id>.webp: the
+// Renders the Color sheet's Look swatches into one sprite, icons/looks/sprite.webp
+// (COLOR_LOOKS in order, then Custom, each SIZE px square, side by side): the
 // app itself (headless Chromium on the GPU), one fixed view, each Look's
-// style, palette and bands and shift, the canvas squared and screenshotted
-// and encoded as WebP by the canvas itself. Re-run after changing COLOR_LOOKS
-// in app.js, a style's look, or a palette:
+// style, palette and bands and shift, the canvas squared and encoded by the
+// canvas itself. Re-run after changing COLOR_LOOKS in app.js, a style's look,
+// or a palette:
 //
 //   node scripts/render_look_thumbs.mjs
 //
-// The Looks are read from app.js, so a new Look gets a thumbnail without
+// The Looks are read from app.js, so a new Look gets a swatch without
 // editing this file. "custom" is the Custom tile's picture, set below.
 import { chromium } from "@playwright/test";
 import { spawn } from "node:child_process";
@@ -17,7 +18,7 @@ import vm from "node:vm";
 const root = new URL("..", import.meta.url).pathname;
 const outDir = join(root, "icons/looks");
 const PORT = 8750;
-const SIZE = 240; // px, about 2x a Look tile
+const SIZE = 192; // px per swatch: 3x the 64 px swatch the sheet shows, so it's sharp on a 3x phone
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Seahorse Valley at 6e-3 (233x deep) shows every style but the orbit
@@ -55,6 +56,7 @@ try {
     await page.evaluate("new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))");
   };
   await settle();
+  const shots = [];
   // The canvas is the viewport minus the toolbar: make it SIZE x SIZE.
   const toolbarH = await page.evaluate("window.__vt.inspect().controls.h");
   await page.setViewportSize({ width: SIZE, height: Math.round(SIZE + toolbarH) });
@@ -75,11 +77,28 @@ try {
     const wanted = await page.evaluate(`COLOR_STYLES.find((s) => s.id === ${JSON.stringify(look.style)}).glsl`);
     if (drawn !== wanted) throw new Error(`${look.id}: the view draws style ${drawn}, not ${wanted}`);
     // The canvas keeps its frame (preserveDrawingBuffer), so it encodes itself.
-    const url = await page.evaluate(`document.getElementById("mainCanvas").toDataURL("image/webp", 0.88)`);
-    if (!url.startsWith("data:image/webp")) throw new Error("this browser can't encode WebP");
-    writeFileSync(join(outDir, `${look.id}.webp`), Buffer.from(url.split(",")[1], "base64"));
-    console.log(`${look.id}.webp`);
+    const url = await page.evaluate(`document.getElementById("mainCanvas").toDataURL("image/png")`);
+    if (!url.startsWith("data:image/png")) throw new Error("this browser can't encode PNG");
+    shots.push(url);
+    console.log(look.id);
   }
+  // One sprite, in the order of COLOR_LOOKS and then Custom (the app shows tile i
+  // from i * SIZE px across), so the sheet asks for one file, not eight.
+  const sprite = await page.evaluate(`(async (urls, size) => {
+    const out = document.createElement("canvas");
+    out.width = urls.length * size; out.height = size;
+    const ctx = out.getContext("2d");
+    for (let i = 0; i < urls.length; i++) {
+      const img = new Image();
+      img.src = urls[i];
+      await img.decode();
+      ctx.drawImage(img, i * size, 0, size, size);
+    }
+    return out.toDataURL("image/webp", 0.9);
+  })(${JSON.stringify(shots)}, ${SIZE})`);
+  if (!sprite.startsWith("data:image/webp")) throw new Error("this browser can't encode WebP");
+  writeFileSync(join(outDir, "sprite.webp"), Buffer.from(sprite.split(",")[1], "base64"));
+  console.log(`sprite.webp: ${looks.length} swatches of ${SIZE}px`);
   if (errors.length) throw new Error(`page errors: ${errors.join("; ")}`);
 } finally {
   await browser.close();

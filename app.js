@@ -3817,7 +3817,7 @@ document.addEventListener("pointerdown", (e) => {
 // ---------------------------------------------------------------- color sheet
 
 // The Looks: a style with a palette, at the neutral bands and shift. Their
-// thumbnails are icons/looks/<id>.webp (scripts/render_look_thumbs.mjs).
+// swatches are icons/looks/sprite.webp (scripts/render_look_thumbs.mjs).
 // Picking one changes the palette, and the color button shows it.
 const COLOR_LOOKS = [
   { id: "classic", label: "Classic", style: "smooth", palette: "Classic" },
@@ -3882,7 +3882,9 @@ function colorSheetNote() {
   if (!byType.length && !byDepth.length) return null;
   const note = colorSheetEl("p", { class: "note", id: "colorSheetNote" });
   if (byDepth.length) {
-    note.append(...boldList(byDepth), ` need a shallower view. Zoom out past about ${COLOR_STYLES.find((s) => s.maxZoom).maxZoom.toLocaleString("en-US")}× to use them.`);
+    // Says how far off the view is: from a Surprise-me place, billions of
+    // times deep, getting back under the limit takes a long pinch out.
+    note.append(...boldList(byDepth), ` only draw in views under ${COLOR_STYLES.find((s) => s.maxZoom).maxZoom.toLocaleString("en-US")}× deep. This one is ${zoomPhrase(mainState.baseScale, mainState.scale)}.`);
   }
   if (byType.length) {
     if (byDepth.length) note.append(" ");
@@ -3891,28 +3893,81 @@ function colorSheetNote() {
   return note;
 }
 
+// The Looks' swatches are cut from one sprite, icons/looks/sprite.webp (the
+// Looks in COLOR_LOOKS order, then Custom; scripts/render_look_thumbs.mjs):
+// one file to fetch and decode, drawn as a CSS background so a rebuilt tile
+// costs nothing, and sharp at any pixel density.
+const LOOK_SWATCHES = COLOR_LOOKS.length + 1;
+function lookSwatch(index) {
+  const x = LOOK_SWATCHES > 1 ? (index * 100) / (LOOK_SWATCHES - 1) : 0;
+  return colorSheetEl("span", { class: "swatch", "aria-hidden": "true", style: `background-size:${LOOK_SWATCHES * 100}% 100%;background-position:${x}% 0` });
+}
+// While the app is idle after it loads (the sprite isn't otherwise asked for
+// until the sheet is first opened, over the network on the website, where the
+// service worker also revalidates each file): fetch and decode it, and build
+// the sheet, so opening it later is only showing it. The Image is kept so the
+// decoded picture stays in memory.
+let lookSpriteImage = null;
+function prepareColorSheet() {
+  lookSpriteImage = new Image();
+  lookSpriteImage.src = "icons/looks/sprite.webp";
+  lookSpriteImage.decode?.().catch(() => {});
+  if (colorSheetApplies()) {
+    colorSheetTab = currentLookId() ? "looks" : "custom";
+    renderColorSheet();
+  }
+}
+if (stylesEnabled) (window.requestIdleCallback || ((f) => setTimeout(f, 1000)))(prepareColorSheet, { timeout: 3000 });
+
+// The Looks are one scrolling strip, so the sheet stays short and the fractal
+// stays visible. Its edges fade where there is more to scroll to, and the
+// next tile peeks past the edge, so it isn't mistaken for the whole set.
+function trackLooksFade(strip) {
+  const update = () => {
+    const more = strip.scrollWidth - strip.clientWidth > 2;
+    const left = strip.scrollLeft > 2;
+    const right = strip.scrollLeft + strip.clientWidth < strip.scrollWidth - 2;
+    strip.dataset.fade = more && left && right ? "both" : more && right ? "right" : more && left ? "left" : "none";
+  };
+  strip.addEventListener("scroll", update, { passive: true });
+  update();
+  requestAnimationFrame(update); // once it's laid out, if it wasn't yet
+}
+
+// A greyed-out Look says why when it's tapped: the note under the strip
+// lights up briefly (and comes into view if the sheet is scrolled).
+function flashColorSheetNote() {
+  const note = els.colorSheet.querySelector("#colorSheetNote");
+  if (!note) return;
+  note.scrollIntoView({ block: "nearest" });
+  note.classList.remove("flash");
+  void note.offsetWidth; // restart the animation
+  note.classList.add("flash");
+}
+
 function colorSheetLooks() {
   const active = currentLookId();
-  const grid = colorSheetEl("div", { class: "grid", role: "radiogroup", "aria-label": "Looks" });
-  for (const look of COLOR_LOOKS) {
+  const strip = colorSheetEl("div", { class: "looks", role: "radiogroup", "aria-label": "Looks" });
+  COLOR_LOOKS.forEach((look, i) => {
     const blocked = styleBlocked(COLOR_STYLES.find((s) => s.id === look.style), mainState);
     const tile = colorSheetEl("button", {
       class: `pickTile${active === look.id ? " active" : ""}`, role: "radio", "aria-checked": active === look.id,
       "aria-disabled": blocked ? "true" : false, "aria-describedby": blocked ? "colorSheetNote" : false, "data-key": `look-${look.id}`,
-    }, colorSheetEl("img", { src: `icons/looks/${look.id}.webp`, alt: "", width: 120, height: 120 }), colorSheetEl("span", {}, look.label));
+    }, lookSwatch(i), colorSheetEl("span", {}, look.label));
     tile.addEventListener("click", () => {
-      if (blocked) return;
+      if (blocked) { flashColorSheetNote(); return; }
       applyLook(look);
       renderColorSheet();
     });
-    grid.append(tile);
-  }
+    strip.append(tile);
+  });
   const custom = colorSheetEl("button", {
     class: `pickTile${active === null ? " active" : " ghost"}`, role: "radio", "aria-checked": active === null, "data-key": "look-custom",
-  }, colorSheetEl("img", { src: "icons/looks/custom.webp", alt: "", width: 120, height: 120 }), colorSheetEl("span", {}, "Custom"));
+  }, lookSwatch(COLOR_LOOKS.length), colorSheetEl("span", {}, "Custom"));
   custom.addEventListener("click", () => { colorSheetTab = "custom"; renderColorSheet(); });
-  grid.append(custom);
-  return [grid, colorSheetNote()];
+  strip.append(custom);
+  trackLooksFade(strip);
+  return [strip, colorSheetNote()];
 }
 
 // The slider for bands is logarithmic: 0.25x to 8x with 1x (today's coloring) in the middle, snapped.
@@ -3931,14 +3986,19 @@ function colorSheetCustom() {
     btn.addEventListener("click", () => { setColorStyle({ style: s.id }); renderColorSheet(); });
     seg.append(btn);
   }
+  // Every palette at once in a wrapping grid, so nothing needs scrolling:
+  // each swatch is its own gradient, named for assistive tech (and the line
+  // above says the current one), the current one ringed and ticked.
   const pals = colorSheetEl("div", { class: "pals", role: "radiogroup", "aria-label": "Palette" });
   COLORMAPS.forEach((c, i) => {
     const btn = colorSheetEl("button", {
-      class: `pal${i === colormapIndex ? " active" : ""}`, role: "radio", "aria-checked": i === colormapIndex, "data-key": `pal-${i}`,
-    }, colorSheetEl("i", { style: `background:${cmGradient(c.stops)}` }), c.name);
+      class: `pal${i === colormapIndex ? " active" : ""}`, role: "radio", "aria-checked": i === colormapIndex, "aria-label": c.name,
+      title: c.name, "data-key": `pal-${i}`, style: `background:${cmGradient(c.stops)}`,
+    });
     btn.addEventListener("click", () => { colormapIndex = i; updateLUT(); requestRender(); renderColorSheet(); });
     pals.append(btn);
   });
+  const palHead = colorSheetEl("p", { class: "palHead" }, colorSheetEl("span", {}, "Palette"), colorSheetEl("b", {}, COLORMAPS[colormapIndex].name));
   const slider = (name, label, min, max, step, value, text, onInput) => {
     const input = colorSheetEl("input", { type: "range", min, max, step, "aria-label": name, "aria-valuetext": text(value) });
     input.value = value;
@@ -3952,19 +4012,30 @@ function colorSheetCustom() {
     return colorSheetEl("label", { class: "field" }, label, input);
   };
   return [
-    seg, colorSheetNote(), pals,
+    seg, colorSheetNote(), palHead, pals,
     slider("Color bands", "Bands", BANDS_SLIDER.min, BANDS_SLIDER.max, BANDS_SLIDER.step, Math.log2(colorStyle.density),
       (v) => bandsText(2 ** v), (v) => setColorStyle({ density: Math.abs(v) < 0.03 ? 1 : 2 ** v })),
     slider("Color shift", "Shift", 0, 0.99, 0.01, colorStyle.offset, shiftText, (v) => setColorStyle({ offset: v })),
   ];
 }
 
-// Rebuilds the sheet for the current state, keeping the palette row's scroll
-// and the focused control (the sliders aren't rebuilt while dragged, see
-// their input handlers).
+// Everything the sheet's contents depend on: when it hasn't changed since the
+// sheet was built, opening it again keeps the DOM it has.
+function colorSheetStateKey() {
+  return JSON.stringify([
+    colorSheetTab, colorStyle.style, colorStyle.density, colorStyle.offset, colormapIndex, currentName,
+    COLOR_STYLES.map((s) => styleBlocked(s, mainState) || "").join(","),
+  ]);
+}
+
+// Rebuilds the sheet for the current state (unless it is already built for
+// it), keeping the focused control (the sliders aren't rebuilt while dragged,
+// see their input handlers).
 function renderColorSheet() {
   const sheet = els.colorSheet;
-  const scroll = sheet.querySelector(".pals")?.scrollLeft;
+  const key = colorSheetStateKey();
+  if (sheet.dataset.stateKey === key && sheet.firstChild) return;
+  sheet.dataset.stateKey = key;
   const focusKey = document.activeElement?.dataset?.key;
   const tabs = colorSheetEl("div", { class: "tabs", role: "tablist" });
   for (const [id, label] of [["looks", "Looks"], ["custom", "Custom"]]) {
@@ -3982,10 +4053,12 @@ function renderColorSheet() {
     });
     tabs.append(tab);
   }
-  sheet.replaceChildren(tabs, ...(colorSheetTab === "looks" ? colorSheetLooks() : colorSheetCustom()).filter(Boolean));
-  const pals = sheet.querySelector(".pals");
-  if (pals && scroll !== undefined) pals.scrollLeft = scroll;
-  else pals?.querySelector(".active")?.scrollIntoView({ block: "nearest", inline: "center" });
+  const done = colorSheetEl("button", { class: "done", "data-key": "done", "aria-label": "Close color sheet" }, "Done");
+  done.addEventListener("click", () => els.colorSheet.classList.remove("open"));
+  sheet.replaceChildren(
+    colorSheetEl("div", { class: "head" }, tabs, done),
+    ...(colorSheetTab === "looks" ? colorSheetLooks() : colorSheetCustom()).filter(Boolean),
+  );
   if (focusKey) sheet.querySelector(`[data-key="${focusKey}"]`)?.focus({ preventScroll: true });
 }
 
@@ -3993,6 +4066,9 @@ function openColorSheet() {
   colorSheetTab = currentLookId() ? "looks" : "custom";
   renderColorSheet();
   els.colorSheet.classList.add("open");
+  // The strip's edge fade was worked out when it was built, while the sheet
+  // was hidden and had no size: work it out again now it has one.
+  els.colorSheet.querySelector(".looks")?.dispatchEvent(new Event("scroll"));
 }
 
 document.addEventListener("pointerdown", (e) => {

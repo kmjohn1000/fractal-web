@@ -43,8 +43,11 @@ types draw which style (Phoenix has Smooth and Bands; Newton, Carpet, Gasket
 and Apollonian color by their own schemes), that the orbit traps switch off
 past about 1,000x deep, that the deep-zoom drag preview shows the current
 style, that Save image equals the frame on screen, the Color sheet's
-controls, names, greyed-out states and sizes (including at the largest text
-size), the share-link fields (`st`, `cd`, `co`: lenient parsing, written
+controls, names, greyed-out states and sizes (at most 40% of a 393x852 screen
+with at least half the fractal still visible; every palette on screen at once,
+named and pickable; the Looks strip's peeking tile and edge fade; Done, the
+color button, Escape and a tap on the fractal closing it; no rebuild on
+reopening; the largest text size), the share-link fields (`st`, `cd`, `co`: lenient parsing, written
 only when not the default), the info card, and baselines of each style on
 several fractals and of both sheet tabs.
 
