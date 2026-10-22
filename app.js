@@ -937,14 +937,53 @@ function createFractalRenderer(canvas) {
     "digitCenter", "digitScale", "cellHole", "digitCycle", "subPixelColor", "apoW0", "apoK", "apoL", "apoFlip",
     "apoSteps", "apoCapColor", "jitter", "usePerturbation", "refOrbitTex", "refOrbitLen", "critOffset",
     "critLen", "refTexWidth", "refOffset"];
+  function fractalEntry(variant, p) {
+    const entry = { prog: p, u: Object.fromEntries(UNIFORMS.map((n) => [n, gl.getUniformLocation(p, `u_${n}`)])) };
+    programs.set(variant, entry);
+    warming.delete(variant);
+    return entry;
+  }
   function fractalProgram(variant) {
     let entry = programs.get(variant);
     if (!entry) {
-      const p = link(`#define COLOR_VARIANT ${variant}\n${FRAG_SRC}`);
-      entry = { prog: p, u: Object.fromEntries(UNIFORMS.map((n) => [n, gl.getUniformLocation(p, `u_${n}`)])) };
-      programs.set(variant, entry);
+      const inFlight = warming.get(variant);
+      if (inFlight) {
+        // A warm-up compile is under way: finish with it (waits if it isn't done) rather than starting again.
+        if (!gl.getProgramParameter(inFlight, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(inFlight));
+        entry = fractalEntry(variant, inFlight);
+      } else {
+        entry = fractalEntry(variant, link(`#define COLOR_VARIANT ${variant}\n${FRAG_SRC}`));
+      }
     }
     return entry;
+  }
+  // Compiling a variant before it's asked for (warmColorVariants in app.js),
+  // so that picking a style doesn't wait on the compiler. With
+  // KHR_parallel_shader_compile the compile runs off the main thread: this
+  // starts it and later calls report "pending" until it's done, without
+  // blocking. Without it, the compile happens here, once, in the idle time the
+  // caller picked. Returns "ready" or "pending".
+  const parallelCompile = gl.getExtension("KHR_parallel_shader_compile");
+  const warming = new Map();
+  function warmVariant(variant) {
+    if (programs.has(variant)) return "ready";
+    if (!parallelCompile) { fractalProgram(variant); return "ready"; }
+    let p = warming.get(variant);
+    if (!p) {
+      p = gl.createProgram();
+      for (const [type, src] of [[gl.VERTEX_SHADER, VERT_SRC], [gl.FRAGMENT_SHADER, `#define COLOR_VARIANT ${variant}\n${FRAG_SRC}`]]) {
+        const s = gl.createShader(type);
+        gl.shaderSource(s, src);
+        gl.compileShader(s);
+        gl.attachShader(p, s);
+      }
+      gl.bindAttribLocation(p, 0, "a_pos");
+      gl.linkProgram(p);
+      warming.set(variant, p);
+    }
+    if (!gl.getProgramParameter(p, parallelCompile.COMPLETION_STATUS_KHR)) return "pending";
+    fractalProgram(variant); // finishes with the program just compiled
+    return "ready";
   }
   fractalProgram(0);
   const previewProg = link(PREVIEW_FRAG_SRC);
@@ -1033,6 +1072,63 @@ function createFractalRenderer(canvas) {
     }
     gl.drawArrays(gl.TRIANGLES, 0, 6);
     gl.disable(gl.BLEND);
+  }
+
+  // Live frames (a flight, a pinch above the deep-zoom threshold) draw one
+  // pass each. When they're running late, app.js asks for a smaller one
+  // (setLiveDivisor): the fractal is drawn at 1/div of the canvas size into a
+  // small texture, and that is painted over the canvas through the preview
+  // program. Only while a gesture or flight is on (isInteracting); the full
+  // render when it settles is untouched, so the landing is as sharp as ever.
+  let liveDiv = 1;
+  let liveTex = null, liveFbo = null, liveW = 0, liveH = 0;
+  function ensureLiveTarget(w, h) {
+    // Unit 4 is the preview's; units 0 and 1 hold the colormap and the
+    // reference orbit that the program about to draw is sampling.
+    gl.activeTexture(gl.TEXTURE4);
+    if (!liveTex) {
+      liveTex = gl.createTexture();
+      liveFbo = gl.createFramebuffer();
+      gl.bindTexture(gl.TEXTURE_2D, liveTex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    }
+    if (w !== liveW || h !== liveH) {
+      gl.bindTexture(gl.TEXTURE_2D, liveTex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, liveFbo);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, liveTex, 0);
+      liveW = w; liveH = h;
+    }
+  }
+  // The fractal program is bound with its uniforms set (u.resolution aside):
+  // draw it small, then paint that over the canvas.
+  function drawSmall(u) {
+    const w = Math.max(1, Math.round(canvas.width / liveDiv));
+    const h = Math.max(1, Math.round(canvas.height / liveDiv));
+    ensureLiveTarget(w, h);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, liveFbo);
+    gl.viewport(0, 0, w, h);
+    gl.uniform2f(u.resolution, w, h);
+    gl.disable(gl.BLEND);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.activeTexture(gl.TEXTURE4);
+    gl.bindTexture(gl.TEXTURE_2D, liveTex);
+    gl.useProgram(previewProg);
+    gl.uniform2f(pu.resolution, canvas.width, canvas.height);
+    gl.uniform1i(pu.snap, 4);
+    gl.uniform2f(pu.snapRes, w, h);
+    gl.uniformMatrix2fv(pu.toSnap, false, [1, 0, 0, 1]);
+    gl.uniform2f(pu.snapOffset, 0, 0);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+  }
+  function drawFinal(sampleIndex, u) {
+    if (liveDiv > 1 && isInteracting && sampleIndex === 0) drawSmall(u);
+    else drawToCanvas(sampleIndex);
   }
 
   // Reference orbit for the current view, reused by that view's
@@ -1316,7 +1412,7 @@ function createFractalRenderer(canvas) {
     gl.uniform1i(u.lut, 0);
 
     if (!usePerturbation) {
-      drawToCanvas(sampleIndex);
+      drawFinal(sampleIndex, u);
       return null;
     }
 
@@ -1404,6 +1500,9 @@ function createFractalRenderer(canvas) {
 
   return {
     canvas, render, renderPreview, setLUT, resize, perturbationSupported,
+    setLiveDivisor(d) { liveDiv = d; },
+    warmVariant,
+    get compiledVariants() { return [...programs.keys()]; },
     // Until its first use, an optimistic yes on WebGL2 (see newtonDeep).
     get newtonDeepSupported() { return newtonDeep !== false; },
     get phoenixDeepSupported() { return phoenixDeep !== false; },
@@ -1634,6 +1733,31 @@ function endVectorInteracting() {
   requestRender();
 }
 
+// Live frames at a frame-time-driven resolution. During a flight or a pinch
+// each frame is one full-size pass; on a phone a heavy view or style can take
+// longer than a frame, and the flight or pinch stutters. When frames arrive
+// late (two frames' worth of time between draws, three times running) the
+// next live frames are drawn at a step smaller, scaled up; when they're on
+// time for a good while, a step bigger. The step is kept between gestures that
+// follow each other, and starts over at full size after a pause. The render
+// when the gesture or flight settles is always full size.
+const LIVE_STEPS = [1, 1.5, 2, 3, 4];
+const liveRes = { step: 0, last: 0, late: 0, onTime: 0 };
+function adaptLiveResolution(now = performance.now()) {
+  const dt = now - liveRes.last;
+  liveRes.last = now;
+  if (dt > 1500) { liveRes.step = 0; liveRes.late = 0; liveRes.onTime = 0; }
+  else if (dt > 150) { liveRes.late = 0; liveRes.onTime = 0; } // a gap, not a slow frame
+  else if (dt > 25) { liveRes.onTime = 0; liveRes.late++; }
+  else if (dt < 19) { liveRes.late = 0; liveRes.onTime++; }
+  let step = liveRes.step;
+  if (liveRes.late >= 3 && step < LIVE_STEPS.length - 1) { step++; liveRes.late = 0; }
+  else if (liveRes.onTime >= 45 && step > 0) { step--; liveRes.onTime = 0; }
+  liveRes.step = step;
+  mainRenderer.setLiveDivisor(LIVE_STEPS[step]);
+  juliaRenderer.setLiveDivisor(LIVE_STEPS[step]);
+}
+
 const mainRenderer = createFractalRenderer(els.mainCanvas);
 const juliaRenderer = createFractalRenderer(els.juliaCanvas);
 const kochView = createKochView(els.kochCanvas);
@@ -1787,6 +1911,7 @@ function deepZoomEligible(renderer, state) {
 function renderAll() {
   updateBackButtons();
   if (mode === "fractal") {
+    if (isInteracting) adaptLiveResolution();
     if (isInteracting && deepZoomEligible(mainRenderer, mainState)) {
       mainRenderer.renderPreview(mainState);
     } else {
@@ -3924,6 +4049,40 @@ function prepareColorSheet() {
     colorSheetTab = currentLookId() ? "looks" : "custom";
     renderColorSheet();
   }
+  warmColorVariants();
+}
+
+// Compiling the color styles' shader variants ahead of the pick. Each style
+// with per-iteration work (Glow, Stripes, the traps) is its own program, built
+// the first time it's drawn; on a phone that compile is a visible stall at the
+// tap. So once the app is idle, and again whenever the Color sheet opens, the
+// variants this fractal can use are built for the main pane, and for the
+// Julia pane too where dual view is offered: one at a time, each in an idle
+// moment (or started off the main thread where the browser can), never while
+// a gesture or a flight is on.
+const warmQueue = [];
+let warmRunning = false;
+function warmColorVariants() {
+  if (!stylesEnabled || mode !== "fractal" || !ESCAPE_TIME_TYPES.includes(mainState.ftype)) return;
+  const variants = [...new Set(COLOR_STYLES
+    .filter((s) => s.variant && (s.types || ESCAPE_TIME_TYPES).includes(mainState.ftype)).map((s) => s.variant))];
+  const jobs = variants.map((v) => [mainRenderer, v]);
+  if (FRACTAL_CONFIGS[currentName].dual) jobs.push(...variants.map((v) => [juliaRenderer, v]));
+  warmQueue.splice(0, warmQueue.length, ...jobs.filter(([r, v]) => !r.compiledVariants.includes(v)));
+  if (warmQueue.length && !warmRunning) { warmRunning = true; warmNextVariant(); }
+}
+function warmNextVariant() {
+  const idle = window.requestIdleCallback || ((f) => setTimeout(f, 200));
+  idle(() => {
+    if (isInteracting) { setTimeout(warmNextVariant, 400); return; }
+    const job = warmQueue[0];
+    if (!job) { warmRunning = false; return; }
+    let state = "ready";
+    try { state = job[0].warmVariant(job[1]); } catch (e) { console.warn("Shader warm-up failed:", e); }
+    if (state === "ready") warmQueue.shift();
+    if (warmQueue.length) setTimeout(warmNextVariant, state === "pending" ? 60 : 0);
+    else warmRunning = false;
+  }, { timeout: 2500 });
 }
 if (stylesEnabled) (window.requestIdleCallback || ((f) => setTimeout(f, 1000)))(prepareColorSheet, { timeout: 3000 });
 
@@ -4077,6 +4236,7 @@ function openColorSheet() {
   // The strip's edge fade was worked out when it was built, while the sheet
   // was hidden and had no size: work it out again now it has one.
   els.colorSheet.querySelector(".looks")?.dispatchEvent(new Event("scroll"));
+  warmColorVariants();
 }
 
 document.addEventListener("pointerdown", (e) => {

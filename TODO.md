@@ -520,7 +520,13 @@ distance estimation → zoom-to-minibrot / AI discovery.
       float32 deltas should hold to ~scale 1e-30 (inference); BLA wasn't
       worth it at this iteration cap. Needs a share-link v2 and a
       `chooseReference` redesign (scan candidates as float64 deltas against
-      the BigInt center orbit); ~250-400 lines
+      the BigInt center orbit); ~250-400 lines. Measured 2026-10-21
+      (headless Chromium, a 100 px drag, same for every color style and
+      every fractal family tried): the float64 view center follows a drag
+      correctly down to scale ~1e-15, moves in coarse steps at 1e-16 (not
+      at all for centers near 1-2, up to 1.7x the drag for centers near
+      0.1-0.3) and doesn't move at 7.8e-18 (1.6e17x), while zoom itself
+      keeps working; there is no zoom cap
 - [ ] maxIter past 8000 (the cap planned for Bird's Eye, see Next): one
       draw looping 10⁴–10⁶ times needs multi-pass iteration, saving
       per-pixel state (z, dz, reference index) in float textures between

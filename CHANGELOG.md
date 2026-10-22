@@ -9,7 +9,11 @@ Newest version at the top. See CLAUDE.md for when and how to bump.
 - Groundwork for color styles (not visible yet): "point" and "cross" orbit-trap styles that color by how close the orbit passes to a point or a pair of lines, up to about 1,000× deep.
 - Groundwork for color styles (hidden behind a setting for now): the color button opens a Color sheet with a Looks tab (Classic, Inferno, Edge glow, Iteration bands, Stripes, Orbit trap, Cross trap) and a Custom tab with the style, palette, and bands and shift sliders.
 - Groundwork for color styles (hidden behind a setting for now): share links carry the style, bands and shift when they aren't the default, and the info card names the Look or the custom style.
+- Color styles (hidden behind a setting for now): the shaders for Glow, Stripes and the traps are built while the app is idle (and when the Color sheet opens), so picking a style no longer waits on the compiler.
 - Color sheet rework (hidden behind a setting for now): the sheet is about a third of the screen tall at most, so the fractal stays in view and live while you change bands and shift; a tap on the fractal, Done, the color button or Escape closes it. The Looks are small swatches in one scrolling strip (the next one peeks past the edge), all the palettes show at once as a grid with the current one ticked, and the sheet is built ahead of time so it opens at once. Greyed-out Point and Cross now say how deep the view is.
+
+## 1.39.3 — 2026-10-21
+- Flights and pinches that run slowly now draw at a lower resolution while they move and sharpen the moment they stop or land, so a heavy dive such as the Douady rabbit's Rabbit Hole stays smooth on a phone. It only kicks in when frames are running late; the finished picture is exactly the same.
 
 ## 1.39.2 — 2026-10-21
 - Dual view from a zoomed-in view or a Surprise me place no longer comes up with a blank Julia pane: it opens on the whole Julia set, as it does from the opening view. It's also much quicker to switch on from a deep place, since the pane no longer does a deep render of a flat patch.
