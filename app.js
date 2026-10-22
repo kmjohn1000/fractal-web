@@ -1720,17 +1720,22 @@ function trapRangeFor(px, fixed) {
 // hidden and shared links ignore the style fields until it's on. Turn it on
 // with localStorage["fractalAtlas.styles"] = "1" or by opening the page once
 // with #styles in the address ("#styles=0" turns it off again); the hash is
-// read here, before applyShareHashFromUrl strips it.
+// read here, before applyShareHashFromUrl strips it. A link that carries style
+// settings (st, cd or co) turns the styles on for whoever opens it, the same
+// as #styles, so a shared view looks as it was sent; "#styles=0" still wins.
 const stylesEnabled = (() => {
+  const p = new URLSearchParams(location.hash.slice(1));
+  const off = p.get("styles") === "0";
+  const linked = !off && ["st", "cd", "co"].some((k) => p.has(k));
   try {
-    const p = new URLSearchParams(location.hash.slice(1));
     if (p.has("styles")) {
-      if (p.get("styles") === "0") localStorage.removeItem("fractalAtlas.styles");
+      if (off) localStorage.removeItem("fractalAtlas.styles");
       else localStorage.setItem("fractalAtlas.styles", "1");
     }
+    if (linked) localStorage.setItem("fractalAtlas.styles", "1");
     return localStorage.getItem("fractalAtlas.styles") === "1";
   } catch {
-    return false; // storage blocked
+    return linked; // storage blocked: on for this visit only
   }
 })();
 

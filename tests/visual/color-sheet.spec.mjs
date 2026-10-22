@@ -76,6 +76,27 @@ test.describe("turning the flag on and off from the address", () => {
     await page.locator("#colormapBtn").click();
     await expect(page.locator("#colormapMenu")).toHaveClass(/open/);
   });
+
+  test("a link that carries style settings turns the styles on and restores them; #styles=0 beats it", async ({ page }) => {
+    await load(page, { flag: false });
+    const link = "index.html#v=1&m=fractal&f=Mandelbrot&x=-0.75&y=0&s=2.7&r=0&i=300&cm=Hot&st=sp&cd=2&co=0.3";
+    await page.goto("about:blank");
+    await page.goto(link);
+    await page.addScriptTag({ path: DRIVER });
+    await settle(page);
+    expect(await page.evaluate(() => localStorage.getItem("fractalAtlas.styles"))).toBe("1");
+    expect(await page.evaluate(() => ({ style: colorStyle.style, density: colorStyle.density, offset: colorStyle.offset, palette: COLORMAPS[colormapIndex].name })))
+      .toEqual({ style: "stripes", density: 2, offset: 0.3, palette: "Hot" });
+    await page.locator("#colormapBtn").click();
+    await expect(page.locator("#colorSheet")).toHaveClass(/open/);
+    // An explicit #styles=0 wins over the fields: the palette arrives, the styles stay off.
+    await page.goto("about:blank");
+    await page.goto(`${link}&styles=0`);
+    await page.addScriptTag({ path: DRIVER });
+    await settle(page);
+    expect(await page.evaluate(() => localStorage.getItem("fractalAtlas.styles"))).toBeNull();
+    expect(await page.evaluate(() => ({ style: colorStyle.style, palette: COLORMAPS[colormapIndex].name }))).toEqual({ style: "smooth", palette: "Hot" });
+  });
 });
 
 test.describe("with the flag on", () => {
