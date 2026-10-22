@@ -2265,15 +2265,23 @@ function enterDual(from = null) {
   const config = FRACTAL_CONFIGS[currentName];
   if (!config.dual) return;
   dualActive = true;
+  // The Julia pane opens on the whole Julia set: no more zoomed in than the
+  // fractal's own opening view. (It used to copy the main pane's zoom, which
+  // from any zoomed-in view -- every Surprise-me place -- was a magnified
+  // patch around the origin, a flat color that still paid for a deep render.)
+  const juliaScale = Math.max(mainState.scale, mainState.baseScale);
+  const sameZoom = juliaScale === mainState.scale;
   juliaState = from ? from.juliaState : {
-    cx: 0, cy: 0, scale: mainState.scale, rotation: 0,
+    cx: 0, cy: 0, scale: juliaScale, rotation: 0,
     ftype: mainState.ftype, power: mainState.power,
     isJulia: true, juliaC: [mainState.cx, mainState.cy],
-    maxIter: mainState.maxIter,
     // The slider drives both panes, so a manual lock carries over; auto
-    // mode counts zoom from this pane's own opening scale.
-    baseScale: mainState.scale,
-    iterAutoLocked: mainState.iterAutoLocked,
+    // mode counts zoom from this pane's own opening scale. A pane at its
+    // own, shallower zoom takes its own iteration budget, not the main
+    // pane's (thousands, for a deep place).
+    maxIter: sameZoom ? mainState.maxIter : suggestedMaxIter(juliaScale, juliaScale),
+    baseScale: juliaScale,
+    iterAutoLocked: sameZoom ? mainState.iterAutoLocked : false,
   };
   // c is the main pane's center, whichever pane this is.
   juliaState.juliaC = [mainState.cx, mainState.cy];
