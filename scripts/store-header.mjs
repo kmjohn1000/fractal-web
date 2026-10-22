@@ -6,7 +6,7 @@
 //
 // Renders the bare canvas from the web build in headless WebKit (the engine
 // of the iOS app's WKWebView) at 1920x823 CSS px, dpr 2, then composes the
-// text over it. Writes appstore-screenshots/product-page-header-3840x1646.png
+// text over it. Writes listing/product-page-header-3840x1646.png
 // (git-ignored), keeping the previous file as ...png.bak. Fails on a page
 // error, the error banner or a lost WebGL context.
 import { webkit } from "@playwright/test";
@@ -16,7 +16,7 @@ import { join } from "node:path";
 import { PNG } from "pngjs";
 
 const root = new URL("..", import.meta.url).pathname;
-const OUT_DIR = join(root, "appstore-screenshots");
+const OUT_DIR = join(root, "listing");
 const OUT = join(OUT_DIR, "product-page-header-3840x1646.png");
 const PORT = 8746;
 const DRIVER = join(root, "tests/driver.js");

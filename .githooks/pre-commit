@@ -15,7 +15,7 @@ private=$(git diff --cached --name-only --diff-filter=ACMR | grep -i -E \
   -e '^\.claude/' \
   -e '^research/' \
   -e '^docs/' \
-  -e '^appstore-screenshots/' \
+  -e '^listing/' \
   -e '^store-assets/')
 if [ -n "$private" ]; then
   echo "pre-commit: refusing to commit private files:"

@@ -4,7 +4,7 @@
 //
 //   node scripts/store-screenshots.mjs <version> [shotName ...]
 //
-// Writes, under appstore-screenshots/<version>/:
+// Writes, under listing/<version>/:
 //   renders/<slot>/<shot>.png  this run's bare renders, plus captions.json:
 //                              the baseline the next version compares with
 //   app/<slot>/<shot>.png      bare app screens to upload (no caption,
@@ -27,7 +27,7 @@ import { join } from "node:path";
 import { PNG } from "pngjs";
 
 const root = new URL("..", import.meta.url).pathname;
-const LISTING = join(root, "appstore-screenshots");
+const LISTING = join(root, "listing");
 const PORT = 8745;
 const DRIVER = join(root, "tests/driver.js");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -94,6 +94,10 @@ const SHOTS = [
     steps: ["__store.land('Burn. Ship', 'Armada'); __store.colormap('Fire')", "#hudBtn"] },
   { name: "6-pattern-play", caption: () => "Watch patterns\ngrow",
     steps: ["__vt.mode('tree'); __store.solidColor('tree', 'Autumn')"] },
+  // Added with 1.40.0 (the Color sheet): upload it as a seventh screenshot and
+  // drag it up the list in App Store Connect.
+  { name: "7-looks", caption: () => "Six Looks.\nEvery palette.",
+    steps: ["__store.land('Mandelbrot', 'Seahorse Valley')", "#colormapBtn", '#colorSheet [data-key="look-stripes"]'] },
 ];
 
 // Timer-driven overlays (rotation compass, crosshair flash, speed bubble),

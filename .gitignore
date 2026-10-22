@@ -4,7 +4,7 @@
 node_modules/
 www/
 CLAUDE.md
-appstore-screenshots/
+listing/
 .claude/
 .claude-session-state.md
 .playwright-mcp/
@@ -12,7 +12,7 @@ test-results/
 # Product and strategy notes: local only (this repo is public). See
 # .githooks/pre-commit.
 /STRATEGY*.md
-# Competitor research lives in appstore-screenshots/reports/ now.
+# Competitor research lives in listing/reports/ now.
 /research/
 # Working notes (learn-more-links.md): local only.
 /docs/
