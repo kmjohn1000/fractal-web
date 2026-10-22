@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## Unreleased
+- Adaptive refinement (an experiment, off unless the page is opened with `#adaptive`; `#adaptive=0` turns it off): after the first four of the 16 sharpening passes, only the pixels that still differ between samples keep refining, to finish deep views sooner. Nothing changes for anyone who doesn't turn it on.
+
 ## 1.40.0 — 2026-10-22
 - Color styles. The color button now opens a Color sheet with six Looks (Default, Edge glow, Stripes, Bands, Orbs and Rays) and a Custom tab with the style, palette, and Repeat and Shift sliders. Edge glow draws the distance to the set's boundary, so thin filaments stay crisp at any depth; Stripes colors by the angle of the orbit; Bands draws whole-number bands; Orbs and Rays color by how close the orbit passes to a point or a pair of lines, and work at any depth.
 - The Color sheet stays under about 40% of the screen, so the fractal stays in view and live while you change a style. Done, the color button, Escape or a tap on the fractal closes it, while dragging or pinching the fractal leaves it open. On Newton, Carpet, Gasket and Apollonian it shows just the palette grid, in place of the old tall list. It fits a small phone, landscape and the largest text sizes, and is centered above the toolbar on an iPad.

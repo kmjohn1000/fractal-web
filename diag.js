@@ -33,6 +33,28 @@ const Diag = (() => {
     }
   })();
 
+  // Opt-in renderer experiments, switched on the same way ("#adaptive", and
+  // "#adaptive=0" to turn it off) and read live, so no reload is needed. Off
+  // for everyone unless asked for. "adaptive" is adaptive refinement (TODO.md).
+  const ADAPTIVE_KEY = "fractalAtlas.adaptive";
+  let adaptive = (() => {
+    const p = new URLSearchParams(location.hash.slice(1));
+    const off = p.get("adaptive") === "0";
+    try {
+      if (p.has("adaptive")) {
+        if (off) localStorage.removeItem(ADAPTIVE_KEY);
+        else localStorage.setItem(ADAPTIVE_KEY, "1");
+      }
+      return localStorage.getItem(ADAPTIVE_KEY) === "1";
+    } catch {
+      return p.has("adaptive") && !off;
+    }
+  })();
+  function setAdaptive(on) {
+    adaptive = on;
+    try { if (on) localStorage.setItem(ADAPTIVE_KEY, "1"); else localStorage.removeItem(ADAPTIVE_KEY); } catch { /* this visit only */ }
+  }
+
   const contexts = []; // [name, gl, canvas]
   const links = []; // [label, ms]
   const events = []; // [seconds since load, text]
@@ -130,6 +152,7 @@ const Diag = (() => {
     const out = [`Fractal Atlas diagnostics · ${new Date().toISOString()}`,
       navigator.userAgent,
       `devicePixelRatio ${window.devicePixelRatio} · screen ${screen.width}x${screen.height} · window ${innerWidth}x${innerHeight}`,
+      `experiment: adaptive refinement ${adaptive ? "ON" : "off"}`,
       ""];
     contexts.forEach((c) => out.push(glReport(c)));
     out.push(gpuInfo, "", "Shader links, ms (compile + link until usable; \"warm start\" is what a parallel warm-up costs the thread):");
@@ -208,6 +231,7 @@ const Diag = (() => {
     if (i < 0) return;
     const p = new URLSearchParams(url.slice(i + 1));
     if (p.has("diag")) setEnabled(p.get("diag") !== "0");
+    if (p.has("adaptive")) setAdaptive(p.get("adaptive") !== "0");
   }
 
   // A hash typed into an open tab changes no page load. This listener is
@@ -216,6 +240,6 @@ const Diag = (() => {
 
   if (enabled) showUi();
 
-  return { pass, link, event, watch, fromLink, setCopy(fn) { copyFn = fn; },
+  return { pass, link, event, watch, fromLink, get adaptive() { return adaptive; }, setCopy(fn) { copyFn = fn; },
     setShare(fn) { shareFn = fn; if (shareBtn) shareBtn.hidden = !fn; }, get enabled() { return enabled; } };
 })();

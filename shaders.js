@@ -820,6 +820,33 @@ void main() {
 }
 `;
 
+// Adaptive refinement's mask (the opt-in experiment in createFractalRenderer):
+// run once, after the fourth supersample, to write the stencil. u_a is the
+// canvas after the first sample and u_b the canvas after the fourth (the mean
+// of four): a pixel whose mean has moved from its first sample, or whose
+// neighbor's has (3x3), still disagrees with itself between samples and keeps
+// refining; the rest stop. Nothing is drawn to the canvas (color writes are off).
+const ADAPTIVE_MASK_FRAG_SRC = `#version 300 es
+precision highp float;
+uniform sampler2D u_a;
+uniform sampler2D u_b;
+uniform vec2 u_res;
+uniform float u_thr;
+out vec4 o;
+void main() {
+  float m = 0.0;
+  for (int dy = -1; dy <= 1; dy++) {
+    for (int dx = -1; dx <= 1; dx++) {
+      vec2 q = (gl_FragCoord.xy + vec2(float(dx), float(dy))) / u_res;
+      vec3 d = abs(texture(u_a, q).rgb - texture(u_b, q).rgb);
+      m = max(m, max(d.r, max(d.g, d.b)));
+    }
+  }
+  if (m <= u_thr) discard;
+  o = vec4(1.0);
+}
+`;
+
 // Shared by NEWTON_DEEP_FRAG_SRC and PHOENIX_DEEP_FRAG_SRC, which declare
 // u_lut before including it.
 const FIXED_POINT_GLSL = `
