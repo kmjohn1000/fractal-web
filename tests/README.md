@@ -34,6 +34,48 @@ two-finger twist must still work at depth; a nonsense view from a
 hand-edited link must render quickly without errors; and three deep-zoom
 screenshots are compared with baselines.
 
+`styles.spec.mjs` and `color-sheet.spec.mjs` cover the color styles (Smooth,
+Bands, Glow, Stripes, Point and Cross; see `COLOR_STYLES` in `app.js`),
+which are being built behind a flag (`localStorage["fractalAtlas.styles"] =
+"1"`, or open the page once with `#styles`; the specs set it themselves
+where it matters). They check that the style API is strict, which fractal
+types draw which style (Phoenix has Smooth and Bands; Newton, Carpet, Gasket
+and Apollonian color by their own schemes), that the orbit traps switch off
+past about 1,000x deep, that the deep-zoom drag preview shows the current
+style, that Save image equals the frame on screen, the Color sheet's
+controls, names, greyed-out states and sizes (including at the largest text
+size), the share-link fields (`st`, `cd`, `co`: lenient parsing, written
+only when not the default), the info card, and baselines of each style on
+several fractals and of both sheet tabs.
+
+Three scripts back them, outside the suite because they take a few minutes
+or need Python with numpy and Pillow:
+
+- `node scripts/default-identity.mjs record|check`: the default style must
+  draw exactly as before the styles work. It renders 26 states (every
+  fractal type, the perturbation, Newton and Phoenix deep paths, dual view)
+  and `check` fails on a single differing pixel against the reference
+  recorded in `tests/baselines/identity/`. Run it after any shader edit: a
+  reshaped `escapeColor` in `PHOENIX_DEEP_FRAG_SRC` once changed 10% of a
+  deep Phoenix frame, and the shader compiler is the only thing that knows.
+- `node scripts/oracle-compare.mjs --styles glow,stripes ...`: renders a view
+  in the app and in a float64 reference (`scripts/oracle/oracle.py`, which
+  reads the app's own palettes) and compares them. Gates, set from what
+  Smooth measures against the oracle (blurred difference 0.16-1.60 of 255
+  over the twelve gate views, because float32 and float64 orbits drift
+  apart in filament zones and the app takes 16 samples to the oracle's 4):
+  every case needs the interior masks to agree on at least 98% of pixels and
+  the difference after averaging 8x8 blocks to be at most 3 of 255; the
+  "calm" views (low iteration counts) also need a mean difference of at most
+  5 and at most 4% of pixels off by more than 40. Measured, all within the
+  gates: Smooth 0.16-1.60, Bands 0.29-1.62, Glow 0.14-1.17, Stripes 0.37-1.94,
+  Point 0.07-0.41 and Cross 0.08-1.28 (blurred difference). The deep views
+  run the perturbation path against straight float64.
+- `node scripts/style-bench.mjs ['setColorStyle({style:"glow"})']`: the
+  headless time of one fully refined frame. Headless Chromium on a Mac's GPU,
+  so only for "did Smooth regress" and "what does a style add", never a
+  phone number.
+
 `sw.spec.mjs` checks the freshness stamps `npm run stamp` writes: `sw.js`'s
 `CACHE_NAME` matches the app files, and `package.json` and `index.html`'s
 `?v=` queries carry the CHANGELOG version. It also checks that `APP_SHELL`

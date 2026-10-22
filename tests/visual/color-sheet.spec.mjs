@@ -6,7 +6,7 @@
 import { test, expect } from "@playwright/test";
 
 /* global colorStyle, setColorStyle, COLORMAPS, colormapIndex:writable, updateLUT, applyShareLink, buildShareHash,
-   parseShareHash */
+   parseShareHash, mainState, enterDual, exitDual, dualActive */
 
 const DRIVER = new URL("../driver.js", import.meta.url).pathname;
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
@@ -47,6 +47,28 @@ test.describe("with the flag off", () => {
     await page.locator("#colormapBtn").click();
     await expect(page.locator("#colormapMenu")).toHaveClass(/open/);
     await expect(page.locator("#colorSheet")).not.toHaveClass(/open/);
+  });
+});
+
+test.describe("turning the flag on and off from the address", () => {
+  test("#styles turns it on (and remembers it), #styles=0 turns it off", async ({ page }) => {
+    await load(page, { flag: false });
+    // (from a blank page: a hash change within the open page doesn't reload it, so the flag isn't read again)
+    await page.goto("about:blank");
+    await page.goto("index.html#styles");
+    await page.addScriptTag({ path: DRIVER });
+    await settle(page);
+    expect(await page.evaluate(() => localStorage.getItem("fractalAtlas.styles"))).toBe("1");
+    await page.locator("#colormapBtn").click();
+    await expect(page.locator("#colorSheet")).toHaveClass(/open/);
+    // The flag was cleared by the init script on this load and set again by the hash; now switch it off.
+    await page.goto("about:blank");
+    await page.goto("index.html#styles=0");
+    await page.addScriptTag({ path: DRIVER });
+    await settle(page);
+    expect(await page.evaluate(() => localStorage.getItem("fractalAtlas.styles"))).toBeNull();
+    await page.locator("#colormapBtn").click();
+    await expect(page.locator("#colormapMenu")).toHaveClass(/open/);
   });
 });
 
@@ -259,6 +281,41 @@ test.describe("share links (flag on)", () => {
       // A good field survives its bad neighbour.
       "st=de&cd=999&co=0.5": { style: "glow", density: 1, offset: 0.5 },
     });
+  });
+});
+
+test.describe("the style is global (flag on)", () => {
+  test.beforeEach(async ({ page }) => { await load(page, { flag: true }); });
+
+  test("survives a trip to another fractal and the dual view, and leaves auto detail alone", async ({ page }) => {
+    const r = await page.evaluate(() => {
+      window["__vt"].fractal("Mandelbrot");
+      const locked = mainState.iterAutoLocked, iter = mainState.maxIter;
+      setColorStyle({ style: "stripes", density: 2, offset: 0.25 });
+      const same = mainState.iterAutoLocked === locked && mainState.maxIter === iter;
+      const keep = () => ({ ...colorStyle });
+      window["__vt"].fractal("Newton z³"); const onNewton = keep();
+      window["__vt"].fractal("Burn. Ship"); const onShip = keep();
+      enterDual(); const inDual = keep(); exitDual(); const outDual = keep();
+      return { same, onNewton, onShip, inDual, outDual };
+    });
+    const want = { style: "stripes", density: 2, offset: 0.25, trap: null };
+    expect(r.same).toBe(true);
+    for (const k of ["onNewton", "onShip", "inDual", "outDual"]) expect(r[k], k).toEqual(want);
+  });
+
+  test("a dual view's link keeps the style and opens in dual", async ({ page }) => {
+    const r = await page.evaluate(() => {
+      window["__vt"].fractal("Mandelbrot");
+      enterDual();
+      setColorStyle({ style: "glow", density: 1.5 });
+      const hash = buildShareHash();
+      setColorStyle({ style: "smooth", density: 1, offset: 0 });
+      applyShareLink(`https://example.org/${hash}`);
+      return { hash, style: colorStyle.style, density: colorStyle.density, dual: dualActive };
+    });
+    expect(r.hash).toMatch(/[&#]st=de&cd=1\.5(&|$)/);
+    expect(r).toMatchObject({ style: "glow", density: 1.5, dual: true });
   });
 });
 
