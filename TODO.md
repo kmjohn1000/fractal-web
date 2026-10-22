@@ -162,7 +162,28 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         interior; after pass 3 keep refining only where samples still differ
         by more than ~12 levels. Modeled work 51-98% of today's across five
         views. Output stops being bit-identical, so re-record the visual
-        baselines. Subsumes "Skip the black interior" step 1 above
+        baselines. Subsumes "Skip the black interior" step 1 above.
+        TRIED 2026-10-22, DID NOT PAY (an opt-in `#adaptive` experiment,
+        commit `122e20f`: 4 full samples, a 3x3-dilated stencil mask of the
+        pixels whose 4-sample mean differs from sample 0 by more than 4
+        levels, the other 12 samples drawn only under the mask). What was
+        measured on the iPhone 15: the stencil test does skip work (a
+        synthetic 50% mask of blocks of 8-128 px took 50% of the time, a
+        10% mask 17%; single-pixel scatter only 83%); but the real mask keeps
+        the expensive pixels. In a float32 spike the mask kept 7-45% of the
+        pixels and the whole refinement still took 76-100% of full (whole
+        set 94-100%, Elephant 80%, Spiral Cluster 76%, Seahorse 2e-4 92%;
+        mean error 0.03-0.15 of 255, p99 1-2, worst pixels up to 47). In the
+        app at Seahorse 4e-10 the 12 masked passes took 155 ms against 153 ms
+        for an ordinary pass: no saving, though the mask keeps only 33% of
+        the pixels there (Bird's Eye 25%, Mini Mandelbrot 27%, Rabbit Hole
+        5%, Spiral Cluster 20%, Elephant 9%; the share barely moves with the
+        threshold from 4 to 32 levels). Why: the pixels that still disagree
+        between samples are the near-boundary ones, which also run the most
+        iterations, so a third of the pixels hold nearly all of a pass's
+        cost. The model that predicted 51-69% for deep views assumed a cost
+        spread it didn't have. Gate was >=25% less refinement time on deep
+        views: not met. Left in tree behind the flag, or to be reverted
       - Per-fractal shader variants (~60-100 lines in `link()`): `#define`
         variants compiled lazily, with `KHR_parallel_shader_compile` where
         present. Pass: pixel-identical output and >=15% faster pass or >=30%
