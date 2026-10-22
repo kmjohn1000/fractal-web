@@ -1,8 +1,8 @@
-// The Color sheet (behind the styles flag, see stylesEnabled in app.js): the
-// existing color button opens it on the fractals the styles can color, with
-// a Looks tab and a Custom tab. These checks cover the flag, the controls
-// and their accessibility, that opening it never resizes the canvas, and
-// baselines for both tabs. Run through `npm run test:visual`.
+// The Color sheet: the color button opens it on every fractal (the palette grid
+// alone where the fractal colors by its own scheme, the Looks and Custom tabs
+// where the styles apply). These checks cover the controls and their
+// accessibility, that opening it never resizes the canvas, and baselines for
+// both tabs. Run through `npm run test:visual`.
 import { test, expect } from "@playwright/test";
 
 /* global colorStyle, setColorStyle, COLORMAPS, colormapIndex:writable, updateLUT, applyShareLink, buildShareHash,
@@ -15,16 +15,15 @@ const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden
 
 let pageErrors = [];
 
-async function load(page, { flag }) {
+async function load(page) {
   pageErrors = [];
   page.on("pageerror", (e) => pageErrors.push(e.message));
-  await page.addInitScript((on) => {
+  await page.addInitScript(() => {
     try {
       localStorage.setItem("fractalAtlas.visited", "1");
       localStorage.setItem("fractalAtlas.welcomeDismissed", "1");
-      if (on) localStorage.setItem("fractalAtlas.styles", "1"); else localStorage.removeItem("fractalAtlas.styles");
     } catch { /* storage blocked */ }
-  }, flag);
+  });
   await page.goto("index.html");
   await page.addScriptTag({ path: DRIVER });
   await page.addStyleTag({ content: HIDE_TRANSIENTS });
@@ -47,60 +46,23 @@ test.afterEach(() => {
   expect(pageErrors, "uncaught page errors").toEqual([]);
 });
 
-test.describe("with the flag off", () => {
-  test("the color button opens the plain palette list", async ({ page }) => {
-    await load(page, { flag: false });
-    await page.locator("#colormapBtn").click();
-    await expect(page.locator("#colormapMenu")).toHaveClass(/open/);
-    await expect(page.locator("#colorSheet")).not.toHaveClass(/open/);
-  });
-});
-
-test.describe("turning the flag on and off from the address", () => {
-  test("#styles turns it on (and remembers it), #styles=0 turns it off", async ({ page }) => {
-    await load(page, { flag: false });
-    // (from a blank page: a hash change within the open page doesn't reload it, so the flag isn't read again)
+test.describe("a link that carries style settings", () => {
+  test("restores them on load, with the palette, in the app's first view", async ({ page }) => {
+    await load(page);
+    // (from a blank page: a hash change within the open page isn't a load)
     await page.goto("about:blank");
-    await page.goto("index.html#styles");
+    await page.goto("index.html#v=1&m=fractal&f=Mandelbrot&x=-0.75&y=0&s=2.7&r=0&i=300&cm=Hot&st=sp&cd=2&co=0.3");
     await page.addScriptTag({ path: DRIVER });
     await settle(page);
-    expect(await page.evaluate(() => localStorage.getItem("fractalAtlas.styles"))).toBe("1");
-    await page.locator("#colormapBtn").click();
-    await expect(page.locator("#colorSheet")).toHaveClass(/open/);
-    // The flag was cleared by the init script on this load and set again by the hash; now switch it off.
-    await page.goto("about:blank");
-    await page.goto("index.html#styles=0");
-    await page.addScriptTag({ path: DRIVER });
-    await settle(page);
-    expect(await page.evaluate(() => localStorage.getItem("fractalAtlas.styles"))).toBeNull();
-    await page.locator("#colormapBtn").click();
-    await expect(page.locator("#colormapMenu")).toHaveClass(/open/);
-  });
-
-  test("a link that carries style settings turns the styles on and restores them; #styles=0 beats it", async ({ page }) => {
-    await load(page, { flag: false });
-    const link = "index.html#v=1&m=fractal&f=Mandelbrot&x=-0.75&y=0&s=2.7&r=0&i=300&cm=Hot&st=sp&cd=2&co=0.3";
-    await page.goto("about:blank");
-    await page.goto(link);
-    await page.addScriptTag({ path: DRIVER });
-    await settle(page);
-    expect(await page.evaluate(() => localStorage.getItem("fractalAtlas.styles"))).toBe("1");
     expect(await page.evaluate(() => ({ style: colorStyle.style, density: colorStyle.density, offset: colorStyle.offset, palette: COLORMAPS[colormapIndex].name })))
       .toEqual({ style: "stripes", density: 2, offset: 0.3, palette: "Hot" });
     await page.locator("#colormapBtn").click();
     await expect(page.locator("#colorSheet")).toHaveClass(/open/);
-    // An explicit #styles=0 wins over the fields: the palette arrives, the styles stay off.
-    await page.goto("about:blank");
-    await page.goto(`${link}&styles=0`);
-    await page.addScriptTag({ path: DRIVER });
-    await settle(page);
-    expect(await page.evaluate(() => localStorage.getItem("fractalAtlas.styles"))).toBeNull();
-    expect(await page.evaluate(() => ({ style: colorStyle.style, palette: COLORMAPS[colormapIndex].name }))).toEqual({ style: "smooth", palette: "Hot" });
   });
 });
 
-test.describe("with the flag on", () => {
-  test.beforeEach(async ({ page }) => { await load(page, { flag: true }); });
+test.describe("the Color sheet", () => {
+  test.beforeEach(async ({ page }) => { await load(page); });
 
   test("the color button opens the sheet on Looks, with the current Look checked", async ({ page }) => {
     await page.locator("#colormapBtn").click();
@@ -578,8 +540,8 @@ test.describe("with the flag on", () => {
 // and never rejects the link.
 const BASE_LINK = "#v=1&m=fractal&f=Mandelbrot&x=-0.75&y=0&s=1.4&r=0&i=300&cm=Inferno";
 
-test.describe("share links (flag on)", () => {
-  test.beforeEach(async ({ page }) => { await load(page, { flag: true }); });
+test.describe("share links", () => {
+  test.beforeEach(async ({ page }) => { await load(page); });
 
   test("a link without style fields opens in today's coloring, and its own hash has none", async ({ page }) => {
     const r = await page.evaluate((link) => {
@@ -633,8 +595,8 @@ test.describe("share links (flag on)", () => {
   });
 });
 
-test.describe("the style is global (flag on)", () => {
-  test.beforeEach(async ({ page }) => { await load(page, { flag: true }); });
+test.describe("the style is global", () => {
+  test.beforeEach(async ({ page }) => { await load(page); });
 
   test("survives a trip to another fractal and the dual view, and leaves auto detail alone", async ({ page }) => {
     const r = await page.evaluate(() => {
@@ -668,21 +630,6 @@ test.describe("the style is global (flag on)", () => {
   });
 });
 
-test.describe("share links (flag off)", () => {
-  test.beforeEach(async ({ page }) => { await load(page, { flag: false }); });
-
-  test("ignore the style fields and never write them", async ({ page }) => {
-    const r = await page.evaluate((link) => {
-      applyShareLink(`https://example.org/${link}&st=de&cd=2&co=0.5`);
-      const applied = { ...colorStyle };
-      setColorStyle({ style: "glow", density: 2, offset: 0.5 });
-      return { applied, hash: buildShareHash() };
-    }, BASE_LINK);
-    expect(r.applied).toEqual({ style: "smooth", density: 1, offset: 0, trap: null });
-    expect(r.hash).not.toMatch(/[&#](st|cd|co)=/);
-  });
-});
-
 test.describe("the info card", () => {
   const card = async (page) => {
     await page.locator("#hudBtn").click();
@@ -690,8 +637,8 @@ test.describe("the info card", () => {
     return { plain: await page.locator("#hud .hudPlain").innerText(), tech: await page.locator("#hud .hudStats").innerText() };
   };
 
-  test("names a Look and lists the style, repeat and shift, in the sheet's words (flag on)", async ({ page }) => {
-    await load(page, { flag: true });
+  test("names a Look and lists the style, repeat and shift, in the sheet's words", async ({ page }) => {
+    await load(page);
     await page.evaluate(() => { window["__vt"].fractal("Mandelbrot"); });
     const plain0 = await card(page);
     expect(plain0.plain).not.toMatch(/Custom|Edge glow/);
@@ -711,15 +658,5 @@ test.describe("the info card", () => {
     await page.evaluate(() => setColorStyle({ style: "point", density: 1, offset: 0 }));
     await settle(page);
     expect((await page.locator("#hud .hudPlain").innerText())).toContain("Custom: Orbs, Plasma");
-  });
-
-  test("is unchanged while the flag is off", async ({ page }) => {
-    await load(page, { flag: false });
-    await page.evaluate(() => { window["__vt"].fractal("Mandelbrot"); setColorStyle({ style: "glow", density: 2, offset: 0.25 }); });
-    const c = await card(page);
-    expect(c.plain).not.toMatch(/Custom|glow/i);
-    expect(c.tech).not.toMatch(/style:|repeat:|shift:/);
-    // And the color button is labelled as before.
-    await expect(page.locator("#colormapBtn")).toHaveAttribute("aria-label", /^Choose colormap \(/);
   });
 });

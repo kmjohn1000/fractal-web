@@ -41,7 +41,6 @@ const Diag = (() => {
   let timer = 0;
   let copyFn = null;
   let shareFn = null;
-  let stylesIsOn = null, stylesToggle = null;
   let gpuInfo = "WebGPU: checking…";
 
   const push = (arr, v) => { arr.push(v); if (arr.length > SAMPLES) arr.shift(); };
@@ -149,7 +148,7 @@ const Diag = (() => {
   }
 
   // The pill and the report panel, built only while on.
-  let pill = null, panel = null, body = null, shareBtn = null, stylesBtn = null, refresh = 0;
+  let pill = null, panel = null, body = null, shareBtn = null, refresh = 0;
   function makeButton(text, onClick) {
     const b = document.createElement("button");
     b.type = "button";
@@ -183,12 +182,7 @@ const Diag = (() => {
       try { await shareFn(report()); } catch (e) { flash(shareBtn, `Share failed: ${e && e.message ? e.message : e}`); }
     });
     shareBtn.hidden = !shareFn;
-    // The color styles are behind their own flag; this flips it (the page
-    // reloads, keeping the view) so a report can cover both.
-    stylesBtn = makeButton("", () => stylesToggle());
-    stylesBtn.hidden = !stylesToggle;
-    if (stylesIsOn) stylesBtn.textContent = `Styles: ${stylesIsOn() ? "on" : "off"}`;
-    bar.append(copy, shareBtn, stylesBtn,
+    bar.append(copy, shareBtn,
       makeButton("Clear passes", () => { passes.clear(); body.textContent = report(); }),
       makeButton("Turn off", () => { setEnabled(false); }));
     body = document.createElement("pre");
@@ -199,7 +193,7 @@ const Diag = (() => {
   function hideUi() {
     clearInterval(refresh);
     pill?.remove(); panel?.remove();
-    pill = panel = body = shareBtn = stylesBtn = null;
+    pill = panel = body = shareBtn = null;
   }
 
   function setEnabled(on) {
@@ -223,9 +217,5 @@ const Diag = (() => {
   if (enabled) showUi();
 
   return { pass, link, event, watch, fromLink, setCopy(fn) { copyFn = fn; },
-    setShare(fn) { shareFn = fn; if (shareBtn) shareBtn.hidden = !fn; },
-    setStyles(isOn, toggle) {
-      stylesIsOn = isOn; stylesToggle = toggle;
-      if (stylesBtn) { stylesBtn.hidden = false; stylesBtn.textContent = `Styles: ${isOn() ? "on" : "off"}`; }
-    }, get enabled() { return enabled; } };
+    setShare(fn) { shareFn = fn; if (shareBtn) shareBtn.hidden = !fn; }, get enabled() { return enabled; } };
 })();

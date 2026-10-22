@@ -4,7 +4,7 @@
 // `npm run test:visual`.
 import { test, expect } from "@playwright/test";
 
-/* global Diag, buildShareUrl, currentName */
+/* global Diag, buildShareUrl */
 
 const DRIVER = new URL("../driver.js", import.meta.url).pathname;
 
@@ -68,39 +68,12 @@ test("Share hands the report to the system share sheet", async ({ page }) => {
   expect(shared.text).toContain("MAX_TEXTURE_SIZE");
 });
 
-const stylesButton = (page, state) => page.getByRole("button", { name: `Styles: ${state}`, exact: true });
-
-test("#styles&diag in one link turns both on", async ({ page }) => {
-  await load(page, { hash: "#styles&diag" });
-  await pill(page).click();
-  await expect(stylesButton(page, "on")).toBeVisible();
-});
-
-test("a #styles typed into a page opened with #diag turns styles on too, keeping diag", async ({ page }) => {
-  await load(page, { hash: "#diag" });
-  await pill(page).click();
-  await expect(stylesButton(page, "off")).toBeVisible();
-  await page.evaluate(() => { location.hash = "#styles"; }); // the page reloads
+test("a #diag typed into an already open page turns it on", async ({ page }) => {
+  await load(page);
+  await expect(pill(page)).toHaveCount(0);
+  await page.evaluate(() => { location.hash = "#diag"; });
   await expect(pill(page)).toBeVisible();
-  await pill(page).click();
-  await expect(stylesButton(page, "on")).toBeVisible();
   expect(await page.evaluate(() => Diag.enabled)).toBe(true);
-});
-
-test("the panel's Styles button flips the flag and keeps the view", async ({ page }) => {
-  await load(page, { hash: "#diag" });
-  await page.evaluate(() => window["__vt"].fractal("Phoenix"));
-  await pill(page).click();
-  await stylesButton(page, "off").click(); // the page reloads
-  await expect(pill(page)).toBeVisible();
-  await pill(page).click();
-  await expect(stylesButton(page, "on")).toBeVisible();
-  // The view came back through the share hash the button put in the address.
-  await expect.poll(() => page.evaluate(() => currentName)).toBe("Phoenix");
-  await stylesButton(page, "on").click();
-  await expect(pill(page)).toBeVisible();
-  await pill(page).click();
-  await expect(stylesButton(page, "off")).toBeVisible();
 });
 
 test("#diag=0 turns it off again and removes the button", async ({ page }) => {

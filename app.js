@@ -972,7 +972,7 @@ function createFractalRenderer(canvas) {
   const warming = new Map();
   function warmVariant(variant) {
     if (programs.has(variant)) return "ready";
-    if (!parallelCompile) { fractalProgram(variant); return "ready"; }
+    if (!parallelCompile) { fractalProgram(variant); primeVariant(variant); return "ready"; }
     let p = warming.get(variant);
     if (!p) {
       const t0 = performance.now();
@@ -990,7 +990,34 @@ function createFractalRenderer(canvas) {
     }
     if (!gl.getProgramParameter(p, parallelCompile.COMPLETION_STATUS_KHR)) return "pending";
     fractalProgram(variant); // finishes with the program just compiled
+    primeVariant(variant);
     return "ready";
+  }
+  // A compiled program still has a first draw to pay for: the GPU builds its own
+  // version of the shader for the canvas the first time it is drawn (50-100 ms
+  // more than a later pass in the app's first run, measured on the phone). One
+  // fragment in the canvas corner, with a first pass's state (no blending),
+  // builds it ahead of the pick. The pixel is read first and put back after, so
+  // the picture doesn't change; clear() isn't a draw, so it builds nothing.
+  function primeVariant(variant) {
+    const entry = programs.get(variant);
+    if (!entry || gl.isContextLost()) return;
+    const t0 = performance.now();
+    const px = new Uint8Array(4);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    gl.useProgram(entry.prog);
+    gl.uniform2f(entry.u.resolution, canvas.width, canvas.height);
+    gl.uniform1i(entry.u.maxIter, 0); // every pass sets it again; zero makes this draw trivial
+    gl.disable(gl.BLEND);
+    gl.enable(gl.SCISSOR_TEST);
+    gl.scissor(0, 0, 1, 1);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    gl.clearColor(px[0] / 255, px[1] / 255, px[2] / 255, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.disable(gl.SCISSOR_TEST);
+    Diag.link(`${canvas.id} escape-time variant ${variant}, first-draw prime`, performance.now() - t0);
   }
   fractalProgram(0);
   const previewProg = link(PREVIEW_FRAG_SRC, VERT_SRC, "preview");
@@ -1568,6 +1595,7 @@ function createFractalRenderer(canvas) {
     canvas, render, renderPreview, setLUT, resize, perturbationSupported,
     setLiveDivisor(d) { liveDiv = d; },
     warmVariant,
+    primeVariant,
     get compiledVariants() { return [...programs.keys()]; },
     // Until its first use, an optimistic yes on WebGL2 (see newtonDeep).
     get newtonDeepSupported() { return newtonDeep !== false; },
@@ -1735,48 +1763,6 @@ function trapRangeFor(px, fixed) {
   const lo = fixed.lo + w * (r.lo - fixed.lo);
   const hi = fixed.hi + w * (r.hi - fixed.hi);
   return { lo, hi: hi > lo ? hi : lo * 1.01 + 1e-9 };
-}
-
-// Styles are being built behind a flag (see TODO.md): the new controls stay
-// hidden and shared links ignore the style fields until it's on. Turn it on
-// with localStorage["fractalAtlas.styles"] = "1" or by opening the page once
-// with #styles in the address ("#styles=0" turns it off again); the hash is
-// read here, before applyShareHashFromUrl strips it. A link that carries style
-// settings (st, cd or co) turns the styles on for whoever opens it, the same
-// as #styles, so a shared view looks as it was sent; "#styles=0" still wins.
-const stylesEnabled = (() => {
-  const p = new URLSearchParams(location.hash.slice(1));
-  const off = p.get("styles") === "0";
-  const linked = !off && ["st", "cd", "co"].some((k) => p.has(k));
-  try {
-    if (p.has("styles")) {
-      if (off) localStorage.removeItem("fractalAtlas.styles");
-      else localStorage.setItem("fractalAtlas.styles", "1");
-    }
-    if (linked) localStorage.setItem("fractalAtlas.styles", "1");
-    return localStorage.getItem("fractalAtlas.styles") === "1";
-  } catch {
-    return linked; // storage blocked: on for this visit only
-  }
-})();
-
-// The flag is read once, at load, so changing it on an open page means a
-// reload: for a #styles / #styles=0 typed into an open tab, a link opened
-// inside the app, a link that carries style fields, or the diag panel's
-// Styles button. `hash` goes back into the address first, so the view the
-// link names (or the current one) survives the reload.
-function setStylesFlag(on, hash = "") {
-  if (on === stylesEnabled) return;
-  try {
-    if (on) localStorage.setItem("fractalAtlas.styles", "1"); else localStorage.removeItem("fractalAtlas.styles");
-    history.replaceState(null, "", location.pathname + location.search + hash);
-  } catch { return; }
-  location.reload();
-}
-function stylesFlagFromHash(hash) {
-  const p = new URLSearchParams(hash.replace(/^#/, ""));
-  if (p.has("styles")) setStylesFlag(p.get("styles") !== "0", hash);
-  else if (["st", "cd", "co"].some((k) => p.has(k))) setStylesFlag(true, hash);
 }
 
 // The style a view actually draws: the chosen one if its fractal can do it,
@@ -2022,8 +2008,7 @@ function updateLUT() {
   labelColormapButton();
 }
 
-// The color button names the palette, and with the styles flag on, the Look
-// (or "Custom") too, so a screen reader hears what the screen is showing: the
+// The color button names the palette and the Look (or "Custom") too, so a screen reader hears what the screen is showing: the
 // pill can't change without touching the fixed toolbar.
 function labelColormapButton() {
   const name = COLORMAPS[colormapIndex].name;
@@ -2359,13 +2344,13 @@ function updateHud() {
   });
 }
 
-// The info card's color style items, empty unless the styles flag is on and
-// the view isn't drawn in today's coloring: "Edge glow" (a Look) or
+// The info card's color style items, empty unless the view isn't drawn in
+// the default coloring (Smooth): "Edge glow" (a Look) or
 // "Custom: stripes, Plasma" on the plain line, and the technical line adds
 // style, bands and shift where they aren't the defaults.
 function colorStyleHud(s) {
   const none = { plain: "", tech: "" };
-  if (!stylesEnabled || !ESCAPE_TIME_TYPES.includes(s.ftype)) return none;
+  if (!ESCAPE_TIME_TYPES.includes(s.ftype)) return none;
   const id = styleDrawn(colorStyle.style, s);
   const { density, offset } = colorStyle;
   if (id === "smooth" && density === 1 && offset === 0) return none;
@@ -4101,8 +4086,8 @@ function openColormapMenu(solidKey) {
     e.stopPropagation(); // don't let the outside-tap closer below fire on this same tap
     els.fractalTypeRow.classList.remove("open");
     els.shareMenu.classList.remove("open");
-    // The fractals the styles can color get the Color sheet; the rest, and
-    // everyone while the styles flag is off, the plain palette list.
+    // The fractals get the Color sheet; the pattern modes (Koch and the rest)
+    // keep the plain palette list.
     if (btn === els.colormapBtn && colorSheetApplies()) {
       els.colormapMenu.classList.remove("open");
       if (els.colorSheet.classList.contains("open")) els.colorSheet.classList.remove("open");
@@ -4141,12 +4126,11 @@ const COLOR_LOOKS = [
 ];
 let colorSheetTab = "looks";
 
-// The sheet stands in for the palette list on every fractal while the flag is
-// on; the escape-time fractals get the styles, Looks and sliders with it, the
-// rest (Newton, Carpet, Gasket, Apollonian, which color by their own schemes)
-// only the palette grid.
+// The sheet is the palette list on every fractal; the escape-time fractals get
+// the styles, Looks and sliders with it, the rest (Newton, Carpet, Gasket,
+// Apollonian, which color by their own schemes) only the palette grid.
 function colorSheetApplies() {
-  return stylesEnabled && mode === "fractal";
+  return mode === "fractal";
 }
 function colorSheetStyles() {
   return colorSheetApplies() && ESCAPE_TIME_TYPES.includes(mainState.ftype);
@@ -4250,7 +4234,7 @@ function prepareColorSheet() {
 const warmQueue = [];
 let warmRunning = false;
 function warmColorVariants() {
-  if (!stylesEnabled || mode !== "fractal" || !ESCAPE_TIME_TYPES.includes(mainState.ftype)) return;
+  if (mode !== "fractal" || !ESCAPE_TIME_TYPES.includes(mainState.ftype)) return;
   const variants = [...new Set(COLOR_STYLES
     .filter((s) => s.variant && (s.types || ESCAPE_TIME_TYPES).includes(mainState.ftype)).map((s) => s.variant))];
   const jobs = variants.map((v) => [mainRenderer, v]);
@@ -4271,7 +4255,7 @@ function warmNextVariant() {
     else warmRunning = false;
   }, { timeout: 2500 });
 }
-if (stylesEnabled) (window.requestIdleCallback || ((f) => setTimeout(f, 1000)))(prepareColorSheet, { timeout: 3000 });
+(window.requestIdleCallback || ((f) => setTimeout(f, 1000)))(prepareColorSheet, { timeout: 3000 });
 
 // A greyed-out Look says why when it's tapped: the note under the grid lights
 // up briefly.
@@ -4573,13 +4557,11 @@ function buildShareHash() {
     put("x", s.cx); put("y", s.cy); put("s", s.scale); put("r", s.rotation || 0);
     put("i", s.maxIter); if (s.iterAutoLocked) p.set("il", "1");
     put("cm", COLORMAPS[colormapIndex].name);
-    // The color style, only when it isn't today's coloring (and only while
-    // the styles flag is on), so links made without one are unchanged.
-    if (stylesEnabled) {
-      if (colorStyle.style !== "smooth") put("st", STYLE_LINK_CODES.get(colorStyle.style));
-      if (colorStyle.density !== 1) put("cd", Number(colorStyle.density.toFixed(3)));
-      if (colorStyle.offset !== 0) put("co", Number(colorStyle.offset.toFixed(3)));
-    }
+    // The color style, only when it isn't the default coloring, so links made
+    // without one are unchanged.
+    if (colorStyle.style !== "smooth") put("st", STYLE_LINK_CODES.get(colorStyle.style));
+    if (colorStyle.density !== 1) put("cd", Number(colorStyle.density.toFixed(3)));
+    if (colorStyle.offset !== 0) put("co", Number(colorStyle.offset.toFixed(3)));
     if (dualActive && juliaState) {
       const j = juliaState;
       p.set("d", "1");
@@ -4686,8 +4668,8 @@ function applyShareState(st) {
   if (st.mode === "fractal") {
     colormapIndex = st.cm;
     // The style travels with the colormap (both global); a link without one
-    // means today's coloring. Ignored while the styles flag is off.
-    if (stylesEnabled) setColorStyle({ style: st.color.style, density: st.color.density, offset: st.color.offset });
+    // means the default coloring.
+    setColorStyle({ style: st.color.style, density: st.color.density, offset: st.color.offset });
     if (dualActive) exitDual();
     selectFractal(st.name, { fresh: true });
     Object.assign(mainState, { cx: st.cx, cy: st.cy, scale: st.scale, rotation: st.rotation,
@@ -4738,7 +4720,6 @@ function applyShareState(st) {
 // Applies a share link from the URL, then strips the hash so a reload
 // returns to the app's normal start rather than re-pinning the link.
 function applyShareHashFromUrl() {
-  stylesFlagFromHash(location.hash); // at load this changes nothing: the flag was read from the same hash
   const st = parseShareHash(location.hash);
   if (location.hash) history.replaceState(null, "", location.pathname + location.search);
   if (st) applyShareState(st);
@@ -4750,7 +4731,6 @@ function applyShareHashFromUrl() {
 function applyShareLink(url) {
   Diag.fromLink(url);
   const i = url.indexOf("#");
-  if (i >= 0) stylesFlagFromHash(url.slice(i));
   const st = i >= 0 ? parseShareHash(url.slice(i)) : null;
   if (st) {
     cancelTeleport();
@@ -4964,7 +4944,6 @@ async function copyText(text) {
 }
 
 Diag.setCopy(copyText);
-Diag.setStyles(() => stylesEnabled, () => setStylesFlag(!stylesEnabled, buildShareHash()));
 if (Platform.canShare) Diag.setShare((text) => Platform.share({ title: "Fractal Atlas diagnostics", text }));
 
 els.shareCopyBtn.addEventListener("click", async () => {

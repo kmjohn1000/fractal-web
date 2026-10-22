@@ -7,7 +7,7 @@
 import { test, expect } from "@playwright/test";
 import { PNG } from "pngjs";
 
-/* global enterDual, exitDual, mainState, juliaState, dualActive, setColorStyle, SAMPLE_OFFSETS, currentName, selectFractal */
+/* global enterDual, exitDual, mainState, juliaState, dualActive, setColorStyle, SAMPLE_OFFSETS, currentName, selectFractal, warmRunning, warmQueue, mainRenderer */
 
 const DRIVER = new URL("../driver.js", import.meta.url).pathname;
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
@@ -22,7 +22,6 @@ test.beforeEach(async ({ page }) => {
     try {
       localStorage.setItem("fractalAtlas.visited", "1");
       localStorage.setItem("fractalAtlas.welcomeDismissed", "1");
-      localStorage.setItem("fractalAtlas.styles", "1");
     } catch { /* storage blocked */ }
     // Count draws per canvas, to see how often the Julia pane is redrawn.
     const draws = {};
@@ -117,6 +116,9 @@ test("the Julia pane opens on the whole Julia set, with its own iteration budget
 });
 
 test("once both panes are drawn the Julia pane isn't redrawn, and toggling draws it once through", async ({ page }) => {
+  // The idle warm-up draws one fragment per style variant (primeVariant); let it
+  // finish first so those draws aren't counted as redraws.
+  await page.waitForFunction(() => !warmRunning && warmQueue.length === 0 && mainRenderer.compiledVariants.length === 4, null, { timeout: 30_000 });
   await page.evaluate(`${place("Seahorse Valley")}`);
   await settle(page);
   await page.evaluate(() => { for (const k of Object.keys(window["__draws"])) window["__draws"][k] = 0; enterDual(); });

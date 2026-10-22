@@ -36,10 +36,8 @@ screenshots are compared with baselines.
 
 `styles.spec.mjs` and `color-sheet.spec.mjs` cover the color styles (Smooth,
 Bands, Edge glow, Stripes, Orbs and Rays; the style ids are `smooth`, `bands`,
-`glow`, `stripes`, `point` and `cross`, see `COLOR_STYLES` in `app.js`),
-which are being built behind a flag (`localStorage["fractalAtlas.styles"] =
-"1"`, or open the page once with `#styles`; the specs set it themselves
-where it matters). They check that the style API is strict, which fractal
+`glow`, `stripes`, `point` and `cross`, see `COLOR_STYLES` in `app.js`).
+They check that the style API is strict, which fractal
 types draw which style (Phoenix has Smooth and Bands; Newton, Carpet, Gasket
 and Apollonian color by their own schemes), that the orbit traps are offered
 at any depth and keep real contrast deep in (their colormap range comes from a
