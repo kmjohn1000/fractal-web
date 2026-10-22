@@ -143,6 +143,25 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         series approximation (0 steps skipped at float64, 0-25% at float32
         in a simulation of the app's own places), native Metal, threads /
         `SharedArrayBuffer`, GPU Mariani-Silver, wavefront compaction, f16
+- [ ] Pre-rendering common changes (user idea 2026-10-21; the first two are
+      part of the color-style speed fixes in progress, the rest not approved):
+      - Warm the shader variants in idle time (when the Color sheet opens, or
+        once the app is idle after the first frame): the Glow, Stripes, Bands
+        and trap variants, and the Julia pane's variant when dual view is
+        available, so the compile happens before the tap. One program per idle
+        callback, or parallel compile with `KHR_parallel_shader_compile`
+      - Keep the old image on screen (scaled) until the first new pass of a
+        style change or dual toggle is ready, rather than clearing to blank
+      - Frame cache: the last 3-4 finished frames of the current view, keyed by
+        style, palette, bands and shift, so flipping a style back is instant;
+        cleared by any pan, zoom, rotation or detail change. Count the memory
+        on the phone (frame size x 4 bytes each at dpr 2) before keeping it
+      - Looks thumbnails that show the current view in each Look: tiny
+        single-pass, quarter-resolution renders in idle time, only where the
+        view is cheap (shallow zoom). Speculative full renders of other
+        styles at deep zoom are out: a deep Glow pass costs about 200 ms in
+        headless measurements and a frame is 16 of them, so they would
+        compete with the live frame and drain the battery
 - [ ] New escape-time types: Buffalo, Lambda (Celtic is done, see Done)
       (single-state iteration, reuse existing shader/perturbation/
       supersampling pipeline with no structural changes)
