@@ -203,9 +203,18 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         program per idle callback, or parallel compile with
         `KHR_parallel_shader_compile`; each variant is also drawn once (one
         fragment, pixel restored) so the GPU builds it before the pick. The
-        first-pick hitch it targets (~50-100 ms in the app's first run) is
-        not yet re-measured on the phone: needs a cold shader cache, i.e. a
-        reinstall
+        first-pick hitch it targets (~50-100 ms in the app's first run) was
+        re-measured 2026-10-22 on a fresh install (iPhone 15, 1.40.0 build
+        297, cold shader cache): compile is free (0-1 ms, parallel) and the
+        primes ran, but the first real draw of Edge glow, Stripes and Orbs
+        still took 72-76 ms (Rays 18: it shares Orbs' program), against 8-20
+        after. So the prime is unproven. To settle it: an A/B on the same
+        cold cache with and without `primeVariant`, or prime with exactly
+        the state of the first real pass (blend, color mask, attachments)
+      - First launch after an install is slow: the default program linked in
+        573 ms and the preview in 268 ms before the first frame (6-9 ms on
+        later launches, cache warm), about 0.85 s extra on the launch screen,
+        once per install. Measured on the same fresh install
       - Keep the old image on screen (scaled) until the first new pass of a
         style change or dual toggle is ready, rather than clearing to blank
       - Frame cache: the last 3-4 finished frames of the current view, keyed by
