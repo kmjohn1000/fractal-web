@@ -8,7 +8,7 @@ import { test, expect } from "@playwright/test";
 import { PNG } from "pngjs";
 
 /* global setColorStyle, colorStyle, colorStyleFor, mainState, enterDual, mainRenderer, markInteracting, renderAll,
-   COLORMAPS */
+   COLORMAPS, captureShareBlob */
 
 const DRIVER = new URL("../driver.js", import.meta.url).pathname;
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
@@ -208,6 +208,37 @@ test.describe("Stripes", () => {
     await page.evaluate(() => { window["__vt"].fractal("Phoenix"); setColorStyle({ style: "stripes" }); });
     expect(await page.evaluate(() => colorStyleFor(mainState).glsl)).toBe(0);
   });
+});
+
+// Save and Share capture the canvas through captureShareBlob (plus a
+// watermark pill, bottom right): the file must be the frame on screen.
+test.describe("Save image", () => {
+  for (const style of ["glow", "stripes", "point", "bands"]) {
+    test(`the saved image of a ${style} view is the frame on screen`, async ({ page }) => {
+      await page.evaluate((s) => { window["__vt"].fractal("Mandelbrot"); setColorStyle({ style: s, density: 1.5, offset: 0.1 }); }, style);
+      await waitSettled(page);
+      const r = await page.evaluate(async () => {
+        const blob = await captureShareBlob();
+        const img = await createImageBitmap(blob);
+        const canvas = mainRenderer.canvas;
+        const grab = (src, w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d"); g.drawImage(src, 0, 0); return g.getImageData(0, 0, w, h).data; };
+        const a = grab(canvas, canvas.width, canvas.height), b = grab(img, img.width, img.height);
+        if (img.width !== canvas.width || img.height !== canvas.height) return { size: [img.width, img.height, canvas.width, canvas.height] };
+        let sum = 0, n = 0;
+        for (let y = 0; y < canvas.height; y++) {
+          for (let x = 0; x < canvas.width; x++) {
+            if (x > canvas.width * 0.55 && y > canvas.height * 0.85) continue; // the watermark pill
+            const i = (y * canvas.width + x) * 4;
+            sum += Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]);
+            n += 3;
+          }
+        }
+        return { mean: sum / n };
+      });
+      expect(r.size, "saved image has the canvas's size").toBeUndefined();
+      expect(r.mean).toBeLessThan(0.5);
+    });
+  }
 });
 
 test.describe("Orbit traps (Point and Cross)", () => {

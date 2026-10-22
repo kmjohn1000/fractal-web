@@ -5,7 +5,8 @@
 // baselines for both tabs. Run through `npm run test:visual`.
 import { test, expect } from "@playwright/test";
 
-/* global colorStyle, setColorStyle, COLORMAPS, colormapIndex */
+/* global colorStyle, setColorStyle, COLORMAPS, colormapIndex:writable, updateLUT, applyShareLink, buildShareHash,
+   parseShareHash */
 
 const DRIVER = new URL("../driver.js", import.meta.url).pathname;
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
@@ -198,5 +199,115 @@ test.describe("with the flag on", () => {
     await page.locator("#colormapBtn").click();
     await page.locator('#colorSheet [role="tab"]', { hasText: "Custom" }).click();
     await expect(page.locator("#colorSheet")).toHaveScreenshot("color-sheet-custom.png");
+  });
+});
+
+// Share links carry the style as st (style), cd (bands) and co (shift), only
+// when they aren't today's coloring; a bad field falls back to its default
+// and never rejects the link.
+const BASE_LINK = "#v=1&m=fractal&f=Mandelbrot&x=-0.75&y=0&s=1.4&r=0&i=300&cm=Inferno";
+
+test.describe("share links (flag on)", () => {
+  test.beforeEach(async ({ page }) => { await load(page, { flag: true }); });
+
+  test("a link without style fields opens in today's coloring, and its own hash has none", async ({ page }) => {
+    const r = await page.evaluate((link) => {
+      setColorStyle({ style: "glow", density: 2, offset: 0.5 }); // whatever was chosen before
+      applyShareLink(`https://example.org/${link}`);
+      return { style: { ...colorStyle }, hash: buildShareHash() };
+    }, BASE_LINK);
+    expect(r.style).toEqual({ style: "smooth", density: 1, offset: 0, trap: null });
+    expect(r.hash).not.toMatch(/[&#](st|cd|co)=/);
+  });
+
+  test("every style, bands and shift round-trip, and rebuilding is stable", async ({ page }) => {
+    const r = await page.evaluate(() => {
+      const out = [];
+      for (const [style, density, offset] of [["bands", 1, 0], ["glow", 1, 0], ["stripes", 2.5, 0.25], ["point", 0.25, 0.999], ["cross", 8, 0.001], ["smooth", 3, 0.5], ["smooth", 1, 0.125]]) {
+        window["__vt"].fractal("Mandelbrot");
+        setColorStyle({ style, density, offset });
+        const hash = buildShareHash();
+        const parsed = parseShareHash(hash).color;
+        setColorStyle({ style: "smooth", density: 1, offset: 0 });
+        applyShareLink(`https://example.org/${hash}`);
+        out.push({ parsed, applied: { style: colorStyle.style, density: colorStyle.density, offset: colorStyle.offset }, stable: buildShareHash() === hash });
+      }
+      return out;
+    });
+    const wanted = [["bands", 1, 0], ["glow", 1, 0], ["stripes", 2.5, 0.25], ["point", 0.25, 0.999], ["cross", 8, 0.001], ["smooth", 3, 0.5], ["smooth", 1, 0.125]];
+    r.forEach((x, i) => {
+      const [style, density, offset] = wanted[i];
+      expect(x.parsed, `link ${i}`).toEqual({ style, density, offset });
+      expect(x.applied, `applied ${i}`).toEqual({ style, density, offset });
+      expect(x.stable, `stable ${i}`).toBe(true);
+    });
+  });
+
+  test("garbage in the style fields falls back to the defaults and the link still opens", async ({ page }) => {
+    const r = await page.evaluate((base) => {
+      const out = {};
+      for (const extra of ["st=zz", "st=constructor", "st=__proto__", "st=", "cd=NaN", "cd=1e9", "cd=0.1", "cd=-2", "cd=", "co=-3", "co=1", "co=abc", "st=de&cd=999&co=0.5"]) {
+        const parsed = parseShareHash(`${base}&${extra}`);
+        out[extra] = parsed ? parsed.color : "REJECTED";
+      }
+      return out;
+    }, BASE_LINK);
+    const d = { style: "smooth", density: 1, offset: 0 };
+    expect(r).toEqual({
+      "st=zz": d, "st=constructor": d, "st=__proto__": d, "st=": d, "cd=NaN": d, "cd=1e9": d, "cd=0.1": d, "cd=-2": d, "cd=": d,
+      "co=-3": d, "co=1": d, "co=abc": d,
+      // A good field survives its bad neighbour.
+      "st=de&cd=999&co=0.5": { style: "glow", density: 1, offset: 0.5 },
+    });
+  });
+});
+
+test.describe("share links (flag off)", () => {
+  test.beforeEach(async ({ page }) => { await load(page, { flag: false }); });
+
+  test("ignore the style fields and never write them", async ({ page }) => {
+    const r = await page.evaluate((link) => {
+      applyShareLink(`https://example.org/${link}&st=de&cd=2&co=0.5`);
+      const applied = { ...colorStyle };
+      setColorStyle({ style: "glow", density: 2, offset: 0.5 });
+      return { applied, hash: buildShareHash() };
+    }, BASE_LINK);
+    expect(r.applied).toEqual({ style: "smooth", density: 1, offset: 0, trap: null });
+    expect(r.hash).not.toMatch(/[&#](st|cd|co)=/);
+  });
+});
+
+test.describe("the info card", () => {
+  const card = async (page) => {
+    await page.locator("#hudBtn").click();
+    await settle(page);
+    return { plain: await page.locator("#hud .hudPlain").innerText(), tech: await page.locator("#hud .hudStats").innerText() };
+  };
+
+  test("names a Look and lists the style, bands and shift (flag on)", async ({ page }) => {
+    await load(page, { flag: true });
+    await page.evaluate(() => { window["__vt"].fractal("Mandelbrot"); });
+    const plain0 = await card(page);
+    expect(plain0.plain).not.toMatch(/Custom|Edge glow/);
+    expect(plain0.tech).not.toMatch(/style:|bands:|shift:/);
+    await page.evaluate(() => { colormapIndex = COLORMAPS.findIndex((c) => c.name === "Inferno"); updateLUT(); setColorStyle({ style: "glow" }); });
+    await settle(page);
+    expect((await page.locator("#hud .hudPlain").innerText())).toContain("Edge glow");
+    expect((await page.locator("#hud .hudStats").innerText())).toContain("style: glow");
+    await page.evaluate(() => { colormapIndex = COLORMAPS.findIndex((c) => c.name === "Plasma"); updateLUT(); setColorStyle({ style: "stripes", density: 2, offset: 0.25 }); });
+    await settle(page);
+    expect((await page.locator("#hud .hudPlain").innerText())).toContain("Custom: stripes, Plasma");
+    const tech = await page.locator("#hud .hudStats").innerText();
+    expect(tech).toContain("style: stripes");
+    expect(tech).toContain("bands: 2×");
+    expect(tech).toContain("shift: 25%");
+  });
+
+  test("is unchanged while the flag is off", async ({ page }) => {
+    await load(page, { flag: false });
+    await page.evaluate(() => { window["__vt"].fractal("Mandelbrot"); setColorStyle({ style: "glow", density: 2, offset: 0.25 }); });
+    const c = await card(page);
+    expect(c.plain).not.toMatch(/Custom|glow/i);
+    expect(c.tech).not.toMatch(/style:|bands:|shift:/);
   });
 });

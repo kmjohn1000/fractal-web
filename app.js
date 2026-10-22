@@ -1511,6 +1511,9 @@ const COLOR_STYLES = [
   { id: "cross", glsl: 5, variant: 3, label: "Cross", maxZoom: 1000, types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
 ];
 const COLOR_BANDS_RANGE = [0.25, 8];
+// A style's id in share links (st=); "c" is taken by the vector modes' solid
+// color, so the three fields are st (style), cd (bands) and co (shift).
+const STYLE_LINK_CODES = new Map([["smooth", "sm"], ["bands", "bd"], ["glow", "de"], ["stripes", "sp"], ["point", "pt"], ["cross", "xt"]]);
 // trap: an [x, y] override of the orbit traps' center (the checks use it to
 // match the oracle); null for the per-fractal default, see trapCenterFor.
 const colorStyle = { style: "smooth", density: 1, offset: 0, trap: null };
@@ -1573,7 +1576,9 @@ function setColorStyle(next = {}) {
       ? Math.min(COLOR_BANDS_RANGE[1], Math.max(COLOR_BANDS_RANGE[0], next.density)) : 1;
   }
   if (next.offset !== undefined) {
-    colorStyle.offset = Number.isFinite(next.offset) ? ((next.offset % 1) + 1) % 1 : 0;
+    const o = next.offset;
+    // (a value already in 0..1 is kept exactly; the wrap would add rounding)
+    colorStyle.offset = !Number.isFinite(o) ? 0 : o >= 0 && o < 1 ? o : ((o % 1) + 1) % 1;
   }
   if (next.trap !== undefined) {
     colorStyle.trap = Array.isArray(next.trap) && next.trap.length === 2 && next.trap.every(Number.isFinite) ? [next.trap[0], next.trap[1]] : null;
@@ -2065,15 +2070,35 @@ function updateHud() {
   const f = formatHudCoords(s.cx, s.cy, s.scale);
   const label = fractalLabel(currentName);
   const deep = zoomPhrase(s.baseScale, s.scale);
+  const styleHud = colorStyleHud(s);
   setHud(place || label, [
     place ? `${label}, ${deep}` : capitalize(deep),
     apollo ? apolloCurvatureText(s.cx, s.cy, s.scale) : "",
     rotationHudText(s.rotation),
+    styleHud.plain,
   ], {
     unitsPerPx: unitsPerCssPx(s.scale, mainRenderer.canvas),
     center: f.center,
-    tech: `scale: ${f.scale}   ${iterText}   precision: ${precision}`,
+    tech: `scale: ${f.scale}   ${iterText}   precision: ${precision}${styleHud.tech}`,
   });
+}
+
+// The info card's color style items, empty unless the styles flag is on and
+// the view isn't drawn in today's coloring: "Edge glow" (a Look) or
+// "Custom: stripes, Plasma" on the plain line, and the technical line adds
+// style, bands and shift where they aren't the defaults.
+function colorStyleHud(s) {
+  const none = { plain: "", tech: "" };
+  if (!stylesEnabled || !ESCAPE_TIME_TYPES.includes(s.ftype)) return none;
+  const id = styleDrawn(colorStyle.style, s);
+  const { density, offset } = colorStyle;
+  if (id === "smooth" && density === 1 && offset === 0) return none;
+  const palette = COLORMAPS[colormapIndex].name;
+  const look = density === 1 && offset === 0 ? COLOR_LOOKS.find((l) => l.style === id && l.palette === palette) : null;
+  const label = COLOR_STYLES.find((c) => c.id === id).label.toLowerCase();
+  const tech = [id !== "smooth" ? `style: ${id}` : "", density !== 1 ? `bands: ${bandsText(density)}` : "", offset !== 0 ? `shift: ${shiftText(offset)}` : ""]
+    .filter(Boolean).join("   ");
+  return { plain: look ? look.label : `Custom: ${label}, ${palette}`, tech: tech ? `   ${tech}` : "" };
 }
 
 // Pattern modes are titled with their picker label (EXTRA_MODES).
@@ -4019,6 +4044,13 @@ function buildShareHash() {
     put("x", s.cx); put("y", s.cy); put("s", s.scale); put("r", s.rotation || 0);
     put("i", s.maxIter); if (s.iterAutoLocked) p.set("il", "1");
     put("cm", COLORMAPS[colormapIndex].name);
+    // The color style, only when it isn't today's coloring (and only while
+    // the styles flag is on), so links made without one are unchanged.
+    if (stylesEnabled) {
+      if (colorStyle.style !== "smooth") put("st", STYLE_LINK_CODES.get(colorStyle.style));
+      if (colorStyle.density !== 1) put("cd", Number(colorStyle.density.toFixed(3)));
+      if (colorStyle.offset !== 0) put("co", Number(colorStyle.offset.toFixed(3)));
+    }
     if (dualActive && juliaState) {
       const j = juliaState;
       p.set("d", "1");
@@ -4043,6 +4075,27 @@ function buildShareHash() {
 
 function buildShareUrl() {
   return Platform.shareBaseUrl() + buildShareHash();
+}
+
+// The color style fields of a link (st, cd, co). Unlike the view fields, a
+// bad one never rejects the link: it falls back to today's coloring, so a
+// hand-edited or newer link still opens. An unknown style code (a newer
+// app's), a density outside 0.25-8 and a shift outside 0-1 all fall back;
+// the code is looked up in a Map, never an object, so "constructor" is just
+// an unknown code.
+function parseStyleFields(p) {
+  const code = p.get("st");
+  const style = [...STYLE_LINK_CODES].find(([, c]) => c === code);
+  const number = (k, lo, hi, fallback) => {
+    const raw = p.get(k);
+    const v = raw === null || raw === "" ? NaN : Number(raw);
+    return Number.isFinite(v) && v >= lo && v <= hi ? v : fallback;
+  };
+  return {
+    style: style ? style[0] : "smooth",
+    density: number("cd", COLOR_BANDS_RANGE[0], COLOR_BANDS_RANGE[1], 1),
+    offset: number("co", 0, 1 - 1e-9, 0),
+  };
 }
 
 // Parses a share hash into a plain state object, or null if it isn't a
@@ -4079,7 +4132,7 @@ function parseShareHash(hash) {
       const name = p.get("f");
       if (!Object.prototype.hasOwnProperty.call(FRACTAL_CONFIGS, name)) return null;
       const st = { mode: m, name, ...view, maxIter: int("i", 50, 2000), iterAutoLocked: p.get("il") === "1",
-        cm: cmIndex(), dual: false };
+        cm: cmIndex(), dual: false, color: parseStyleFields(p) };
       if (p.get("d") === "1" && FRACTAL_CONFIGS[name].dual) {
         st.dual = true;
         st.julia = { juliaC: [num("jcx", big), num("jcy", big)], cx: num("jx", big), cy: num("jy", big),
@@ -4103,6 +4156,9 @@ function parseShareHash(hash) {
 function applyShareState(st) {
   if (st.mode === "fractal") {
     colormapIndex = st.cm;
+    // The style travels with the colormap (both global); a link without one
+    // means today's coloring. Ignored while the styles flag is off.
+    if (stylesEnabled) setColorStyle({ style: st.color.style, density: st.color.density, offset: st.color.offset });
     if (dualActive) exitDual();
     selectFractal(st.name, { fresh: true });
     Object.assign(mainState, { cx: st.cx, cy: st.cy, scale: st.scale, rotation: st.rotation,
