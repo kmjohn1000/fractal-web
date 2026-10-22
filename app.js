@@ -1756,6 +1756,25 @@ const stylesEnabled = (() => {
   }
 })();
 
+// The flag is read once, at load, so changing it on an open page means a
+// reload: for a #styles / #styles=0 typed into an open tab, a link opened
+// inside the app, a link that carries style fields, or the diag panel's
+// Styles button. `hash` goes back into the address first, so the view the
+// link names (or the current one) survives the reload.
+function setStylesFlag(on, hash = "") {
+  if (on === stylesEnabled) return;
+  try {
+    if (on) localStorage.setItem("fractalAtlas.styles", "1"); else localStorage.removeItem("fractalAtlas.styles");
+    history.replaceState(null, "", location.pathname + location.search + hash);
+  } catch { return; }
+  location.reload();
+}
+function stylesFlagFromHash(hash) {
+  const p = new URLSearchParams(hash.replace(/^#/, ""));
+  if (p.has("styles")) setStylesFlag(p.get("styles") !== "0", hash);
+  else if (["st", "cd", "co"].some((k) => p.has(k))) setStylesFlag(true, hash);
+}
+
 // The style a view actually draws: the chosen one if its fractal can do it,
 // otherwise Smooth. Newton, Carpet, Gasket and Apollonian color by their own
 // schemes (the shaders never read the style).
@@ -4691,6 +4710,7 @@ function applyShareState(st) {
 // Applies a share link from the URL, then strips the hash so a reload
 // returns to the app's normal start rather than re-pinning the link.
 function applyShareHashFromUrl() {
+  stylesFlagFromHash(location.hash); // at load this changes nothing: the flag was read from the same hash
   const st = parseShareHash(location.hash);
   if (location.hash) history.replaceState(null, "", location.pathname + location.search);
   if (st) applyShareState(st);
@@ -4702,6 +4722,7 @@ function applyShareHashFromUrl() {
 function applyShareLink(url) {
   Diag.fromLink(url);
   const i = url.indexOf("#");
+  if (i >= 0) stylesFlagFromHash(url.slice(i));
   const st = i >= 0 ? parseShareHash(url.slice(i)) : null;
   if (st) {
     cancelTeleport();
@@ -4915,6 +4936,7 @@ async function copyText(text) {
 }
 
 Diag.setCopy(copyText);
+Diag.setStyles(() => stylesEnabled, () => setStylesFlag(!stylesEnabled, buildShareHash()));
 if (Platform.canShare) Diag.setShare((text) => Platform.share({ title: "Fractal Atlas diagnostics", text }));
 
 els.shareCopyBtn.addEventListener("click", async () => {
