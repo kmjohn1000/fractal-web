@@ -1379,7 +1379,7 @@ function createFractalRenderer(canvas) {
     const t0 = performance.now();
     const path = renderPass(state, sampleIndex);
     if (Diag.enabled) {
-      Diag.pass(gl, `${canvas.id} ${Object.keys(FTYPE)[state.ftype]} ${path || "float32"}, `
+      Diag.pass(gl, `${canvas.id} ${Object.keys(FTYPE)[state.ftype]} ${path || "float32"} ${styleDrawn(colorStyle.style, state)}, `
         + `${isInteracting ? "live" : sampleIndex === 0 ? "first pass" : "refine pass"}`, performance.now() - t0);
     }
     return path;

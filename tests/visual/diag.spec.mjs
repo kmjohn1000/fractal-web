@@ -43,7 +43,7 @@ test("#diag shows the button and a report with GL facts, shader links and timed 
   await pill(page).click();
   const report = page.locator("pre");
   // Passes are timed by a fence polled after submit, so give them a moment to land.
-  await expect(report).toContainText("mainCanvas ESCAPE float32, first pass", { timeout: 15_000 });
+  await expect(report).toContainText("mainCanvas ESCAPE float32 smooth, first pass", { timeout: 15_000 });
   const text = await report.innerText();
   expect(text).toContain("EXT_color_buffer_float");
   expect(text).toContain("KHR_parallel_shader_compile");
@@ -51,7 +51,7 @@ test("#diag shows the button and a report with GL facts, shader links and timed 
   expect(text).toContain("mainCanvas escape-time variant 0:");
   expect(text).toMatch(/WebGPU:/);
   // A timed pass has real numbers, not dashes, on a WebGL2 context.
-  const row = text.split("\n").find((l) => l.includes("mainCanvas ESCAPE float32, first pass"));
+  const row = text.split("\n").find((l) => l.includes("mainCanvas ESCAPE float32 smooth, first pass"));
   expect(row).toMatch(/GPU \d/);
 });
 
