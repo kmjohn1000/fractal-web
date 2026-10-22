@@ -33,6 +33,29 @@ const Diag = (() => {
     }
   })();
 
+  // An opt-in experiment, switched on the same way ("#passes=8"; "#passes=16"
+  // is the normal setting) and read live, so no reload is needed: how many of
+  // the 16 sharpening passes the slow deep-zoom views draw (see scheduleRefinement
+  // in app.js and TODO.md). Always 16 unless asked for.
+  const PASSES_KEY = "fractalAtlas.deepPasses";
+  const parsePasses = (v) => { const n = Number(v); return Number.isInteger(n) && n >= 2 && n <= 16 ? n : 16; };
+  let deepPasses = (() => {
+    const p = new URLSearchParams(location.hash.slice(1));
+    try {
+      if (p.has("passes")) {
+        const n = parsePasses(p.get("passes"));
+        if (n === 16) localStorage.removeItem(PASSES_KEY); else localStorage.setItem(PASSES_KEY, String(n));
+      }
+      return parsePasses(localStorage.getItem(PASSES_KEY));
+    } catch {
+      return p.has("passes") ? parsePasses(p.get("passes")) : 16; // storage blocked: this visit only
+    }
+  })();
+  function setDeepPasses(n) {
+    deepPasses = n;
+    try { if (n === 16) localStorage.removeItem(PASSES_KEY); else localStorage.setItem(PASSES_KEY, String(n)); } catch { /* this visit only */ }
+  }
+
   const contexts = []; // [name, gl, canvas]
   const links = []; // [label, ms]
   const events = []; // [seconds since load, text]
@@ -130,6 +153,7 @@ const Diag = (() => {
     const out = [`Fractal Atlas diagnostics · ${new Date().toISOString()}`,
       navigator.userAgent,
       `devicePixelRatio ${window.devicePixelRatio} · screen ${screen.width}x${screen.height} · window ${innerWidth}x${innerHeight}`,
+      `experiment: deep views draw ${deepPasses} of 16 passes${deepPasses === 16 ? " (normal)" : ""}`,
       ""];
     contexts.forEach((c) => out.push(glReport(c)));
     out.push(gpuInfo, "", "Shader links, ms (compile + link until usable; \"warm start\" is what a parallel warm-up costs the thread):");
@@ -208,6 +232,7 @@ const Diag = (() => {
     if (i < 0) return;
     const p = new URLSearchParams(url.slice(i + 1));
     if (p.has("diag")) setEnabled(p.get("diag") !== "0");
+    if (p.has("passes")) setDeepPasses(parsePasses(p.get("passes")));
   }
 
   // A hash typed into an open tab changes no page load. This listener is
@@ -216,6 +241,6 @@ const Diag = (() => {
 
   if (enabled) showUi();
 
-  return { pass, link, event, watch, fromLink, setCopy(fn) { copyFn = fn; },
+  return { pass, link, event, watch, fromLink, get deepPasses() { return deepPasses; }, setCopy(fn) { copyFn = fn; },
     setShare(fn) { shareFn = fn; if (shareBtn) shareBtn.hidden = !fn; }, get enabled() { return enabled; } };
 })();

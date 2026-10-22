@@ -183,7 +183,7 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         iterations, so a third of the pixels hold nearly all of a pass's
         cost. The model that predicted 51-69% for deep views assumed a cost
         spread it didn't have. Gate was >=25% less refinement time on deep
-        views: not met. Left in tree behind the flag, or to be reverted
+        views: not met. Reverted in `fc14078` (the code is in history, `122e20f`)
       - Per-fractal shader variants (~60-100 lines in `link()`): `#define`
         variants compiled lazily, with `KHR_parallel_shader_compile` where
         present. Pass: pixel-identical output and >=15% faster pass or >=30%

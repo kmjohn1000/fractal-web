@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## Unreleased
+- Fewer sharpening passes on deep zooms (an experiment, off unless the page is opened with `#passes=8`, or any number from 2 to 16; `#passes=16` is the normal setting): slow deep-zoom views stop sharpening early to finish sooner, with a little more grain. Shallow views, and Save and Share (which always finish all 16), are unaffected.
+
 ## 1.40.0 — 2026-10-22
 - Color styles. The color button now opens a Color sheet with six Looks (Default, Edge glow, Stripes, Bands, Orbs and Rays) and a Custom tab with the style, palette, and Repeat and Shift sliders. Edge glow draws the distance to the set's boundary, so thin filaments stay crisp at any depth; Stripes colors by the angle of the orbit; Bands draws whole-number bands; Orbs and Rays color by how close the orbit passes to a point or a pair of lines, and work at any depth.
 - The Color sheet stays under about 40% of the screen, so the fractal stays in view and live while you change a style. Done, the color button, Escape or a tap on the fractal closes it, while dragging or pinching the fractal leaves it open. On Newton, Carpet, Gasket and Apollonian it shows just the palette grid, in place of the old tall list. It fits a small phone, landscape and the largest text sizes, and is centered above the toolbar on an iPad.

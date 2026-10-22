@@ -2025,6 +2025,7 @@ function layoutCanvasArea() {
 
 // The main pane's last render() result: "perturbation", "fixed point" or null.
 let lastMainDeepPath = null;
+let lastJuliaDeepPath = null;
 
 // Below the deep-zoom threshold, a live float32 re-render during an active
 // gesture isn't a lower-quality version of the same view — the per-pixel
@@ -2067,7 +2068,7 @@ function renderAll() {
       if (isInteracting && deepZoomEligible(juliaRenderer, juliaState)) {
         juliaRenderer.renderPreview(juliaState);
       } else {
-        juliaRenderer.render(juliaState);
+        lastJuliaDeepPath = juliaRenderer.render(juliaState);
       }
       positionCrosshair();
     }
@@ -2110,19 +2111,41 @@ let refineGeneration = 0;
 // False from the moment a render starts a refinement chain until that chain
 // draws its last sample; share capture waits on it (captureShareBlob).
 let refineDone = true;
+let refineNext = 1; // the next sample this chain draws
+let refineTarget = SAMPLE_OFFSETS.length; // how many samples it draws in all
+// Deep-zoom passes (perturbation and the exact paths) take 40-230 ms each on a
+// phone, so the 16 of a full refinement take seconds. An opt-in experiment
+// (Diag.deepPasses, "#passes=8"; TODO.md) stops those views early. Views drawn
+// in plain float32 are cheap and always get all 16.
+function refinePassCount() {
+  const deep = lastMainDeepPath || (dualActive && lastJuliaDeepPath);
+  return deep ? Math.min(SAMPLE_OFFSETS.length, Diag.deepPasses) : SAMPLE_OFFSETS.length;
+}
+function refineStep(gen) {
+  if (gen !== refineGeneration || mode !== "fractal" || isInteracting) return;
+  mainRenderer.render(mainState, refineNext);
+  if (dualActive && juliaState) juliaRenderer.render(juliaState, refineNext);
+  if (++refineNext < refineTarget) requestAnimationFrame(() => refineStep(gen));
+  else refineDone = true;
+}
 function scheduleRefinement() {
   const gen = ++refineGeneration;
   refineDone = false;
+  refineNext = 1;
+  refineTarget = refinePassCount();
   if (isInteracting) return;
-  let k = 1;
-  const step = () => {
-    if (gen !== refineGeneration || mode !== "fractal" || isInteracting) return;
-    mainRenderer.render(mainState, k);
-    if (dualActive && juliaState) juliaRenderer.render(juliaState, k);
-    if (++k < SAMPLE_OFFSETS.length) requestAnimationFrame(step);
-    else refineDone = true;
-  };
-  requestAnimationFrame(step);
+  requestAnimationFrame(() => refineStep(gen));
+}
+// A saved or shared image gets all 16 samples even where the screen stopped
+// short: draw the rest now (a no-op for any view that already has them).
+function finishRefinement() {
+  if (refineTarget >= SAMPLE_OFFSETS.length || mode !== "fractal" || isInteracting) return;
+  refineTarget = SAMPLE_OFFSETS.length;
+  if (refineDone) {
+    refineDone = false;
+    const gen = refineGeneration;
+    requestAnimationFrame(() => refineStep(gen));
+  }
 }
 
 let renderPending = false;
@@ -4820,7 +4843,10 @@ function watermarkedCopy(src) {
 // image, Save to Photos, Share…) goes through here, so all get the
 // watermark.
 async function captureShareBlob() {
-  if (mode === "fractal") await waitUntil(() => refineDone && !isInteracting, 3000);
+  if (mode === "fractal") {
+    finishRefinement();
+    await waitUntil(() => refineDone && !isInteracting, 3000);
+  }
   else if (isIfsMode(mode)) await waitUntil(() => !fernView.refining, 3000);
   const canvas = watermarkedCopy(mode !== "fractal" ? VECTOR_VIEWS[mode][1] : dualActive ? compositeDualCanvas() : els.mainCanvas);
   return new Promise((resolve, reject) => {
