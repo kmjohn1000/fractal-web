@@ -84,7 +84,8 @@ async function renderApp(browser, v, style) {
       setColorStyle({ style: ${JSON.stringify(style)}, density: ${density}, offset: ${shift}${trapOverride ? `, trap: ${JSON.stringify(v.trap)}` : ""} });`;
     await page.evaluate(`(() => {
       __vt.fractal(${JSON.stringify(v.fractal)}, ${cmIndex});
-      Object.assign(mainState, { cx: ${v.c[0]}, cy: ${v.c[1]}, scale: ${v.s}, rotation: 0, maxIter: ${v.it}, iterAutoLocked: true });${styleCall}
+      Object.assign(mainState, { cx: ${v.c[0]}, cy: ${v.c[1]}, scale: ${v.s}, rotation: 0, maxIter: ${v.it}, iterAutoLocked: true,
+        baseScale: ${v.s} /* so the orbit traps' depth limit doesn't switch them off at deep views */ });${styleCall}
       requestRender();
     })()`);
     await waitSettled(page);

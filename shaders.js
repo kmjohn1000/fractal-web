@@ -323,6 +323,31 @@ vec3 stripeColor(int iter, vec2 z, vec4 S) {
   float A = S.w + (S.z - S.w) * (n - floor(n));
   return styleColor(clamp(0.5 + (A - 0.5) * STRIPE_GAIN, 0.0, 1.0));
 }
+#elif COLOR_VARIANT == 3
+// Point and Cross: orbit traps. T = (the smallest squared distance any
+// iterate came to u_trapCenter, the smallest distance to the horizontal or
+// vertical line through it). Point colors by the first, Cross by the second;
+// both color the interior too, which never escapes but still has an orbit.
+// The first iterate sits at c, the pixel itself, so it's skipped. Every
+// pixel's orbit shares nearly the same shape in a deep view, so the contrast
+// fades as you zoom in (about 1,000x is the useful limit, see COLOR_STYLES).
+uniform vec2 u_trapCenter;
+const float COLOR_TRAP_RANGE = 1.0;     // distance that maps to the far end of the colormap
+const float COLOR_CROSS_RANGE = 0.2;
+
+vec2 trapStart() { return vec2(1e18, 1e18); }
+
+vec2 trapStep(vec2 T, vec2 z) {
+  vec2 d = z - u_trapCenter;
+  return min(T, vec2(dot(d, d), min(abs(d.x), abs(d.y))));
+}
+
+vec3 trapColor(vec2 T) {
+  float t = u_style == STYLE_CROSS
+    ? 1.0 - sqrt(clamp(T.y / COLOR_CROSS_RANGE, 0.0, 1.0))
+    : 1.0 - sqrt(clamp(sqrt(T.x) / COLOR_TRAP_RANGE, 0.0, 1.0));
+  return styleColor(t);
+}
 #endif
 
 // Sierpinski carpet and Sierpinski gasket are the same construction at two
@@ -512,7 +537,9 @@ vec3 renderEscapeFast(vec2 p) {
 
   // Cardioid / period-2 bulb analytic skip — only for plain power-2
   // Mandelbrot in parameter-space (non-Julia) mode, same test as the
-  // Python desktop app's cardioid/bulb skip.
+  // Python desktop app's cardioid/bulb skip. (Not for the orbit traps, which
+  // color the interior by its orbit.)
+#if COLOR_VARIANT != 3
   if (u_ftype == FTYPE_ESCAPE && u_power < 2.5 && !u_isJulia) {
     float x = c.x, y = c.y;
     float q = (x - 0.25) * (x - 0.25) + y * y;
@@ -520,6 +547,7 @@ vec3 renderEscapeFast(vec2 p) {
       return vec3(0.0);
     }
   }
+#endif
 
   int iter = 0;
   bool escaped = false;
@@ -530,6 +558,8 @@ vec3 renderEscapeFast(vec2 p) {
   vec4 D = glowStart();
 #elif COLOR_VARIANT == 2
   vec4 S = stripeStart();
+#elif COLOR_VARIANT == 3
+  vec2 T = trapStart();
 #endif
 
   for (int i = 0; i < 2000; i++) {
@@ -563,10 +593,15 @@ vec3 renderEscapeFast(vec2 p) {
     iter = i;
 #if COLOR_VARIANT == 2
     S = stripeStep(S, z);
+#elif COLOR_VARIANT == 3
+    if (i > 0) T = trapStep(T, z);
 #endif
     if (dot(z, z) > ESCAPE_RADIUS_SQ) { escaped = true; break; }
   }
 
+#if COLOR_VARIANT == 3
+  return trapColor(T);
+#endif
   if (!escaped) return vec3(0.0);
 
 #if COLOR_VARIANT == 1
@@ -663,6 +698,8 @@ vec3 renderEscapePerturbation(vec2 uv) {
   vec4 D = glowStart();
 #elif COLOR_VARIANT == 2
   vec4 S = stripeStart();
+#elif COLOR_VARIANT == 3
+  vec2 T = trapStart();
 #endif
 
   for (int i = 0; i < 2000; i++) {
@@ -679,6 +716,8 @@ vec3 renderEscapePerturbation(vec2 uv) {
     iter = i;
 #if COLOR_VARIANT == 2
     S = stripeStep(S, full);
+#elif COLOR_VARIANT == 3
+    if (i > 0) T = trapStep(T, full);
 #endif
 
     if (dot(full, full) > ESCAPE_RADIUS_SQ) {
@@ -699,6 +738,9 @@ vec3 renderEscapePerturbation(vec2 uv) {
     }
   }
 
+#if COLOR_VARIANT == 3
+  return trapColor(T);
+#endif
   if (!escaped) return vec3(0.0);
 #if COLOR_VARIANT == 1
   return glowColor(fullAtEscape, D);

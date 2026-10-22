@@ -21,7 +21,7 @@ Needs python3 with numpy and Pillow (`python3 -c "import numpy, PIL"`).
 
   oracle.py views                          the views as JSON (for oracle-compare.mjs)
   oracle.py render VIEW STYLE CMAP OUT.png [--density D] [--shift S] [--size PX]
-            [--ss N] [--trap X Y]
+            [--ss N] [--trap=X,Y]
   STYLE is one of smooth, bands, glow, stripes, stripes_atan, point, cross
       writes OUT.png and OUT.mask.png (white = escaped); fields are cached in
       test-results/oracle/ (git-ignored)
@@ -279,7 +279,7 @@ def main():
     r.add_argument("--shift", type=float, default=0.0)
     r.add_argument("--size", type=int, default=360)
     r.add_argument("--ss", type=int, default=2)
-    r.add_argument("--trap", type=float, nargs=2)
+    r.add_argument("--trap", help="trap center as X,Y (written --trap=-0.5,0 when X is negative)")
     a = ap.parse_args()
     if a.cmd == "views":
         print(json.dumps(VIEWS))
@@ -287,7 +287,7 @@ def main():
     F, meta = cached_fields(a.view, a.size, a.ss)
     if a.trap:
         # the trap minima are baked into the cached fields: re-iterate for another center
-        VIEWS[a.view]["trap"] = tuple(a.trap)
+        VIEWS[a.view]["trap"] = tuple(float(v) for v in a.trap.split(","))
         F, meta = render_fields(a.view, a.size, a.ss)
     maps = load_colormaps()
     img, mask = colorize(F, meta, a.style, build_lut(maps[a.cmap]), a.density, a.shift)

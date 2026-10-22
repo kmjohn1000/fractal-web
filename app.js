@@ -933,7 +933,7 @@ function createFractalRenderer(canvas) {
   // the first time a style asks for them.
   const programs = new Map();
   const UNIFORMS = ["resolution", "center", "scale", "rotCos", "rotSin", "maxIter", "ftype", "power", "isJulia",
-    "juliaC", "phoenixP", "lut", "style", "density", "offset", "pixelSize", "digitDepth", "digitLevel",
+    "juliaC", "phoenixP", "lut", "style", "density", "offset", "pixelSize", "trapCenter", "digitDepth", "digitLevel",
     "digitCenter", "digitScale", "cellHole", "digitCycle", "subPixelColor", "apoW0", "apoK", "apoL", "apoFlip",
     "apoSteps", "apoCapColor", "jitter", "usePerturbation", "refOrbitTex", "refOrbitLen", "critOffset",
     "critLen", "refTexWidth", "refOffset"];
@@ -1275,6 +1275,7 @@ function createFractalRenderer(canvas) {
     // World units per CSS pixel: the distance estimate's glow width is
     // measured in these, so a retina phone and a laptop show the same glow.
     gl.uniform1f(u.pixelSize, 2 * state.scale / (canvas.clientHeight || canvas.height / dpr));
+    gl.uniform2f(u.trapCenter, cs.trap[0], cs.trap[1]);
     // Per view, not per pass: every later sample in a refinement chain is
     // the same view (any change restarts at sample 0), and the program
     // keeps its uniforms between draws.
@@ -1502,9 +1503,22 @@ const COLOR_STYLES = [
   // separate fixed-point shader.
   { id: "glow", glsl: 2, variant: 1, label: "Glow", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
   { id: "stripes", glsl: 3, variant: 2, label: "Stripes", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
+  // Orbit traps color by how close the orbit came to a point or a cross. Every
+  // pixel's orbit looks alike in a deep view, so the traps go flat as you zoom
+  // in: past ~1,000x they're not offered (maxZoom) and the view draws Smooth.
+  { id: "point", glsl: 4, variant: 3, label: "Point", maxZoom: 1000, types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
+  { id: "cross", glsl: 5, variant: 3, label: "Cross", maxZoom: 1000, types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
 ];
 const COLOR_BANDS_RANGE = [0.25, 8];
-const colorStyle = { style: "smooth", density: 1, offset: 0 };
+// trap: an [x, y] override of the orbit traps' center (the checks use it to
+// match the oracle); null for the per-fractal default, see trapCenterFor.
+const colorStyle = { style: "smooth", density: 1, offset: 0, trap: null };
+const TRAP_CENTERS = new Map([[FTYPE.ESCAPE, [-0.5, 0]], [FTYPE.SHIP, [-1.75, -0.03]], [FTYPE.TRICORN, [0, 0]], [FTYPE.CELTIC, [-0.5, 0]]]);
+function trapCenterFor(state) {
+  if (colorStyle.trap) return colorStyle.trap;
+  if (state.isJulia || (state.ftype === FTYPE.ESCAPE && state.power > 2.5)) return [0, 0];
+  return TRAP_CENTERS.get(state.ftype) || [0, 0];
+}
 
 // Styles are being built behind a flag (see TODO.md): the new controls stay
 // hidden and shared links ignore the style fields until it's on. Turn it on
@@ -1529,13 +1543,17 @@ const stylesEnabled = (() => {
 // schemes (the shaders never read the style).
 function styleDrawn(id, state) {
   const s = COLOR_STYLES.find((c) => c.id === id);
-  return s && (s.types || ESCAPE_TIME_TYPES).includes(state.ftype) ? s.id : "smooth";
+  if (!s || !(s.types || ESCAPE_TIME_TYPES).includes(state.ftype)) return "smooth";
+  // (the small allowance keeps a view set to exactly maxZoom on the right side of rounding)
+  if (s.maxZoom && !(state.baseScale / state.scale <= s.maxZoom * 1.001)) return "smooth";
+  return s.id;
 }
 
 // What the renderer sends the shaders for one view.
 function colorStyleFor(state) {
   const s = COLOR_STYLES.find((c) => c.id === styleDrawn(colorStyle.style, state));
-  return { glsl: s.glsl, variant: s.variant, density: colorStyle.density, offset: colorStyle.offset };
+  return { glsl: s.glsl, variant: s.variant, density: colorStyle.density, offset: colorStyle.offset,
+    trap: s.variant === 3 ? trapCenterFor(state) : [0, 0] };
 }
 
 // Strict: anything unknown or out of range falls back to today's coloring
@@ -1550,7 +1568,11 @@ function setColorStyle(next = {}) {
   if (next.offset !== undefined) {
     colorStyle.offset = Number.isFinite(next.offset) ? ((next.offset % 1) + 1) % 1 : 0;
   }
-  if (prev.style !== colorStyle.style || prev.density !== colorStyle.density || prev.offset !== colorStyle.offset) requestRender();
+  if (next.trap !== undefined) {
+    colorStyle.trap = Array.isArray(next.trap) && next.trap.length === 2 && next.trap.every(Number.isFinite) ? [next.trap[0], next.trap[1]] : null;
+  }
+  if (prev.style !== colorStyle.style || prev.density !== colorStyle.density || prev.offset !== colorStyle.offset
+    || String(prev.trap) !== String(colorStyle.trap)) requestRender();
 }
 let currentName = "Mandelbrot";
 let dualActive = false;

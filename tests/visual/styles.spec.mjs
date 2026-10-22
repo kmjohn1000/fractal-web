@@ -66,7 +66,7 @@ async function checkStyled(page, name) {
 
 test.describe("the style API", () => {
   test("starts at today's coloring", async ({ page }) => {
-    expect(await page.evaluate(() => ({ ...colorStyle }))).toEqual({ style: "smooth", density: 1, offset: 0 });
+    expect(await page.evaluate(() => ({ ...colorStyle }))).toEqual({ style: "smooth", density: 1, offset: 0, trap: null });
   });
 
   test("is strict about what it accepts", async ({ page }) => {
@@ -80,11 +80,11 @@ test.describe("the style API", () => {
       setColorStyle({ style: "zz" }); out.push(read());
       return out;
     });
-    expect(r[0]).toEqual({ style: "smooth", density: 1, offset: 0 });
-    expect(r[1]).toEqual({ style: "bands", density: 8, offset: 0.75 });
-    expect(r[2]).toEqual({ style: "bands", density: 0.25, offset: 0.5 });
-    expect(r[3]).toEqual({ style: "bands", density: 1, offset: 0 });
-    expect(r[4]).toEqual({ style: "smooth", density: 1, offset: 0 });
+    expect(r[0]).toEqual({ style: "smooth", density: 1, offset: 0, trap: null });
+    expect(r[1]).toEqual({ style: "bands", density: 8, offset: 0.75, trap: null });
+    expect(r[2]).toEqual({ style: "bands", density: 0.25, offset: 0.5, trap: null });
+    expect(r[3]).toEqual({ style: "bands", density: 1, offset: 0, trap: null });
+    expect(r[4]).toEqual({ style: "smooth", density: 1, offset: 0, trap: null });
   });
 
   test("a view draws Smooth when its fractal can't do the chosen style", async ({ page }) => {
@@ -207,5 +207,37 @@ test.describe("Stripes", () => {
   test("Phoenix draws Smooth", async ({ page }) => {
     await page.evaluate(() => { window["__vt"].fractal("Phoenix"); setColorStyle({ style: "stripes" }); });
     expect(await page.evaluate(() => colorStyleFor(mainState).glsl)).toBe(0);
+  });
+});
+
+test.describe("Orbit traps (Point and Cross)", () => {
+  const plasma = () => COLORMAPS.findIndex((c) => c.name === "Plasma");
+  for (const [name, fractal, style] of [["point-mandelbrot", "Mandelbrot", "point"], ["cross-mandelbrot", "Mandelbrot", "cross"],
+    ["cross-ship", "Burn. Ship", "cross"], ["point-julia-rabbit", "Julia:Rabbit", "point"], ["cross-julia-rabbit", "Julia:Rabbit", "cross"]]) {
+    test(`${style} on ${fractal}`, async ({ page }) => {
+      await page.evaluate(([f, g, s]) => { window["__vt"].fractal(f, g); setColorStyle({ style: s }); }, [fractal, await page.evaluate(plasma), style]);
+      await checkStyled(page, `style-trap-${name}`);
+    });
+  }
+
+  // The traps go flat as you zoom in, so past about 1,000x deep the view
+  // draws Smooth (the style stays chosen and returns when you zoom back out).
+  test("are offered up to about 1,000x deep and draw Smooth beyond", async ({ page }) => {
+    const r = await page.evaluate(() => {
+      window["__vt"].fractal("Mandelbrot");
+      setColorStyle({ style: "point" });
+      const at = (zoom) => { mainState.scale = mainState.baseScale / zoom; return colorStyleFor(mainState).glsl; };
+      return { opening: at(1), x500: at(500), x1000: at(1000), x2000: at(2000), deep: at(1e9), back: at(10), chosen: colorStyle.style };
+    });
+    expect(r).toEqual({ opening: 4, x500: 4, x1000: 4, x2000: 0, deep: 0, back: 4, chosen: "point" });
+  });
+
+  test("Newton, Carpet and Phoenix never draw them", async ({ page }) => {
+    const r = await page.evaluate(() => {
+      const out = [];
+      for (const f of ["Newton z³", "Carpet", "Phoenix", "Julia:Phoenix"]) { window["__vt"].fractal(f); setColorStyle({ style: "cross" }); out.push(colorStyleFor(mainState).glsl); }
+      return out;
+    });
+    expect(r).toEqual([0, 0, 0, 0]);
   });
 });
