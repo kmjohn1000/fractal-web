@@ -40,6 +40,7 @@ const Diag = (() => {
   const pending = [];
   let timer = 0;
   let copyFn = null;
+  let shareFn = null;
   let gpuInfo = "WebGPU: checking…";
 
   const push = (arr, v) => { arr.push(v); if (arr.length > SAMPLES) arr.shift(); };
@@ -147,7 +148,7 @@ const Diag = (() => {
   }
 
   // The pill and the report panel, built only while on.
-  let pill = null, panel = null, body = null, refresh = 0;
+  let pill = null, panel = null, body = null, shareBtn = null, refresh = 0;
   function makeButton(text, onClick) {
     const b = document.createElement("button");
     b.type = "button";
@@ -176,7 +177,12 @@ const Diag = (() => {
       try { ok = copyFn ? await copyFn(report()) : false; } catch { /* fall through */ }
       flash(copy, ok ? "Copied!" : "Copy failed");
     });
-    bar.append(copy,
+    // For AirDrop to the Mac or Save to Files; shown once app.js supplies it.
+    shareBtn = makeButton("Share", async () => {
+      try { await shareFn(report()); } catch (e) { flash(shareBtn, `Share failed: ${e && e.message ? e.message : e}`); }
+    });
+    shareBtn.hidden = !shareFn;
+    bar.append(copy, shareBtn,
       makeButton("Clear passes", () => { passes.clear(); body.textContent = report(); }),
       makeButton("Turn off", () => { setEnabled(false); }));
     body = document.createElement("pre");
@@ -187,7 +193,7 @@ const Diag = (() => {
   function hideUi() {
     clearInterval(refresh);
     pill?.remove(); panel?.remove();
-    pill = panel = body = null;
+    pill = panel = body = shareBtn = null;
   }
 
   function setEnabled(on) {
@@ -206,5 +212,6 @@ const Diag = (() => {
 
   if (enabled) showUi();
 
-  return { pass, link, event, watch, fromLink, setCopy(fn) { copyFn = fn; }, get enabled() { return enabled; } };
+  return { pass, link, event, watch, fromLink, setCopy(fn) { copyFn = fn; },
+    setShare(fn) { shareFn = fn; if (shareBtn) shareBtn.hidden = !fn; }, get enabled() { return enabled; } };
 })();

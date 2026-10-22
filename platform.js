@@ -182,14 +182,16 @@ const Platform = (() => {
 
     // System share sheet with the image (where supported) and link.
     // Resolves quietly if the user dismisses the sheet.
-    async share({ blob, fileName, url, title }) {
+    // `text` is for sharing words alone (the diagnostics report); a link
+    // share leaves it out.
+    async share({ blob, fileName, url, title, text }) {
       if (!isNative) {
         try {
           if (webCanShareFiles && blob) {
             const file = new File([blob], fileName, { type: "image/png" });
             await navigator.share({ files: [file], title, text: url, url });
           } else {
-            await navigator.share({ title, url });
+            await navigator.share({ title, text, url });
           }
         } catch (err) {
           if (err && err.name === "AbortError") return;
@@ -206,7 +208,7 @@ const Platform = (() => {
         files.push(written.uri);
       }
       try {
-        await Share.share({ title, url, files });
+        await Share.share({ title, text, url, files });
       } catch (err) {
         if (isNativeCancel(err)) return;
         throw err;

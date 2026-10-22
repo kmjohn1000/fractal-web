@@ -55,6 +55,19 @@ test("#diag shows the button and a report with GL facts, shader links and timed 
   expect(row).toMatch(/GPU \d/);
 });
 
+test("Share hands the report to the system share sheet", async ({ page }) => {
+  await page.addInitScript(() => {
+    navigator.share = async (data) => { window["__shared"] = data; };
+  });
+  await load(page, { hash: "#diag" });
+  await pill(page).click();
+  // The panel's text button, not the toolbar's Share icon (same accessible name).
+  await page.locator('button:text-is("Share")').click();
+  await expect.poll(() => page.evaluate(() => window["__shared"]?.text ?? "")).toContain("Fractal Atlas diagnostics");
+  const shared = await page.evaluate(() => window["__shared"]);
+  expect(shared.text).toContain("MAX_TEXTURE_SIZE");
+});
+
 test("#diag=0 turns it off again and removes the button", async ({ page }) => {
   await load(page, { hash: "#diag=0", stored: true });
   await expect(pill(page)).toHaveCount(0);

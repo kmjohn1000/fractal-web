@@ -4915,6 +4915,7 @@ async function copyText(text) {
 }
 
 Diag.setCopy(copyText);
+if (Platform.canShare) Diag.setShare((text) => Platform.share({ title: "Fractal Atlas diagnostics", text }));
 
 els.shareCopyBtn.addEventListener("click", async () => {
   const ok = await copyText(buildShareUrl());
