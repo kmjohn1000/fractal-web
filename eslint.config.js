@@ -41,6 +41,8 @@ const sharedGlobals = {
   ifsData: "readonly",
   // platform.js
   Platform: "readonly",
+  // diag.js
+  Diag: "readonly",
 };
 
 export default [

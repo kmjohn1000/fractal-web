@@ -901,6 +901,7 @@ function createFractalRenderer(canvas) {
           || canvas.getContext("experimental-webgl", ctxOpts);
   if (!gl) return null;
   const isWebGL2 = typeof WebGL2RenderingContext !== "undefined" && gl instanceof WebGL2RenderingContext;
+  Diag.watch(canvas.id, gl, canvas);
 
   function compile(type, src) {
     const s = gl.createShader(type);
@@ -917,13 +918,15 @@ function createFractalRenderer(canvas) {
 
   // a_pos is pinned to attribute 0 in both programs so they share the
   // quad's vertex-attribute setup below without re-pointing it per draw.
-  function link(fragSrc, vertSrc = VERT_SRC) {
+  function link(fragSrc, vertSrc = VERT_SRC, label = "program") {
+    const t0 = performance.now();
     const p = gl.createProgram();
     gl.attachShader(p, compile(gl.VERTEX_SHADER, vertSrc));
     gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fragSrc));
     gl.bindAttribLocation(p, 0, "a_pos");
     gl.linkProgram(p);
     if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    Diag.link(`${canvas.id} ${label}`, performance.now() - t0);
     return p;
   }
   // The escape-time program comes in variants (COLOR_VARIANT in FRAG_SRC),
@@ -949,10 +952,12 @@ function createFractalRenderer(canvas) {
       const inFlight = warming.get(variant);
       if (inFlight) {
         // A warm-up compile is under way: finish with it (waits if it isn't done) rather than starting again.
+        const t0 = performance.now();
         if (!gl.getProgramParameter(inFlight, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(inFlight));
+        Diag.link(`${canvas.id} escape-time variant ${variant}, finishing a warm-up`, performance.now() - t0);
         entry = fractalEntry(variant, inFlight);
       } else {
-        entry = fractalEntry(variant, link(`#define COLOR_VARIANT ${variant}\n${FRAG_SRC}`));
+        entry = fractalEntry(variant, link(`#define COLOR_VARIANT ${variant}\n${FRAG_SRC}`, VERT_SRC, `escape-time variant ${variant}`));
       }
     }
     return entry;
@@ -970,6 +975,7 @@ function createFractalRenderer(canvas) {
     if (!parallelCompile) { fractalProgram(variant); return "ready"; }
     let p = warming.get(variant);
     if (!p) {
+      const t0 = performance.now();
       p = gl.createProgram();
       for (const [type, src] of [[gl.VERTEX_SHADER, VERT_SRC], [gl.FRAGMENT_SHADER, `#define COLOR_VARIANT ${variant}\n${FRAG_SRC}`]]) {
         const s = gl.createShader(type);
@@ -980,13 +986,14 @@ function createFractalRenderer(canvas) {
       gl.bindAttribLocation(p, 0, "a_pos");
       gl.linkProgram(p);
       warming.set(variant, p);
+      Diag.link(`${canvas.id} escape-time variant ${variant}, warm start`, performance.now() - t0);
     }
     if (!gl.getProgramParameter(p, parallelCompile.COMPLETION_STATUS_KHR)) return "pending";
     fractalProgram(variant); // finishes with the program just compiled
     return "ready";
   }
   fractalProgram(0);
-  const previewProg = link(PREVIEW_FRAG_SRC);
+  const previewProg = link(PREVIEW_FRAG_SRC, VERT_SRC, "preview");
   gl.useProgram(programs.get(0).prog);
 
   const quad = new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]);
@@ -1187,7 +1194,7 @@ function createFractalRenderer(canvas) {
   function newtonDeepProgram() {
     if (newtonDeep !== null) return newtonDeep;
     try {
-      const p = link(NEWTON_DEEP_FRAG_SRC, VERT_SRC_300);
+      const p = link(NEWTON_DEEP_FRAG_SRC, VERT_SRC_300, "Newton deep");
       const names = ["resolution", "jitter", "rotCos", "rotSin", "scale", "maxIter", "cx", "cy", "third", "testMode", "lut"];
       const nu = Object.fromEntries(names.map((n) => [n, gl.getUniformLocation(p, `u_${n}`)]));
       newtonDeep = { prog: p, u: nu };
@@ -1274,7 +1281,7 @@ function createFractalRenderer(canvas) {
   function phoenixDeepProgram() {
     if (phoenixDeep !== null) return phoenixDeep;
     try {
-      const p = link(PHOENIX_DEEP_FRAG_SRC, VERT_SRC_300);
+      const p = link(PHOENIX_DEEP_FRAG_SRC, VERT_SRC_300, "Phoenix deep");
       const names = ["resolution", "jitter", "rotCos", "rotSin", "scale", "maxIter", "isJulia", "cx", "cy",
         "jcx", "jcy", "ref", "refLen", "refOff", "exactCap", "testMode", "lut", "style", "density", "offset"];
       const pu = Object.fromEntries(names.map((n) => [n, gl.getUniformLocation(p, `u_${n}`)]));
@@ -1369,6 +1376,16 @@ function createFractalRenderer(canvas) {
   // Returns which deep-zoom path drew the frame ("perturbation" or
   // "fixed point"), or null for plain float32 -- for the info card.
   function render(state, sampleIndex = 0) {
+    const t0 = performance.now();
+    const path = renderPass(state, sampleIndex);
+    if (Diag.enabled) {
+      Diag.pass(gl, `${canvas.id} ${Object.keys(FTYPE)[state.ftype]} ${path || "float32"}, `
+        + `${isInteracting ? "live" : sampleIndex === 0 ? "first pass" : "refine pass"}`, performance.now() - t0);
+    }
+    return path;
+  }
+
+  function renderPass(state, sampleIndex) {
     // A resize clears the canvas, so there's nothing left to blend into.
     if (resize()) sampleIndex = 0;
     if (sampleIndex === 0) {
@@ -4683,6 +4700,7 @@ function applyShareHashFromUrl() {
 // same parse/apply as a link loaded on the web. Anything that isn't a valid
 // share hash is ignored, leaving the current view alone.
 function applyShareLink(url) {
+  Diag.fromLink(url);
   const i = url.indexOf("#");
   const st = i >= 0 ? parseShareHash(url.slice(i)) : null;
   if (st) {
@@ -4895,6 +4913,8 @@ async function copyText(text) {
     return ok;
   }
 }
+
+Diag.setCopy(copyText);
 
 els.shareCopyBtn.addEventListener("click", async () => {
   const ok = await copyText(buildShareUrl());

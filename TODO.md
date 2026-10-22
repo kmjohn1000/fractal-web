@@ -109,7 +109,13 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         `EXT_float_blend`, `KHR_parallel_shader_compile`,
         `EXT_disjoint_timer_query_webgl2`), shader link time, per-pass
         fence latency and WebGPU `adapter.features` on the iPhone. Decides
-        most of the items below
+        most of the items below. BUILT 2026-10-22 (`diag.js`, tests in
+        `diag.spec.mjs`): open the site with `#diag` (in the app, open
+        `https://kmjohn1000.github.io/fractal-web/#diag` as a link), tap the
+        "diag" pill, use the views that matter (deep Mandelbrot, Phoenix
+        and Newton deep, a Glow or Stripes pick, a Surprise-me flight), then
+        Copy the report. Still to do: run it on the iPhone 15, in Safari and
+        in the app, and read the numbers
       - Interior skip + variance-adaptive supersampling (~100-180 lines in
         `render`, `scheduleRefinement`, a mask pass): after pass 0 mask the
         interior; after pass 3 keep refining only where samples still differ
@@ -418,7 +424,10 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       location and colors; decide whether iCloud sync is worth it or
       local-only is enough. Could reuse the share-link format as the stored
       view (2026-10-10). Design spike done 2026-10-21, see
-      `docs/saved-places/design.md` (local, git-ignored)
+      `docs/saved-places/design.md` (local, git-ignored). User said
+      2026-10-22 they might build it as saved links (stored share links);
+      not approved yet. Whatever it stores must go through the share-link
+      writer, which never carries the `#diag` telemetry flag
 - [ ] Open the Mandelbrot family rotated 90° on portrait phones: the set is
       wider than tall, so today it sits small mid-screen with ~45% empty
       space above and below. Rotation already exists; the opening view's

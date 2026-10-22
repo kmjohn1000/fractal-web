@@ -3,6 +3,7 @@
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
 ## Unreleased
+- Diagnostics (hidden behind a setting for now): opening the page with `#diag` shows a small "diag" button that opens an on-device report of the graphics hardware, shader build times and how long each drawing pass takes, with a Copy button. Nothing is sent anywhere.
 - Color styles (hidden behind a setting for now): the Orbs and Rays orbit traps (the point and cross traps) now work at any depth. Their colors stretch over the range the view really has, found from a small probe of the view, so a deep place no longer comes out one flat color. They were limited to about 1,000× deep before, and the Orbs and Rays Looks show Seahorse Valley.
 - Groundwork for color styles (not visible yet): the shaders can draw the whole-number "bands" coloring and take a bands and shift setting. Nothing changes on screen yet.
 - Groundwork for color styles (not visible yet): a "glow" style that draws the distance to the set's boundary, so thin filaments stay crisp at any depth.
