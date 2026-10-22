@@ -322,11 +322,18 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       orbit, so the minimum distance to a fixed trap is the same number
       (contrast across the view: 48% of the palette at 1e-2, 11% at 1e-3,
       2% at 1e-4, 0% at 1e-8). Options, in order:
-      1. Auto-range: stretch the palette over the view's real minimum and
-         maximum trap distance (a CPU probe or a GPU reduction). Should help
-         the middle depths; past about 1e-8 float32 can't hold the
-         differences. Being tried first
-      2. Compute the trap distance as a difference from the reference orbit
+      1. DONE behind the styles flag (`99712fc`): auto-range. A 48-row probe
+         of the same view through the same program (a trap-probe mode of
+         `trapColor`) is read back and its 2nd-98th percentile of the escaped
+         pixels' trap distance becomes the colormap range; the colormap moves
+         from the fixed range onto it as it narrows (`trapRangeFor`), so
+         shallow views are unchanged. It held up in the float64 oracle
+         comparison down to 1.5e-12, and float32 resolution wasn't the limit
+         (the views are mostly interior past about 1e-12 whatever the style),
+         so the depth limit is gone. Phone check: the first Point or Cross
+         pick at a deep place, and the colors while dragging (the range is
+         reused during a gesture and refreshed on settle)
+      2. Not needed so far: compute the trap distance as a difference from the reference orbit
          (the perturbation trick), keeping tiny differences exact in float32,
          together with auto-range; might carry traps to about 1e-12
       3. Trap relative to the view: put the trap on the reference orbit at an
