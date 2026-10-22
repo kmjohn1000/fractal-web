@@ -180,6 +180,10 @@ async function render(browser, size, shot) {
     await page.addScriptTag({ path: DRIVER });
     await page.addScriptTag({ content: HELPERS });
     await page.addStyleTag({ content: HIDE_TRANSIENTS });
+    // These are the app's screens, not the website's: platform.js gives the
+    // website a centered toolbar column on wide windows (html.web), which the
+    // iPad app doesn't have (it keeps the full-width toolbar).
+    await page.evaluate("document.documentElement.classList.remove('web'); window.dispatchEvent(new Event('resize'))");
     await waitSettled(page);
     for (const step of shot.steps) {
       if (/^[#.]/.test(step)) await page.locator(`${step}:visible`).first().click();
