@@ -114,9 +114,13 @@ offline.
 
 `scripts/test-visual.mjs` kills leftover Playwright browsers and test
 servers before and after each run and runs with stdin closed. The git
-pre-push hook (`.githooks/pre-push`, turned on by `npm install`) runs the
-suite unless the push only touches docs; `SKIP_VISUAL=1 git push` skips it.
-Failures leave diffs in `test-results/report/index.html`.
+pre-push hook (`.githooks/pre-push`, turned on by `npm install`) runs lint on
+every push and the whole suite only when the push carries a release tag
+(`v*`, which `/release` pushes); `RUN_VISUAL=1 git push` forces the suite on
+a branch push and `SKIP_VISUAL=1` skips it even for a tag. Between releases,
+run the specs that cover what you changed (`npx playwright test
+tests/visual/<file>.spec.mjs`). Failures leave diffs in
+`test-results/report/index.html`.
 
 ## Baselines
 
