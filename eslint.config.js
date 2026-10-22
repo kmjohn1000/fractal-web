@@ -17,7 +17,6 @@ const sharedGlobals = {
   FRAG_SRC: "readonly",
   PREVIEW_FRAG_SRC: "readonly",
   VERT_SRC_300: "readonly",
-  ADAPTIVE_MASK_FRAG_SRC: "readonly",
   NEWTON_DEEP_FRAG_SRC: "readonly",
   PHOENIX_DEEP_FRAG_SRC: "readonly",
   // vectorgeom.js

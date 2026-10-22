@@ -893,9 +893,7 @@ function createFractalRenderer(canvas) {
   // preserveDrawingBuffer: supersampling blends each new sample into the
   // previous frame's canvas contents, which the browser would otherwise be
   // free to discard after compositing.
-  // stencil: adaptive refinement (an opt-in experiment, see render() below)
-  // masks late supersamples with it; with the experiment off it is never used.
-  const ctxOpts = { antialias: false, alpha: false, preserveDrawingBuffer: true, stencil: true };
+  const ctxOpts = { antialias: false, alpha: false, preserveDrawingBuffer: true };
   // WebGL2 when there is one: Newton's deep zoom needs its 32-bit uints
   // (NEWTON_DEEP_FRAG_SRC). The ES 1.00 shaders run unchanged on either.
   const gl = canvas.getContext("webgl2", ctxOpts)
@@ -1404,95 +1402,15 @@ function createFractalRenderer(canvas) {
 
   // Returns which deep-zoom path drew the frame ("perturbation" or
   // "fixed point"), or null for plain float32 -- for the info card.
-  // Adaptive refinement, an opt-in experiment (Diag.adaptive: open the page with
-  // #adaptive, "#adaptive=0" to turn it off; TODO.md, "Rendering speed"). The
-  // 16 supersamples are blended into the canvas one per frame. With the
-  // experiment on, the first four are drawn in full; then a mask pass marks the
-  // pixels whose mean of four still differs from their first sample (and their
-  // neighbors) in the stencil buffer, and samples 5-16 are drawn only there, as
-  // the stencil test skips the rest before the expensive shader runs. Pixels
-  // outside the mask keep their four-sample mean, which is where they already
-  // agree. Escape-time fractals only (ESCAPE_TIME_TYPES), WebGL2 only, and never
-  // while a gesture is on (those frames are single live passes).
-  const ADAPT_AFTER = 4;
-  const ADAPT_THRESHOLD = 4 / 255;
-  let adaptiveMask = false; // the stencil holds the mask of the refinement chain in progress
-  let adaptTexA = null, adaptTexB = null, maskProg = null;
-  const adaptiveStats = { chains: 0, maskedPasses: 0 };
-  function adaptTexture() {
-    const t = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, t);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    return t;
-  }
-  // Copy what the canvas shows now into a texture (units 5 and 6, clear of the
-  // LUT, the reference orbit and the preview snapshot).
-  function adaptiveSnapshot(first) {
-    if (!adaptTexA) { adaptTexA = adaptTexture(); adaptTexB = adaptTexture(); }
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.activeTexture(first ? gl.TEXTURE5 : gl.TEXTURE6);
-    gl.bindTexture(gl.TEXTURE_2D, first ? adaptTexA : adaptTexB);
-    gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGB, 0, 0, canvas.width, canvas.height, 0);
-    gl.activeTexture(gl.TEXTURE0);
-  }
-  function adaptiveWriteMask() {
-    if (!maskProg) {
-      const prog = link(ADAPTIVE_MASK_FRAG_SRC, VERT_SRC_300, "adaptive mask");
-      maskProg = { prog, a: gl.getUniformLocation(prog, "u_a"), b: gl.getUniformLocation(prog, "u_b"),
-        res: gl.getUniformLocation(prog, "u_res"), thr: gl.getUniformLocation(prog, "u_thr") };
-    }
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.clearStencil(0); gl.stencilMask(0xFF); gl.clear(gl.STENCIL_BUFFER_BIT);
-    gl.colorMask(false, false, false, false);
-    gl.disable(gl.BLEND);
-    gl.enable(gl.STENCIL_TEST);
-    gl.stencilFunc(gl.ALWAYS, 1, 0xFF);
-    gl.stencilOp(gl.KEEP, gl.KEEP, gl.REPLACE);
-    gl.useProgram(maskProg.prog);
-    gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, adaptTexA);
-    gl.activeTexture(gl.TEXTURE6); gl.bindTexture(gl.TEXTURE_2D, adaptTexB);
-    gl.uniform1i(maskProg.a, 5); gl.uniform1i(maskProg.b, 6);
-    gl.uniform2f(maskProg.res, canvas.width, canvas.height);
-    gl.uniform1f(maskProg.thr, ADAPT_THRESHOLD);
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
-    gl.colorMask(true, true, true, true);
-    gl.disable(gl.STENCIL_TEST);
-    gl.stencilMask(0xFF);
-    gl.activeTexture(gl.TEXTURE0);
-  }
-  const stencilOn = () => {
-    gl.enable(gl.STENCIL_TEST);
-    gl.stencilFunc(gl.EQUAL, 1, 0xFF);
-    gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
-    gl.stencilMask(0);
-  };
-  const stencilOff = () => { gl.disable(gl.STENCIL_TEST); gl.stencilMask(0xFF); };
-
   function render(state, sampleIndex = 0) {
     const t0 = performance.now();
-    const adaptive = Diag.adaptive && isWebGL2 && !isInteracting && ESCAPE_TIME_TYPES.includes(state.ftype);
-    // A resize clears the canvas, stencil included: the chain starts again.
-    if (resize()) { adaptiveMask = false; sampleIndex = 0; }
-    if (sampleIndex === 0 || !adaptive) adaptiveMask = false;
-    const masked = adaptive && adaptiveMask && sampleIndex >= ADAPT_AFTER;
-    if (masked) { stencilOn(); adaptiveStats.maskedPasses++; }
     const path = renderPass(state, sampleIndex);
-    if (masked) stencilOff();
-    // (Phoenix's exact deep path draws only four samples: nothing to mask there.)
-    if (adaptive && !(path && path.includes("fixed point"))) {
-      if (sampleIndex === 0) { adaptiveSnapshot(true); adaptiveStats.chains++; }
-      else if (sampleIndex === ADAPT_AFTER - 1) { adaptiveSnapshot(false); adaptiveWriteMask(); adaptiveMask = true; }
-    }
     if (Diag.enabled) {
       // The fractal's name (the Julia pane of a dual view is its own row),
       // the path and style, and the kind of pass; a live frame also says if it
       // was drawn small (setLiveDivisor), since that changes what its time means.
       const where = canvas.id === "mainCanvas" ? currentName : "Julia pane";
-      const kind = isInteracting ? (liveDiv > 1 ? `live at 1/${liveDiv} size` : "live") : sampleIndex === 0 ? "first pass" : masked ? "refine pass (masked)" : "refine pass";
+      const kind = isInteracting ? (liveDiv > 1 ? `live at 1/${liveDiv} size` : "live") : sampleIndex === 0 ? "first pass" : "refine pass";
       Diag.pass(gl, `${where} ${path || "float32"} ${styleDrawn(colorStyle.style, state)}, ${kind}`, performance.now() - t0);
     }
     return path;
@@ -1678,7 +1596,6 @@ function createFractalRenderer(canvas) {
     setLiveDivisor(d) { liveDiv = d; },
     warmVariant,
     primeVariant,
-    get adaptiveStats() { return adaptiveStats; },
     get compiledVariants() { return [...programs.keys()]; },
     // Until its first use, an optimistic yes on WebGL2 (see newtonDeep).
     get newtonDeepSupported() { return newtonDeep !== false; },
