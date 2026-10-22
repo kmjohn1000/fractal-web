@@ -262,58 +262,14 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       so old Burning Ship links keep opening the same place; check whether
       colormaps can have a per-fractal default today (user idea 2026-10-08);
       see "Curated palettes" below
-- [ ] Coloring Style selector and Looks (merges "Exterior distance
-      estimation as a coloring style" and "Orbit trap coloring as a style
-      selector"; benchmarked against fractal.garden, MIT,
-      github.com/trebeljahr/fractal-garden, utils/escapeTimeColoring.ts and
-      utils/shaders/escape-time.frag, read 2026-10-17):
-      - Status (2026-10-21): in progress, behind a flag so the live
-        site's output doesn't change: `localStorage["fractalAtlas.styles"]
-        = "1"`, or open the page once with `#styles` in the address
-        (`#styles=0` turns it off). Shipped so far: the shader plumbing
-        (style, bands and shift uniforms; Bands style), and the Glow
-        (exterior distance estimate), Stripes and the Point and Cross
-        orbit traps (offered up to ~1,000x deep), and the Color sheet (the
-        color button opens it while the flag is on: Looks tab with
-        thumbnails from `node scripts/render_look_thumbs.mjs`, Custom tab
-        with style, palette, bands and shift), share-link fields (`st`,
-        `cd`, `co`, written only when not the default and only while the
-        flag is on) and the info card lines. Still to do: the phone checks
-        and removing the flag. Checks: `node
-        scripts/default-identity.mjs check` (default output identical to
-        before, zero differing pixels), `node scripts/oracle-compare.mjs`
-        (app against a float64 reference, `scripts/oracle/oracle.py`),
-        `node scripts/style-bench.mjs` (headless frame time).
-      - Styles: smooth (today); exterior distance estimate; stripe
-        average (Härkönen: 0.5+0.5·sin(5·arg z) averaged over the orbit,
-        blended between the last two averages by the smooth fraction);
-        orbit traps (point, cross) that also color the interior instead
-        of black.
-      - Distance estimation: track dc' = 2·z·dc + 1 alongside z, color by
-        b = 2|z|·ln|z| / |dc| (normalized by u_scale, i.e. pixel size, so
-        the glow is zoom-invariant). Draws thin filaments crisply instead
-        of as speckle. Fits beside orbit traps (Tier 3); the same estimate
-        could steer "zoom to nearest minibrot" and auto-discovery toward
-        the boundary. Perturbation path needs dc tracked from the full
-        Z+dz; watch float32 overflow at high iteration counts.
-      - Deep zoom: every style must use the full z (Z + dz) each iteration
-        in the perturbation path. Traps are cheap; stripes add atan+sin
-        per iteration; DE needs dc tracked from the full Z+dz (above).
-      - Two user controls: color density (scales the 40-iteration cycle,
-        today's fixed 0.025 in `escapeColor`) and color offset (palette
-        phase). Density is the user control the rejected log-compression
-        note asks for. Offset is the same uniform as the "Colormap
-        animation" item's u_colorPhase.
-      - Looks: named presets bundling style + colormap + density + offset
-        (theirs: Classic, Ultra Fractal, Inferno, Edge glow, Iteration
-        bands, Stripes, Orbit trap, Cross trap); touching any control
-        switches to "Custom". Cheap, and the curated answer to
-        per-fractal variety.
-      - Don't copy their "Log escape time": it is the log compression
-        already rejected (flattened Seahorse Valley at 4e-10), and it
-        shifts as auto detail raises maxIter.
-      - Their palettes overlap ours: their "Ultra Fractal" has the same
-        stops as our Classic.
+- [ ] Remove the styles flag once the color styles pass the phone checks
+      (iPhone 15: Smooth frame and refinement time, first-use shader compile
+      time per style, Glow at 1e-12 and 1e-15, the Color sheet's height and
+      scroll, a slider drag over a deep render, VoiceOver and the largest
+      text size, a share link with the new fields). Replace `stylesEnabled`
+      (`app.js`) with `true`, drop the flag-off tests, and fold the
+      `## Unreleased` CHANGELOG bullets into the release. Not approved to
+      ship until then.
 - [ ] Curated palettes instead of one global default (2026-10-17;
       considered randomizing the palette per fractal and recommended
       against it: a random pick gambles the first impression, gives bad
@@ -583,6 +539,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
+- Coloring Style selector and Looks, built but dark (2026-10-21): behind `localStorage["fractalAtlas.styles"] = "1"` (or load the page with `#styles`; `#styles=0` turns it off), so the live output is unchanged (`scripts/default-identity.mjs`: 26 states, zero differing pixels). Six styles on the escape-time fractals: Smooth, Bands, Glow (exterior distance estimate, `dz/dc` as a 2x2 matrix for the folded maps, saturated at 1e30 for float32), Stripes (windowed stripe average, frequency 4 from x and y with no trig) and the Point and Cross orbit traps (offered up to ~1,000x deep, they color the interior); each costly style is a compiled variant of the escape-time shader, so the default program's code is untouched. Phoenix has Smooth and Bands; Newton, Carpet, Gasket and Apollonian keep their own schemes. A Color sheet on the color button (Looks tab: Classic, Inferno, Edge glow, Iteration bands, Stripes, Orbit trap, Cross trap with `icons/looks/` thumbnails from `scripts/render_look_thumbs.mjs`; Custom tab: style, palette, bands and shift), share-link fields `st`/`cd`/`co` (lenient, written only when not the default) and info card lines. Checked against a float64 oracle (`scripts/oracle/oracle.py`, `scripts/oracle-compare.mjs`; gates in `tests/README.md`) including the perturbation path, and by `styles.spec.mjs` and `color-sheet.spec.mjs`. Phone checks and flag removal are the item under Next — `acb3c1d`, `d37c39c`, `7592bdc`, `114a6f0`, `ce33ccb`, `0b9638a`, `45711eb`, `0677b34`
 - Viewport-adaptive Koch, tree and dragon, with the vector-mode speedups (1.39.0): the three views build only what's on screen each frame (a piece wholly off screen stays a chord or is skipped; pieces under a pixel stay straight; a vertex budget bounds the frame), and add levels beyond the depth slider as you zoom, so detail no longer runs out at ~13× / 2× / 1×; the info card shows "(+N from zoom)". The dragon is drawn from its two-map form (matches the L-system curve to 4e-15 at depths 0-16); Koch/dragon/other line curves use typed arrays and stroke in groups of 256 segments, the tree fills in groups of 32 squares (Canvas2D cost per path grows faster than its size). Hilbert, Gosper and arrowhead share the faster stroke path. `tests/visual/vector.spec.mjs` checks geometry against the old generators, that culling changes no pixel, zoom detail, twist at depth and nonsense views. Left open: a lighter level of detail while a gesture is in progress (the dragon at depth 16, zoomed 4×, is the heaviest frame measured) — `3232da9`
 - First-visit experience on the web and link previews (1.38.0): a first web visit with no share link flies from the whole set to one of five showpiece Mandelbrot places (Seahorse Valley, Mini Mandelbrot, Elephant Valley, Double Spiral, Sunburst Fan) with the info card open; a dismissible welcome card (name, one line, App Store link, Privacy · Support; shown every web visit until closed, never in the app); `<meta name="description">` plus `og:` and `twitter:card` tags with `icons/og-image.jpg`; the opening view reads "The whole shape"; on website windows 900px and wider the toolbar rows sit in a centered 760px column (web only, `html.web`, so the iPad app is unchanged). Visit state lives in `Platform.welcome` (`platform.js`); `tests/visual/cold-open.spec.mjs` covers the three paths, and the visual suite, store-screenshots and thumbnail scripts pre-set the storage keys. App checked in the iPhone and iPad simulators (no flight, no card, iPad toolbar unchanged); the phone checks and the info card's new line on screen in the app are still open (see Now) — `189e823`
 - 1.37.0 (build 245) submitted for App Review 2026-10-19 with the listing copy updated to 24 fractals and 98 places in English and French (`appstore-screenshots/copy/listing-1.37.0.md`), Spanish added (`copy/listing-es.md`), What's New covering 1.30.1–1.37.0, the new `2-picker` screenshots (iPhone 6.3", iPad 13") and the app preview videos. Screenshots and promo images now come from `scripts/store-screenshots.mjs` — `82cf394`
