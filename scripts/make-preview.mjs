@@ -70,9 +70,15 @@ window.__pv = {
     colormapIndex = COLORMAPS.findIndex((c) => c.name === palette);
     updateLUT(); updateColorSwatches(); requestRender();
   },
+  // Lands exactly on a Surprise-me place, as the app's flight does: the info
+  // card names a place only while the view equals it to the last digit, and a
+  // camera path ends a rounding error away.
   land(fractal, label) {
     const i = TELEPORT_DESTINATIONS.findIndex((d) => d.fractal === fractal && d.label === label);
-    lastTeleportIndex = teleportLandingIndex = i; // the info card names the place
+    const d = TELEPORT_DESTINATIONS[i];
+    Object.assign(mainState, { cx: Number(d.re), cy: Number(d.im), scale: d.scale, rotation: d.rotation || 0 });
+    lastTeleportIndex = teleportLandingIndex = i;
+    applyAutoIter();
     requestRender();
   },
   places() { return TELEPORT_DESTINATIONS.length; },
@@ -81,14 +87,15 @@ window.__pv = {
     if (!el) {
       el = document.createElement("div");
       el.id = "pvCaption";
-      el.style.cssText = "position:fixed;left:0;right:0;top:12%;z-index:99999;text-align:center;padding:0 7%;" +
-        "font:700 " + Math.round(innerWidth * 0.1) + "px/1.1 -apple-system,system-ui,sans-serif;color:#fff;" +
+      // Below the info card (about the top 12% of the screen), two lines at most.
+      el.style.cssText = "position:fixed;left:0;right:0;top:17%;z-index:99999;text-align:center;padding:0 8%;" +
+        "font:700 " + Math.round(innerWidth * 0.085) + "px/1.12 -apple-system,system-ui,sans-serif;color:#fff;" +
         "text-shadow:0 2px 14px rgba(0,0,0,.85),0 0 4px rgba(0,0,0,.6);pointer-events:none;";
       document.body.appendChild(el);
     }
     el.textContent = text;
   },
-  endCard(title, line) {
+  async endCard(title, line) {
     const el = document.createElement("div");
     el.style.cssText = "position:fixed;inset:0;z-index:100000;background:#000;display:flex;flex-direction:column;" +
       "align-items:center;justify-content:center;gap:" + Math.round(innerWidth * 0.05) + "px;color:#fff;" +
@@ -97,6 +104,7 @@ window.__pv = {
       '<div style="font-weight:700;font-size:' + Math.round(innerWidth * 0.12) + 'px">' + title + '</div>' +
       '<div style="font-size:' + Math.round(innerWidth * 0.06) + 'px;opacity:.8">' + line + '</div>';
     document.body.appendChild(el);
+    await el.querySelector("img").decode().catch(() => {}); // the icon has to be in the frame
   },
 };
 `;
@@ -147,8 +155,19 @@ try {
   // The app's screens, not the website's (platform.js gives wide windows a centered toolbar column).
   await page.evaluate("document.documentElement.classList.remove('web'); window.dispatchEvent(new Event('resize'))");
 
+  // A frame is finished when the app says it has settled. If one never does (an
+  // iPad render once stalled mid-dive), nudge the render and wait again; after
+  // that, shoot the frame anyway and say so, rather than lose the whole render.
   const settle = async () => {
-    await page.waitForFunction("window.__vt.settled()", null, { timeout: 120_000, polling: 20 });
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await page.waitForFunction("window.__vt.settled()", null, { timeout: attempt ? 60_000 : 30_000, polling: 20 });
+        break;
+      } catch {
+        if (attempt >= 2) { console.warn(`frame ${frameCount + 1}: never settled, shooting it as it is`); break; }
+        await page.evaluate("requestRender()");
+      }
+    }
     await page.evaluate("new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))");
   };
   const last = () => join(framesDir, `${String(frameCount).padStart(5, "0")}.jpg`);
@@ -198,20 +217,32 @@ try {
   await shot();
   hold(n(29));
   // Rays is left out: at this depth it is a plain blue field with a few thin lines.
+  // A tile that can't be clicked means the sheet isn't open (a social render once
+  // lost it after Bands): open it again and retry once, saying so.
+  const sheetClick = async (selector) => {
+    try {
+      await page.locator(selector).click({ timeout: 20_000 });
+    } catch {
+      console.warn(`frame ${frameCount + 1}: ${selector} not clickable, reopening the Color sheet`);
+      if (!(await page.evaluate("els.colorSheet.classList.contains('open')"))) await page.locator("#colormapBtn").click();
+      await settle();
+      await page.locator(selector).click({ timeout: 20_000 });
+    }
+  };
   for (const [key, name] of [["edge-glow", "Edge glow"], ["stripes", "Stripes"], ["bands", "Bands"], ["orbs", "Orbs"]]) {
-    await page.locator(`#colorSheet [data-key="look-${key}"]`).click();
+    await sheetClick(`#colorSheet [data-key="look-${key}"]`);
     await settle();
     await shot();
     hold(n(59));
     log(name);
   }
-  await page.locator('#colorSheet [data-key="done"]').click();
+  await sheetClick('#colorSheet [data-key="done"]');
   await settle();
   await shot();
   hold(n(14));
 
   // ---- 3. A spiral dive into the Douady rabbit.
-  await caption(`Dive into spirals and ${await ev("__pv.places()")} named places`);
+  await caption(`Fly to ${await ev("__pv.places()")} named places`);
   await ev("__vt.fractal('Julia:Rabbit'); __pv.look('glow', 'Inferno')");
   await settle();
   const j = await ev("__pv.state()");
