@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Fractal Atlas&trade;</title>
 
-<link rel="manifest" href="manifest.webmanifest?v=1.39.0">
+<link rel="manifest" href="manifest.webmanifest?v=1.39.1">
 <meta name="theme-color" content="#111111">
-<link rel="icon" href="icons/favicon-32.png?v=1.39.0" sizes="32x32" type="image/png">
+<link rel="icon" href="icons/favicon-32.png?v=1.39.1" sizes="32x32" type="image/png">
 
 <!-- iOS Safari ignores the manifest entirely for install/homescreen purposes
      and needs its own meta tags + a dedicated (non-transparent) icon. -->
@@ -15,7 +15,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fractal Atlas">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.39.0">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.39.1">
 
 <!-- Smart App Banner: Safari on iPhone/iPad offers the App Store app.
      Ignored everywhere else, including the app's own web view. -->
@@ -299,6 +299,65 @@
   #fractalTypeRow .pickTile.active img { box-shadow: 0 0 0 2px #6cf; }
   #fractalTypeRow .pickTile:focus-visible { outline: none; }
   #fractalTypeRow .pickTile:focus-visible img { box-shadow: 0 0 0 2px #fff; }
+  /* Color sheet (behind the styles flag, see COLOR_STYLES in app.js): the
+     same popover pattern as the picker (out of flow, above the toolbar, so
+     opening it never resizes the canvas). A Looks tab with a thumbnail grid
+     like the picker's, and a Custom tab with the style, one scrolling row of
+     palettes and two sliders, short enough that the fractal above it stays
+     visible while you tweak. */
+  #colorSheet {
+    position: absolute; left: 10px; right: 10px; bottom: 100%; margin-bottom: 8px; box-sizing: border-box;
+    padding: 10px 12px 14px; display: none;
+    max-height: 75vh; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+    background: #1c1c1c; border: 1px solid #444; border-radius: 10px;
+    box-shadow: 0 -6px 20px rgba(0,0,0,0.5); z-index: 30;
+  }
+  #colorSheet.open { display: block; }
+  #colorSheet .tabs, #colorSheet .seg { display: flex; gap: 2px; padding: 2px; border-radius: 10px; background: rgba(255,255,255,0.08); }
+  #colorSheet .tabs button, #colorSheet .seg button {
+    flex: 1 1 0; min-width: 0; padding: 0 2px; border: none; border-radius: 8px; background: transparent; color: #ddd;
+    font: 500 0.8125rem -apple-system, system-ui, sans-serif;
+  }
+  #colorSheet .seg button { font-size: 0.75rem; }
+  #colorSheet .tabs button.active, #colorSheet .seg button.active { background: #3a6ea5; box-shadow: 0 0 0 1px #6cf inset; color: #fff; }
+  #colorSheet .seg button:disabled { color: rgba(235,235,245,0.3); }
+  #colorSheet .tabs button:active, #colorSheet .seg button:active { transform: none; }
+  #colorSheet .tabs { margin-bottom: 12px; }
+  #colorSheet .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 10px; }
+  #colorSheet .pickTile {
+    display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 0; min-height: 0; min-width: 0;
+    background: none; border: none; white-space: normal; text-align: center; color: #ddd;
+    font: 0.75rem/1.25 -apple-system, system-ui, sans-serif;
+  }
+  #colorSheet .pickTile img {
+    width: 100%; aspect-ratio: 1; display: block; object-fit: cover; border-radius: 10px; background: #000;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.12);
+  }
+  #colorSheet .pickTile.active { color: #fff; }
+  #colorSheet .pickTile.active img { box-shadow: 0 0 0 2px #6cf; }
+  #colorSheet .pickTile.ghost img { opacity: 0.45; box-shadow: 0 0 0 1px rgba(255,255,255,0.25); }
+  #colorSheet .pickTile[aria-disabled="true"] { opacity: 0.4; }
+  #colorSheet .pickTile:focus-visible { outline: none; }
+  #colorSheet .pickTile:focus-visible img { box-shadow: 0 0 0 2px #fff; }
+  #colorSheet .pals {
+    display: flex; gap: 10px; margin: 12px -12px 0; padding: 4px 12px 2px; overflow-x: auto;
+    scroll-snap-type: x proximity; scroll-padding-left: 12px; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  #colorSheet .pals::-webkit-scrollbar { display: none; }
+  #colorSheet .pal {
+    flex: 0 0 92px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 4px; padding: 0; min-height: 44px;
+    background: none; border: none; text-align: left; color: #f2f2f7; font: 400 0.75rem/1.2 -apple-system, system-ui, sans-serif;
+  }
+  #colorSheet .pal i { display: block; height: 22px; border-radius: 4px; }
+  #colorSheet .pal.active { font-weight: 600; }
+  #colorSheet .pal.active i { box-shadow: 0 0 0 2px #6cf; }
+  #colorSheet .pal:active { transform: none; background: none; }
+  #colorSheet .pal:focus-visible { outline: none; }
+  #colorSheet .pal:focus-visible i { box-shadow: 0 0 0 2px #fff; }
+  #colorSheet label.field { display: grid; grid-template-columns: 44px 1fr; min-height: 32px; margin-top: 2px; }
+  #colorSheet label.field input { margin-left: 0; }
+  #colorSheet .note { margin: 8px 2px 0; font: 0.75rem/1.35 -apple-system, system-ui, sans-serif; color: rgba(235,235,245,0.6); }
+  #colorSheet .note b { color: #f2f2f7; font-weight: 600; }
   /* Share popover: same open-class pattern and out-of-flow positioning as
      #fractalTypeRow, so opening it never reflows the control rows. */
   #shareMenu {
@@ -574,6 +633,7 @@
 <div id="controls">
   <div id="fractalTypeRow"></div>
   <div id="colormapMenu" role="menu" aria-label="Choose colormap"></div>
+  <div id="colorSheet" role="dialog" aria-label="Color"></div>
   <div id="shareMenu" role="menu">
     <button id="shareSaveBtn" role="menuitem">Save image</button>
     <button id="shareCopyBtn" role="menuitem">Copy link</button>
@@ -805,16 +865,16 @@
   </div>
 </div>
 
-<script src="colormaps.js?v=1.39.0"></script>
-<script src="shaders.js?v=1.39.0"></script>
-<script src="lsystem.js?v=1.39.0"></script>
-<script src="vectorgeom.js?v=1.39.0"></script>
-<script src="koch.js?v=1.39.0"></script>
-<script src="pythagoras.js?v=1.39.0"></script>
-<script src="dragon.js?v=1.39.0"></script>
-<script src="fern.js?v=1.39.0"></script>
-<script src="platform.js?v=1.39.0"></script>
-<script src="app.js?v=1.39.0"></script>
+<script src="colormaps.js?v=1.39.1"></script>
+<script src="shaders.js?v=1.39.1"></script>
+<script src="lsystem.js?v=1.39.1"></script>
+<script src="vectorgeom.js?v=1.39.1"></script>
+<script src="koch.js?v=1.39.1"></script>
+<script src="pythagoras.js?v=1.39.1"></script>
+<script src="dragon.js?v=1.39.1"></script>
+<script src="fern.js?v=1.39.1"></script>
+<script src="platform.js?v=1.39.1"></script>
+<script src="app.js?v=1.39.1"></script>
 <script>
   // Service workers only register on secure origins or localhost, so this is
   // a silent no-op during phone-over-LAN dev testing (plain http://<lan-ip>)

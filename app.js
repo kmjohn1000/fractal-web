@@ -1602,6 +1602,26 @@ function markInteracting() {
   }, 200);
 }
 
+// The vector views' counterpart: while a drag, pinch or wheel zoom is in
+// progress they draw at a coarser pixel limit (opts.lite), because a full
+// frame of the dragon at depth 16 took 200-400 ms per move on a phone-speed
+// CPU and the pinch looked frozen. Full detail returns when the last finger
+// lifts, or 150 ms after the last wheel tick.
+let vectorLite = false;
+let vectorLiteTimer = null;
+function markVectorInteracting() {
+  vectorLite = true;
+  if (vectorLiteTimer) clearTimeout(vectorLiteTimer);
+  vectorLiteTimer = setTimeout(endVectorInteracting, 150);
+}
+function endVectorInteracting() {
+  if (vectorLiteTimer) clearTimeout(vectorLiteTimer);
+  vectorLiteTimer = null;
+  if (!vectorLite) return;
+  vectorLite = false;
+  requestRender();
+}
+
 const mainRenderer = createFractalRenderer(els.mainCanvas);
 const juliaRenderer = createFractalRenderer(els.juliaCanvas);
 const kochView = createKochView(els.kochCanvas);
@@ -1781,14 +1801,14 @@ function renderAll() {
     updateHud();
     scheduleRefinement();
   } else if (mode === "koch") {
-    kochView.render({ depth: kochState.depth, fill: kochState.fill, colorIndex: vectorColors.koch, fitHalfHeight: vectorFitHalfHeight("koch") });
+    kochView.render({ depth: kochState.depth, fill: kochState.fill, colorIndex: vectorColors.koch, fitHalfHeight: vectorFitHalfHeight("koch"), lite: vectorLite });
     updateKochHud();
   } else if (mode === "tree") {
-    treeView.render({ depth: treeState.depth, colorIndex: vectorColors.tree, fitHalfHeight: vectorFitHalfHeight("tree") });
+    treeView.render({ depth: treeState.depth, colorIndex: vectorColors.tree, fitHalfHeight: vectorFitHalfHeight("tree"), lite: vectorLite });
     updateTreeHud();
   } else if (isCurveMode(mode)) {
     dragonView.render({
-      depth: dragonState.depth, colorIndex: vectorColors[dragonView.curve],
+      depth: dragonState.depth, colorIndex: vectorColors[dragonView.curve], lite: vectorLite,
       // Only the dragon is drawn from the viewport; the other curves have a fixed depth.
       fitHalfHeight: dragonView.curve === "dragon" ? vectorFitHalfHeight("dragon") : undefined,
     });
@@ -2713,6 +2733,7 @@ function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive = () =>
       const anchored = centerForVectorAnchor(p.x, p.y, panStart.worldX, panStart.worldY);
       vectorView.view.cx = anchored.cx;
       vectorView.view.cy = anchored.cy;
+      markVectorInteracting();
       requestRender();
     } else if (pointers.size === 2 && pinchStartDist) {
       const pts = [...pointers.values()];
@@ -2730,6 +2751,7 @@ function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive = () =>
       const after = vectorView.screenToWorld(midX, midY);
       vectorView.view.cx += before[0] - after[0];
       vectorView.view.cy += before[1] - after[1];
+      markVectorInteracting();
       requestRender();
     }
   });
@@ -2752,6 +2774,8 @@ function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive = () =>
     }
     pinchStartDist = null;
     pinchStartAngle = null;
+    // Fingers up: the full-detail frame, now rather than after the timer.
+    if (pointers.size === 0) endVectorInteracting();
   }
   canvas.addEventListener("pointerup", release);
   canvas.addEventListener("pointercancel", release);
@@ -2773,6 +2797,7 @@ function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive = () =>
     const after = vectorView.screenToWorld(sx, sy);
     vectorView.view.cx += before[0] - after[0];
     vectorView.view.cy += before[1] - after[1];
+    markVectorInteracting();
     requestRender();
   }, { passive: false });
 

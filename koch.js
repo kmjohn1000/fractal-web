@@ -28,6 +28,7 @@ function kochSnowflake(depth) {
 const KOCH_EDGE = Math.sqrt(3);   // world length of the depth-0 triangle's sides
 const KOCH_FIT_HH = 1.08;         // half-height of the Reset framing on a wide canvas; render's opts.fitHalfHeight overrides it
 const KOCH_PX_MIN = 1;            // CSS px: a piece whose thirds would be shorter stays one straight line
+const KOCH_LITE_PX_MIN = 3;       // CSS px: the pixel limit while a drag or pinch is in progress (opts.lite)
 const KOCH_ZOOM_SLACK = 1.5;      // zoom headroom before a level beyond the slider's depth is added
 const KOCH_BUDGET = 100000;       // vertices per frame; past it the pixel limit grows by half and the frame is redone
 const KOCH_MAX_LEVEL = 40;        // 3^-40 is already below double precision for any view
@@ -151,7 +152,7 @@ function createKochView(canvas) {
     // half-height app.js's Reset framing uses), with some headroom. It
     // doesn't change as you zoom, so zooming in is what adds levels.
     const refPx = KOCH_EDGE * Math.pow(1 / 3, opts.depth) * (canvas.height / 2 / (opts.fitHalfHeight || KOCH_FIT_HH)) * KOCH_ZOOM_SLACK;
-    let pxMin = KOCH_PX_MIN * dpr;
+    let pxMin = (opts.lite ? KOCH_LITE_PX_MIN : KOCH_PX_MIN) * dpr;
     let r = kochAdaptive(aff, buf, opts.depth, pxMin, refPx);
     for (let tries = 0; r.overflow && tries < 12; tries++) {
       pxMin *= 1.5;

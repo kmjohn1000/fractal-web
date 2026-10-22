@@ -52,6 +52,7 @@ const TREE_FIT_HH = 2.125;       // half-height of the Reset framing on a wide c
 // Canvas px, not CSS px: the smallest squares carry the canopy's brightness
 // (a depth-12 frame on a 2x phone lost 8% of it at 1 CSS px).
 const TREE_PX_MIN = 1;           // canvas px: squares whose children would be smaller aren't split
+const TREE_LITE_PX_MIN = 3;      // canvas px: the pixel limit while a drag or pinch is in progress (opts.lite)
 const TREE_ZOOM_SLACK = 1.5;     // zoom headroom before a level beyond the slider's depth is added
 const TREE_BUDGET = 40000;       // squares per frame; past it the pixel limit grows by half and the frame is redone
 const TREE_MAX_LEVEL = 60;
@@ -166,7 +167,7 @@ function createPythagorasTreeView(canvas) {
     // half-height app.js's Reset framing uses), with some headroom. It
     // doesn't change as you zoom, so zooming in is what adds levels.
     const refPx = Math.pow(Math.SQRT1_2, opts.depth) * (canvas.height / 2 / (opts.fitHalfHeight || TREE_FIT_HH)) * TREE_ZOOM_SLACK;
-    let pxMin = TREE_PX_MIN;
+    let pxMin = opts.lite ? TREE_LITE_PX_MIN : TREE_PX_MIN;
     let r = treeAdaptive(aff, buf, opts.depth, pxMin, refPx);
     for (let tries = 0; r.overflow && tries < 12; tries++) {
       pxMin *= 1.5;

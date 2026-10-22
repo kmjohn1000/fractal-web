@@ -10,7 +10,7 @@ import { test, expect } from "@playwright/test";
 
 /* global setMode, kochState, treeState, dragonState, fittedVectorModes, VECTOR_VIEWS, requestRender, renderAll,
    fitVectorView, vectorAffine, kochAdaptive, kochSnowflake, treeAdaptive, pythagorasTree, dragonAdaptive,
-   dragonCurve, createKochView, createPythagorasTreeView, createCurveView */
+   dragonCurve, createKochView, createPythagorasTreeView, createCurveView, startDepthPlay, stopDepthPlay, vectorLite */
 
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
 
@@ -238,6 +238,57 @@ for (const m of ["koch", "tree", "dragon"]) {
     expect(r.turned, "rotation changed by about a quarter turn").toBeGreaterThan(1.2);
     expect(r.extra, "still showing zoom detail").toBeGreaterThan(2);
     expect(r.lit, "frame isn't blank").toBeGreaterThan(r.total * 0.002);
+  });
+}
+
+// A pinch while the depth player runs (the dragon at depth 16 took 200-400 ms
+// a move on a phone-speed CPU and looked frozen): the view still zooms, the
+// frame is drawn coarser while the fingers are down, and the frame at rest
+// is exactly the full-detail one.
+for (const m of ["koch", "tree", "dragon"]) {
+  test(`${m}: pinching during Play zooms, draws coarser while held, and is full detail on release`, async ({ page }) => {
+    const depthView = {
+      koch: { depth: 7, view: { cx: 0, cy: 0, halfHeight: 1, rotation: 0 } },
+      tree: { depth: 11, view: { cx: 0, cy: 2, halfHeight: 2.5, rotation: 0 } },
+      dragon: { depth: 16, view: { cx: -0.35, cy: -0.24, halfHeight: 1.2, rotation: 0 } },
+    }[m];
+    await show(page, m, depthView.depth, depthView.view);
+    const r = await page.evaluate(async ([m]) => {
+      HTMLElement.prototype.setPointerCapture = () => {};
+      startDepthPlay();
+      const view = VECTOR_VIEWS[m][0], canvas = VECTOR_VIEWS[m][1];
+      const rect = canvas.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+      const fire = (type, id, x, y) => canvas.dispatchEvent(new PointerEvent(type, { pointerId: id, clientX: x, clientY: y, bubbles: true, pointerType: "touch" }));
+      const frame = () => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)));
+      const hh0 = view.view.halfHeight;
+      fire("pointerdown", 1, cx - 60, cy);
+      fire("pointerdown", 2, cx + 60, cy);
+      let liteWhileHeld = false;
+      for (let s = 1; s <= 8; s++) {
+        fire("pointermove", 1, cx - 60 - s * 10, cy);
+        fire("pointermove", 2, cx + 60 + s * 10, cy);
+        await frame();
+        liteWhileHeld = vectorLite;
+      }
+      fire("pointerup", 1, 0, 0);
+      fire("pointerup", 2, 0, 0);
+      const liteAfterRelease = vectorLite;
+      stopDepthPlay();
+      await frame();
+      const grab = () => Array.from(canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data);
+      const atRest = grab();
+      requestRender();
+      await frame();
+      const again = grab();
+      let differ = 0;
+      for (let i = 0; i < atRest.length; i++) if (atRest[i] !== again[i]) differ++;
+      return { zoomed: hh0 / view.view.halfHeight, liteWhileHeld, liteAfterRelease, differ };
+    }, [m]);
+    expect(r.zoomed, "pinch out of Play zoomed in").toBeGreaterThan(1.5);
+    expect(r.liteWhileHeld, "coarser frames while the fingers are down").toBe(true);
+    expect(r.liteAfterRelease, "full detail as soon as the fingers lift").toBe(false);
+    expect(r.differ, "the frame at rest is the full-detail frame").toBe(0);
   });
 }
 

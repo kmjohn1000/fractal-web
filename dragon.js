@@ -23,6 +23,7 @@ const DRAGON_FIT_HH = 0.6;        // typical half-height of the Reset framing on
 // dropping a level there dims it (a depth-16 frame on a 2x phone lost 17% of
 // its brightness when the limit was 1 CSS px).
 const DRAGON_PX_MIN = 1;          // canvas px: a chord whose halves would be shorter stays one straight line
+const DRAGON_LITE_PX_MIN = 3;     // canvas px: the pixel limit while a drag or pinch is in progress (opts.lite), about 9x fewer segments at depth 16
 const DRAGON_ZOOM_SLACK = 1.5;    // zoom headroom before a level beyond the slider's depth is added
 const DRAGON_BUDGET = 120000;     // vertices per frame; past it the pixel limit grows by half and the frame is redone
 const DRAGON_MAX_LEVEL = 80;
@@ -252,7 +253,7 @@ function createCurveView(canvas) {
       // zooming in is what adds levels.
       const refPx = Math.pow(Math.SQRT1_2, opts.depth) * (canvas.height / 2 / (opts.fitHalfHeight || DRAGON_FIT_HH)) * DRAGON_ZOOM_SLACK;
       const budgetBuf = buf.subarray(0, 2 * (DRAGON_BUDGET + 2));
-      let pxMin = DRAGON_PX_MIN;
+      let pxMin = opts.lite ? DRAGON_LITE_PX_MIN : DRAGON_PX_MIN;
       let r = dragonAdaptive(aff, budgetBuf, opts.depth, pxMin, refPx);
       for (let tries = 0; r.overflow && tries < 12; tries++) {
         pxMin *= 1.5;
