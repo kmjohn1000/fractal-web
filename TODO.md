@@ -289,6 +289,49 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       (`app.js`) with `true`, drop the flag-off tests, and fold the
       `## Unreleased` CHANGELOG bullets into the release. Not approved to
       ship until then.
+- [ ] More Looks and a Looks list rework (user, 2026-10-22; not approved to
+      build, other than the trap experiment below). Classic and Inferno are
+      Smooth plus a palette, which the palette grid already covers, so they
+      shouldn't be Looks: one "Smooth" tile instead, and recipes that are
+      really different. Candidate styles, each a compiled variant of the
+      escape-time shader, judged on contact-sheet renders in
+      `docs/coloring-styles/prototype/` (local) before any build:
+      - Relief: light the fractal as an embossed surface from the distance
+        estimate and `z` (normal from `z / dz`); costs about what Glow costs
+      - Ink / Blueprint: only the thin boundary lines, in one color on a flat
+        background, from the same distance estimate; good for wallpapers and
+        printing
+      - Glow plus Stripes hybrid: the glow modulated by the stripe texture;
+        costs both
+      - Angle / Hue: color by the argument of the final orbit point; almost
+        free
+      - Binary decomposition: the retro checkerboard following the escape
+        bands (sign of the imaginary part at escape); almost free
+      - Triangle-inequality average: soft marble shading, a gentler cousin of
+        Stripes; per-iteration cost like Stripes
+      - Interior coloring by cycle length (each bulb its own hue): needs
+        cycle detection, heavy, shallow and moderate zooms only; leave out of
+        a first pass
+      - Colorway recipes, no shader work: Edge glow on Hot, Ice and Neon;
+        Stripes soft (low bands) and bold (high bands)
+      All of the first six use the final orbit point and the distance value,
+      so they should hold up at depth (unlike the traps); Phoenix has no
+      distance value and stays at Smooth and Bands
+- [ ] Orbit traps at depth (2026-10-22). Point and Cross flatten past about
+      1,000x deep because every pixel of a deep view traces nearly the same
+      orbit, so the minimum distance to a fixed trap is the same number
+      (contrast across the view: 48% of the palette at 1e-2, 11% at 1e-3,
+      2% at 1e-4, 0% at 1e-8). Options, in order:
+      1. Auto-range: stretch the palette over the view's real minimum and
+         maximum trap distance (a CPU probe or a GPU reduction). Should help
+         the middle depths; past about 1e-8 float32 can't hold the
+         differences. Being tried first
+      2. Compute the trap distance as a difference from the reference orbit
+         (the perturbation trick), keeping tiny differences exact in float32,
+         together with auto-range; might carry traps to about 1e-12
+      3. Trap relative to the view: put the trap on the reference orbit at an
+         iteration where the pixels have spread out, so it follows the zoom;
+         a different look from the fixed trap, an experiment
 - [ ] Curated palettes instead of one global default (2026-10-17;
       considered randomizing the palette per fractal and recommended
       against it: a random pick gambles the first impression, gives bad
