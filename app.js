@@ -4218,11 +4218,8 @@ function colorSheetLooks() {
     });
     strip.append(tile);
   });
-  const custom = colorSheetEl("button", {
-    class: `pickTile${active === null ? " active" : " ghost"}`, role: "radio", "aria-checked": active === null, "data-key": "look-custom",
-  }, lookSwatch(COLOR_LOOKS.length), colorSheetEl("span", {}, "Custom"));
-  custom.addEventListener("click", () => { colorSheetTab = "custom"; renderColorSheet(); });
-  strip.append(custom);
+  // No Custom tile: the Custom tab is the way in, and the sheet reopens on it
+  // whenever the settings match no Look (none is checked then).
   trackLooksFade(strip);
   return [strip, colorSheetNote()];
 }

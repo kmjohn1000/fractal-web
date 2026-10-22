@@ -83,7 +83,7 @@ test.describe("with the flag on", () => {
     await expect(page.locator("#colorSheet")).toHaveAttribute("role", "dialog");
     await expect(page.locator('#colorSheet [role="tab"]')).toHaveText(["Looks", "Custom"]);
     await expect(page.locator('#colorSheet [role="tab"][aria-selected="true"]')).toHaveText("Looks");
-    await expect(page.locator('#colorSheet [role="radiogroup"][aria-label="Looks"] [role="radio"]')).toHaveCount(8);
+    await expect(page.locator('#colorSheet [role="radiogroup"][aria-label="Looks"] [role="radio"]')).toHaveCount(7);
     // The default (Smooth on Inferno) is the Inferno Look.
     await expect(page.locator('#colorSheet [role="radio"][aria-checked="true"]')).toHaveText("Inferno");
   });
@@ -105,7 +105,9 @@ test.describe("with the flag on", () => {
     await page.locator('#colorSheet input[aria-label="Color shift"]').fill("0.3");
     expect(await page.evaluate(() => colorStyle.offset)).toBeCloseTo(0.3, 5);
     await page.locator('#colorSheet [role="tab"]', { hasText: "Looks" }).click();
-    await expect(page.locator('#colorSheet [role="radio"][aria-checked="true"]')).toHaveText("Custom");
+    // No Look matches now, so none is checked, and there is no second Custom entry in the strip.
+    await expect(page.locator('#colorSheet [role="radio"][aria-checked="true"]')).toHaveCount(0);
+    await expect(page.locator('#colorSheet [data-key="look-custom"]')).toHaveCount(0);
     // Close and reopen: lands on Custom, because the settings match no Look.
     await page.locator("#colormapBtn").click();
     await expect(page.locator("#colorSheet")).not.toHaveClass(/open/);
@@ -312,7 +314,7 @@ test.describe("with the flag on", () => {
       const tiles = [...strip.querySelectorAll(".pickTile")].map((t) => t.getBoundingClientRect());
       return { fade: strip.dataset.fade, scrolls: strip.scrollWidth > strip.clientWidth, peeking: tiles.some((q) => q.left < edge - 8 && q.right > edge + 8), tiles: tiles.length };
     });
-    expect(r.tiles).toBe(8);
+    expect(r.tiles).toBe(7);
     expect(r.scrolls, "the strip is longer than the sheet").toBe(true);
     expect(r.peeking, "a tile is cut off by the edge").toBe(true);
     expect(r.fade, "the right edge fades").toBe("right");
