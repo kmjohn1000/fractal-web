@@ -9,6 +9,8 @@ import { test, expect } from "@playwright/test";
    parseShareHash, mainState, enterDual, exitDual, dualActive, lookSpriteImage, styleBlocked, COLOR_STYLES, colorStyleFor */
 
 const DRIVER = new URL("../driver.js", import.meta.url).pathname;
+// The Look that is checked (both tabs are in the page at once, so queries have to say which group).
+const LOOK_CHECKED = '#colorSheet [aria-label="Looks"] [role="radio"][aria-checked="true"]';
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
 
 let pageErrors = [];
@@ -83,18 +85,20 @@ test.describe("with the flag on", () => {
     await expect(page.locator("#colorSheet")).toHaveAttribute("role", "dialog");
     await expect(page.locator('#colorSheet [role="tab"]')).toHaveText(["Looks", "Custom"]);
     await expect(page.locator('#colorSheet [role="tab"][aria-selected="true"]')).toHaveText("Looks");
-    await expect(page.locator('#colorSheet [role="radiogroup"][aria-label="Looks"] [role="radio"]')).toHaveCount(7);
-    // The default (Smooth on Inferno) is the Inferno Look.
-    await expect(page.locator('#colorSheet [role="radio"][aria-checked="true"]')).toHaveText("Inferno");
+    await expect(page.locator('#colorSheet [role="radiogroup"][aria-label="Looks"] [role="radio"]')).toHaveText(
+      ["Default", "Edge glow", "Stripes", "Bands", "Orbs", "Rays"]);
+    // The default (Smooth on Inferno) is the Default Look. (Classic and Inferno are palettes, not Looks.)
+    await expect(page.locator(LOOK_CHECKED)).toHaveText("Default");
+    await expect(page.locator("#colormapBtn")).toHaveAttribute("aria-label", "Choose colors (Default, Inferno)");
   });
 
   test("picking a Look sets its style and its palette, and the color button shows it", async ({ page }) => {
     await page.locator("#colormapBtn").click();
-    await page.locator('#colorSheet [data-key="look-orbit-trap"]').click();
+    await page.locator('#colorSheet [data-key="look-orbs"]').click();
     const r = await page.evaluate(() => ({ style: colorStyle.style, palette: COLORMAPS[colormapIndex].name }));
     expect(r).toEqual({ style: "point", palette: "Twilight" });
-    await expect(page.locator("#colormapBtn")).toHaveAttribute("aria-label", "Choose colormap (Twilight)");
-    await expect(page.locator('#colorSheet [role="radio"][aria-checked="true"]')).toHaveText("Orbit trap");
+    await expect(page.locator("#colormapBtn")).toHaveAttribute("aria-label", "Choose colors (Orbs, Twilight)");
+    await expect(page.locator(LOOK_CHECKED)).toHaveText("Orbs");
     await page.locator('#colorSheet [data-key="look-edge-glow"]').click();
     expect(await page.evaluate(() => ({ style: colorStyle.style, palette: COLORMAPS[colormapIndex].name }))).toEqual({ style: "glow", palette: "Inferno" });
   });
@@ -102,23 +106,39 @@ test.describe("with the flag on", () => {
   test("touching a control makes it Custom, and the sheet opens on Custom after that", async ({ page }) => {
     await page.locator("#colormapBtn").click();
     await page.locator('#colorSheet [role="tab"]', { hasText: "Custom" }).click();
+    // At the Default, Reset is there (the sheet never changes height) but hidden.
+    const reset = page.locator("#colorSheet .reset");
+    await expect(reset).toBeHidden();
     await page.locator('#colorSheet input[aria-label="Color shift"]').fill("0.3");
     expect(await page.evaluate(() => colorStyle.offset)).toBeCloseTo(0.3, 5);
+    // The value is on screen next to the slider, and Reset appears without rebuilding the sheet.
+    await expect(page.locator('#colorSheet label.field', { hasText: "Shift" }).locator("output")).toHaveText("30%");
+    await expect(reset).toBeVisible();
     await page.locator('#colorSheet [role="tab"]', { hasText: "Looks" }).click();
-    // No Look matches now, so none is checked, and there is no second Custom entry in the strip.
-    await expect(page.locator('#colorSheet [role="radio"][aria-checked="true"]')).toHaveCount(0);
+    // No Look matches now, so none is checked, and there is no second Custom entry in the grid.
+    await expect(page.locator(LOOK_CHECKED)).toHaveCount(0);
     await expect(page.locator('#colorSheet [data-key="look-custom"]')).toHaveCount(0);
+    await expect(page.locator("#colormapBtn")).toHaveAttribute("aria-label", "Choose colors (Custom, Inferno)");
     // Close and reopen: lands on Custom, because the settings match no Look.
     await page.locator("#colormapBtn").click();
     await expect(page.locator("#colorSheet")).not.toHaveClass(/open/);
     await page.locator("#colormapBtn").click();
     await expect(page.locator('#colorSheet [role="tab"][aria-selected="true"]')).toHaveText("Custom");
+    // Reset puts everything back (style, palette, repeat and shift) and the Default Look is checked again.
+    await page.evaluate(() => { setColorStyle({ style: "stripes", density: 2, offset: 0.5 }); colormapIndex = COLORMAPS.findIndex((c) => c.name === "Plasma"); updateLUT(); });
+    await page.locator('#colorSheet [role="tab"]', { hasText: "Looks" }).click();
+    await page.locator('#colorSheet [role="tab"]', { hasText: "Custom" }).click();
+    await page.locator("#colorSheet .reset").click();
+    expect(await page.evaluate(() => ({ ...colorStyle, palette: COLORMAPS[colormapIndex].name }))).toMatchObject({ style: "smooth", density: 1, offset: 0, palette: "Inferno" });
+    await page.locator('#colorSheet [role="tab"]', { hasText: "Looks" }).click();
+    await expect(page.locator(LOOK_CHECKED)).toHaveText("Default");
   });
 
-  test("Custom has the style, palette, bands and shift controls with names", async ({ page }) => {
+  test("Custom has the style, palette, repeat and shift controls with names", async ({ page }) => {
     await page.locator("#colormapBtn").click();
     await page.locator('#colorSheet [role="tab"]', { hasText: "Custom" }).click();
-    await expect(page.locator('#colorSheet [aria-label="Style"] [role="radio"]')).toHaveText(["Smooth", "Bands", "Glow", "Stripes", "Point", "Cross"]);
+    // The same words as the Look tiles (Edge glow, Stripes, Bands, Orbs, Rays).
+    await expect(page.locator('#colorSheet [aria-label="Style"] [role="radio"]')).toHaveText(["Smooth", "Bands", "Edge glow", "Stripes", "Orbs", "Rays"]);
     await expect(page.locator('#colorSheet [aria-label="Palette"] [role="radio"]')).toHaveCount(await page.evaluate(() => COLORMAPS.length));
     await page.locator('#colorSheet [aria-label="Style"] [role="radio"]', { hasText: "Stripes" }).click();
     expect(await page.evaluate(() => colorStyle.style)).toBe("stripes");
@@ -126,13 +146,16 @@ test.describe("with the flag on", () => {
     await page.locator('#colorSheet [aria-label="Palette"] [role="radio"][aria-label="Glacier"]').click();
     expect(await page.evaluate(() => COLORMAPS[colormapIndex].name)).toBe("Glacier");
     expect(await page.evaluate(() => colorStyle.style)).toBe("stripes");
-    // Bands is a log slider: its middle is exactly 1x (today's coloring), and it snaps there.
-    const bands = page.locator('#colorSheet input[aria-label="Color bands"]');
-    await bands.fill("1");
+    // Repeat is a log slider: its middle is exactly 1x (today's coloring), and it snaps there. (It was
+    // "Bands", which is also a style's name; its value is on screen next to it.)
+    const repeat = page.locator('#colorSheet input[aria-label="Color repeat"]');
+    await expect(page.locator('#colorSheet input[aria-label="Color bands"]')).toHaveCount(0);
+    await repeat.fill("1");
     expect(await page.evaluate(() => colorStyle.density)).toBeCloseTo(2, 5);
-    await expect(bands).toHaveAttribute("aria-valuetext", "2×");
+    await expect(repeat).toHaveAttribute("aria-valuetext", "2×");
+    await expect(page.locator('#colorSheet label.field', { hasText: "Repeat" }).locator("output")).toHaveText("2×");
     // (set directly: fill() rejects a value that isn't on the slider's step)
-    await bands.evaluate((el) => { el.value = "0"; el.dispatchEvent(new Event("input", { bubbles: true })); });
+    await repeat.evaluate((el) => { el.value = "0"; el.dispatchEvent(new Event("input", { bubbles: true })); });
     expect(await page.evaluate(() => colorStyle.density)).toBe(1);
     const shift = page.locator('#colorSheet input[aria-label="Color shift"]');
     await shift.fill("0.5");
@@ -150,38 +173,61 @@ test.describe("with the flag on", () => {
     expect(await offered()).toEqual([null, null]);
     await page.locator("#colormapBtn").click();
     await page.locator('#colorSheet [role="tab"]', { hasText: "Custom" }).click();
-    const point = page.locator('#colorSheet [aria-label="Style"] [role="radio"]', { hasText: "Point" });
+    const point = page.locator('#colorSheet [aria-label="Style"] [role="radio"]', { hasText: "Orbs" });
     await expect(point).toBeEnabled();
-    await expect(page.locator("#colorSheetNote")).toBeHidden();
+    await expect(page.locator("#colorSheetNote-custom")).toHaveCount(0);
     // Picking one at depth takes effect.
     await point.click();
     expect(await page.evaluate(() => colorStyle.style)).toBe("point");
     expect(await page.evaluate(() => colorStyleFor(mainState).glsl)).toBe(4);
     // The Looks tab offers the trap Looks too.
     await page.locator('#colorSheet [role="tab"]', { hasText: "Looks" }).click();
-    await expect(page.locator('#colorSheet [data-key="look-orbit-trap"]')).not.toHaveAttribute("aria-disabled", "true");
-    await expect(page.locator('#colorSheet [data-key="look-cross-trap"]')).not.toHaveAttribute("aria-disabled", "true");
+    await expect(page.locator('#colorSheet [data-key="look-orbs"]')).not.toHaveAttribute("aria-disabled", "true");
+    await expect(page.locator('#colorSheet [data-key="look-rays"]')).not.toHaveAttribute("aria-disabled", "true");
   });
 
-  test("Phoenix offers only Smooth and Bands", async ({ page }) => {
+  test("Phoenix offers only Smooth and Bands, names what it can't do in the tiles' words, and shows what it draws", async ({ page }) => {
+    // Cross chosen on Mandelbrot, then Phoenix, which can't draw it: the choice is kept, Smooth is what shows as selected.
+    await page.evaluate(() => setColorStyle({ style: "cross" }));
     await page.evaluate(() => window["__vt"].fractal("Phoenix"));
+    await page.evaluate(() => { colormapIndex = COLORMAPS.findIndex((c) => c.name === "Inferno"); updateLUT(); });
     await settle(page);
+    expect(await page.evaluate(() => colorStyle.style), "the choice is kept for Mandelbrot").toBe("cross");
     await page.locator("#colormapBtn").click();
+    // It is exactly the Default Look, so the Looks tab says so (and opens there).
+    await expect(page.locator('#colorSheet [role="tab"][aria-selected="true"]')).toHaveText("Looks");
+    await expect(page.locator(LOOK_CHECKED)).toHaveText("Default");
+    await expect(page.locator("#colorSheetNote-looks")).toContainText("Edge glow, Stripes, Orbs and Rays aren't available for Phoenix.");
     await page.locator('#colorSheet [role="tab"]', { hasText: "Custom" }).click();
     const states = await page.locator('#colorSheet [aria-label="Style"] [role="radio"]').evaluateAll((els) => els.map((e) => !e.disabled));
     expect(states).toEqual([true, true, false, false, false, false]);
-    await expect(page.locator("#colorSheetNote")).toContainText("aren't available for Phoenix.");
+    const checked = await page.locator('#colorSheet [aria-label="Style"] [role="radio"][aria-checked="true"]').allInnerTexts();
+    expect(checked, "only what is drawn is selected, not the greyed Rays").toEqual(["Smooth"]);
+    await expect(page.locator("#colorSheetNote-custom")).toContainText("Edge glow, Stripes, Orbs and Rays aren't available for Phoenix.");
   });
 
-  test("Newton, Carpet, Gasket and Apollonian keep the plain palette list", async ({ page }) => {
+  test("Newton, Carpet, Gasket and Apollonian open the same sheet with just the palette grid", async ({ page }) => {
     for (const f of ["Newton z³", "Carpet", "Gasket", "Apollonian"]) {
       await page.evaluate((n) => window["__vt"].fractal(n), f);
       await settle(page);
       await page.locator("#colormapBtn").click();
-      await expect(page.locator("#colormapMenu"), f).toHaveClass(/open/);
+      await expect(page.locator("#colorSheet"), f).toHaveClass(/open/);
+      await expect(page.locator("#colormapMenu"), f).not.toHaveClass(/open/);
+      await expect(page.locator('#colorSheet [role="tab"]'), `${f}: no tabs`).toHaveCount(0);
+      await expect(page.locator('#colorSheet [aria-label="Style"], #colorSheet [aria-label="Looks"], #colorSheet input'), `${f}: no styles, Looks or sliders`).toHaveCount(0);
+      await expect(page.locator('#colorSheet [aria-label="Palette"] [role="radio"]'), f).toHaveCount(await page.evaluate(() => COLORMAPS.length));
+      await expect(page.locator("#colormapBtn"), f).toHaveAttribute("aria-label", /^Choose colormap \(/);
+      // Picking a palette works there too, and Done closes it.
+      await page.locator('#colorSheet [aria-label="Palette"] [aria-label="Glacier"]').click();
+      expect(await page.evaluate(() => COLORMAPS[colormapIndex].name), f).toBe("Glacier");
+      await page.locator("#colorSheet .done").click();
       await expect(page.locator("#colorSheet"), f).not.toHaveClass(/open/);
-      await page.locator("#colormapBtn").click();
     }
+    // Back on a fractal the styles apply to, the full sheet returns.
+    await page.evaluate(() => window["__vt"].fractal("Mandelbrot"));
+    await settle(page);
+    await page.locator("#colormapBtn").click();
+    await expect(page.locator('#colorSheet [role="tab"]')).toHaveText(["Looks", "Custom"]);
   });
 
   test("opening and closing never resizes the canvas, and Escape and an outside tap close it", async ({ page }) => {
@@ -204,36 +250,45 @@ test.describe("with the flag on", () => {
     await expect(page.locator("#fractalTypeRow")).toHaveClass(/open/);
   });
 
-  // The sheet is short enough that the fractal stays in view: measured on a
-  // 393x852 phone screen, both tabs, with and without the depth note.
-  test("the sheet is at most 40% of a 393x852 screen, and most of the fractal stays visible", async ({ page }) => {
+  // The sheet is short enough that the fractal stays in view, and both tabs
+  // are the same height with the tab bar in the same place, so nothing moves
+  // when you switch: measured on a 393x852 phone screen, with and without a
+  // depth.
+  test("the sheet is at most 45% of a 393x852 screen, both tabs the same height with the tab bar in place", async ({ page }) => {
     await page.setViewportSize({ width: 393, height: 852 });
     await settle(page);
     for (const deep of [false, true]) {
       if (deep) { await page.evaluate(`${place("Seahorse Valley")}`); await settle(page); }
       await page.locator("#colormapBtn").click();
+      const seen = {};
       for (const tab of ["Looks", "Custom"]) {
         await page.locator('#colorSheet [role="tab"]', { hasText: tab }).click();
         const r = await page.evaluate(() => {
           const s = document.getElementById("colorSheet").getBoundingClientRect();
           const c = document.getElementById("mainCanvas").getBoundingClientRect();
-          return { sheetPct: (100 * s.height) / window.innerHeight, visiblePct: (100 * (Math.min(s.top, c.bottom) - c.top)) / c.height };
+          const t = document.querySelector('#colorSheet [role="tab"][aria-selected="true"]').getBoundingClientRect();
+          return { sheetH: s.height, sheetPct: (100 * s.height) / window.innerHeight, tabY: t.top, visiblePct: (100 * (Math.min(s.top, c.bottom) - c.top)) / c.height };
         });
+        seen[tab] = r;
         expect(r.sheetPct, `${tab}${deep ? " (deep)" : ""}: sheet height as % of the screen`).toBeLessThanOrEqual(45);
         // (WebKit's phone emulation keeps its own 659 pt-tall screen whatever setViewportSize says, where the
-        // sheet's cap of 45% of the screen applies; on a real 852 pt screen Custom is 40% at most.)
-        expect(r.visiblePct, `${tab}${deep ? " (deep)" : ""}: % of the fractal still visible`).toBeGreaterThanOrEqual(tab === "Looks" ? 55 : 40);
+        // sheet's cap of 45% of the screen applies; on a real 852 pt screen the sheet is about 38%.)
+        expect(r.visiblePct, `${tab}${deep ? " (deep)" : ""}: % of the fractal still visible`).toBeGreaterThanOrEqual(40);
       }
+      expect(seen.Looks.sheetH, "Looks and Custom are the same height").toBeCloseTo(seen.Custom.sheetH, 0);
+      expect(seen.Looks.tabY, "the tab bar doesn't move between the tabs").toBeCloseTo(seen.Custom.tabY, 0);
       await page.keyboard.press("Escape");
     }
   });
 
-  test("Done, the color button, Escape and a tap on the fractal all close it; a drag on the fractal still pans", async ({ page }) => {
+  test("Done, the color button, Escape and a plain tap on the fractal close it; a drag or a pinch leaves it open", async ({ page }) => {
     const open = () => page.locator("#colormapBtn").click();
     const closed = () => expect(page.locator("#colorSheet")).not.toHaveClass(/open/);
+    const stillOpen = () => expect(page.locator("#colorSheet")).toHaveClass(/open/);
     await open();
     const done = page.locator("#colorSheet .done");
     expect((await done.boundingBox()).height, "Done is a 44 pt target").toBeGreaterThanOrEqual(44);
+    await expect(done, "Done's accessible name contains its visible text").toHaveAccessibleName("Done");
     await done.click();
     await closed();
     await open();
@@ -242,7 +297,7 @@ test.describe("with the flag on", () => {
     await open();
     await page.keyboard.press("Escape");
     await closed();
-    // A press on the canvas closes it, and the same press is a pan.
+    // A drag on the canvas pans and leaves the sheet open, so you can move to another spot and watch a style change.
     await open();
     const before = await page.evaluate(() => mainState.cx);
     const box = await page.locator("#mainCanvas").boundingBox();
@@ -250,8 +305,40 @@ test.describe("with the flag on", () => {
     await page.mouse.down();
     await page.mouse.move(box.x + box.width / 2 + 60, box.y + 40, { steps: 5 });
     await page.mouse.up();
+    await stillOpen();
+    expect(await page.evaluate(() => mainState.cx), "the drag panned").not.toBe(before);
+    // So does a pinch (two synthetic touches, as the vector spec does: setPointerCapture refuses ones the browser doesn't know).
+    const scaleBefore = await page.evaluate(() => mainState.scale);
+    await page.evaluate(async () => {
+      Element.prototype.setPointerCapture = () => {};
+      const c = document.getElementById("mainCanvas"), r = c.getBoundingClientRect();
+      const cx = r.left + r.width / 2, cy = r.top + 40;
+      const fire = (type, id, x) => c.dispatchEvent(new PointerEvent(type, { pointerId: id, clientX: x, clientY: cy, bubbles: true, pointerType: "touch" }));
+      fire("pointerdown", 21, cx - 30); fire("pointerdown", 22, cx + 30);
+      for (let i = 1; i <= 6; i++) { fire("pointermove", 21, cx - 30 - i * 8); fire("pointermove", 22, cx + 30 + i * 8); await new Promise((res) => requestAnimationFrame(res)); }
+      fire("pointerup", 21, cx - 80); fire("pointerup", 22, cx + 80);
+    });
+    await stillOpen();
+    expect(await page.evaluate(() => mainState.scale), "the pinch zoomed").not.toBe(scaleBefore);
+    // A plain tap closes it.
+    await page.mouse.click(box.x + box.width / 2, box.y + 60);
     await closed();
-    expect(await page.evaluate(() => mainState.cx)).not.toBe(before);
+  });
+
+  // The tap that closes the sheet is consumed: in dual view a tap on the main pane normally glides the
+  // view to the tapped point, and closing the sheet doesn't also move the view.
+  test("in dual view, the tap that closes the sheet doesn't also glide the view; the next tap does", async ({ page }) => {
+    await page.evaluate(() => { window["__vt"].fractal("Mandelbrot"); enterDual(); });
+    await settle(page);
+    await page.locator("#colormapBtn").click();
+    const box = await page.locator("#mainCanvas").boundingBox();
+    const cx0 = await page.evaluate(() => mainState.cx);
+    await page.mouse.click(box.x + box.width * 0.25, box.y + box.height * 0.25);
+    await expect(page.locator("#colorSheet")).not.toHaveClass(/open/);
+    await page.waitForTimeout(900);
+    expect(await page.evaluate(() => mainState.cx), "the closing tap didn't glide").toBe(cx0);
+    await page.mouse.click(box.x + box.width * 0.25, box.y + box.height * 0.25);
+    await expect.poll(() => page.evaluate(() => mainState.cx), { message: "the next tap glides" }).not.toBe(cx0);
   });
 
   test("reopening it with nothing changed keeps the DOM it has; a change rebuilds it", async ({ page }) => {
@@ -306,36 +393,142 @@ test.describe("with the flag on", () => {
     expect(picked).toEqual(names);
   });
 
-  test("the Looks strip shows there is more: the next tile peeks and the edge fades", async ({ page }) => {
+  test("every Look is on screen at once, in a grid: four across on a phone, none cut off, no scrolling", async ({ page }) => {
     await page.setViewportSize({ width: 393, height: 852 });
     await page.locator("#colormapBtn").click();
     const r = await page.evaluate(() => {
-      const strip = document.querySelector("#colorSheet .looks"), edge = strip.getBoundingClientRect().right;
-      const tiles = [...strip.querySelectorAll(".pickTile")].map((t) => t.getBoundingClientRect());
-      return { fade: strip.dataset.fade, scrolls: strip.scrollWidth > strip.clientWidth, peeking: tiles.some((q) => q.left < edge - 8 && q.right > edge + 8), tiles: tiles.length };
+      const grid = document.querySelector("#colorSheet .looks"), sheet = document.getElementById("colorSheet").getBoundingClientRect();
+      const tiles = [...grid.querySelectorAll(".pickTile")].map((t) => { const q = t.getBoundingClientRect(); return { l: q.left, r: q.right, t: q.top, b: q.bottom, h: q.height, name: t.textContent }; });
+      const rows = [...new Set(tiles.map((q) => Math.round(q.t)))].length;
+      return { tiles, rows, inside: tiles.every((q) => q.l >= sheet.left && q.r <= sheet.right && q.b <= sheet.bottom), scrolls: grid.scrollWidth > grid.clientWidth + 1, fade: grid.dataset.fade || null, firstRow: tiles.filter((q) => Math.round(q.t) === Math.round(tiles[0].t)).length };
     });
-    expect(r.tiles).toBe(7);
-    expect(r.scrolls, "the strip is longer than the sheet").toBe(true);
-    expect(r.peeking, "a tile is cut off by the edge").toBe(true);
-    expect(r.fade, "the right edge fades").toBe("right");
-    await page.locator("#colorSheet .looks").evaluate((el) => { el.scrollLeft = el.scrollWidth; });
-    await expect(page.locator("#colorSheet .looks")).toHaveAttribute("data-fade", "left");
+    expect(r.tiles.map((q) => q.name)).toEqual(["Default", "Edge glow", "Stripes", "Bands", "Orbs", "Rays"]);
+    expect(r.firstRow, "four across").toBe(4);
+    expect(r.rows).toBe(2);
+    expect(r.inside, "every tile inside the sheet").toBe(true);
+    expect(r.scrolls, "nothing to scroll sideways").toBe(false);
+    expect(r.fade, "no edge fade left over from the old strip").toBeNull();
+    for (const q of r.tiles) expect(q.h, `${q.name} tile height`).toBeGreaterThanOrEqual(44);
+    // On an iPad-width screen they sit in one row.
+    await page.setViewportSize({ width: 1032, height: 1376 });
+    await page.waitForTimeout(300);
+    const row = await page.evaluate(() => new Set([...document.querySelectorAll("#colorSheet .looks .pickTile")].map((t) => Math.round(t.getBoundingClientRect().top))).size);
+    expect(row, "one row on an iPad").toBe(1);
   });
 
-  test("the sheet stays inside the screen at the largest text size", async ({ page }) => {
+  // The Looks and the segments don't collide at the larger Dynamic Type sizes
+  // (the tiles had a fixed width, so "Classic Inferno" ran together at 2x).
+  for (const scale of [1.5, 2]) {
+    test(`at ${scale}x text, tile labels don't run into each other, no segment is left alone, and the sheet stays on screen`, async ({ page }) => {
+      await page.evaluate((s) => document.documentElement.style.setProperty("--text-scale", String(s)), scale);
+      await page.locator("#colormapBtn").click();
+      for (const tab of ["Looks", "Custom"]) {
+        await page.locator('#colorSheet [role="tab"]', { hasText: tab }).click();
+        const r = await page.evaluate(() => {
+          const s = document.getElementById("colorSheet"), b = s.getBoundingClientRect();
+          const boxes = (sel) => [...s.querySelectorAll(sel)].map((e) => { const q = e.getBoundingClientRect(); return { l: q.left, r: q.right, t: q.top, b: q.bottom, over: e.scrollWidth > e.clientWidth + 1, name: e.textContent }; });
+          const overlap = (list) => list.some((p, i) => list.slice(i + 1).some((q) => p.l < q.r - 1 && q.l < p.r - 1 && p.t < q.b - 1 && q.t < p.b - 1));
+          const tiles = boxes(".looks .pickTile"), segs = boxes(".seg button");
+          const segRows = [...new Set(segs.map((q) => Math.round(q.t)))].map((t) => segs.filter((q) => Math.round(q.t) === t).length);
+          return { top: b.top, left: b.left, right: b.right, vw: window.innerWidth, noSideScroll: s.scrollWidth <= s.clientWidth + 1,
+            tilesOverlap: overlap(tiles), tilesOver: tiles.filter((q) => q.over).map((q) => q.name), segsOverlap: overlap(segs), segsOver: segs.filter((q) => q.over).map((q) => q.name), segRows };
+        });
+        expect(r.top, `${tab}: top edge on screen`).toBeGreaterThanOrEqual(0);
+        expect(r.left, `${tab}: left edge`).toBeGreaterThanOrEqual(0);
+        expect(r.right, `${tab}: right edge`).toBeLessThanOrEqual(r.vw);
+        expect(r.noSideScroll, `${tab}: no sideways scroll`).toBe(true);
+        expect(r.tilesOverlap, `${tab}: tiles don't overlap`).toBe(false);
+        expect(r.tilesOver, `${tab}: no tile label overflows its tile`).toEqual([]);
+        expect(r.segsOverlap, `${tab}: segments don't overlap`).toBe(false);
+        expect(r.segsOver, `${tab}: no segment label overflows`).toEqual([]);
+        expect(Math.min(...r.segRows), `${tab}: no segment alone on its row`).toBeGreaterThan(1);
+      }
+    });
+  }
+
+  test("a small phone (360x640): all six styles in one row, both sliders and Reset reachable, nothing cut off", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 640 });
+    await settle(page);
+    await page.evaluate(() => setColorStyle({ density: 2 })); // so Reset shows too
+    await page.locator("#colormapBtn").click();
+    await page.locator('#colorSheet [role="tab"]', { hasText: "Custom" }).click();
+    const r = await page.evaluate(() => {
+      const sheet = document.getElementById("colorSheet"), s = sheet.getBoundingClientRect();
+      const rect = (sel) => document.querySelector(sel).getBoundingClientRect();
+      const segs = [...sheet.querySelectorAll(".seg button")].map((e) => Math.round(e.getBoundingClientRect().top));
+      const inside = (q) => q.top >= s.top - 1 && q.bottom <= s.bottom + 1 && q.left >= s.left - 1 && q.right <= s.right + 1;
+      return { segRow: new Set(segs).size, repeat: inside(rect('input[aria-label="Color repeat"]')), shift: inside(rect('input[aria-label="Color shift"]')),
+        reset: inside(rect(".reset")), fits: sheet.scrollHeight <= sheet.clientHeight + 1, top: s.top, noSide: sheet.scrollWidth <= sheet.clientWidth + 1 };
+    });
+    expect(r.segRow, "the six styles share one row").toBe(1);
+    expect(r.repeat && r.shift && r.reset, "sliders and Reset inside the sheet").toBe(true);
+    expect(r.fits, "no scrolling needed at this size").toBe(true);
+    expect(r.top).toBeGreaterThanOrEqual(0);
+    expect(r.noSide).toBe(true);
+  });
+
+  for (const [w, h] of [[852, 393], [667, 375]]) {
+    test(`iPhone landscape (${w}x${h}): the sheet fits, the sliders sit beside the palettes, nothing is cut off`, async ({ page }) => {
+      await page.setViewportSize({ width: w, height: h });
+      await settle(page);
+      await page.locator("#colormapBtn").click();
+      for (const tab of ["Looks", "Custom"]) {
+        await page.locator('#colorSheet [role="tab"]', { hasText: tab }).click();
+        const r = await page.evaluate(() => {
+          const sheet = document.getElementById("colorSheet"), s = sheet.getBoundingClientRect();
+          const rect = (sel) => document.querySelector(sel)?.getBoundingClientRect();
+          const rep = rect('input[aria-label="Color repeat"]'), pal = rect(".pals");
+          const tiles = [...sheet.querySelectorAll(".looks .pickTile")].map((e) => Math.round(e.getBoundingClientRect().top));
+          return { top: s.top, left: s.left, right: s.right, vw: innerWidth, fits: sheet.scrollHeight <= sheet.clientHeight + 1, noSide: sheet.scrollWidth <= sheet.clientWidth + 1,
+            beside: rep && pal ? rep.left >= pal.right - 1 : null, lookRows: new Set(tiles).size };
+        });
+        expect(r.top, `${tab}: top on screen`).toBeGreaterThanOrEqual(0);
+        expect(r.left).toBeGreaterThanOrEqual(0);
+        expect(r.right).toBeLessThanOrEqual(r.vw);
+        expect(r.noSide).toBe(true);
+        if (tab === "Looks") expect(r.lookRows, "the Looks lie in one row").toBe(1);
+        else {
+          expect(r.beside, "the sliders are beside the palettes").toBe(true);
+          // Reachable: if it doesn't all fit, the sheet scrolls, and the last slider can be scrolled to.
+          await page.locator('#colorSheet input[aria-label="Color shift"]').scrollIntoViewIfNeeded();
+        }
+      }
+    });
+  }
+
+  test("on an iPad-width screen the sheet is centered above the toolbar, not left-aligned", async ({ page }) => {
+    await page.setViewportSize({ width: 1032, height: 1376 });
+    await settle(page);
+    await page.locator("#colormapBtn").click();
+    const { l, r, vw } = await page.evaluate(() => { const s = document.getElementById("colorSheet").getBoundingClientRect(); return { l: s.left, r: s.right, vw: innerWidth }; });
+    expect(Math.abs((l + r) / 2 - vw / 2), "centered, within 20 px").toBeLessThanOrEqual(20);
+  });
+
+  test("the palettes and styles have one tab stop each, and the arrow keys move inside them", async ({ page }) => {
+    await page.locator("#colormapBtn").click();
+    await page.locator('#colorSheet [role="tab"]', { hasText: "Custom" }).click();
+    for (const group of ["Style", "Palette", "Looks"]) {
+      const stops = await page.locator(`#colorSheet [aria-label="${group}"] [role="radio"]`).evaluateAll((els) => els.filter((e) => e.tabIndex === 0).length);
+      expect(stops, `${group}: one tab stop`).toBe(1);
+    }
+    const pal = page.locator('#colorSheet [aria-label="Palette"] [role="radio"]');
+    await pal.nth(0).focus();
+    await page.keyboard.press("ArrowRight");
+    expect(await page.evaluate(() => document.activeElement.getAttribute("aria-label")), "ArrowRight moves to the next palette").toBe(await pal.nth(1).getAttribute("aria-label"));
+    await page.keyboard.press("Enter");
+    expect(await page.evaluate(() => colormapIndex)).toBe(1);
+  });
+
+  test("picking a palette keeps the sheet's scroll position (at a size where it scrolls)", async ({ page }) => {
     await page.evaluate(() => document.documentElement.style.setProperty("--text-scale", "2"));
     await page.locator("#colormapBtn").click();
-    for (const tab of ["Looks", "Custom"]) {
-      await page.locator('#colorSheet [role="tab"]', { hasText: tab }).click();
-      const r = await page.evaluate(() => {
-        const s = document.getElementById("colorSheet"), b = s.getBoundingClientRect();
-        return { top: b.top, left: b.left, right: b.right, vw: window.innerWidth, noSideScroll: s.scrollWidth <= s.clientWidth + 1 };
-      });
-      expect(r.top, `${tab}: top edge on screen`).toBeGreaterThanOrEqual(0);
-      expect(r.left, `${tab}: left edge`).toBeGreaterThanOrEqual(0);
-      expect(r.right, `${tab}: right edge`).toBeLessThanOrEqual(r.vw);
-      expect(r.noSideScroll, `${tab}: no sideways scroll`).toBe(true);
-    }
+    await page.locator('#colorSheet [role="tab"]', { hasText: "Custom" }).click();
+    const sheet = page.locator("#colorSheet");
+    await sheet.evaluate((el) => { el.scrollTop = el.scrollHeight; });
+    const top = await sheet.evaluate((el) => el.scrollTop);
+    expect(top, "it scrolls at 2x").toBeGreaterThan(0);
+    await page.locator('#colorSheet [aria-label="Palette"] [aria-label="Glacier"]').evaluate((el) => el.click());
+    expect(await sheet.evaluate((el) => el.scrollTop), "same scroll position after the rebuild").toBeCloseTo(top, 0);
   });
 
   test("Looks tab", async ({ page }) => {
@@ -470,23 +663,27 @@ test.describe("the info card", () => {
     return { plain: await page.locator("#hud .hudPlain").innerText(), tech: await page.locator("#hud .hudStats").innerText() };
   };
 
-  test("names a Look and lists the style, bands and shift (flag on)", async ({ page }) => {
+  test("names a Look and lists the style, repeat and shift, in the sheet's words (flag on)", async ({ page }) => {
     await load(page, { flag: true });
     await page.evaluate(() => { window["__vt"].fractal("Mandelbrot"); });
     const plain0 = await card(page);
     expect(plain0.plain).not.toMatch(/Custom|Edge glow/);
-    expect(plain0.tech).not.toMatch(/style:|bands:|shift:/);
+    expect(plain0.tech).not.toMatch(/style:|repeat:|shift:/);
     await page.evaluate(() => { colormapIndex = COLORMAPS.findIndex((c) => c.name === "Inferno"); updateLUT(); setColorStyle({ style: "glow" }); });
     await settle(page);
     expect((await page.locator("#hud .hudPlain").innerText())).toContain("Edge glow");
-    expect((await page.locator("#hud .hudStats").innerText())).toContain("style: glow");
+    expect((await page.locator("#hud .hudStats").innerText())).toContain("style: Edge glow");
     await page.evaluate(() => { colormapIndex = COLORMAPS.findIndex((c) => c.name === "Plasma"); updateLUT(); setColorStyle({ style: "stripes", density: 2, offset: 0.25 }); });
     await settle(page);
-    expect((await page.locator("#hud .hudPlain").innerText())).toContain("Custom: stripes, Plasma");
+    expect((await page.locator("#hud .hudPlain").innerText())).toContain("Custom: Stripes, Plasma");
     const tech = await page.locator("#hud .hudStats").innerText();
-    expect(tech).toContain("style: stripes");
-    expect(tech).toContain("bands: 2×");
+    expect(tech).toContain("style: Stripes");
+    expect(tech).toContain("repeat: 2×");
     expect(tech).toContain("shift: 25%");
+    // The trap styles read Orbs and Rays there too.
+    await page.evaluate(() => setColorStyle({ style: "point", density: 1, offset: 0 }));
+    await settle(page);
+    expect((await page.locator("#hud .hudPlain").innerText())).toContain("Custom: Orbs, Plasma");
   });
 
   test("is unchanged while the flag is off", async ({ page }) => {
@@ -494,6 +691,8 @@ test.describe("the info card", () => {
     await page.evaluate(() => { window["__vt"].fractal("Mandelbrot"); setColorStyle({ style: "glow", density: 2, offset: 0.25 }); });
     const c = await card(page);
     expect(c.plain).not.toMatch(/Custom|glow/i);
-    expect(c.tech).not.toMatch(/style:|bands:|shift:/);
+    expect(c.tech).not.toMatch(/style:|repeat:|shift:/);
+    // And the color button is labelled as before.
+    await expect(page.locator("#colormapBtn")).toHaveAttribute("aria-label", /^Choose colormap \(/);
   });
 });

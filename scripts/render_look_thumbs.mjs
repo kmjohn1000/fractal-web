@@ -1,5 +1,5 @@
 // Renders the Color sheet's Look swatches into one sprite, icons/looks/sprite.webp
-// (COLOR_LOOKS in order, then Custom, each SIZE px square, side by side): the
+// (COLOR_LOOKS in order, each SIZE px square, side by side): the
 // app itself (headless Chromium on the GPU), one fixed view, each Look's
 // style, palette and bands and shift, the canvas squared and encoded by the
 // canvas itself. Re-run after changing COLOR_LOOKS in app.js, a style's look,
@@ -8,7 +8,7 @@
 //   node scripts/render_look_thumbs.mjs
 //
 // The Looks are read from app.js, so a new Look gets a swatch without
-// editing this file. "custom" is the Custom tile's picture, set below.
+// editing this file.
 import { chromium } from "@playwright/test";
 import { spawn } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -24,14 +24,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // Seahorse Valley at 6e-3 (233x deep) shows every style well, the orbit traps
 // included now that their colormap range is set per view.
 const VIEW = { cx: -0.743643887037151, cy: 0.131825904205330, scale: 6e-3, maxIter: 770 };
-const CUSTOM = { id: "custom", style: "smooth", palette: "Spectrum", density: 3, offset: 0.1 };
 
 const src = readFileSync(join(root, "app.js"), "utf8");
 const m = src.match(/^const COLOR_LOOKS = \[[\s\S]*?\n\];/m);
 if (!m) throw new Error("render_look_thumbs: couldn't find COLOR_LOOKS in app.js");
 const ctx = vm.createContext({});
 vm.runInContext(`${m[0]}; globalThis.out = COLOR_LOOKS;`, ctx);
-const looks = [...ctx.out.map((l) => ({ density: 1, offset: 0, ...l })), CUSTOM];
+const looks = ctx.out.map((l) => ({ density: 1, offset: 0, ...l }));
 
 const server = spawn("node", [join(root, "tests/serve.mjs"), String(PORT)], { stdio: "ignore" });
 for (let i = 0; i < 50; i++) {
@@ -80,8 +79,8 @@ try {
     shots.push(url);
     console.log(look.id);
   }
-  // One sprite, in the order of COLOR_LOOKS and then Custom (the app shows tile i
-  // from i * SIZE px across), so the sheet asks for one file, not eight.
+  // One sprite, in the order of COLOR_LOOKS (the app shows tile i from
+  // i * SIZE px across), so the sheet asks for one file, not one per Look.
   const sprite = await page.evaluate(`(async (urls, size) => {
     const out = document.createElement("canvas");
     out.width = urls.length * size; out.height = size;

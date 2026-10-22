@@ -35,7 +35,8 @@ hand-edited link must render quickly without errors; and three deep-zoom
 screenshots are compared with baselines.
 
 `styles.spec.mjs` and `color-sheet.spec.mjs` cover the color styles (Smooth,
-Bands, Glow, Stripes, Point and Cross; see `COLOR_STYLES` in `app.js`),
+Bands, Edge glow, Stripes, Orbs and Rays; the style ids are `smooth`, `bands`,
+`glow`, `stripes`, `point` and `cross`, see `COLOR_STYLES` in `app.js`),
 which are being built behind a flag (`localStorage["fractalAtlas.styles"] =
 "1"`, or open the page once with `#styles`; the specs set it themselves
 where it matters). They check that the style API is strict, which fractal
@@ -43,14 +44,23 @@ types draw which style (Phoenix has Smooth and Bands; Newton, Carpet, Gasket
 and Apollonian color by their own schemes), that the orbit traps are offered
 at any depth and keep real contrast deep in (their colormap range comes from a
 per-view probe; the probe's decoding is unit tested), that the deep-zoom drag preview shows the current
-style, that Save image equals the frame on screen, the Color sheet's
-controls, names, greyed-out states and sizes (at most 40% of a 393x852 screen
-with at least half the fractal still visible; every palette on screen at once,
-named and pickable; the Looks strip's peeking tile and edge fade; Done, the
-color button, Escape and a tap on the fractal closing it; no rebuild on
-reopening; the largest text size), the share-link fields (`st`, `cd`, `co`: lenient parsing, written
-only when not the default), the info card, and baselines of each style on
-several fractals and of both sheet tabs.
+style, that Save image equals the frame on screen, and the Color sheet: its
+controls and names (the same words on the Look tiles, the style segments, the
+unavailable note and the info card; the slider is Repeat), the Looks as a grid
+with every tile on screen (four across on a phone, one row on an iPad), both
+tabs the same height with the tab bar in place, every palette on screen at once
+(named, pickable, one tab stop with the arrow keys), Reset, the slider values
+shown, Phoenix showing what it draws (not a greyed choice), the palette-only
+sheet on Newton, Carpet, Gasket and Apollonian, Done (named "Done"), the color
+button and Escape and a plain tap on the fractal closing it while a drag or a
+pinch leaves it open, and in dual view the closing tap not also gliding the
+view; no rebuild on reopening and the scroll position kept; the larger text
+sizes (1.5x and 2x: no overlapping or overflowing labels, no segment alone on
+its row), a 360x640 phone, iPhone landscape (852x393 and 667x375), and the
+sheet centered on an iPad. Also the share-link fields (`st`, `cd`, `co`:
+lenient parsing, written only when not the default; the ids didn't change when
+the display names did), the info card, and baselines of each style on several
+fractals and of both sheet tabs.
 
 Three scripts back them, outside the suite because they take a few minutes
 or need Python with numpy and Pillow:

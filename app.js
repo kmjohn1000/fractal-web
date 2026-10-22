@@ -1646,7 +1646,7 @@ const COLOR_STYLES = [
   // Phoenix is left out of the styles that track state per iteration: its
   // two-term recurrence has no derivative worked out, and its deep path is a
   // separate fixed-point shader.
-  { id: "glow", glsl: 2, variant: 1, label: "Glow", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
+  { id: "glow", glsl: 2, variant: 1, label: "Edge glow", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
   { id: "stripes", glsl: 3, variant: 2, label: "Stripes", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
   // Orbit traps color by how close the orbit came to a point or a cross. In a
   // deep view every pixel's orbit looks alike, so the distances fall in a
@@ -1655,8 +1655,11 @@ const COLOR_STYLES = [
   // (A style can still be limited with `maxZoom`: past that many times deep
   // it isn't offered and the view draws Smooth. The traps were limited to
   // 1,000 before the auto-range.)
-  { id: "point", glsl: 4, variant: 3, label: "Point", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
-  { id: "cross", glsl: 5, variant: 3, label: "Cross", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
+  // Display names are plain words and the same everywhere (tile, segment,
+  // note, info card): Orbs is the point trap and Rays the cross trap. The ids
+  // (and the share-link codes below) never change.
+  { id: "point", glsl: 4, variant: 3, label: "Orbs", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
+  { id: "cross", glsl: 5, variant: 3, label: "Rays", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
 ];
 const COLOR_BANDS_RANGE = [0.25, 8];
 // A style's id in share links (st=); "c" is taken by the vector modes' solid
@@ -1773,7 +1776,10 @@ function setColorStyle(next = {}) {
     colorStyle.trap = Array.isArray(next.trap) && next.trap.length === 2 && next.trap.every(Number.isFinite) ? [next.trap[0], next.trap[1]] : null;
   }
   if (prev.style !== colorStyle.style || prev.density !== colorStyle.density || prev.offset !== colorStyle.offset
-    || String(prev.trap) !== String(colorStyle.trap)) requestRender();
+    || String(prev.trap) !== String(colorStyle.trap)) {
+    labelColormapButton();
+    requestRender();
+  }
 }
 let currentName = "Mandelbrot";
 let dualActive = false;
@@ -1968,7 +1974,17 @@ function updateLUT() {
   juliaRenderer.setLUT(bytes);
   const cm = COLORMAPS[colormapIndex];
   els.colormapPill.style.background = cmGradient(cm.stops);
-  labelColorButton(els.colormapBtn, "Choose colormap", cm.name);
+  labelColormapButton();
+}
+
+// The color button names the palette, and with the styles flag on, the Look
+// (or "Custom") too, so a screen reader hears what the screen is showing: the
+// pill can't change without touching the fixed toolbar.
+function labelColormapButton() {
+  const name = COLORMAPS[colormapIndex].name;
+  if (!colorSheetStyles()) { labelColorButton(els.colormapBtn, "Choose colormap", name); return; }
+  const look = COLOR_LOOKS.find((l) => l.id === currentLookId());
+  labelColorButton(els.colormapBtn, "Choose colors", `${look ? look.label : "Custom"}, ${name}`);
 }
 
 function layoutCanvasArea() {
@@ -2310,8 +2326,8 @@ function colorStyleHud(s) {
   if (id === "smooth" && density === 1 && offset === 0) return none;
   const palette = COLORMAPS[colormapIndex].name;
   const look = density === 1 && offset === 0 ? COLOR_LOOKS.find((l) => l.style === id && l.palette === palette) : null;
-  const label = COLOR_STYLES.find((c) => c.id === id).label.toLowerCase();
-  const tech = [id !== "smooth" ? `style: ${id}` : "", density !== 1 ? `bands: ${bandsText(density)}` : "", offset !== 0 ? `shift: ${shiftText(offset)}` : ""]
+  const label = COLOR_STYLES.find((c) => c.id === id).label;
+  const tech = [id !== "smooth" ? `style: ${label}` : "", density !== 1 ? `repeat: ${bandsText(density)}` : "", offset !== 0 ? `shift: ${shiftText(offset)}` : ""]
     .filter(Boolean).join("   ");
   return { plain: look ? look.label : `Custom: ${label}, ${palette}`, tech: tech ? `   ${tech}` : "" };
 }
@@ -2472,6 +2488,7 @@ function selectFractal(name, { fresh = false } = {}) {
   // A new fractal (or Reset) starts in auto iter mode; a remembered one
   // keeps its lock, and auto mode re-derives from its zoom.
   applyAutoIter();
+  labelColormapButton(); // the Look it names depends on what this fractal draws
 }
 
 // from: a remembered { juliaState, juliaHistory } (see selectFractal) to bring
@@ -2766,7 +2783,7 @@ function attachFractalInteraction(canvas, getState, paneName, renderer) {
     // pinch/rotate gets checked against its OWN down position and can read
     // as a "tap" even though two fingers were down (see multiTouch's
     // comment above).
-    if (paneName === "main" && dualActive && downPos && pointers.size === 1 && !multiTouch) {
+    if (paneName === "main" && dualActive && downPos && pointers.size === 1 && !multiTouch && !colorSheetTapJustClosed()) {
       const moved = Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y);
       if (moved < 6) {
         const local = toLocal(e.clientX, e.clientY);
@@ -4042,28 +4059,37 @@ document.addEventListener("pointerdown", (e) => {
 // The Looks: a style with a palette, at the neutral bands and shift. Their
 // swatches are icons/looks/sprite.webp (scripts/render_look_thumbs.mjs).
 // Picking one changes the palette, and the color button shows it.
+// "Default" is today's coloring (Smooth on Inferno): the tile that gets you
+// back to how the app starts. A palette alone isn't a Look; the palettes are
+// in the Custom tab. The grid has room for more Looks.
 const COLOR_LOOKS = [
-  { id: "classic", label: "Classic", style: "smooth", palette: "Classic" },
-  { id: "inferno", label: "Inferno", style: "smooth", palette: "Inferno" },
+  { id: "default", label: "Default", style: "smooth", palette: "Inferno" },
   { id: "edge-glow", label: "Edge glow", style: "glow", palette: "Inferno" },
-  { id: "iteration-bands", label: "Iteration bands", style: "bands", palette: "Turbo" },
   { id: "stripes", label: "Stripes", style: "stripes", palette: "Glacier" },
-  { id: "orbit-trap", label: "Orbit trap", style: "point", palette: "Twilight" },
-  { id: "cross-trap", label: "Cross trap", style: "cross", palette: "Plasma" },
+  { id: "bands", label: "Bands", style: "bands", palette: "Turbo" },
+  { id: "orbs", label: "Orbs", style: "point", palette: "Twilight" },
+  { id: "rays", label: "Rays", style: "cross", palette: "Plasma" },
 ];
 let colorSheetTab = "looks";
 
-// The sheet stands in for the plain palette list on the fractals whose colors
-// the styles control.
+// The sheet stands in for the palette list on every fractal while the flag is
+// on; the escape-time fractals get the styles, Looks and sliders with it, the
+// rest (Newton, Carpet, Gasket, Apollonian, which color by their own schemes)
+// only the palette grid.
 function colorSheetApplies() {
-  return stylesEnabled && mode === "fractal" && ESCAPE_TIME_TYPES.includes(mainState.ftype);
+  return stylesEnabled && mode === "fractal";
+}
+function colorSheetStyles() {
+  return colorSheetApplies() && ESCAPE_TIME_TYPES.includes(mainState.ftype);
 }
 
-// The Look the current choices amount to, or null (Custom).
+// The Look the current choices amount to, or null (Custom). What the view
+// draws counts, not what was chosen: on Phoenix a Cross choice draws Smooth.
 function currentLookId() {
   if (colorStyle.density !== 1 || colorStyle.offset !== 0) return null;
   const palette = COLORMAPS[colormapIndex].name;
-  const look = COLOR_LOOKS.find((l) => l.style === colorStyle.style && l.palette === palette);
+  const drawn = styleDrawn(colorStyle.style, mainState);
+  const look = COLOR_LOOKS.find((l) => l.style === drawn && l.palette === palette);
   return look ? look.id : null;
 }
 
@@ -4098,12 +4124,14 @@ function boldList(styles) {
   return out;
 }
 
-// Says why some styles are greyed out right now, or null if none are.
-function colorSheetNote() {
+// Says why some styles are greyed out right now, or null if none are. Each tab
+// has its own copy (`where` is "looks" or "custom": the ids can't repeat), and
+// it names the styles in the words the tiles and the segments use.
+function colorSheetNote(where) {
   const byType = COLOR_STYLES.filter((s) => styleBlocked(s, mainState) === "type");
   const byDepth = COLOR_STYLES.filter((s) => styleBlocked(s, mainState) === "depth");
   if (!byType.length && !byDepth.length) return null;
-  const note = colorSheetEl("p", { class: "note", id: "colorSheetNote" });
+  const note = colorSheetEl("p", { class: "note", id: `colorSheetNote-${where}` });
   if (byDepth.length) {
     // Says how far off the view is: from a Surprise-me place, billions of
     // times deep, getting back under the limit takes a long pinch out.
@@ -4117,10 +4145,10 @@ function colorSheetNote() {
 }
 
 // The Looks' swatches are cut from one sprite, icons/looks/sprite.webp (the
-// Looks in COLOR_LOOKS order, then Custom; scripts/render_look_thumbs.mjs):
+// Looks in COLOR_LOOKS order; scripts/render_look_thumbs.mjs):
 // one file to fetch and decode, drawn as a CSS background so a rebuilt tile
 // costs nothing, and sharp at any pixel density.
-const LOOK_SWATCHES = COLOR_LOOKS.length + 1;
+const LOOK_SWATCHES = COLOR_LOOKS.length;
 function lookSwatch(index) {
   const x = LOOK_SWATCHES > 1 ? (index * 100) / (LOOK_SWATCHES - 1) : 0;
   return colorSheetEl("span", { class: "swatch", "aria-hidden": "true", style: `background-size:${LOOK_SWATCHES * 100}% 100%;background-position:${x}% 0` });
@@ -4136,7 +4164,7 @@ function prepareColorSheet() {
   lookSpriteImage.src = "icons/looks/sprite.webp";
   lookSpriteImage.decode?.().catch(() => {});
   if (colorSheetApplies()) {
-    colorSheetTab = currentLookId() ? "looks" : "custom";
+    colorSheetTab = colorSheetOpeningTab();
     renderColorSheet();
   }
   warmColorVariants();
@@ -4176,25 +4204,10 @@ function warmNextVariant() {
 }
 if (stylesEnabled) (window.requestIdleCallback || ((f) => setTimeout(f, 1000)))(prepareColorSheet, { timeout: 3000 });
 
-// The Looks are one scrolling strip, so the sheet stays short and the fractal
-// stays visible. Its edges fade where there is more to scroll to, and the
-// next tile peeks past the edge, so it isn't mistaken for the whole set.
-function trackLooksFade(strip) {
-  const update = () => {
-    const more = strip.scrollWidth - strip.clientWidth > 2;
-    const left = strip.scrollLeft > 2;
-    const right = strip.scrollLeft + strip.clientWidth < strip.scrollWidth - 2;
-    strip.dataset.fade = more && left && right ? "both" : more && right ? "right" : more && left ? "left" : "none";
-  };
-  strip.addEventListener("scroll", update, { passive: true });
-  update();
-  requestAnimationFrame(update); // once it's laid out, if it wasn't yet
-}
-
-// A greyed-out Look says why when it's tapped: the note under the strip
-// lights up briefly (and comes into view if the sheet is scrolled).
+// A greyed-out Look says why when it's tapped: the note under the grid lights
+// up briefly.
 function flashColorSheetNote() {
-  const note = els.colorSheet.querySelector("#colorSheetNote");
+  const note = els.colorSheet.querySelector(".panel.current .note");
   if (!note) return;
   note.scrollIntoView({ block: "nearest" });
   note.classList.remove("flash");
@@ -4202,26 +4215,46 @@ function flashColorSheetNote() {
   note.classList.add("flash");
 }
 
+// The arrow keys move focus between the radios of a group, which has one tab
+// stop (the checked one, else the first), so the Custom tab isn't 18 stops.
+// Enter or Space picks, as for any button.
+function rovingRadios(group) {
+  const radios = [...group.querySelectorAll('[role="radio"]')].filter((r) => !r.disabled);
+  const stop = radios.find((r) => r.getAttribute("aria-checked") === "true") || radios[0];
+  radios.forEach((r) => r.setAttribute("tabindex", r === stop ? "0" : "-1"));
+  group.addEventListener("keydown", (e) => {
+    const step = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 }[e.key];
+    const i = radios.indexOf(document.activeElement);
+    if (!step || i < 0) return;
+    e.preventDefault();
+    const next = radios[(i + step + radios.length) % radios.length];
+    next.setAttribute("tabindex", "0");
+    radios[i].setAttribute("tabindex", "-1");
+    next.focus();
+  });
+}
+
+// The Looks: every one on screen at once, in a grid (four across on a phone,
+// all in one row on an iPad), so none is hidden and the tab is as tall as
+// Custom. None is checked when the settings match no Look.
 function colorSheetLooks() {
   const active = currentLookId();
-  const strip = colorSheetEl("div", { class: "looks", role: "radiogroup", "aria-label": "Looks" });
+  const grid = colorSheetEl("div", { class: "looks", role: "radiogroup", "aria-label": "Looks" });
   COLOR_LOOKS.forEach((look, i) => {
     const blocked = styleBlocked(COLOR_STYLES.find((s) => s.id === look.style), mainState);
     const tile = colorSheetEl("button", {
       class: `pickTile${active === look.id ? " active" : ""}`, role: "radio", "aria-checked": active === look.id,
-      "aria-disabled": blocked ? "true" : false, "aria-describedby": blocked ? "colorSheetNote" : false, "data-key": `look-${look.id}`,
+      "aria-disabled": blocked ? "true" : false, "aria-describedby": blocked ? "colorSheetNote-looks" : false, "data-key": `look-${look.id}`,
     }, lookSwatch(i), colorSheetEl("span", {}, look.label));
     tile.addEventListener("click", () => {
       if (blocked) { flashColorSheetNote(); return; }
       applyLook(look);
       renderColorSheet();
     });
-    strip.append(tile);
+    grid.append(tile);
   });
-  // No Custom tile: the Custom tab is the way in, and the sheet reopens on it
-  // whenever the settings match no Look (none is checked then).
-  trackLooksFade(strip);
-  return [strip, colorSheetNote()];
+  rovingRadios(grid);
+  return [grid, colorSheetNote("looks")];
 }
 
 // The slider for bands is logarithmic: 0.25x to 8x with 1x (today's coloring) in the middle, snapped.
@@ -4229,20 +4262,10 @@ const BANDS_SLIDER = { min: Math.log2(COLOR_BANDS_RANGE[0]), max: Math.log2(COLO
 function bandsText(density) { return `${Number(density.toFixed(2))}×`; }
 function shiftText(offset) { return `${Math.round(offset * 100)}%`; }
 
-function colorSheetCustom() {
-  const seg = colorSheetEl("div", { class: "seg", role: "radiogroup", "aria-label": "Style" });
-  for (const s of COLOR_STYLES) {
-    const blocked = styleBlocked(s, mainState);
-    const btn = colorSheetEl("button", {
-      class: colorStyle.style === s.id ? "active" : "", role: "radio", "aria-checked": colorStyle.style === s.id,
-      disabled: !!blocked, "aria-describedby": blocked ? "colorSheetNote" : false, "data-key": `style-${s.id}`,
-    }, s.label);
-    btn.addEventListener("click", () => { setColorStyle({ style: s.id }); renderColorSheet(); });
-    seg.append(btn);
-  }
-  // Every palette at once in a wrapping grid, so nothing needs scrolling:
-  // each swatch is its own gradient, named for assistive tech (and the line
-  // above says the current one), the current one ringed and ticked.
+// Every palette at once in a wrapping grid, so nothing needs scrolling: each
+// swatch is its own gradient, named for assistive tech (and the line above
+// says the current one), the current one ringed and ticked.
+function colorSheetPalettes() {
   const pals = colorSheetEl("div", { class: "pals", role: "radiogroup", "aria-label": "Palette" });
   COLORMAPS.forEach((c, i) => {
     const btn = colorSheetEl("button", {
@@ -4252,24 +4275,64 @@ function colorSheetCustom() {
     btn.addEventListener("click", () => { colormapIndex = i; updateLUT(); requestRender(); renderColorSheet(); });
     pals.append(btn);
   });
-  const palHead = colorSheetEl("p", { class: "palHead" }, colorSheetEl("span", {}, "Palette"), colorSheetEl("b", {}, COLORMAPS[colormapIndex].name));
-  const slider = (name, label, min, max, step, value, text, onInput) => {
-    const input = colorSheetEl("input", { type: "range", min, max, step, "aria-label": name, "aria-valuetext": text(value) });
-    input.value = value;
+  rovingRadios(pals);
+  return pals;
+}
+
+// "Palette  Inferno" and, on the Custom tab while anything differs from the
+// Default (style, palette, repeat or shift), a Reset that puts all four back.
+function colorSheetPaletteHead(withReset) {
+  const reset = withReset
+    ? colorSheetEl("button", { class: `reset${currentLookId() === "default" ? " off" : ""}`, "data-key": "reset", "aria-label": "Reset to Default" }, "Reset") : null;
+  reset?.addEventListener("click", () => { applyLook(COLOR_LOOKS[0]); renderColorSheet(); });
+  return colorSheetEl("div", { class: "palHead" },
+    ...[colorSheetEl("p", {}, colorSheetEl("span", {}, "Palette"), colorSheetEl("b", {}, COLORMAPS[colormapIndex].name)), reset].filter(Boolean));
+}
+// The sliders don't rebuild the sheet while they move; this shows or hides
+// Reset as the settings leave or return to the Default.
+function syncColorSheetReset() {
+  els.colorSheet.querySelector(".reset")?.classList.toggle("off", currentLookId() === "default");
+}
+
+// A slider with its value on screen, not only for VoiceOver (the output is
+// hidden from it: the slider already speaks its value).
+function colorSheetSlider(name, label, min, max, step, value, text, onInput) {
+  const input = colorSheetEl("input", { type: "range", min, max, step, "aria-label": name, "aria-valuetext": text(value) });
+  const out = colorSheetEl("output", { class: "val", "aria-hidden": "true" }, text(value));
+  input.value = value;
+  syncSliderFill(input);
+  input.addEventListener("input", () => {
+    const v = parseFloat(input.value);
     syncSliderFill(input);
-    input.addEventListener("input", () => {
-      const v = parseFloat(input.value);
-      syncSliderFill(input);
-      input.setAttribute("aria-valuetext", text(v));
-      onInput(v);
-    });
-    return colorSheetEl("label", { class: "field" }, label, input);
-  };
+    input.setAttribute("aria-valuetext", text(v));
+    out.textContent = text(v);
+    onInput(v);
+    syncColorSheetReset();
+  });
+  return colorSheetEl("label", { class: "field" }, colorSheetEl("span", { class: "name" }, label), input, out);
+}
+
+function colorSheetCustom() {
+  // What the view draws is what shows as chosen: on Phoenix a Cross choice is
+  // kept (it comes back on Mandelbrot) but Smooth is the one drawn.
+  const drawn = styleDrawn(colorStyle.style, mainState);
+  const seg = colorSheetEl("div", { class: "seg", role: "radiogroup", "aria-label": "Style" });
+  for (const s of COLOR_STYLES) {
+    const blocked = styleBlocked(s, mainState);
+    const btn = colorSheetEl("button", {
+      class: drawn === s.id ? "active" : "", role: "radio", "aria-checked": drawn === s.id,
+      disabled: !!blocked, "aria-describedby": blocked ? "colorSheetNote-custom" : false, "data-key": `style-${s.id}`,
+    }, s.label);
+    btn.addEventListener("click", () => { setColorStyle({ style: s.id }); renderColorSheet(); });
+    seg.append(btn);
+  }
+  rovingRadios(seg);
   return [
-    seg, colorSheetNote(), palHead, pals,
-    slider("Color bands", "Bands", BANDS_SLIDER.min, BANDS_SLIDER.max, BANDS_SLIDER.step, Math.log2(colorStyle.density),
-      (v) => bandsText(2 ** v), (v) => setColorStyle({ density: Math.abs(v) < 0.03 ? 1 : 2 ** v })),
-    slider("Color shift", "Shift", 0, 0.99, 0.01, colorStyle.offset, shiftText, (v) => setColorStyle({ offset: v })),
+    colorSheetEl("div", { class: "colA" }, ...[seg, colorSheetNote("custom"), colorSheetPaletteHead(true), colorSheetPalettes()].filter(Boolean)),
+    colorSheetEl("div", { class: "colB" },
+      colorSheetSlider("Color repeat", "Repeat", BANDS_SLIDER.min, BANDS_SLIDER.max, BANDS_SLIDER.step, Math.log2(colorStyle.density),
+        (v) => bandsText(2 ** v), (v) => setColorStyle({ density: Math.abs(v) < 0.03 ? 1 : 2 ** v })),
+      colorSheetSlider("Color shift", "Shift", 0, 0.99, 0.01, colorStyle.offset, shiftText, (v) => setColorStyle({ offset: v }))),
   ];
 }
 
@@ -4277,60 +4340,126 @@ function colorSheetCustom() {
 // sheet was built, opening it again keeps the DOM it has.
 function colorSheetStateKey() {
   return JSON.stringify([
-    colorSheetTab, colorStyle.style, colorStyle.density, colorStyle.offset, colormapIndex, currentName,
+    colorSheetTab, colorSheetStyles(), colorStyle.style, colorStyle.density, colorStyle.offset, colormapIndex, currentName,
     COLOR_STYLES.map((s) => styleBlocked(s, mainState) || "").join(","),
   ]);
 }
 
+// The tab the sheet opens on: Looks if the settings are one of them, else Custom.
+function colorSheetOpeningTab() {
+  return currentLookId() ? "looks" : "custom";
+}
+
 // Rebuilds the sheet for the current state (unless it is already built for
-// it), keeping the focused control (the sliders aren't rebuilt while dragged,
-// see their input handlers).
+// it), keeping the focused control and the scroll position (the sliders aren't
+// rebuilt while dragged, see their input handlers). Both tabs are always
+// built and stacked in one grid cell, the one not shown hidden, so the sheet
+// is as tall as the taller tab whichever is up and the tab bar never moves.
+// A fractal the styles don't apply to gets only the palette grid.
 function renderColorSheet() {
   const sheet = els.colorSheet;
   const key = colorSheetStateKey();
   if (sheet.dataset.stateKey === key && sheet.firstChild) return;
   sheet.dataset.stateKey = key;
   const focusKey = document.activeElement?.dataset?.key;
-  const tabs = colorSheetEl("div", { class: "tabs", role: "tablist" });
-  for (const [id, label] of [["looks", "Looks"], ["custom", "Custom"]]) {
-    const tab = colorSheetEl("button", {
-      class: colorSheetTab === id ? "active" : "", role: "tab", "aria-selected": colorSheetTab === id,
-      tabindex: colorSheetTab === id ? false : "-1", "data-key": `tab-${id}`,
-    }, label);
-    tab.addEventListener("click", () => { colorSheetTab = id; renderColorSheet(); });
-    tab.addEventListener("keydown", (e) => {
-      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-      e.preventDefault();
-      colorSheetTab = id === "looks" ? "custom" : "looks";
-      renderColorSheet();
-      els.colorSheet.querySelector(`[data-key=tab-${colorSheetTab}]`)?.focus();
-    });
-    tabs.append(tab);
-  }
-  const done = colorSheetEl("button", { class: "done", "data-key": "done", "aria-label": "Close color sheet" }, "Done");
+  const scrollTop = sheet.scrollTop;
+  const done = colorSheetEl("button", { class: "done", "data-key": "done" }, "Done");
   done.addEventListener("click", () => els.colorSheet.classList.remove("open"));
-  sheet.replaceChildren(
-    colorSheetEl("div", { class: "head" }, tabs, done),
-    ...(colorSheetTab === "looks" ? colorSheetLooks() : colorSheetCustom()).filter(Boolean),
-  );
+  if (!colorSheetStyles()) {
+    sheet.classList.add("paletteOnly");
+    sheet.replaceChildren(
+      colorSheetEl("div", { class: "head" }, colorSheetEl("p", { class: "title" }, "Color"), done),
+      colorSheetEl("div", { class: "panels" }, colorSheetEl("div", { class: "panel current", role: "group", "aria-label": "Palette" },
+        colorSheetPaletteHead(false), colorSheetPalettes())),
+    );
+  } else {
+    sheet.classList.remove("paletteOnly");
+    const tabs = colorSheetEl("div", { class: "tabs", role: "tablist" });
+    const panels = colorSheetEl("div", { class: "panels" });
+    for (const [id, label, build] of [["looks", "Looks", colorSheetLooks], ["custom", "Custom", colorSheetCustom]]) {
+      const current = colorSheetTab === id;
+      const tab = colorSheetEl("button", {
+        class: current ? "active" : "", role: "tab", "aria-selected": current, id: `colorTab-${id}`, "aria-controls": `colorPanel-${id}`,
+        tabindex: current ? false : "-1", "data-key": `tab-${id}`,
+      }, label);
+      tab.addEventListener("click", () => { colorSheetTab = id; renderColorSheet(); });
+      tab.addEventListener("keydown", (e) => {
+        if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+        e.preventDefault();
+        colorSheetTab = id === "looks" ? "custom" : "looks";
+        renderColorSheet();
+        els.colorSheet.querySelector(`[data-key=tab-${colorSheetTab}]`)?.focus();
+      });
+      tabs.append(tab);
+      panels.append(colorSheetEl("div", {
+        class: `panel${current ? " current" : ""}`, role: "tabpanel", id: `colorPanel-${id}`, "aria-labelledby": `colorTab-${id}`, "data-panel": id,
+      }, ...build().filter(Boolean)));
+    }
+    sheet.replaceChildren(colorSheetEl("div", { class: "head" }, tabs, done), panels);
+  }
+  sheet.scrollTop = scrollTop;
+  fitColorSegment();
   if (focusKey) sheet.querySelector(`[data-key="${focusKey}"]`)?.focus({ preventScroll: true });
 }
 
+// The style segments: all six in one row when every name fits its cell (a
+// word wider than its cell would overflow, which is what's measured), else
+// three and three. Measured on the open sheet, so it runs after it opens, after
+// a rebuild and when the sheet's width changes (a rotation, the text size).
+function fitColorSegment() {
+  const seg = els.colorSheet.querySelector(".seg");
+  if (!seg || !els.colorSheet.classList.contains("open")) return;
+  seg.style.gridTemplateColumns = "repeat(6, minmax(0, 1fr))";
+  const over = [...seg.children].some((b) => b.scrollWidth > b.clientWidth + 1);
+  seg.style.gridTemplateColumns = over ? "repeat(3, minmax(0, 1fr))" : "repeat(6, minmax(0, 1fr))";
+}
+if (typeof ResizeObserver !== "undefined") new ResizeObserver(fitColorSegment).observe(els.colorSheet);
+
 function openColorSheet() {
-  colorSheetTab = currentLookId() ? "looks" : "custom";
+  colorSheetTab = colorSheetOpeningTab();
   renderColorSheet();
   els.colorSheet.classList.add("open");
-  // The strip's edge fade was worked out when it was built, while the sheet
-  // was hidden and had no size: work it out again now it has one.
-  els.colorSheet.querySelector(".looks")?.dispatchEvent(new Event("scroll"));
+  fitColorSegment();
   warmColorVariants();
 }
 
+// Closing: Done, the color button, Escape, or a plain TAP on the fractal. A
+// drag, pinch or twist on it leaves the sheet open, so you can move to another
+// spot and watch a style change live. Anything else outside the sheet (a
+// toolbar button, a slider) closes it at once, as before. The tap that closes
+// it is consumed: in dual view it doesn't also glide the view to where it
+// landed (see colorSheetTapClosedAt in the tap-to-recenter check).
+const SHEET_TAP_MAX_MOVE = 8; // CSS px
+const SHEET_TAP_MAX_MS = 300;
+let sheetTap = null; // { id, x, y, t, dead } for the finger on the fractal
+let colorSheetTapClosedAt = -1e9;
+function colorSheetTapJustClosed() { return performance.now() - colorSheetTapClosedAt < 150; }
 document.addEventListener("pointerdown", (e) => {
   if (!els.colorSheet.classList.contains("open")) return;
   if (els.colorSheet.contains(e.target) || e.target.closest("[aria-haspopup]")) return;
+  if (e.target.tagName === "CANVAS") {
+    // A second finger down means a pinch or twist, never a tap.
+    if (sheetTap) sheetTap.dead = true;
+    else sheetTap = { id: e.pointerId, x: e.clientX, y: e.clientY, t: e.timeStamp, dead: false };
+    return;
+  }
   els.colorSheet.classList.remove("open");
 });
+document.addEventListener("pointermove", (e) => {
+  if (sheetTap && e.pointerId === sheetTap.id && Math.hypot(e.clientX - sheetTap.x, e.clientY - sheetTap.y) > SHEET_TAP_MAX_MOVE) sheetTap.dead = true;
+}, { passive: true });
+// In the capture phase, so it runs before the canvas's own release handling.
+document.addEventListener("pointerup", (e) => {
+  if (!sheetTap || e.pointerId !== sheetTap.id) return; // a second finger lifting leaves the dead tap in place
+  const tap = !sheetTap.dead && e.timeStamp - sheetTap.t < SHEET_TAP_MAX_MS
+    && Math.hypot(e.clientX - sheetTap.x, e.clientY - sheetTap.y) <= SHEET_TAP_MAX_MOVE;
+  sheetTap = null;
+  if (tap && els.colorSheet.classList.contains("open")) {
+    els.colorSheet.classList.remove("open");
+    colorSheetTapClosedAt = performance.now();
+  }
+}, true);
+document.addEventListener("pointercancel", () => { sheetTap = null; }, true);
 
 els.fernBoxZoomBtn.addEventListener("click", () => {
   fernBoxZoomActive = !fernBoxZoomActive;
