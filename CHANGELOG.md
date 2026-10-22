@@ -7,6 +7,7 @@ Newest version at the top. See CLAUDE.md for when and how to bump.
 - Groundwork for color styles (not visible yet): a "glow" style that draws the distance to the set's boundary, so thin filaments stay crisp at any depth.
 - Groundwork for color styles (not visible yet): a "stripes" style that colors by the angle of the orbit, giving feathery, painterly detail.
 - Groundwork for color styles (not visible yet): "point" and "cross" orbit-trap styles that color by how close the orbit passes to a point or a pair of lines, up to about 1,000× deep.
+- Groundwork for color styles (hidden behind a setting for now): the color button opens a Color sheet with a Looks tab (Classic, Inferno, Edge glow, Iteration bands, Stripes, Orbit trap, Cross trap) and a Custom tab with the style, palette, and bands and shift sliders.
 
 ## 1.39.1 — 2026-10-21
 - Pinch-zooming or dragging the dragon curve (and the Koch snowflake and tree) is smooth at high depths, including after pressing Play: while your fingers are down it draws a lighter version, then fills in the full detail the moment you let go.

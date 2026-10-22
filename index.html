@@ -318,7 +318,10 @@
     flex: 1 1 0; min-width: 0; padding: 0 2px; border: none; border-radius: 8px; background: transparent; color: #ddd;
     font: 500 0.8125rem -apple-system, system-ui, sans-serif;
   }
-  #colorSheet .seg button { font-size: 0.75rem; }
+  /* Six styles share one row at the normal text size and wrap onto more rows
+     at the larger Dynamic Type sizes, where their names no longer fit. */
+  #colorSheet .seg { flex-wrap: wrap; }
+  #colorSheet .seg button { flex: 1 1 52px; min-width: min-content; padding: 0 6px; font-size: 0.75rem; }
   #colorSheet .tabs button.active, #colorSheet .seg button.active { background: #3a6ea5; box-shadow: 0 0 0 1px #6cf inset; color: #fff; }
   #colorSheet .seg button:disabled { color: rgba(235,235,245,0.3); }
   #colorSheet .tabs button:active, #colorSheet .seg button:active { transform: none; }
@@ -354,8 +357,8 @@
   #colorSheet .pal:active { transform: none; background: none; }
   #colorSheet .pal:focus-visible { outline: none; }
   #colorSheet .pal:focus-visible i { box-shadow: 0 0 0 2px #fff; }
-  #colorSheet label.field { display: grid; grid-template-columns: 44px 1fr; min-height: 32px; margin-top: 2px; }
-  #colorSheet label.field input { margin-left: 0; }
+  #colorSheet label.field { display: grid; grid-template-columns: 3.25rem minmax(0, 1fr); min-height: 32px; margin-top: 2px; }
+  #colorSheet label.field input { margin-left: 0; min-width: 0; width: 100%; box-sizing: border-box; }
   #colorSheet .note { margin: 8px 2px 0; font: 0.75rem/1.35 -apple-system, system-ui, sans-serif; color: rgba(235,235,245,0.6); }
   #colorSheet .note b { color: #f2f2f7; font-weight: 600; }
   /* Share popover: same open-class pattern and out-of-flow positioning as

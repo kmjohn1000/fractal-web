@@ -1475,6 +1475,7 @@ const els = {
   fernBackBtn: document.getElementById("fernBackBtn"),
   shareMenu: document.getElementById("shareMenu"),
   colormapMenu: document.getElementById("colormapMenu"),
+  colorSheet: document.getElementById("colorSheet"),
   shareSaveBtn: document.getElementById("shareSaveBtn"),
   shareCopyBtn: document.getElementById("shareCopyBtn"),
   shareNativeBtn: document.getElementById("shareNativeBtn"),
@@ -1543,10 +1544,16 @@ const stylesEnabled = (() => {
 // schemes (the shaders never read the style).
 function styleDrawn(id, state) {
   const s = COLOR_STYLES.find((c) => c.id === id);
-  if (!s || !(s.types || ESCAPE_TIME_TYPES).includes(state.ftype)) return "smooth";
-  // (the small allowance keeps a view set to exactly maxZoom on the right side of rounding)
-  if (s.maxZoom && !(state.baseScale / state.scale <= s.maxZoom * 1.001)) return "smooth";
-  return s.id;
+  return s && !styleBlocked(s, state) ? s.id : "smooth";
+}
+
+// Why a style can't be drawn for this view: "type" (its fractal can't do it)
+// or "depth" (too deep for the orbit traps), else null. The small allowance
+// keeps a view set to exactly maxZoom on the right side of rounding.
+function styleBlocked(style, state) {
+  if (!(style.types || ESCAPE_TIME_TYPES).includes(state.ftype)) return "type";
+  if (style.maxZoom && !(state.baseScale / state.scale <= style.maxZoom * 1.001)) return "depth";
+  return null;
 }
 
 // What the renderer sends the shaders for one view.
@@ -2303,6 +2310,7 @@ function setMode(next) {
   els.fractalTypeRow.classList.remove("open"); // collapse the picker on any mode switch
   els.shareMenu.classList.remove("open");
   els.colormapMenu.classList.remove("open");
+  els.colorSheet.classList.remove("open");
   els.fractalControls.classList.toggle("hidden", mode !== "fractal");
   els.kochControls.classList.toggle("hidden", mode !== "koch");
   els.treeControls.classList.toggle("hidden", mode !== "tree");
@@ -3170,6 +3178,7 @@ document.querySelectorAll(".fractalMenuBtn").forEach((btn) => {
   btn.addEventListener("click", (e) => {
     e.stopPropagation(); // don't let the outside-click closer below fire on this same tap
     els.colormapMenu.classList.remove("open");
+    els.colorSheet.classList.remove("open");
     els.shareMenu.classList.remove("open");
     els.fractalTypeRow.classList.toggle("open");
   });
@@ -3758,6 +3767,15 @@ function openColormapMenu(solidKey) {
     e.stopPropagation(); // don't let the outside-tap closer below fire on this same tap
     els.fractalTypeRow.classList.remove("open");
     els.shareMenu.classList.remove("open");
+    // The fractals the styles can color get the Color sheet; the rest, and
+    // everyone while the styles flag is off, the plain palette list.
+    if (btn === els.colormapBtn && colorSheetApplies()) {
+      els.colormapMenu.classList.remove("open");
+      if (els.colorSheet.classList.contains("open")) els.colorSheet.classList.remove("open");
+      else openColorSheet();
+      return;
+    }
+    els.colorSheet.classList.remove("open");
     if (els.colormapMenu.classList.contains("open")) els.colormapMenu.classList.remove("open");
     else openColormapMenu({
       [els.fernColorBtn.id]: "fern", [els.kochColormapBtn.id]: "koch",
@@ -3769,6 +3787,193 @@ document.addEventListener("pointerdown", (e) => {
   if (!els.colormapMenu.classList.contains("open")) return;
   if (els.colormapMenu.contains(e.target) || e.target.closest("[aria-haspopup]")) return;
   els.colormapMenu.classList.remove("open");
+});
+
+// ---------------------------------------------------------------- color sheet
+
+// The Looks: a style with a palette, at the neutral bands and shift. Their
+// thumbnails are icons/looks/<id>.webp (scripts/render_look_thumbs.mjs).
+// Picking one changes the palette, and the color button shows it.
+const COLOR_LOOKS = [
+  { id: "classic", label: "Classic", style: "smooth", palette: "Classic" },
+  { id: "inferno", label: "Inferno", style: "smooth", palette: "Inferno" },
+  { id: "edge-glow", label: "Edge glow", style: "glow", palette: "Inferno" },
+  { id: "iteration-bands", label: "Iteration bands", style: "bands", palette: "Turbo" },
+  { id: "stripes", label: "Stripes", style: "stripes", palette: "Glacier" },
+  { id: "orbit-trap", label: "Orbit trap", style: "point", palette: "Twilight" },
+  { id: "cross-trap", label: "Cross trap", style: "cross", palette: "Plasma" },
+];
+let colorSheetTab = "looks";
+
+// The sheet stands in for the plain palette list on the fractals whose colors
+// the styles control.
+function colorSheetApplies() {
+  return stylesEnabled && mode === "fractal" && ESCAPE_TIME_TYPES.includes(mainState.ftype);
+}
+
+// The Look the current choices amount to, or null (Custom).
+function currentLookId() {
+  if (colorStyle.density !== 1 || colorStyle.offset !== 0) return null;
+  const palette = COLORMAPS[colormapIndex].name;
+  const look = COLOR_LOOKS.find((l) => l.style === colorStyle.style && l.palette === palette);
+  return look ? look.id : null;
+}
+
+function applyLook(look) {
+  colormapIndex = COLORMAPS.findIndex((c) => c.name === look.palette);
+  updateLUT();
+  setColorStyle({ style: look.style, density: 1, offset: 0 });
+  requestRender();
+}
+
+function colorSheetEl(tag, props = {}, ...children) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    // ARIA states are the strings "true" and "false"; other attributes are
+    // omitted when false (so `disabled: false` leaves the button enabled).
+    if (/^aria-(checked|selected|disabled|expanded|pressed)$/.test(k) && typeof v === "boolean") node.setAttribute(k, String(v));
+    else if (v === false || v === null || v === undefined) continue;
+    else if (k === "class") node.className = v;
+    else node.setAttribute(k, v === true ? "" : String(v));
+  }
+  node.append(...children);
+  return node;
+}
+
+// "<b>Point</b> and <b>Cross</b>" as nodes.
+function boldList(styles) {
+  const out = [];
+  styles.forEach((s, i) => {
+    if (i > 0) out.push(i === styles.length - 1 ? " and " : ", ");
+    out.push(colorSheetEl("b", {}, s.label));
+  });
+  return out;
+}
+
+// Says why some styles are greyed out right now, or null if none are.
+function colorSheetNote() {
+  const byType = COLOR_STYLES.filter((s) => styleBlocked(s, mainState) === "type");
+  const byDepth = COLOR_STYLES.filter((s) => styleBlocked(s, mainState) === "depth");
+  if (!byType.length && !byDepth.length) return null;
+  const note = colorSheetEl("p", { class: "note", id: "colorSheetNote" });
+  if (byDepth.length) {
+    note.append(...boldList(byDepth), ` need a shallower view. Zoom out past about ${COLOR_STYLES.find((s) => s.maxZoom).maxZoom.toLocaleString("en-US")}× to use them.`);
+  }
+  if (byType.length) {
+    if (byDepth.length) note.append(" ");
+    note.append(...boldList(byType), ` aren't available for ${fractalLabel(currentName)}.`);
+  }
+  return note;
+}
+
+function colorSheetLooks() {
+  const active = currentLookId();
+  const grid = colorSheetEl("div", { class: "grid", role: "radiogroup", "aria-label": "Looks" });
+  for (const look of COLOR_LOOKS) {
+    const blocked = styleBlocked(COLOR_STYLES.find((s) => s.id === look.style), mainState);
+    const tile = colorSheetEl("button", {
+      class: `pickTile${active === look.id ? " active" : ""}`, role: "radio", "aria-checked": active === look.id,
+      "aria-disabled": blocked ? "true" : false, "aria-describedby": blocked ? "colorSheetNote" : false, "data-key": `look-${look.id}`,
+    }, colorSheetEl("img", { src: `icons/looks/${look.id}.webp`, alt: "", width: 120, height: 120 }), colorSheetEl("span", {}, look.label));
+    tile.addEventListener("click", () => {
+      if (blocked) return;
+      applyLook(look);
+      renderColorSheet();
+    });
+    grid.append(tile);
+  }
+  const custom = colorSheetEl("button", {
+    class: `pickTile${active === null ? " active" : " ghost"}`, role: "radio", "aria-checked": active === null, "data-key": "look-custom",
+  }, colorSheetEl("img", { src: "icons/looks/custom.webp", alt: "", width: 120, height: 120 }), colorSheetEl("span", {}, "Custom"));
+  custom.addEventListener("click", () => { colorSheetTab = "custom"; renderColorSheet(); });
+  grid.append(custom);
+  return [grid, colorSheetNote()];
+}
+
+// The slider for bands is logarithmic: 0.25x to 8x with 1x (today's coloring) in the middle, snapped.
+const BANDS_SLIDER = { min: Math.log2(COLOR_BANDS_RANGE[0]), max: Math.log2(COLOR_BANDS_RANGE[1]), step: 0.05 };
+function bandsText(density) { return `${Number(density.toFixed(2))}×`; }
+function shiftText(offset) { return `${Math.round(offset * 100)}%`; }
+
+function colorSheetCustom() {
+  const seg = colorSheetEl("div", { class: "seg", role: "radiogroup", "aria-label": "Style" });
+  for (const s of COLOR_STYLES) {
+    const blocked = styleBlocked(s, mainState);
+    const btn = colorSheetEl("button", {
+      class: colorStyle.style === s.id ? "active" : "", role: "radio", "aria-checked": colorStyle.style === s.id,
+      disabled: !!blocked, "aria-describedby": blocked ? "colorSheetNote" : false, "data-key": `style-${s.id}`,
+    }, s.label);
+    btn.addEventListener("click", () => { setColorStyle({ style: s.id }); renderColorSheet(); });
+    seg.append(btn);
+  }
+  const pals = colorSheetEl("div", { class: "pals", role: "radiogroup", "aria-label": "Palette" });
+  COLORMAPS.forEach((c, i) => {
+    const btn = colorSheetEl("button", {
+      class: `pal${i === colormapIndex ? " active" : ""}`, role: "radio", "aria-checked": i === colormapIndex, "data-key": `pal-${i}`,
+    }, colorSheetEl("i", { style: `background:${cmGradient(c.stops)}` }), c.name);
+    btn.addEventListener("click", () => { colormapIndex = i; updateLUT(); requestRender(); renderColorSheet(); });
+    pals.append(btn);
+  });
+  const slider = (name, label, min, max, step, value, text, onInput) => {
+    const input = colorSheetEl("input", { type: "range", min, max, step, "aria-label": name, "aria-valuetext": text(value) });
+    input.value = value;
+    syncSliderFill(input);
+    input.addEventListener("input", () => {
+      const v = parseFloat(input.value);
+      syncSliderFill(input);
+      input.setAttribute("aria-valuetext", text(v));
+      onInput(v);
+    });
+    return colorSheetEl("label", { class: "field" }, label, input);
+  };
+  return [
+    seg, colorSheetNote(), pals,
+    slider("Color bands", "Bands", BANDS_SLIDER.min, BANDS_SLIDER.max, BANDS_SLIDER.step, Math.log2(colorStyle.density),
+      (v) => bandsText(2 ** v), (v) => setColorStyle({ density: Math.abs(v) < 0.03 ? 1 : 2 ** v })),
+    slider("Color shift", "Shift", 0, 0.99, 0.01, colorStyle.offset, shiftText, (v) => setColorStyle({ offset: v })),
+  ];
+}
+
+// Rebuilds the sheet for the current state, keeping the palette row's scroll
+// and the focused control (the sliders aren't rebuilt while dragged, see
+// their input handlers).
+function renderColorSheet() {
+  const sheet = els.colorSheet;
+  const scroll = sheet.querySelector(".pals")?.scrollLeft;
+  const focusKey = document.activeElement?.dataset?.key;
+  const tabs = colorSheetEl("div", { class: "tabs", role: "tablist" });
+  for (const [id, label] of [["looks", "Looks"], ["custom", "Custom"]]) {
+    const tab = colorSheetEl("button", {
+      class: colorSheetTab === id ? "active" : "", role: "tab", "aria-selected": colorSheetTab === id,
+      tabindex: colorSheetTab === id ? false : "-1", "data-key": `tab-${id}`,
+    }, label);
+    tab.addEventListener("click", () => { colorSheetTab = id; renderColorSheet(); });
+    tab.addEventListener("keydown", (e) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      colorSheetTab = id === "looks" ? "custom" : "looks";
+      renderColorSheet();
+      els.colorSheet.querySelector(`[data-key=tab-${colorSheetTab}]`)?.focus();
+    });
+    tabs.append(tab);
+  }
+  sheet.replaceChildren(tabs, ...(colorSheetTab === "looks" ? colorSheetLooks() : colorSheetCustom()).filter(Boolean));
+  const pals = sheet.querySelector(".pals");
+  if (pals && scroll !== undefined) pals.scrollLeft = scroll;
+  else pals?.querySelector(".active")?.scrollIntoView({ block: "nearest", inline: "center" });
+  if (focusKey) sheet.querySelector(`[data-key="${focusKey}"]`)?.focus({ preventScroll: true });
+}
+
+function openColorSheet() {
+  colorSheetTab = currentLookId() ? "looks" : "custom";
+  renderColorSheet();
+  els.colorSheet.classList.add("open");
+}
+
+document.addEventListener("pointerdown", (e) => {
+  if (!els.colorSheet.classList.contains("open")) return;
+  if (els.colorSheet.contains(e.target) || e.target.closest("[aria-haspopup]")) return;
+  els.colorSheet.classList.remove("open");
 });
 
 els.fernBoxZoomBtn.addEventListener("click", () => {
@@ -4067,6 +4272,7 @@ document.querySelectorAll(".shareBtn").forEach((btn) => {
     e.stopPropagation(); // don't let the outside-click closer below fire on this same tap
     els.fractalTypeRow.classList.remove("open");
     els.colormapMenu.classList.remove("open");
+    els.colorSheet.classList.remove("open");
     const opening = !els.shareMenu.classList.contains("open");
     els.shareMenu.classList.toggle("open", opening);
     if (opening) {
@@ -4099,6 +4305,7 @@ for (const btn of TOGGLE_BUTTONS) {
 const POPOVERS = [
   { menu: els.fractalTypeRow, openers: [...document.querySelectorAll(".fractalMenuBtn")] },
   { menu: els.colormapMenu, openers: [els.colormapBtn, els.kochColormapBtn, els.treeColormapBtn, els.dragonColormapBtn, els.fernColorBtn] },
+  { menu: els.colorSheet, openers: [els.colormapBtn] },
   { menu: els.shareMenu, openers: [...document.querySelectorAll(".shareBtn")] },
 ];
 for (const p of POPOVERS) {

@@ -273,7 +273,11 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         (`#styles=0` turns it off). Shipped so far: the shader plumbing
         (style, bands and shift uniforms; Bands style), and the Glow
         (exterior distance estimate), Stripes and the Point and Cross
-        orbit traps (offered up to ~1,000x deep). Checks: `node
+        orbit traps (offered up to ~1,000x deep), and the Color sheet (the
+        color button opens it while the flag is on: Looks tab with
+        thumbnails from `node scripts/render_look_thumbs.mjs`, Custom tab
+        with style, palette, bands and shift). Still to do: share-link
+        fields and the info card line. Checks: `node
         scripts/default-identity.mjs check` (default output identical to
         before, zero differing pixels), `node scripts/oracle-compare.mjs`
         (app against a float64 reference, `scripts/oracle/oracle.py`),
