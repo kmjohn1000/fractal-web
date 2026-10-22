@@ -2589,7 +2589,31 @@ function openPresetInDual(name, juliaView = null) {
   const jv = juliaView || { ...opening, rotation: 0, baseScale: opening.scale };
   Object.assign(juliaState, { cx: jv.cx, cy: jv.cy, scale: jv.scale, rotation: jv.rotation, baseScale: jv.baseScale, juliaC: [cx, cy] });
   if (juliaView && juliaView.iterAutoLocked) Object.assign(juliaState, { maxIter: juliaView.maxIter, iterAutoLocked: true });
-  dualPreset = { name, c: [cx, cy] };
+  dualPreset = { name, c: [cx, cy], fromButton: !!juliaView };
+  applyAutoIter();
+  requestRender();
+}
+
+// The dual button closes a dual view it opened on a Julia preset by going back
+// to that preset, in the view its pane has now, with its Back history: the
+// Julia set was where you started, so dual view should add and remove the
+// Mandelbrot, not the Julia. Once the main pane has moved c (a drag, or a tap
+// that glides to a point) the Julia pane is no longer the preset, and a dual
+// view that came from the picker started in the parent set; both just close
+// the Julia pane (exitDual).
+function closeDual() {
+  const name = dualPreset && dualPreset.fromButton ? dualPresetName() : null;
+  if (!name) { exitDual(); return; }
+  const j = { ...juliaState };
+  const history = juliaHistory;
+  exitDual();
+  selectFractal(name, { fresh: true });
+  Object.assign(mainState, {
+    cx: j.cx, cy: j.cy, scale: j.scale, rotation: j.rotation, baseScale: j.baseScale,
+    maxIter: j.maxIter, iterAutoLocked: j.iterAutoLocked,
+  });
+  mainHistory = history;
+  dualPreset = null;
   applyAutoIter();
   requestRender();
 }
@@ -3542,7 +3566,7 @@ els.iterSlider.addEventListener("input", () => {
 
 
 els.dualBtn.addEventListener("click", () => {
-  if (dualActive) exitDual();
+  if (dualActive) closeDual();
   else if (FRACTAL_CONFIGS[currentName].dualParent) openPresetInDual(currentName, mainState);
   else enterDual();
   els.dualBtn.classList.toggle("active", dualActive);

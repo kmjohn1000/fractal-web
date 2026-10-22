@@ -7,7 +7,7 @@
 import { test, expect } from "@playwright/test";
 import { PNG } from "pngjs";
 
-/* global enterDual, exitDual, mainState, juliaState, dualActive, setColorStyle, SAMPLE_OFFSETS */
+/* global enterDual, exitDual, mainState, juliaState, dualActive, setColorStyle, SAMPLE_OFFSETS, currentName, selectFractal */
 
 const DRIVER = new URL("../driver.js", import.meta.url).pathname;
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
@@ -129,4 +129,65 @@ test("once both panes are drawn the Julia pane isn't redrawn, and toggling draws
   const later = await page.evaluate(() => ({ ...window["__draws"] }));
   expect(later.juliaCanvas, "no redraws of the Julia pane while idle").toBe(afterToggle.juliaCanvas);
   expect(later.mainCanvas, "no redraws of the main pane while idle").toBe(afterToggle.mainCanvas);
+});
+
+// Dual view on a Julia preset adds the parent set (Mandelbrot) above it; the
+// dual button then takes the Mandelbrot away again and leaves the Julia set.
+test("the dual button on a Julia preset adds and removes the Mandelbrot, keeping the Julia view", async ({ page }) => {
+  await page.evaluate(() => {
+    window["__vt"].fractal("Julia:Rabbit");
+    mainState.scale *= 0.25; // a view of its own, to find again
+    mainState.cx += 0.1;
+    mainState.rotation = 0.3;
+  });
+  await settle(page);
+  const before = await page.evaluate(() => ({ name: currentName, cx: mainState.cx, cy: mainState.cy, scale: mainState.scale, rotation: mainState.rotation }));
+
+  await page.click("#dualBtn");
+  await settle(page);
+  const during = await page.evaluate(() => ({ name: currentName, dual: dualActive, juliaC: juliaState.juliaC, juliaScale: juliaState.scale }));
+  expect(during.dual).toBe(true);
+  expect(during.name, "the Mandelbrot is the main pane while dual is on").toBe("Mandelbrot");
+  expect(during.juliaC, "the Julia pane is the preset's own set").toEqual([-0.12256, 0.74486]);
+
+  await page.click("#dualBtn");
+  await settle(page);
+  const after = await page.evaluate(() => ({ name: currentName, dual: dualActive, cx: mainState.cx, cy: mainState.cy, scale: mainState.scale, rotation: mainState.rotation, julia: mainState.isJulia }));
+  expect(after.dual).toBe(false);
+  expect(after.name, "back on the Julia preset, not left on the Mandelbrot").toBe("Julia:Rabbit");
+  expect(after.julia).toBe(true);
+  expect({ cx: after.cx, cy: after.cy, scale: after.scale, rotation: after.rotation }, "in the view it had").toEqual(
+    { cx: before.cx, cy: before.cy, scale: before.scale, rotation: before.rotation });
+});
+
+test("a view the Julia pane has moved on in comes back, and moving c leaves the Mandelbrot", async ({ page }) => {
+  await page.evaluate(() => window["__vt"].fractal("Julia:Rabbit"));
+  await settle(page);
+  await page.click("#dualBtn");
+  await settle(page);
+  // Zoom the Julia pane; closing dual keeps that view on the Julia preset.
+  await page.evaluate(() => { juliaState.scale *= 0.1; juliaState.cx += 0.05; });
+  const moved = await page.evaluate(() => ({ cx: juliaState.cx, scale: juliaState.scale }));
+  await page.click("#dualBtn");
+  await settle(page);
+  const back = await page.evaluate(() => ({ name: currentName, cx: mainState.cx, scale: mainState.scale }));
+  expect(back).toEqual({ name: "Julia:Rabbit", cx: moved.cx, scale: moved.scale });
+
+  // Open again, then move c in the main pane: the Julia pane is no longer the
+  // preset, so closing dual just hides it and the Mandelbrot stays.
+  await page.click("#dualBtn");
+  await settle(page);
+  await page.evaluate(() => { mainState.cx += 0.01; });
+  await page.click("#dualBtn");
+  await settle(page);
+  expect(await page.evaluate(() => ({ name: currentName, dual: dualActive }))).toEqual({ name: "Mandelbrot", dual: false });
+});
+
+test("dual view turned on from the Mandelbrot and then pointed at a preset still closes to the Mandelbrot", async ({ page }) => {
+  await page.evaluate(() => { window["__vt"].fractal("Mandelbrot"); enterDual(); selectFractal("Julia:Rabbit"); });
+  await settle(page);
+  expect(await page.evaluate(() => ({ name: currentName, dual: dualActive }))).toEqual({ name: "Mandelbrot", dual: true });
+  await page.click("#dualBtn");
+  await settle(page);
+  expect(await page.evaluate(() => ({ name: currentName, dual: dualActive }))).toEqual({ name: "Mandelbrot", dual: false });
 });

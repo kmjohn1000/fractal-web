@@ -18,6 +18,9 @@ Newest version at the top. See CLAUDE.md for when and how to bump.
 - Color sheet (hidden behind a setting for now): the styles have one set of plain names everywhere (Smooth, Bands, Edge glow, Stripes, Orbs, Rays), the slider that was called Bands is now Repeat, and the slider values and the info card use the same words. Classic and Inferno are palettes, not Looks, so the Looks start with a Default tile (Smooth on Inferno). A Reset button puts the style, palette, repeat and shift back to the Default.
 - Color sheet (hidden behind a setting for now): on Newton, Carpet, Gasket and Apollonian the color button opens the same sheet with just the palette grid, in place of the old tall list; on Phoenix the sheet shows the style that's actually drawn. It also fits a small phone (360 pt wide), landscape, and the largest text sizes, is centered above the toolbar on an iPad, and the color button's spoken name includes the Look.
 
+## 1.39.4 — 2026-10-22
+- Dual view on a Julia set (Douady rabbit, Dragon, Spiral or Phoenix) now adds and removes the Mandelbrot (or Phoenix) above it. Before, turning dual view off left you on the Mandelbrot and the Julia set disappeared; now it closes back to the Julia set, in the view you had zoomed to.
+
 ## 1.39.3 — 2026-10-21
 - Flights and pinches that run slowly now draw at a lower resolution while they move and sharpen the moment they stop or land, so a heavy dive such as the Douady rabbit's Rabbit Hole stays smooth on a phone. It only kicks in when frames are running late; the finished picture is exactly the same.
 
