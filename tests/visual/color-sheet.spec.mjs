@@ -6,7 +6,7 @@
 import { test, expect } from "@playwright/test";
 
 /* global colorStyle, setColorStyle, COLORMAPS, colormapIndex:writable, updateLUT, applyShareLink, buildShareHash,
-   parseShareHash, mainState, enterDual, exitDual, dualActive, lookSpriteImage, styleBlocked, COLOR_STYLES, colorStyleFor */
+   parseShareHash, mainState, enterDual, exitDual, dualActive, lookSpriteImage, styleBlocked, COLOR_STYLES, colorStyleFor, prepareColorSheet */
 
 const DRIVER = new URL("../driver.js", import.meta.url).pathname;
 // The Look that is checked (both tabs are in the page at once, so queries have to say which group).
@@ -118,6 +118,18 @@ test.describe("the Color sheet", () => {
     expect(await page.evaluate(() => ({ ...colorStyle, palette: COLORMAPS[colormapIndex].name }))).toMatchObject({ style: "smooth", density: 1, offset: 0, palette: "Inferno" });
     await page.locator('#colorSheet [role="tab"]', { hasText: "Looks" }).click();
     await expect(page.locator(LOOK_CHECKED)).toHaveText("Default");
+  });
+
+  // The idle preparation (prepareColorSheet) runs a few seconds after load. It
+  // used to reset an open sheet to its opening tab, which sent someone who had
+  // just tapped Custom back to Looks (and made this suite flaky under load).
+  test("the idle preparation never takes an open sheet's tab away", async ({ page }) => {
+    await page.locator("#colormapBtn").click();
+    await page.locator('#colorSheet [role="tab"]', { hasText: "Custom" }).click();
+    await expect(page.locator('#colorSheet [role="tab"][aria-selected="true"]')).toHaveText("Custom");
+    await page.evaluate(() => prepareColorSheet());
+    await expect(page.locator('#colorSheet [role="tab"][aria-selected="true"]')).toHaveText("Custom");
+    await expect(page.locator('#colorSheet input[aria-label="Color repeat"]')).toBeVisible();
   });
 
   test("Custom has the style, palette, repeat and shift controls with names", async ({ page }) => {

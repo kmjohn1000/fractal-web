@@ -4245,7 +4245,10 @@ function prepareColorSheet() {
   lookSpriteImage = new Image();
   lookSpriteImage.src = "icons/looks/sprite.webp";
   lookSpriteImage.decode?.().catch(() => {});
-  if (colorSheetApplies()) {
+  // Not while the sheet is open: this runs a few seconds after load, and someone
+  // who has already opened it and switched tabs must not be sent back to the
+  // opening tab, nor have the controls under their finger rebuilt.
+  if (colorSheetApplies() && !els.colorSheet.classList.contains("open")) {
     colorSheetTab = colorSheetOpeningTab();
     renderColorSheet();
   }
