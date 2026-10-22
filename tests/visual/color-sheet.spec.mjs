@@ -36,6 +36,9 @@ async function settle(page) {
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
 }
 
+// A few frames after a viewport or tab change, so the size-dependent layout (the media queries, the
+// style segments' columns) has settled before it's measured; a full suite run is slow enough to need it.
+const settleLayout = (page) => page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 150)))));
 const place = (label) => `__vt.place(TELEPORT_DESTINATIONS.findIndex((d) => d.label === ${JSON.stringify(label)}))`;
 // The swatches are one sprite (icons/looks/sprite.webp), fetched when the app is idle.
 const spriteLoaded = (page) => page.waitForFunction(() => lookSpriteImage && lookSpriteImage.complete && lookSpriteImage.naturalWidth > 0);
@@ -452,6 +455,7 @@ test.describe("with the flag on", () => {
     await page.evaluate(() => setColorStyle({ density: 2 })); // so Reset shows too
     await page.locator("#colormapBtn").click();
     await page.locator('#colorSheet [role="tab"]', { hasText: "Custom" }).click();
+    await settleLayout(page);
     const r = await page.evaluate(() => {
       const sheet = document.getElementById("colorSheet"), s = sheet.getBoundingClientRect();
       const rect = (sel) => document.querySelector(sel).getBoundingClientRect();
@@ -474,6 +478,7 @@ test.describe("with the flag on", () => {
       await page.locator("#colormapBtn").click();
       for (const tab of ["Looks", "Custom"]) {
         await page.locator('#colorSheet [role="tab"]', { hasText: tab }).click();
+        await settleLayout(page);
         const r = await page.evaluate(() => {
           const sheet = document.getElementById("colorSheet"), s = sheet.getBoundingClientRect();
           const rect = (sel) => document.querySelector(sel)?.getBoundingClientRect();
@@ -500,6 +505,7 @@ test.describe("with the flag on", () => {
     await page.setViewportSize({ width: 1032, height: 1376 });
     await settle(page);
     await page.locator("#colormapBtn").click();
+    await settleLayout(page);
     const { l, r, vw } = await page.evaluate(() => { const s = document.getElementById("colorSheet").getBoundingClientRect(); return { l: s.left, r: s.right, vw: innerWidth }; });
     expect(Math.abs((l + r) / 2 - vw / 2), "centered, within 20 px").toBeLessThanOrEqual(20);
   });
