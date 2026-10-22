@@ -66,7 +66,7 @@ async function waitSettled(page) {
 async function renderApp(browser, v, style) {
   const context = await browser.newContext({ viewport: { width: TILE, height: 900 }, deviceScaleFactor: 1, serviceWorkers: "block" });
   await context.addInitScript(() => {
-    try { localStorage.setItem("fractalAtlas.visited", "1"); localStorage.setItem("fractalAtlas.welcomeDismissed", "1"); } catch { /* storage blocked */ }
+    try { localStorage.setItem("fractalAtlas.visited", "1"); localStorage.setItem("fractalAtlas.welcomeDismissed", "1"); localStorage.setItem("fractalAtlas.deepPasses", "16"); } catch { /* storage blocked */ }
   });
   const page = await context.newPage();
   const errors = [];

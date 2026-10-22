@@ -157,6 +157,16 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
           Per pixel the app and Safari agree (155 ms on 786x1362 vs 123 ms on
           786x1098). Treat every absolute deep-zoom time above as a cool-phone
           best case: a warm phone takes 2-3.7 s to finish 16 passes at 4e-10
+      - DONE 2026-10-22 (1.40.1): fewer passes on deep views. Deep-zoom
+        passes (perturbation, Newton deep) now stop at 8 of 16 by default
+        (`DEEP_PASSES`); Save and Share finish all 16 (`finishRefinement`).
+        Judged by eye on an iPhone 15: 8 looked the same as 16 at Seahorse
+        4e-10, Mini Mandelbrot 1.5e-12 and a deep Newton view; 4 was slightly
+        grainier. Measured against 16 passes, 8 differs by a mean of 3.8-4.5
+        levels at Seahorse (9-11% of pixels over 16 levels off) and 1.2-1.8 at
+        Mini Mandelbrot. Halves deep refinement time (about 2.4 s to 1.2 s on
+        a warm phone, 0.7 s to 0.35 s cool). `#passes=N` overrides it. Still
+        open: 6 passes was never judged
       - Interior skip + variance-adaptive supersampling (~100-180 lines in
         `render`, `scheduleRefinement`, a mask pass): after pass 0 mask the
         interior; after pass 3 keep refining only where samples still differ

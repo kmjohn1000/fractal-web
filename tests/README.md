@@ -23,6 +23,14 @@ if:
 - the screenshot differs from the golden baseline in
   `tests/baselines/<project>/` by more than 1% of pixels.
 
+Deep-zoom views draw 8 of the 16 sharpening passes by default (`DEEP_PASSES`
+in `app.js`), which adds a little grain, so the suite pins 16
+(`playwright.config.mjs` sets `fractalAtlas.deepPasses` for every test) and
+the baselines stay valid. `deep-passes.spec.mjs` clears the pin to test the
+default itself: only deep views are reduced, Save and Share still finish all
+16, `#passes=N` overrides it, and the reduced picture stays the same picture.
+The store screenshot, video, header and oracle scripts pin 16 as well.
+
 `vector.spec.mjs` covers the Koch, Pythagoras tree and dragon views, which
 are drawn from the viewport (`kochAdaptive`, `treeAdaptive`,
 `dragonAdaptive`): their geometry must equal the plain full-detail

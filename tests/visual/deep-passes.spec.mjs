@@ -1,8 +1,10 @@
-// Fewer sharpening passes on slow deep-zoom views (an opt-in experiment,
-// "#passes=8"; see refinePassCount in app.js). These checks hold that the
-// normal setting is untouched, that only deep views are reduced, that Save and
-// Share still finish all 16 samples, and that the reduced picture stays close
-// to the full one. Run through `npm run test:visual`.
+// Fewer sharpening passes on slow deep-zoom views (DEEP_PASSES in app.js, 8 of
+// 16 by default; "#passes=N" overrides it for tests and tuning). These checks
+// hold that only deep views are reduced, that Save and Share still finish all 16
+// samples, that the override works, and that the reduced picture is still the
+// same picture. The rest of the suite pins 16 passes (playwright.config.mjs) so
+// its deep-zoom baselines stay valid; this file clears that pin to test the
+// default. Run through `npm run test:visual`.
 import { test, expect } from "@playwright/test";
 import { PNG } from "pngjs";
 
@@ -19,7 +21,7 @@ test.beforeEach(async ({ page }) => {
     try {
       localStorage.setItem("fractalAtlas.visited", "1");
       localStorage.setItem("fractalAtlas.welcomeDismissed", "1");
-      localStorage.removeItem("fractalAtlas.deepPasses");
+      localStorage.removeItem("fractalAtlas.deepPasses"); // the default, not the suite's pin
     } catch { /* storage blocked */ }
   });
   await page.goto("index.html");
@@ -38,6 +40,7 @@ async function settle(page) {
 const goTo = (page, fractal, label) => page.evaluate(([f, l]) => {
   window["__vt"].place(TELEPORT_DESTINATIONS.findIndex((d) => d.fractal === f && d.label === l));
 }, [fractal, label]);
+// "#passes=N" as a link would set it, then redraw; "0" clears the override (back to the default).
 const setPasses = (page, n) => page.evaluate((v) => { Diag.fromLink(`https://example.org/#passes=${v}`); requestRender(); }, n);
 const chain = (page) => page.evaluate(() => ({ next: refineNext, target: refineTarget, done: refineDone }));
 
@@ -58,26 +61,8 @@ function compare(a, b) {
   return { mean: sum / n, p99: sorted[Math.floor(n * 0.99)], over16: over16 / n };
 }
 
-test("normal setting: a deep view draws all 16 passes", async ({ page }) => {
-  expect(await page.evaluate(() => Diag.deepPasses)).toBe(16);
-  await goTo(page, "Mandelbrot", "Seahorse Valley");
-  await settle(page);
-  expect(await chain(page)).toEqual({ next: 16, target: 16, done: true });
-});
-
-test("#passes sets and clears it, without a reload, and rejects nonsense", async ({ page }) => {
-  await setPasses(page, 8);
-  expect(await page.evaluate(() => Diag.deepPasses)).toBe(8);
-  await setPasses(page, 16);
-  expect(await page.evaluate(() => Diag.deepPasses)).toBe(16);
-  for (const bad of ["0", "1", "17", "abc", "8.5", ""]) {
-    await setPasses(page, bad);
-    expect(await page.evaluate(() => Diag.deepPasses), `#passes=${bad}`).toBe(16);
-  }
-});
-
-test("#passes=8: a deep view stops at 8, a shallow view still draws 16", async ({ page }) => {
-  await setPasses(page, 8);
+test("by default a deep view stops at 8 passes and a shallow view draws 16", async ({ page }) => {
+  expect(await page.evaluate(() => Diag.passesOverride)).toBe(null);
   await goTo(page, "Mandelbrot", "Seahorse Valley");
   await settle(page);
   expect(await chain(page)).toEqual({ next: 8, target: 8, done: true });
@@ -86,19 +71,36 @@ test("#passes=8: a deep view stops at 8, a shallow view still draws 16", async (
   expect(await chain(page), "float32 views are cheap and stay at 16").toEqual({ next: 16, target: 16, done: true });
 });
 
+test("#passes overrides the default without a reload, and nonsense clears it", async ({ page }) => {
+  await setPasses(page, 16);
+  expect(await page.evaluate(() => Diag.passesOverride)).toBe(16);
+  await goTo(page, "Mandelbrot", "Seahorse Valley");
+  await settle(page);
+  expect(await chain(page), "#passes=16 is full quality").toEqual({ next: 16, target: 16, done: true });
+  await setPasses(page, 6);
+  expect(await page.evaluate(() => Diag.passesOverride)).toBe(6);
+  for (const bad of ["0", "1", "17", "abc", "8.5", ""]) {
+    await setPasses(page, 6);
+    await setPasses(page, bad);
+    expect(await page.evaluate(() => Diag.passesOverride), `#passes=${bad}`).toBe(null);
+  }
+});
+
 // Half the samples is a real quality trade-off, not a rounding error: measured
 // 2026-10-22, 8 passes against 16 differ by a mean of 3.8-4.5 levels at Seahorse
 // Valley (9-11% of pixels over 16 levels off) and 1.2-1.8 at Mini Mandelbrot,
-// from the extra grain on steep bands. These limits only guard against the
-// picture going wrong (a bad blend weight, a missing pass); whether the grain is
-// acceptable is judged by eye on a phone. A float32 view is never reduced (0).
+// from the extra grain on steep bands. On an iPhone 15 the user could not tell
+// 8 from 16 at Seahorse Valley, Mini Mandelbrot and a deep Newton view (4 was
+// slightly grainier). These limits only guard against the picture going wrong
+// (a bad blend weight, a missing pass). A float32 view is never reduced (0).
 const LIMITS = { "Seahorse Valley": [8, 64, 0.2], "Mini Mandelbrot": [5, 56, 0.1], Armada: [0.001, 0, 0] };
 for (const [fractal, label] of [["Mandelbrot", "Seahorse Valley"], ["Mandelbrot", "Mini Mandelbrot"], ["Burn. Ship", "Armada"]]) {
-  test(`#passes=8 ${label}: the picture is the same picture, with some extra grain`, async ({ page }) => {
+  test(`${label}: the default picture is the same picture as with 16 passes, with some extra grain`, async ({ page }) => {
     await goTo(page, fractal, label);
+    await setPasses(page, 16);
     await settle(page);
     const full = await canvasPixels(page);
-    await setPasses(page, 8);
+    await setPasses(page, 0); // back to the default
     await settle(page);
     const c = compare(full, await canvasPixels(page));
     const [meanMax, p99Max, over16Max] = LIMITS[label];
@@ -110,9 +112,10 @@ for (const [fractal, label] of [["Mandelbrot", "Seahorse Valley"], ["Mandelbrot"
 
 test("Save and Share still get all 16 samples", async ({ page }) => {
   await goTo(page, "Mandelbrot", "Seahorse Valley");
+  await setPasses(page, 16);
   await settle(page);
   const full = await canvasPixels(page);
-  await setPasses(page, 8);
+  await setPasses(page, 0);
   await settle(page);
   expect((await chain(page)).next).toBe(8);
   await page.evaluate(() => captureShareBlob()); // what Save image, Save to Photos and Share all call
@@ -131,7 +134,6 @@ test("dual view with a deep main pane: both panes follow the setting", async ({ 
 });
 
 test("a new view starts its own chain: back to 16 for a shallow one after a deep one", async ({ page }) => {
-  await setPasses(page, 8);
   await goTo(page, "Mandelbrot", "Seahorse Valley");
   await settle(page);
   expect((await chain(page)).target).toBe(8);

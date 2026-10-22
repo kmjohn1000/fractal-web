@@ -37,6 +37,10 @@ export default defineConfig({
     baseURL: `http://127.0.0.1:${PORT}/`,
     serviceWorkers: "block",
     trace: "off",
+    // The baselines were recorded with all 16 sharpening passes. Deep-zoom views
+    // now stop at 8 by default (DEEP_PASSES in app.js), so the suite pins 16;
+    // deep-passes.spec.mjs clears this to test the default itself.
+    storageState: { cookies: [], origins: [{ origin: `http://127.0.0.1:${PORT}`, localStorage: [{ name: "fractalAtlas.deepPasses", value: "16" }] }] },
   },
   webServer: {
     command: `node tests/serve.mjs ${PORT}`,

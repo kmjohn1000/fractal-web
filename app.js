@@ -2114,12 +2114,18 @@ let refineDone = true;
 let refineNext = 1; // the next sample this chain draws
 let refineTarget = SAMPLE_OFFSETS.length; // how many samples it draws in all
 // Deep-zoom passes (perturbation and the exact paths) take 40-230 ms each on a
-// phone, so the 16 of a full refinement take seconds. An opt-in experiment
-// (Diag.deepPasses, "#passes=8"; TODO.md) stops those views early. Views drawn
-// in plain float32 are cheap and always get all 16.
+// phone, so the 16 of a full refinement take seconds. Those views stop after
+// DEEP_PASSES: on an iPhone 15, 8 of 16 looked the same as 16 at Seahorse
+// Valley, Mini Mandelbrot and a deep Newton view, 4 was slightly grainier
+// (2026-10-22; TODO.md). Views drawn in plain float32 are cheap and always get
+// all 16, and Save and Share finish the rest (finishRefinement). Diag.passesOverride
+// ("#passes=16" for full quality, "#passes=6" to try fewer) replaces it for tests
+// and tuning.
+const DEEP_PASSES = 8;
 function refinePassCount() {
   const deep = lastMainDeepPath || (dualActive && lastJuliaDeepPath);
-  return deep ? Math.min(SAMPLE_OFFSETS.length, Diag.deepPasses) : SAMPLE_OFFSETS.length;
+  const n = Diag.passesOverride ?? DEEP_PASSES;
+  return deep ? Math.min(SAMPLE_OFFSETS.length, n) : SAMPLE_OFFSETS.length;
 }
 function refineStep(gen) {
   if (gen !== refineGeneration || mode !== "fractal" || isInteracting) return;

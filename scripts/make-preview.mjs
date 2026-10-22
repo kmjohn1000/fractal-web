@@ -142,6 +142,7 @@ try {
     try {
       localStorage.setItem("fractalAtlas.visited", "1");
       localStorage.setItem("fractalAtlas.welcomeDismissed", "1");
+      localStorage.setItem("fractalAtlas.deepPasses", "16"); // video frames get every sharpening pass
     } catch { /* storage blocked */ }
   });
   const page = await context.newPage();
