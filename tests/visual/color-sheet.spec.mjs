@@ -6,7 +6,7 @@
 import { test, expect } from "@playwright/test";
 
 /* global colorStyle, setColorStyle, COLORMAPS, colormapIndex:writable, updateLUT, applyShareLink, buildShareHash,
-   parseShareHash, mainState, enterDual, exitDual, dualActive, lookSpriteImage, styleBlocked, COLOR_STYLES, requestRender */
+   parseShareHash, mainState, enterDual, exitDual, dualActive, lookSpriteImage, styleBlocked, COLOR_STYLES, colorStyleFor */
 
 const DRIVER = new URL("../driver.js", import.meta.url).pathname;
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
@@ -137,39 +137,26 @@ test.describe("with the flag on", () => {
     await expect(shift).toHaveAttribute("aria-valuetext", "50%");
   });
 
-  test("at depth the orbit traps are greyed out, with the reason", async ({ page }) => {
-    await page.evaluate(`${place("Seahorse Valley")}`);
-    await settle(page);
-    await page.locator("#colormapBtn").click();
-    await page.locator('#colorSheet [role="tab"]', { hasText: "Custom" }).click();
-    const point = page.locator('#colorSheet [aria-label="Style"] [role="radio"]', { hasText: "Point" });
-    await expect(point).toBeDisabled();
-    await expect(point).toHaveAttribute("aria-describedby", "colorSheetNote");
-    // The note says how deep this view is, so it's clear how far there is to zoom out.
-    await expect(page.locator("#colorSheetNote")).toContainText("only draw in views under 1,000× deep. This one is");
-    await expect(page.locator("#colorSheetNote")).toContainText("billion times deeper.");
-    await expect(page.locator('#colorSheet [aria-label="Style"] [role="radio"]', { hasText: "Glow" })).toBeEnabled();
-    // The Looks tab ghosts the trap Looks and ignores a tap on one.
-    await page.locator('#colorSheet [role="tab"]', { hasText: "Looks" }).click();
-    const trap = page.locator('#colorSheet [data-key="look-orbit-trap"]');
-    await expect(trap).toHaveAttribute("aria-disabled", "true");
-    await trap.click({ force: true }); // aria-disabled, so Playwright won't click it unforced
-    expect(await page.evaluate(() => colorStyle.style)).toBe("smooth");
-    // The tap isn't silent: the note lights up to say why.
-    await expect(page.locator("#colorSheetNote")).toHaveClass(/flash/);
-  });
-
-  test("Point and Cross are offered at the opening view and after zooming back out from a deep place", async ({ page }) => {
+  // The traps used to be greyed out past ~1,000x deep; the per-view range
+  // (trapRange in createFractalRenderer) lets them draw at any depth, so the
+  // sheet offers them everywhere and shows no depth note.
+  test("the orbit traps stay offered at depth, with no depth note", async ({ page }) => {
     const offered = () => page.evaluate(() => ["point", "cross"].map((id) => styleBlocked(COLOR_STYLES.find((s) => s.id === id), mainState)));
     expect(await offered()).toEqual([null, null]);
     await page.evaluate(`${place("Seahorse Valley")}`);
     await settle(page);
-    expect(await offered()).toEqual(["depth", "depth"]);
-    // Back out to the opening scale (a long pinch in real life): offered again, and the sheet follows.
-    await page.evaluate(() => { mainState.scale = mainState.baseScale; requestRender(); });
-    await settle(page);
     expect(await offered()).toEqual([null, null]);
     await page.locator("#colormapBtn").click();
+    await page.locator('#colorSheet [role="tab"]', { hasText: "Custom" }).click();
+    const point = page.locator('#colorSheet [aria-label="Style"] [role="radio"]', { hasText: "Point" });
+    await expect(point).toBeEnabled();
+    await expect(page.locator("#colorSheetNote")).toBeHidden();
+    // Picking one at depth takes effect.
+    await point.click();
+    expect(await page.evaluate(() => colorStyle.style)).toBe("point");
+    expect(await page.evaluate(() => colorStyleFor(mainState).glsl)).toBe(4);
+    // The Looks tab offers the trap Looks too.
+    await page.locator('#colorSheet [role="tab"]', { hasText: "Looks" }).click();
     await expect(page.locator('#colorSheet [data-key="look-orbit-trap"]')).not.toHaveAttribute("aria-disabled", "true");
     await expect(page.locator('#colorSheet [data-key="look-cross-trap"]')).not.toHaveAttribute("aria-disabled", "true");
   });

@@ -40,8 +40,9 @@ which are being built behind a flag (`localStorage["fractalAtlas.styles"] =
 "1"`, or open the page once with `#styles`; the specs set it themselves
 where it matters). They check that the style API is strict, which fractal
 types draw which style (Phoenix has Smooth and Bands; Newton, Carpet, Gasket
-and Apollonian color by their own schemes), that the orbit traps switch off
-past about 1,000x deep, that the deep-zoom drag preview shows the current
+and Apollonian color by their own schemes), that the orbit traps are offered
+at any depth and keep real contrast deep in (their colormap range comes from a
+per-view probe; the probe's decoding is unit tested), that the deep-zoom drag preview shows the current
 style, that Save image equals the frame on screen, the Color sheet's
 controls, names, greyed-out states and sizes (at most 40% of a 393x852 screen
 with at least half the fractal still visible; every palette on screen at once,
@@ -72,8 +73,18 @@ or need Python with numpy and Pillow:
   "calm" views (low iteration counts) also need a mean difference of at most
   5 and at most 4% of pixels off by more than 40. Measured, all within the
   gates: Smooth 0.16-1.60, Bands 0.29-1.62, Glow 0.14-1.17, Stripes 0.37-1.94,
-  Point 0.07-0.41 and Cross 0.08-1.28 (blurred difference). The deep views
-  run the perturbation path against straight float64.
+  Point 0.07-0.41 and Cross 0.08-1.28 (blurred difference; those two with
+  the old fixed ranges). The deep views run the perturbation path against
+  straight float64. Point and Cross take a per-view range: the 2nd-98th
+  percentile of the escaped pixels' trap distance, from a small probe of the
+  view (`trapRange` in `app.js`), blended with the old fixed range (`trapRangeFor`:
+  the fixed range while the probe's is as wide as it, the probe's once it is half
+  as wide or less, so shallow views look as they always did). The oracle's
+  `point` and `cross` styles use the same rule (`point_fixed` and `cross_fixed`
+  keep the old ranges): over mandelbrot, valley, ship, rabbit, seahorse (4e-10)
+  and minibrot (1.5e-12) with Plasma, Point measures 0.12-0.81 and Cross
+  0.35-1.28 (blurred difference), all within the same gates; the five shallow
+  trap baselines didn't change.
 - `node scripts/style-bench.mjs ['setColorStyle({style:"glow"})']`: the
   headless time of one fully refined frame. Headless Chromium on a Mac's GPU,
   so only for "did Smooth regress" and "what does a style add", never a

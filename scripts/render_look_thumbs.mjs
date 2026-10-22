@@ -21,10 +21,9 @@ const PORT = 8750;
 const SIZE = 192; // px per swatch: 3x the 64 px swatch the sheet shows, so it's sharp on a 3x phone
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Seahorse Valley at 6e-3 (233x deep) shows every style but the orbit
-// traps well, which lose contrast as you zoom in; they get the whole set.
+// Seahorse Valley at 6e-3 (233x deep) shows every style well, the orbit traps
+// included now that their colormap range is set per view.
 const VIEW = { cx: -0.743643887037151, cy: 0.131825904205330, scale: 6e-3, maxIter: 770 };
-const TRAP_VIEW = { cx: -0.75, cy: 0, scale: 1.4, maxIter: 300 };
 const CUSTOM = { id: "custom", style: "smooth", palette: "Spectrum", density: 3, offset: 0.1 };
 
 const src = readFileSync(join(root, "app.js"), "utf8");
@@ -62,10 +61,9 @@ try {
   await page.setViewportSize({ width: SIZE, height: Math.round(SIZE + toolbarH) });
   await page.addStyleTag({ content: "#speedBubble, .compass, #crosshair, #hud { visibility: hidden !important; }" });
   for (const look of looks) {
-    const VIEW_NOW = look.style === "point" || look.style === "cross" ? TRAP_VIEW : VIEW;
     await page.evaluate(`(() => {
       __vt.fractal("Mandelbrot", COLORMAPS.findIndex((c) => c.name === ${JSON.stringify(look.palette)}));
-      Object.assign(mainState, { cx: ${VIEW_NOW.cx}, cy: ${VIEW_NOW.cy}, scale: ${VIEW_NOW.scale}, rotation: 0, maxIter: ${VIEW_NOW.maxIter}, iterAutoLocked: true });
+      Object.assign(mainState, { cx: ${VIEW.cx}, cy: ${VIEW.cy}, scale: ${VIEW.scale}, rotation: 0, maxIter: ${VIEW.maxIter}, iterAutoLocked: true });
       setColorStyle({ style: ${JSON.stringify(look.style)}, density: ${look.density}, offset: ${look.offset} });
       requestRender();
     })()`);

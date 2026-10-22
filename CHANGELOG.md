@@ -3,6 +3,7 @@
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
 ## Unreleased
+- Color styles (hidden behind a setting for now): the Point and Cross orbit traps now work at any depth. Their colors stretch over the range the view really has, found from a small probe of the view, so a deep place no longer comes out one flat color. They were limited to about 1,000× deep before, and the Orbit trap and Cross trap Looks show Seahorse Valley.
 - Groundwork for color styles (not visible yet): the shaders can draw the whole-number "bands" coloring and take a bands and shift setting. Nothing changes on screen yet.
 - Groundwork for color styles (not visible yet): a "glow" style that draws the distance to the set's boundary, so thin filaments stay crisp at any depth.
 - Groundwork for color styles (not visible yet): a "stripes" style that colors by the angle of the orbit, giving feathery, painterly detail.

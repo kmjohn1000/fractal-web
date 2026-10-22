@@ -246,14 +246,38 @@ def style_t(F, P, style):
         e, ep = (F["Ea"], F["Eaprev"]) if style == "stripes" else (F["E"], F["Eprev"])
         A = ep + (e - ep) * f
         return np.clip(0.5 + (A - 0.5) * STRIPE_GAIN, 0, 1), esc
-    if style == "point":
-        return 1.0 - np.clip(F["pt"] / TRAP_RANGE, 0, 1) ** 0.5, np.ones_like(esc)
-    if style == "cross":
+    if style in ("point", "cross"):
+        v = F["pt" if style == "point" else "cross"]
+        lo, hi = trap_range(v, F["escaped"] > 0, TRAP_RANGE if style == "point" else CROSS_RANGE)
+        return 1.0 - np.clip((v - lo) / (hi - lo), 0, 1) ** 0.5, np.ones_like(esc)
+    if style in ("point_fixed", "cross_fixed"):  # the pre-auto-range traps, for comparison
+        if style == "point_fixed":
+            return 1.0 - np.clip(F["pt"] / TRAP_RANGE, 0, 1) ** 0.5, np.ones_like(esc)
         return 1.0 - np.clip(F["cross"] / CROSS_RANGE, 0, 1) ** 0.5, np.ones_like(esc)
     raise ValueError(style)
 
 
-STYLES = ("smooth", "bands", "glow", "stripes", "stripes_atan", "point", "cross")
+def trap_range(v, escaped, fixed_hi):
+    """The orbit traps' range as the app picks it (decodeTrapRange and trapRangeFor in
+    app.js): the 2nd-98th percentile of the escaped pixels' distances, or of every pixel
+    when fewer than 8% of them escaped (a view inside the set), blended with the old fixed
+    range 0..fixed_hi: that range is kept while the percentile range is as wide as it is,
+    and the colormap moves smoothly onto the percentile range as it narrows to half of
+    the fixed one or less (so a shallow view looks as it always did)."""
+    pool = v[escaped] if escaped.sum() >= max(24, 0.08 * v.size) else v.ravel()
+    lo, hi = np.percentile(pool, [2.0, 98.0])
+    if not hi > lo:
+        hi = lo * 1.01 + 1e-9
+    if lo >= fixed_hi:
+        return float(lo), float(hi)
+    w = min(1.0, max(0.0, (fixed_hi - hi) / (0.5 * fixed_hi)))
+    lo, hi = w * lo, fixed_hi + w * (hi - fixed_hi)
+    if not hi > lo:
+        hi = lo * 1.01 + 1e-9
+    return float(lo), float(hi)
+
+
+STYLES = ("smooth", "bands", "glow", "stripes", "stripes_atan", "point", "cross", "point_fixed", "cross_fixed")
 
 
 def colorize(F, meta, style, lut, density=1.0, shift=0.0):

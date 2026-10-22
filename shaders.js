@@ -329,11 +329,16 @@ vec3 stripeColor(int iter, vec2 z, vec4 S) {
 // vertical line through it). Point colors by the first, Cross by the second;
 // both color the interior too, which never escapes but still has an orbit.
 // The first iterate sits at c, the pixel itself, so it's skipped. Every
-// pixel's orbit shares nearly the same shape in a deep view, so the contrast
-// fades as you zoom in (about 1,000x is the useful limit, see COLOR_STYLES).
+// pixel's orbit shares nearly the same shape in a deep view, so the distances
+// all land in a narrow band that a fixed range paints one color. The range is
+// set per view instead (app.js trapRangeFor): the 2nd-98th percentile of the
+// distance over a small probe of the same view, so [u_trapLo, u_trapHi] maps
+// to the whole colormap at any depth. Without a probe the app sends the old
+// fixed ranges (0..1 Point, 0..0.2 Cross).
 uniform vec2 u_trapCenter;
-const float COLOR_TRAP_RANGE = 1.0;     // distance that maps to the far end of the colormap
-const float COLOR_CROSS_RANGE = 0.2;
+uniform float u_trapLo;       // distance that maps to the near end of the colormap
+uniform float u_trapHi;       // distance that maps to the far end
+uniform int u_trapProbe;      // 1: write the distance (log, 16 bits) and the escaped flag instead of a color
 
 vec2 trapStart() { return vec2(1e18, 1e18); }
 
@@ -342,10 +347,16 @@ vec2 trapStep(vec2 T, vec2 z) {
   return min(T, vec2(dot(d, d), min(abs(d.x), abs(d.y))));
 }
 
-vec3 trapColor(vec2 T) {
-  float t = u_style == STYLE_CROSS
-    ? 1.0 - sqrt(clamp(T.y / COLOR_CROSS_RANGE, 0.0, 1.0))
-    : 1.0 - sqrt(clamp(sqrt(T.x) / COLOR_TRAP_RANGE, 0.0, 1.0));
+vec3 trapColor(vec2 T, bool escaped) {
+  float d = u_style == STYLE_CROSS ? T.y : sqrt(T.x);
+  if (u_trapProbe == 1) {
+    // ln(1e-12) .. ln(1e2) in 16 bits (red high byte, green low byte).
+    float e = clamp((log(max(d, 1e-12)) + 27.6310211) / 32.2361913, 0.0, 1.0);
+    float q = floor(e * 65535.0 + 0.5);
+    float hiByte = floor(q / 256.0);
+    return vec3(hiByte / 255.0, (q - hiByte * 256.0) / 255.0, escaped ? 1.0 : 0.0);
+  }
+  float t = 1.0 - sqrt(clamp((d - u_trapLo) / max(u_trapHi - u_trapLo, 1e-30), 0.0, 1.0));
   return styleColor(t);
 }
 #endif
@@ -600,7 +611,7 @@ vec3 renderEscapeFast(vec2 p) {
   }
 
 #if COLOR_VARIANT == 3
-  return trapColor(T);
+  return trapColor(T, escaped);
 #endif
   if (!escaped) return vec3(0.0);
 
@@ -739,7 +750,7 @@ vec3 renderEscapePerturbation(vec2 uv) {
   }
 
 #if COLOR_VARIANT == 3
-  return trapColor(T);
+  return trapColor(T, escaped);
 #endif
   if (!escaped) return vec3(0.0);
 #if COLOR_VARIANT == 1

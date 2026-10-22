@@ -936,7 +936,7 @@ function createFractalRenderer(canvas) {
     "juliaC", "phoenixP", "lut", "style", "density", "offset", "pixelSize", "trapCenter", "digitDepth", "digitLevel",
     "digitCenter", "digitScale", "cellHole", "digitCycle", "subPixelColor", "apoW0", "apoK", "apoL", "apoFlip",
     "apoSteps", "apoCapColor", "jitter", "usePerturbation", "refOrbitTex", "refOrbitLen", "critOffset",
-    "critLen", "refTexWidth", "refOffset"];
+    "critLen", "refTexWidth", "refOffset", "trapLo", "trapHi", "trapProbe"];
   function fractalEntry(variant, p) {
     const entry = { prog: p, u: Object.fromEntries(UNIFORMS.map((n) => [n, gl.getUniformLocation(p, `u_${n}`)])) };
     programs.set(variant, entry);
@@ -1129,6 +1129,48 @@ function createFractalRenderer(canvas) {
   function drawFinal(sampleIndex, u) {
     if (liveDiv > 1 && isInteracting && sampleIndex === 0) drawSmall(u);
     else drawToCanvas(sampleIndex);
+  }
+
+  // Orbit traps' range (Point and Cross). A deep view's orbits all look
+  // alike, so a fixed distance range paints it one color; the range is
+  // instead set per view from a probe: the same program draws a small
+  // (TRAP_PROBE_H rows) copy of the view that writes each pixel's distance
+  // and escaped flag (the trap-probe mode of trapColor in shaders.js), read
+  // back with readPixels, and the 2nd-98th percentile of the escaped pixels'
+  // distances becomes [lo, hi]. It runs when a refinement chain starts on a
+  // view it hasn't seen, and not while a gesture or flight is on (the last
+  // range is reused then, so the colors don't flicker), only the first time
+  // if there is none yet. trapRangeKey is every input the distances depend on.
+  const TRAP_PROBE_H = 48;
+  let trapRange = null; // { key, lo, hi } or null
+  function trapFixedRange(cs) { return cs.glsl === 5 ? { lo: 0, hi: 0.2 } : { lo: 0, hi: 1 }; }
+  function probeTrapRange(u, cs) {
+    const h = TRAP_PROBE_H;
+    const w = Math.max(8, Math.round(h * canvas.width / canvas.height));
+    gl.uniform1i(u.trapProbe, 1);
+    gl.uniform2f(u.jitter, 0, 0);
+    gl.uniform2f(u.resolution, w, h);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, w, h);
+    gl.disable(gl.BLEND);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    const px = new Uint8Array(w * h * 4);
+    gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    gl.uniform1i(u.trapProbe, 0);
+    gl.uniform2f(u.jitter, SAMPLE_OFFSETS[0][0], SAMPLE_OFFSETS[0][1]);
+    gl.uniform2f(u.resolution, canvas.width, canvas.height);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    return trapRangeFor(px, trapFixedRange(cs));
+  }
+  function updateTrapRange(u, state, cs, sampleIndex) {
+    const key = [cs.glsl, cs.trap[0], cs.trap[1], state.ftype, state.cx, state.cy, state.scale, state.rotation || 0,
+      state.power, state.maxIter, state.isJulia, state.juliaC[0], state.juliaC[1], canvas.width, canvas.height].join(",");
+    if (sampleIndex === 0 && (!trapRange || (trapRange.key !== key && !isInteracting))) {
+      trapRange = { key, ...probeTrapRange(u, cs) };
+    }
+    const r = trapRange || trapFixedRange(cs);
+    gl.uniform1f(u.trapLo, r.lo);
+    gl.uniform1f(u.trapHi, r.hi);
   }
 
   // Reference orbit for the current view, reused by that view's
@@ -1372,6 +1414,7 @@ function createFractalRenderer(canvas) {
     // measured in these, so a retina phone and a laptop show the same glow.
     gl.uniform1f(u.pixelSize, 2 * state.scale / (canvas.clientHeight || canvas.height / dpr));
     gl.uniform2f(u.trapCenter, cs.trap[0], cs.trap[1]);
+    gl.uniform1i(u.trapProbe, 0);
     // Per view, not per pass: every later sample in a refinement chain is
     // the same view (any change restarts at sample 0), and the program
     // keeps its uniforms between draws.
@@ -1412,6 +1455,7 @@ function createFractalRenderer(canvas) {
     gl.uniform1i(u.lut, 0);
 
     if (!usePerturbation) {
+      if (cs.variant === 3) updateTrapRange(u, state, cs, sampleIndex);
       drawFinal(sampleIndex, u);
       return null;
     }
@@ -1453,6 +1497,7 @@ function createFractalRenderer(canvas) {
     gl.uniform1i(u.critLen, refCache.critLen);
     gl.uniform1f(u.refTexWidth, refCache.width);
     gl.uniform2f(u.refOffset, refCache.dx, refCache.dy);
+    if (cs.variant === 3) updateTrapRange(u, state, cs, sampleIndex);
     drawToCanvas(sampleIndex);
     return "perturbation";
   }
@@ -1603,11 +1648,15 @@ const COLOR_STYLES = [
   // separate fixed-point shader.
   { id: "glow", glsl: 2, variant: 1, label: "Glow", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
   { id: "stripes", glsl: 3, variant: 2, label: "Stripes", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
-  // Orbit traps color by how close the orbit came to a point or a cross. Every
-  // pixel's orbit looks alike in a deep view, so the traps go flat as you zoom
-  // in: past ~1,000x they're not offered (maxZoom) and the view draws Smooth.
-  { id: "point", glsl: 4, variant: 3, label: "Point", maxZoom: 1000, types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
-  { id: "cross", glsl: 5, variant: 3, label: "Cross", maxZoom: 1000, types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
+  // Orbit traps color by how close the orbit came to a point or a cross. In a
+  // deep view every pixel's orbit looks alike, so the distances fall in a
+  // narrow band; the renderer stretches the colormap over the view's real
+  // range (trapRange in createFractalRenderer), so they work at any depth.
+  // (A style can still be limited with `maxZoom`: past that many times deep
+  // it isn't offered and the view draws Smooth. The traps were limited to
+  // 1,000 before the auto-range.)
+  { id: "point", glsl: 4, variant: 3, label: "Point", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
+  { id: "cross", glsl: 5, variant: 3, label: "Cross", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
 ];
 const COLOR_BANDS_RANGE = [0.25, 8];
 // A style's id in share links (st=); "c" is taken by the vector modes' solid
@@ -1621,6 +1670,47 @@ function trapCenterFor(state) {
   if (colorStyle.trap) return colorStyle.trap;
   if (state.isJulia || (state.ftype === FTYPE.ESCAPE && state.power > 2.5)) return [0, 0];
   return TRAP_CENTERS.get(state.ftype) || [0, 0];
+}
+
+// The orbit traps' range from a probe's RGBA bytes (see probeTrapRange in the
+// renderer): red and green are the distance's log in 16 bits over
+// ln(1e-12) .. ln(1e2) (the same constants as trapColor in shaders.js), blue is
+// the escaped flag. The range is the 2nd-98th percentile of the escaped
+// pixels' distances, or of every pixel when almost none escaped (a view inside
+// the set, where the traps color the interior). null when it can't be told.
+const TRAP_LN_LO = -27.6310211, TRAP_LN_SPAN = 32.2361913;
+function decodeTrapRange(px) {
+  const all = [], escaped = [];
+  for (let i = 0; i + 3 < px.length; i += 4) {
+    const d = Math.exp(TRAP_LN_LO + ((px[i] * 256 + px[i + 1]) / 65535) * TRAP_LN_SPAN);
+    all.push(d);
+    if (px[i + 2] > 127) escaped.push(d);
+  }
+  const pool = escaped.length >= Math.max(24, all.length * 0.08) ? escaped : all;
+  if (pool.length < 8) return null;
+  pool.sort((a, b) => a - b);
+  const lo = pool[Math.floor(0.02 * (pool.length - 1))];
+  let hi = pool[Math.ceil(0.98 * (pool.length - 1))];
+  if (!Number.isFinite(lo) || !Number.isFinite(hi)) return null;
+  if (!(hi > lo)) hi = lo * 1.01 + 1e-9; // a flat view: any range will do
+  return { lo, hi };
+}
+
+// The range the traps use. A shallow view has its far field in the
+// percentile (orbits that escape far from the trap), and stretching over it
+// paled everything near the set, so the fixed range (0..1 Point, 0..0.2
+// Cross) stays in force while the probe's range is as wide as it is; as the
+// probe's range narrows to half of it or less (a deep view, whose distances
+// sit in a narrow band) the colormap moves smoothly onto the probe's range,
+// so there's no jump while zooming. fixed = { lo, hi }.
+function trapRangeFor(px, fixed) {
+  const r = decodeTrapRange(px);
+  if (!r) return fixed;
+  if (r.lo >= fixed.hi) return r; // everything lies beyond the fixed range
+  const w = Math.min(1, Math.max(0, (fixed.hi - r.hi) / (0.5 * (fixed.hi - fixed.lo))));
+  const lo = fixed.lo + w * (r.lo - fixed.lo);
+  const hi = fixed.hi + w * (r.hi - fixed.hi);
+  return { lo, hi: hi > lo ? hi : lo * 1.01 + 1e-9 };
 }
 
 // Styles are being built behind a flag (see TODO.md): the new controls stay

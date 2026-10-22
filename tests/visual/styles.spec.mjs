@@ -8,7 +8,7 @@ import { test, expect } from "@playwright/test";
 import { PNG } from "pngjs";
 
 /* global setColorStyle, colorStyle, colorStyleFor, mainState, enterDual, mainRenderer, markInteracting, renderAll,
-   COLORMAPS, captureShareBlob */
+   COLORMAPS, captureShareBlob, decodeTrapRange, trapRangeFor */
 
 const DRIVER = new URL("../driver.js", import.meta.url).pathname;
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
@@ -251,16 +251,92 @@ test.describe("Orbit traps (Point and Cross)", () => {
     });
   }
 
-  // The traps go flat as you zoom in, so past about 1,000x deep the view
-  // draws Smooth (the style stays chosen and returns when you zoom back out).
-  test("are offered up to about 1,000x deep and draw Smooth beyond", async ({ page }) => {
+  // The traps' colormap range is set per view from a probe (trapRange in
+  // createFractalRenderer), so they work at any depth: they're offered at all
+  // zooms, and a deep view still has real contrast, where a fixed range
+  // painted it one color (the contrast across a deep view fell to 0%).
+  test("are offered at any depth", async ({ page }) => {
     const r = await page.evaluate(() => {
       window["__vt"].fractal("Mandelbrot");
       setColorStyle({ style: "point" });
       const at = (zoom) => { mainState.scale = mainState.baseScale / zoom; return colorStyleFor(mainState).glsl; };
-      return { opening: at(1), x500: at(500), x1000: at(1000), x2000: at(2000), deep: at(1e9), back: at(10), chosen: colorStyle.style };
+      return { opening: at(1), x2000: at(2000), x1e9: at(1e9), x1e13: at(1e13), back: at(10), chosen: colorStyle.style };
     });
-    expect(r).toEqual({ opening: 4, x500: 4, x1000: 4, x2000: 0, deep: 0, back: 4, chosen: "point" });
+    expect(r).toEqual({ opening: 4, x2000: 4, x1e9: 4, x1e13: 4, back: 4, chosen: "point" });
+  });
+
+  const placeCall = (label) => `__vt.place(TELEPORT_DESTINATIONS.findIndex((d) => d.label === ${JSON.stringify(label)}))`;
+  for (const [place, style] of [["Seahorse Valley", "point"], ["Seahorse Valley", "cross"], ["Mini Mandelbrot", "point"], ["Mini Mandelbrot", "cross"]]) {
+    test(`${style} at ${place} (deep) has real contrast, not one flat color`, async ({ page }) => {
+      await page.evaluate(`${placeCall(place)}; setColorStyle({ style: ${JSON.stringify(style)} });`);
+      await waitSettled(page);
+      const r = await page.evaluate(() => {
+        const c = document.getElementById("mainCanvas");
+        const t = document.createElement("canvas"); t.width = 120; t.height = 120;
+        const g = t.getContext("2d");
+        g.drawImage(c, 0, 0, 120, 120);
+        const d = g.getImageData(0, 0, 120, 120).data;
+        const lum = [];
+        for (let i = 0; i < d.length; i += 4) lum.push(0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2]);
+        const mean = lum.reduce((a, b) => a + b, 0) / lum.length;
+        const sd = Math.sqrt(lum.reduce((a, b) => a + (b - mean) ** 2, 0) / lum.length);
+        return { sd, scale: mainState.scale, drawn: colorStyleFor(mainState).glsl };
+      });
+      expect(r.scale).toBeLessThan(1e-9);
+      expect(r.drawn, "the trap style is drawn at depth").toBeGreaterThanOrEqual(4);
+      // A flat frame has a standard deviation near 0; the auto-ranged traps measure 25-70.
+      expect(r.sd, "the deep frame spans the colormap").toBeGreaterThan(15);
+    });
+  }
+
+  // The probe's bytes: red and green hold ln(distance) over ln(1e-12) .. ln(1e2)
+  // in 16 bits, blue the escaped flag; the range is the 2nd-98th percentile.
+  test("the range decoded from a probe is the percentile of the escaped distances", async ({ page }) => {
+    const r = await page.evaluate(() => {
+      const enc = (d) => { const q = Math.round(((Math.log(d) + 27.6310211) / 32.2361913) * 65535); return [q >> 8, q & 255]; };
+      const px = [];
+      for (let i = 0; i < 100; i++) { const d = 0.001 + i * 0.0001; px.push(...enc(d), 255, 255); } // escaped: 0.001 .. 0.0109
+      for (let i = 0; i < 40; i++) px.push(...enc(0.5), 0, 255);                                       // interior: far away
+      const a = decodeTrapRange(Uint8Array.from(px));
+      // Almost nothing escaped: every pixel counts.
+      const few = [];
+      for (let i = 0; i < 50; i++) few.push(...enc(0.2 + i * 0.001), i < 3 ? 255 : 0, 255);
+      const b = decodeTrapRange(Uint8Array.from(few));
+      // A flat view still gets a usable range, and garbage gives null.
+      const flat = [];
+      for (let i = 0; i < 30; i++) flat.push(...enc(0.25), 255, 255);
+      return { a, b, flat: decodeTrapRange(Uint8Array.from(flat)), none: decodeTrapRange(new Uint8Array(0)) };
+    });
+    expect(r.a.lo).toBeGreaterThan(0.00099); expect(r.a.lo).toBeLessThan(0.0013);
+    expect(r.a.hi).toBeGreaterThan(0.0105); expect(r.a.hi).toBeLessThan(0.0112);
+    expect(r.b.hi, "mostly interior: the range covers every pixel").toBeGreaterThan(0.24);
+    expect(r.flat.hi).toBeGreaterThan(r.flat.lo);
+    expect(r.none).toBeNull();
+  });
+
+  // The fixed range stays while the probe's is as wide as it is (a shallow
+  // view, whose far field would stretch it, keeps its contrast); as the
+  // probe's narrows to half of it or less the colormap moves onto it.
+  test("the range is the fixed one for a shallow view and the probe's for a deep one", async ({ page }) => {
+    const r = await page.evaluate(() => {
+      const enc = (d) => { const q = Math.round(((Math.log(d) + 27.6310211) / 32.2361913) * 65535); return [q >> 8, q & 255]; };
+      const make = (f) => { const px = []; for (let i = 0; i < 100; i++) px.push(...enc(f(i)), 255, 255); return Uint8Array.from(px); };
+      const fixed = { lo: 0, hi: 1 };
+      return {
+        shallow: trapRangeFor(make((i) => 0.02 + i * 0.03), fixed),   // 0.02 .. 3: the far field is wider than the fixed range
+        mid: trapRangeFor(make((i) => 0.05 + i * 0.007), fixed),      // 0.05 .. 0.74: half way onto the probe's range
+        deep: trapRangeFor(make((i) => 0.30 + i * 0.0001), fixed),    // a narrow band inside it
+        far: trapRangeFor(make((i) => 2 + i * 0.01), fixed),          // everything beyond the fixed range: not clamped to nothing
+        none: trapRangeFor(new Uint8Array(0), fixed),
+      };
+    });
+    expect(r.shallow).toEqual({ lo: 0, hi: 1 });
+    expect(r.mid.hi, "between the fixed and the probe's end").toBeGreaterThan(0.74); expect(r.mid.hi).toBeLessThan(1);
+    expect(r.mid.lo).toBeGreaterThan(0); expect(r.mid.lo).toBeLessThan(0.1);
+    expect(r.deep.hi).toBeLessThan(0.311); expect(r.deep.hi).toBeGreaterThan(0.309);
+    expect(r.deep.lo).toBeGreaterThan(0.2999);
+    expect(r.far.hi).toBeGreaterThan(r.far.lo);
+    expect(r.none).toEqual({ lo: 0, hi: 1 });
   });
 
   test("Newton, Carpet and Phoenix never draw them", async ({ page }) => {
