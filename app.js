@@ -1379,8 +1379,12 @@ function createFractalRenderer(canvas) {
     const t0 = performance.now();
     const path = renderPass(state, sampleIndex);
     if (Diag.enabled) {
-      Diag.pass(gl, `${canvas.id} ${Object.keys(FTYPE)[state.ftype]} ${path || "float32"} ${styleDrawn(colorStyle.style, state)}, `
-        + `${isInteracting ? "live" : sampleIndex === 0 ? "first pass" : "refine pass"}`, performance.now() - t0);
+      // The fractal's name (the Julia pane of a dual view is its own row),
+      // the path and style, and the kind of pass; a live frame also says if it
+      // was drawn small (setLiveDivisor), since that changes what its time means.
+      const where = canvas.id === "mainCanvas" ? currentName : "Julia pane";
+      const kind = isInteracting ? (liveDiv > 1 ? `live at 1/${liveDiv} size` : "live") : sampleIndex === 0 ? "first pass" : "refine pass";
+      Diag.pass(gl, `${where} ${path || "float32"} ${styleDrawn(colorStyle.style, state)}, ${kind}`, performance.now() - t0);
     }
     return path;
   }

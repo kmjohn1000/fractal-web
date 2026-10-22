@@ -114,8 +114,40 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         `https://kmjohn1000.github.io/fractal-web/#diag` as a link), tap the
         "diag" pill, use the views that matter (deep Mandelbrot, Phoenix
         and Newton deep, a Glow or Stripes pick, a Surprise-me flight), then
-        Copy the report. Still to do: run it on the iPhone 15, in Safari and
-        in the app, and read the numbers
+        Copy or Share the report. Results 2026-10-22, iPhone 15 in Safari
+        (not yet in the app; GPU ms are submit-to-fence, so up to ~4 ms
+        late and including queueing):
+        - Extensions: `EXT_color_buffer_float`, `EXT_color_buffer_half_float`
+          and `KHR_parallel_shader_compile` yes; `EXT_float_blend`,
+          `OES_texture_float_linear` and `EXT_disjoint_timer_query_webgl2`
+          no (desktop WebKit has the first two, so desktop tests don't
+          predict this). Fences work; a WebGPU adapter is present, with
+          `shader-f16` and `timestamp-query` but not `subgroups`
+        - Shader links: default variant 6-18 ms, Phoenix deep 393 ms the
+          first time and 22 ms on later loads (Safari seems to cache the
+          compile). The Glow/Stripes/trap variants warm up in parallel at
+          0-1 ms of main-thread time and finish at 0 ms
+        - Opening view (786x1098), per pass: Smooth 8, Bands 10, Glow 11,
+          Stripes 11, Orbs 19, Rays 20 ms; a drag frame costs the same as
+          a refine pass (Orbs/Rays live 17-18 ms, over a 16.7 ms frame)
+        - Mandelbrot at 4e-10 (perturbation), per refine pass: Smooth 41,
+          Stripes 51, Orbs/Rays 44, Glow 59 ms; 16 passes finish in ~0.7-1.0
+          s. Another deep place measured 98 ms per pass, so cost varies by
+          place, not by depth alone
+        - Phoenix: float32 first/refine/live 60/39/20 ms; deep ~300-350 ms
+          per pass, 4 samples (its refine median is a no-op artifact:
+          passes after the 4th draw nothing)
+        - Dual view: Mandelbrot pane refine 9, Julia pane 11 ms
+        - Julia-set flights (Smooth, float32): 2117 live frames at 19 ms
+          median, p90 22, max 25; no context loss. Whether the late-frame
+          resolution drop was active wasn't logged then (labels now carry
+          it)
+        - What this changes: per-fractal shader variants are not worth
+          building (links are cheap and warm up off the thread); a float
+          accumulation buffer must be RGBA16F or ping-pong (no float
+          blending); perturbation at 40-100 ms per pass is the cost that
+          interior skip and adaptive supersampling would cut
+        - Still to do: the same runs in the app's web view
       - Interior skip + variance-adaptive supersampling (~100-180 lines in
         `render`, `scheduleRefinement`, a mask pass): after pass 0 mask the
         interior; after pass 3 keep refining only where samples still differ
@@ -125,7 +157,9 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       - Per-fractal shader variants (~60-100 lines in `link()`): `#define`
         variants compiled lazily, with `KHR_parallel_shader_compile` where
         present. Pass: pixel-identical output and >=15% faster pass or >=30%
-        faster link on the phone
+        faster link on the phone. Phone telemetry (above) says links are
+        6-18 ms and warm up off the thread, so only a >=15% faster pass
+        could justify it; unmeasured
       - Fence-paced rendering (~80-150 lines): time each pass with
         `fenceSync`, adapt passes per frame (several cheap passes per
         frame, one strip per frame for heavy ones). The route to retrying
@@ -133,7 +167,9 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         float textures (+150-250 lines; see Deep-zoom engine). Test: 20
         zoom-ins at 8000 without context loss
       - Offscreen float accumulation buffer instead of
-        `preserveDrawingBuffer` + `alpha:false` (~100-140 lines). Enables
+        `preserveDrawingBuffer` + `alpha:false` (~100-140 lines; the phone
+        has no `EXT_float_blend`, so use RGBA16F, which blends, or a
+        ping-pong pair with the average done in the shader). Enables
         the two items above and "Render past the screen edges"; touches
         Save/Share readback and the preview snapshot path
       - Dynamic resolution during live float32 gestures, driven by frame
