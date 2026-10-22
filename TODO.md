@@ -147,7 +147,16 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
           accumulation buffer must be RGBA16F or ping-pong (no float
           blending); perturbation at 40-100 ms per pass is the cost that
           interior skip and adaptive supersampling would cut
-        - Still to do: the same runs in the app's web view
+        - In the app's web view (Release build 1.39.4, 13:14-13:16): the
+          opening-view and drag numbers match Safari; first draws of the
+          Glow, Stripes and Orbs variants cost ~50-100 ms more than in Safari
+          (a one-off per style, small samples). Deep perturbation looked 3.8x
+          slower than Safari's earlier figures, but Safari repeated right
+          afterwards on the same phone gave 123 ms (Smooth) instead of 41, so
+          the phone's state (probably heat) moves deep-view cost about 3x.
+          Per pixel the app and Safari agree (155 ms on 786x1362 vs 123 ms on
+          786x1098). Treat every absolute deep-zoom time above as a cool-phone
+          best case: a warm phone takes 2-3.7 s to finish 16 passes at 4e-10
       - Interior skip + variance-adaptive supersampling (~100-180 lines in
         `render`, `scheduleRefinement`, a mask pass): after pass 0 mask the
         interior; after pass 3 keep refining only where samples still differ
