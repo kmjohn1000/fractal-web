@@ -589,32 +589,6 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       later: thumbnails that follow the current colormap, by storing
       grayscale iteration maps and colorizing them with the LUT when the
       picker opens.
-- [ ] Scale flight time to dive depth (user idea 2026-10-22): a Surprise-me
-      flight from a shallow view to a deep one goes by too fast to follow.
-      Today (`app.js`): `teleportDurationMs(distance)` is 1 s at distance
-      4, +50 ms per unit, capped at 2.5 s, so every flight past distance
-      ~34 takes 2.5 s however deep it goes; spiral dives are a fixed
-      `SPIRAL_DIVE_MS` (7 s) whatever their depth, and their spin is tied
-      to the zoom (90° per 3×), so a deeper spiral dive zooms and turns
-      faster per second, not just further.
-      - Time from distance: `path.distance * Math.SQRT2` is the e-folds of
-        zoom travelled (the spiral code already uses it), so duration =
-        e-folds / a cruise speed, with a floor for short hops and a cap
-        for the deepest places. Pick the speed by eye on a phone, for
-        plain flights and spiral dives separately. For a spiral the turn
-        count is already a whole number locked to the zoom, so a longer
-        dive turns more slowly per second at the same turns per e-fold.
-      - Below `DEEP_ZOOM_THRESHOLD` a flight shows the moving last-frame
-        preview (a stretched snapshot), not live frames (see the comment
-        above the Julia spiral dives and in `flyTo`), so a deeper flight
-        can look smeared however long it takes. Check whether a longer
-        flight alone reads better or the preview path needs work too
-        (see the render-past-the-edges item above).
-      - Keep Reduce Motion's short flight and the existing cancel and
-        landing behavior (`teleportGeneration`, exact landing).
-      - Check: a one-place-per-fractal sweep of flight times, and a screen
-        recording of a deep flight on a phone before and after.
-
 ## Later — big bets
 Flexible scope and timing. Chains: new types → formula editor → Fractint importer;
 distance estimation → zoom-to-minibrot / AI discovery.
@@ -732,6 +706,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
+- Flight time scales with dive depth (1.40.2, user idea 2026-10-22): a flight takes 250 ms per e-fold of zoom (`path.distance * √2`), 1 s at least and 7 s at most, so flights to the deepest places take ~7 s (they took ≤ 1.8 s from the opening view) and 1e-3 places ~1.8 s; spiral dives keep a 7 s floor and take 320 ms per e-fold above ~22 e-folds, capped at 12 s (of the 15 spiral places, only Golden Dive changes: 8.6 s); Reduce Motion keeps the old 1–2.5 s formula. Timed in headless WebKit (Mini Mandelbrot 6.99 s, Dragon's Eye 1.01 s, Into the Eye 7.00 s, Reduce Motion 1.80 s, all landing exactly); cold-open and live-res specs pass. The speeds are a first guess, not yet seen on a phone. Open: below `DEEP_ZOOM_THRESHOLD` a flight shows the moving last-frame preview, not live frames, so a deep flight may still look smeared (see the render-past-the-edges item); the plain flights still ease with the cubic curve, whose middle runs ~3× the average speed (spirals use the steady ease) — `b7428c4`
 - Color styles on for everyone (1.40.0, 2026-10-22): the styles flag is gone (`stylesEnabled`, its reload helpers, the flag-off tests and the diag panel's Styles button); the Color sheet, Looks, Custom tab and the `st`/`cd`/`co` share-link fields are always on. The `## Unreleased` notes became the 1.40.0 entry. Phone checks passed first (flags on in Safari and in the app: costs per style at the opening view and at depth, drags, flights, VoiceOver); results are in the telemetry item above. Not yet in an App Store build — `70183b0`
 - Color sheet fix pass, behind the styles flag (2026-10-22), from an independent design review and the owner's answers: the Looks are a grid with every tile on screen (four across on a phone, one row on an iPad) and both tabs are the same height, so the tab bar never moves; Classic and Inferno are palettes, so the Looks start with a Default tile (Smooth on Inferno); one set of plain names everywhere (Smooth, Bands, Edge glow, Stripes, Orbs, Rays) with the slider renamed Repeat, display names only (the `st` ids and share links are unchanged); a plain tap on the fractal closes the sheet while a drag or pinch leaves it open, and the closing tap doesn't also glide in dual view; on Newton, Carpet, Gasket and Apollonian the color button opens the same sheet with only the palette grid; Phoenix shows the style it draws; Reset, slider values on screen, roving focus in the radio groups, Done named "Done", the scroll position kept on a rebuild, the color button's name includes the Look; a 360 pt phone, landscape, 1.5x and 2x text and a centered iPad sheet; thumbnails re-rendered for the six Looks (94 KB). The Looks are about 38% of an 852 pt screen, both tabs, up from the 20% and 30% of the first rework, because Reset's 44 pt row and the grid's two rows share one height. `scripts/default-identity.mjs`: 26 states, zero differing pixels — `29febe2`, `799750c`
 - Coloring Style selector and Looks, built but dark (2026-10-21): behind `localStorage["fractalAtlas.styles"] = "1"` (or load the page with `#styles`; `#styles=0` turns it off), so the live output is unchanged (`scripts/default-identity.mjs`: 26 states, zero differing pixels). Six styles on the escape-time fractals: Smooth, Bands, Glow (exterior distance estimate, `dz/dc` as a 2x2 matrix for the folded maps, saturated at 1e30 for float32), Stripes (windowed stripe average, frequency 4 from x and y with no trig) and the Point and Cross orbit traps (offered up to ~1,000x deep, they color the interior); each costly style is a compiled variant of the escape-time shader, so the default program's code is untouched. Phoenix has Smooth and Bands; Newton, Carpet, Gasket and Apollonian keep their own schemes. A Color sheet on the color button (Looks tab: Classic, Inferno, Edge glow, Iteration bands, Stripes, Orbit trap, Cross trap with `icons/looks/` thumbnails from `scripts/render_look_thumbs.mjs`; Custom tab: style, palette, bands and shift), share-link fields `st`/`cd`/`co` (lenient, written only when not the default) and info card lines. Checked against a float64 oracle (`scripts/oracle/oracle.py`, `scripts/oracle-compare.mjs`; gates in `tests/README.md`) including the perturbation path, and by `styles.spec.mjs` and `color-sheet.spec.mjs`. Phone checks and flag removal are the item under Next — `acb3c1d`, `d37c39c`, `7592bdc`, `114a6f0`, `ce33ccb`, `0b9638a`, `45711eb`, `0677b34`
