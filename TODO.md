@@ -33,6 +33,14 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       scheme that keeps that batching. Decide whether it is a new Look-style
       option or just the tree's default, and check it with the twist gesture
       and the picker thumbnail (`node scripts/render_thumbs.mjs`).
+- [ ] Hexaflake fractal (user idea 2026-10-23): a hexagon replaced by seven
+      hexagons of 1/3 the size (six around one in the center), repeated.
+      Probably an IFS mode like the Sierpinski triangle and Vicsek (seven
+      maps, 1/3 scale) or a vector mode like the tree; pick whichever
+      reuses the most existing code. Needs the new-fractal checklist: the
+      twist rotation gesture, a picker thumbnail
+      (`node scripts/render_thumbs.mjs`), and a row in
+      `docs/learn-more-links.md` (Wikipedia "Hexaflake").
 
 - [ ] Render past the screen edges so a drag reveals image, not blank
       (user idea 2026-10-15). Where it matters: only deep zoom (scale <
