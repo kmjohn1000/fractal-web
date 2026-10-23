@@ -589,6 +589,31 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       later: thumbnails that follow the current colormap, by storing
       grayscale iteration maps and colorizing them with the LUT when the
       picker opens.
+- [ ] Scale flight time to dive depth (user idea 2026-10-22): a Surprise-me
+      flight from a shallow view to a deep one goes by too fast to follow.
+      Today (`app.js`): `teleportDurationMs(distance)` is 1 s at distance
+      4, +50 ms per unit, capped at 2.5 s, so every flight past distance
+      ~34 takes 2.5 s however deep it goes; spiral dives are a fixed
+      `SPIRAL_DIVE_MS` (7 s) whatever their depth, and their spin is tied
+      to the zoom (90° per 3×), so a deeper spiral dive zooms and turns
+      faster per second, not just further.
+      - Time from distance: `path.distance * Math.SQRT2` is the e-folds of
+        zoom travelled (the spiral code already uses it), so duration =
+        e-folds / a cruise speed, with a floor for short hops and a cap
+        for the deepest places. Pick the speed by eye on a phone, for
+        plain flights and spiral dives separately. For a spiral the turn
+        count is already a whole number locked to the zoom, so a longer
+        dive turns more slowly per second at the same turns per e-fold.
+      - Below `DEEP_ZOOM_THRESHOLD` a flight shows the moving last-frame
+        preview (a stretched snapshot), not live frames (see the comment
+        above the Julia spiral dives and in `flyTo`), so a deeper flight
+        can look smeared however long it takes. Check whether a longer
+        flight alone reads better or the preview path needs work too
+        (see the render-past-the-edges item above).
+      - Keep Reduce Motion's short flight and the existing cancel and
+        landing behavior (`teleportGeneration`, exact landing).
+      - Check: a one-place-per-fractal sweep of flight times, and a screen
+        recording of a deep flight on a phone before and after.
 
 ## Later — big bets
 Flexible scope and timing. Chains: new types → formula editor → Fractint importer;
