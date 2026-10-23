@@ -69,6 +69,7 @@ try {
   await setHeight(640);
   // A return visitor who closed the welcome card: no cold-open flight and no
   // card over the thumbnails.
+  await send("Page.enable"); // without it the script below never ran (the card showed over the thumbs)
   await send("Page.addScriptToEvaluateOnNewDocument", {
     source: `try { localStorage.setItem("fractalAtlas.visited", "1"); localStorage.setItem("fractalAtlas.welcomeDismissed", "1"); } catch {}`,
   });
