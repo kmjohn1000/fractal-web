@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.40.3 — 2026-10-22
+- Flights to deep places now show the zoom as it happens. Below about a thousand times in, a flight used to stretch one old picture until it landed, so for most of the way down you saw a flat color. Now the picture is drawn again for real every time it has been stretched about 8 times, so detail keeps appearing all the way down (about nine redraws on the way to the deepest places). Long flights also zoom at a steadier speed instead of rushing through the middle. Short hops, dragging and pinching are unchanged.
+
 ## 1.40.2 — 2026-10-22
 - Flights to deep places now take longer the deeper they go, so you can follow the zoom instead of watching it flash by. Surprise me (and the website's first-visit flight) takes about 1.8 seconds to a place a thousand times in and 7 seconds to the deepest ones; before, no flight from the opening view took more than 1.8 seconds. Short hops are still about 1 second. Spiral dives keep their 7 seconds unless they cover more zoom than that, in which case they take proportionally longer (up to 12). With Reduce Motion on, flights keep their old short times.
 

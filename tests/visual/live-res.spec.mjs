@@ -123,3 +123,27 @@ test("a flight drawn small lands exactly as sharp as before", async ({ page }) =
   expect(r.scale, "the flight landed").toBeLessThan(1e-10);
   expect(r.differ, "pixels that differ between the landed picture and the full passes alone").toBe(0);
 });
+
+test("a deep flight re-renders keyframes below the threshold instead of stretching one snapshot", async ({ page }) => {
+  // Below DEEP_ZOOM_THRESHOLD (1e-3) a flight moves the last accurate frame; it used to be the
+  // frame at 1e-3, stretched for most of the flight, a flat color by the end. Now a real render
+  // at the current view replaces the snapshot each time it has been stretched 8x (flights only).
+  const r = await page.evaluate(async () => {
+    let keyframes = 0, previews = 0;
+    const render = mainRenderer.render, preview = mainRenderer.renderPreview;
+    mainRenderer.render = function (...a) { if (mainState.scale < 1e-3) keyframes++; return render.apply(this, a); };
+    mainRenderer.renderPreview = function (...a) { previews++; return preview.apply(this, a); };
+    const i = TELEPORT_DESTINATIONS.findIndex((d) => d.label === "Mini Mandelbrot");
+    const d = TELEPORT_DESTINATIONS[i];
+    flyToPlace(i);
+    await new Promise((res) => { const t = () => (mainState.scale === d.scale ? res() : requestAnimationFrame(t)); t(); });
+    mainRenderer.render = render;
+    mainRenderer.renderPreview = preview;
+    return { keyframes, previews, scale: mainState.scale, target: d.scale };
+  });
+  expect(r.scale, "the flight landed exactly").toBe(r.target);
+  // ~9 keyframes over the ~9 decades of zoom below 1e-3 (1e-3 to 1.5e-12 here); a few is enough
+  // to tell them from none, whatever the machine's frame rate.
+  expect(r.keyframes, "real renders below the threshold during the flight").toBeGreaterThanOrEqual(4);
+  expect(r.previews, "and the stretched preview between them").toBeGreaterThan(r.keyframes);
+});
