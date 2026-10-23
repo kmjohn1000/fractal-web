@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.40.4 — 2026-10-22
+- Flights are back to how they were in 1.40.1: Surprise me takes 1 to 2.5 seconds again, long flights ease the way they used to, and a deep flight shows one stretched picture until it lands. The longer, depth-scaled flights of 1.40.2 and the mid-flight redraws of 1.40.3 are undone.
+
 ## 1.40.3 — 2026-10-22
 - Flights to deep places now show the zoom as it happens. Below about a thousand times in, a flight used to stretch one old picture until it landed, so for most of the way down you saw a flat color. Now the picture is drawn again for real every time it has been stretched about 8 times, so detail keeps appearing all the way down (about nine redraws on the way to the deepest places). Long flights also zoom at a steadier speed instead of rushing through the middle. Short hops, dragging and pinching are unchanged.
 

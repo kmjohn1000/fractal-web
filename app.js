@@ -1591,17 +1591,8 @@ function createFractalRenderer(canvas) {
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
 
-  // How far the preview has been stretched past the accurate frame it is drawn
-  // from: the frame's scale over the current one (above 1 zooming in, below 1
-  // zooming out). The newest accurate frame is the one a preview would capture
-  // next, if no snapshot has been taken of it yet.
-  function previewMagnification(state) {
-    const from = needSnapshot ? lastView : snapView;
-    return from ? from.scale / state.scale : 1;
-  }
-
   return {
-    canvas, render, renderPreview, previewMagnification, setLUT, resize, perturbationSupported,
+    canvas, render, renderPreview, setLUT, resize, perturbationSupported,
     setLiveDivisor(d) { liveDiv = d; },
     warmVariant,
     primeVariant,
@@ -2054,34 +2045,12 @@ function deepZoomEligible(renderer, state) {
     || (renderer.phoenixDeepSupported && phoenixDeepEligible(state));
 }
 
-// A flight below the threshold would show one stretched snapshot until it
-// lands, so while a flight is on (and only then), once the preview has been
-// stretched past FLIGHT_KEYFRAME_MAG in either direction, one real render at
-// the current view replaces the snapshot: a keyframe, and the preview goes on
-// from it. isInteracting is cleared for that one call because it is what keeps
-// the accurate (perturbation) path off during a gesture; the reference orbit
-// it computes is why keyframes are rationed to one per FLIGHT_KEYFRAME_MIN_MS.
-const FLIGHT_KEYFRAME_MAG = 8;
-const FLIGHT_KEYFRAME_MIN_MS = 200;
-let lastKeyframeAt = 0;
-function renderFlightKeyframe(renderer, state) {
-  const now = performance.now();
-  const mag = renderer.previewMagnification(state);
-  if (!flightIsActive() || now - lastKeyframeAt < FLIGHT_KEYFRAME_MIN_MS
-    || (mag < FLIGHT_KEYFRAME_MAG && mag > 1 / FLIGHT_KEYFRAME_MAG)) return null;
-  lastKeyframeAt = now;
-  isInteracting = false;
-  try { return { path: renderer.render(state) }; } finally { isInteracting = true; }
-}
-
 function renderAll() {
   updateBackButtons();
   if (mode === "fractal") {
     if (isInteracting) adaptLiveResolution();
     if (isInteracting && deepZoomEligible(mainRenderer, mainState)) {
-      const keyframe = renderFlightKeyframe(mainRenderer, mainState);
-      if (keyframe) lastMainDeepPath = keyframe.path;
-      else mainRenderer.renderPreview(mainState);
+      mainRenderer.renderPreview(mainState);
     } else {
       lastMainDeepPath = mainRenderer.render(mainState);
     }
@@ -3665,28 +3634,15 @@ function zoomPath(p0, p1) {
   return f;
 }
 
-// Flight time scales with the zoom a flight covers, so a flight to a deep
-// place can be followed instead of flashing by. A path's distance times
-// sqrt(2) is the e-folds of zoom it travels (out and back in, for a flight
-// that starts deep). 250 ms per e-fold: ~1.8s from the opening view to a
-// place at 1e-3 (7 e-folds), ~7s to the deepest places (28 e-folds), which is
-// also the cap, so deep-to-deep flights take 7s too. A short hop still takes
-// 1s. Reduce Motion keeps the old short flights (1s to 2.5s).
-const FLIGHT_MS_PER_EFOLD = 250;
-const FLIGHT_MIN_MS = 1000;
-const FLIGHT_MAX_MS = 7000;
+// Flight time grows with distance: ~1s for a short hop from the opening
+// view (distance ~4), up to 2.5s for the longest deep-to-deep dives (~34).
 function teleportDurationMs(distance) {
-  if (prefersReducedMotion()) return Math.min(2500, Math.max(1000, 1000 + (distance - 4) * 50));
-  return Math.min(FLIGHT_MAX_MS, Math.max(FLIGHT_MIN_MS, distance * Math.SQRT2 * FLIGHT_MS_PER_EFOLD));
+  return Math.min(2500, Math.max(1000, 1000 + (distance - 4) * 50));
 }
 // Spiral dives (a destination's spiral flag) are slower, at a steady speed,
 // turning 90 degrees per 3x of zoom: five full turns on the way down from
-// the opening view. They take at least SPIRAL_DIVE_MS (the 3^20-deep dives
-// from the opening view, ~22 e-folds, stay at 7s), and a dive covering more
-// zoom takes proportionally longer, up to SPIRAL_MAX_MS.
+// the opening view.
 const SPIRAL_DIVE_MS = 7000;
-const SPIRAL_MS_PER_EFOLD = 320;
-const SPIRAL_MAX_MS = 12000;
 const SPIRAL_RAD_PER_ZOOM = (Math.PI / 2) / Math.log(3); // per e-fold
 // Speed ramps up over the first 12% of the flight, cruises, and slows over
 // the last 18% (fractions of time); returns the distance covered, 0..1.
@@ -3700,13 +3656,10 @@ function steadyEase(t, a = 0.12, b = 0.18) {
 let lastTeleportIndex = -1; // index into TELEPORT_DESTINATIONS; never picked twice in a row
 let teleportLandingIndex = -1; // TELEPORT_DESTINATIONS index of the last completed flight, for the info overlay
 let teleportGeneration = 0;
-let activeFlightGen = -1; // the generation of the flight under way, -1 between flights
 
 // Any direct manipulation (pointer, wheel, Back, fractal switch) wins over
 // an in-flight flight: bumping the generation makes its next frame a no-op.
 function cancelTeleport() { teleportGeneration++; }
-// A flight is on from flyTo until it lands or anything cancels it.
-function flightIsActive() { return activeFlightGen === teleportGeneration; }
 
 function teleport() {
   if (mode !== "fractal") return;
@@ -3768,21 +3721,13 @@ function flyTo(st, d, target, landingIndex, spinSign) {
   // runs at constant speed in zoom, so a turn linear in it keeps the spin
   // locked to the zoom. Reduced motion skips the spin and the long flight.
   const spiral = d.spiral && !prefersReducedMotion();
-  const efolds = path.distance * Math.SQRT2;
   if (spiral) {
-    const spin = spinSign * SPIRAL_RAD_PER_ZOOM * efolds;
+    const spin = spinSign * SPIRAL_RAD_PER_ZOOM * Math.SQRT2 * path.distance;
     turn += 2 * Math.PI * Math.round((spin - turn) / (2 * Math.PI));
   }
-  // The cubic ease zooms at ~3x the average speed through the middle, which
-  // flashes a long flight past; flights over 10 e-folds (about 2.5s) use the
-  // steady ease the spiral dives do. Short hops and Reduce Motion keep the cubic.
-  const steady = spiral || (!prefersReducedMotion() && efolds > 10);
-  const ease = steady ? steadyEase : (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
-  const durationMs = spiral
-    ? Math.min(SPIRAL_MAX_MS, Math.max(SPIRAL_DIVE_MS, efolds * SPIRAL_MS_PER_EFOLD))
-    : teleportDurationMs(path.distance);
+  const ease = spiral ? steadyEase : (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  const durationMs = spiral ? SPIRAL_DIVE_MS : teleportDurationMs(path.distance);
   const gen = ++teleportGeneration;
-  activeFlightGen = gen;
   const t0 = performance.now();
 
   // Each frame goes through the same path as a pinch frame: markInteracting
@@ -3809,7 +3754,6 @@ function flyTo(st, d, target, landingIndex, spinSign) {
       // Exact landing: the path's last point can be a few ulps off, which
       // matters at 1e-12 scales.
       Object.assign(st, target);
-      activeFlightGen = -1;
       // A slider-locked maxIter can be far too low for the new place (a
       // lock at 300 lands Seahorse Valley all black), so landing hands
       // maxIter back to auto mode; the settle's applyAutoIter sets it. A
