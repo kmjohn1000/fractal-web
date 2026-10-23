@@ -41,6 +41,17 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       twist rotation gesture, a picker thumbnail
       (`node scripts/render_thumbs.mjs`), and a row in
       `docs/learn-more-links.md` (Wikipedia "Hexaflake").
+- [ ] Peano curve, shaded by component with the colormaps (user idea
+      2026-10-23): the 3x3 space-filling curve (nine sub-squares per level,
+      snaking through them), colored along its length so each component
+      takes its place in the colormap, like the depth gradient on the other
+      line curves. Likely an L-system in the generic engine beside Hilbert,
+      Gosper and arrowhead (`LINE_CURVES`, same stroke path and colormap
+      picker); check whether the existing color is per segment or per
+      depth and how to color by position along the curve, so the levels
+      read as a gradient. Needs the new-fractal checklist: twist gesture,
+      a picker thumbnail (`node scripts/render_thumbs.mjs`), and a row in
+      `docs/learn-more-links.md` (Wikipedia "Peano curve").
 
 - [ ] Render past the screen edges so a drag reveals image, not blank
       (user idea 2026-10-15). Where it matters: only deep zoom (scale <
