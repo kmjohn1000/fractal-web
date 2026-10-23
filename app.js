@@ -3634,15 +3634,28 @@ function zoomPath(p0, p1) {
   return f;
 }
 
-// Flight time grows with distance: ~1s for a short hop from the opening
-// view (distance ~4), up to 2.5s for the longest deep-to-deep dives (~34).
+// Flight time scales with the zoom a flight covers, so a flight to a deep
+// place can be followed instead of flashing by. A path's distance times
+// sqrt(2) is the e-folds of zoom it travels (out and back in, for a flight
+// that starts deep). 250 ms per e-fold: ~1.8s from the opening view to a
+// place at 1e-3 (7 e-folds), ~7s to the deepest places (28 e-folds), which is
+// also the cap, so deep-to-deep flights take 7s too. A short hop still takes
+// 1s. Reduce Motion keeps the old short flights (1s to 2.5s).
+const FLIGHT_MS_PER_EFOLD = 250;
+const FLIGHT_MIN_MS = 1000;
+const FLIGHT_MAX_MS = 7000;
 function teleportDurationMs(distance) {
-  return Math.min(2500, Math.max(1000, 1000 + (distance - 4) * 50));
+  if (prefersReducedMotion()) return Math.min(2500, Math.max(1000, 1000 + (distance - 4) * 50));
+  return Math.min(FLIGHT_MAX_MS, Math.max(FLIGHT_MIN_MS, distance * Math.SQRT2 * FLIGHT_MS_PER_EFOLD));
 }
 // Spiral dives (a destination's spiral flag) are slower, at a steady speed,
 // turning 90 degrees per 3x of zoom: five full turns on the way down from
-// the opening view.
+// the opening view. They take at least SPIRAL_DIVE_MS (the 3^20-deep dives
+// from the opening view, ~22 e-folds, stay at 7s), and a dive covering more
+// zoom takes proportionally longer, up to SPIRAL_MAX_MS.
 const SPIRAL_DIVE_MS = 7000;
+const SPIRAL_MS_PER_EFOLD = 320;
+const SPIRAL_MAX_MS = 12000;
 const SPIRAL_RAD_PER_ZOOM = (Math.PI / 2) / Math.log(3); // per e-fold
 // Speed ramps up over the first 12% of the flight, cruises, and slows over
 // the last 18% (fractions of time); returns the distance covered, 0..1.
@@ -3721,12 +3734,15 @@ function flyTo(st, d, target, landingIndex, spinSign) {
   // runs at constant speed in zoom, so a turn linear in it keeps the spin
   // locked to the zoom. Reduced motion skips the spin and the long flight.
   const spiral = d.spiral && !prefersReducedMotion();
+  const efolds = path.distance * Math.SQRT2;
   if (spiral) {
-    const spin = spinSign * SPIRAL_RAD_PER_ZOOM * Math.SQRT2 * path.distance;
+    const spin = spinSign * SPIRAL_RAD_PER_ZOOM * efolds;
     turn += 2 * Math.PI * Math.round((spin - turn) / (2 * Math.PI));
   }
   const ease = spiral ? steadyEase : (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
-  const durationMs = spiral ? SPIRAL_DIVE_MS : teleportDurationMs(path.distance);
+  const durationMs = spiral
+    ? Math.min(SPIRAL_MAX_MS, Math.max(SPIRAL_DIVE_MS, efolds * SPIRAL_MS_PER_EFOLD))
+    : teleportDurationMs(path.distance);
   const gen = ++teleportGeneration;
   const t0 = performance.now();
 

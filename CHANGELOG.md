@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.40.2 — 2026-10-22
+- Flights to deep places now take longer the deeper they go, so you can follow the zoom instead of watching it flash by. Surprise me (and the website's first-visit flight) takes about 1.8 seconds to a place a thousand times in and 7 seconds to the deepest ones; before, no flight from the opening view took more than 1.8 seconds. Short hops are still about 1 second. Spiral dives keep their 7 seconds unless they cover more zoom than that, in which case they take proportionally longer (up to 12). With Reduce Motion on, flights keep their old short times.
+
 ## 1.40.1 — 2026-10-22
 - Deep zooms finish sharpening about twice as fast: views far into the Mandelbrot family, Newton's method and similar now stop after 8 of the 16 sharpening passes (on a phone that's about 1.2 seconds instead of 2.4), which looks the same at normal size. Shallow views, and Save and Share (which always finish all 16), are unchanged.
 - Fixed: the Color sheet could jump back to the Looks tab if you opened it and tapped Custom within the first few seconds after the app started.
