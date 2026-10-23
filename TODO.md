@@ -23,6 +23,17 @@ git-ignored file.
 Help people find beautiful places, and give them more ways to see them.
 Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-minibrot.
 
+- [ ] Pythagoras tree: alternate colors and shading (user idea 2026-10-23).
+      Today the tree is one color (or one colormap gradient by depth, via
+      `vectorColors.tree`). Options to look at: alternate the color of
+      squares between neighbouring levels or left/right branches; shade each
+      square by its depth or by its lean (light from one side), so the
+      branching reads as relief. Fills run in groups of 32 squares in
+      `treeView.render` (Canvas2D), so per-square colors need a cheap
+      scheme that keeps that batching. Decide whether it is a new Look-style
+      option or just the tree's default, and check it with the twist gesture
+      and the picker thumbnail (`node scripts/render_thumbs.mjs`).
+
 - [ ] Render past the screen edges so a drag reveals image, not blank
       (user idea 2026-10-15). Where it matters: only deep zoom (scale <
       1e-3, perturbation). Shallower views already re-render live every
