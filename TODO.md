@@ -589,6 +589,33 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       later: thumbnails that follow the current colormap, by storing
       grayscale iteration maps and colorizing them with the LUT when the
       picker opens.
+- [ ] Flight time and detail during deep flights (user idea 2026-10-22;
+      tried in 1.40.2 and 1.40.3, reverted in 1.40.4 because it did not
+      work; the owner did not say how, so ask before a second try).
+      The problem: a Surprise-me flight from a shallow view to a deep one
+      goes by too fast to follow, and below `DEEP_ZOOM_THRESHOLD` (1e-3)
+      it shows one stretched snapshot (a flat color by the end) because
+      `renderAll` suppresses the accurate render during a gesture. Today:
+      `teleportDurationMs` is 1 s to 2.5 s (every flight past distance
+      ~34 takes 2.5 s); spiral dives are a fixed 7 s.
+      Tried:
+      - 1.40.2: duration = 250 ms per e-fold of zoom (`path.distance *
+        Math.SQRT2`), 1 s floor, 7 s cap; spiral dives a 7 s floor then
+        320 ms per e-fold up to 12 s; Reduce Motion kept the old formula.
+        Timed in headless WebKit (a deep flight 6.99 s, was 1.8 s); not
+        checked on a phone.
+      - 1.40.3: during a flight below the threshold, a real render
+        replaces the snapshot each time the preview is stretched 8×
+        (isInteracting cleared for that one call, at most one per
+        200 ms; 9 on the deepest flight), and flights over 10 e-folds
+        used the steady ease. In headless WebKit the mid-flight frames
+        showed real detail (the snapshot alone was flat); the cost of a
+        keyframe on a phone was never measured.
+      Not tried: a pinch or drag at depth still shows the single
+      snapshot; precomputing keyframes along the known flight path before
+      it starts; a lower-resolution keyframe; time scaling without the
+      keyframes (or the reverse).
+
 ## Later — big bets
 Flexible scope and timing. Chains: new types → formula editor → Fractint importer;
 distance estimation → zoom-to-minibrot / AI discovery.
