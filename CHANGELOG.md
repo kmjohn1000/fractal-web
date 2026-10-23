@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.41.1 — 2026-10-23
+- The Pythagoras tree is shaded: each square is lit from the upper left by the way it leans, brightens from trunk to twigs, and every other level turns its hue, so the branching reads as relief. The light stays put on screen as you twist the view, and the color picker still sets the base color.
+
 ## 1.41.0 — 2026-10-23
 - Relief, a new Look and style: the fractal lit like an embossed surface, with the light at the upper left of the screen however you twist the view. It shades the palette's colors, so Repeat, Shift and every palette work with it, and it keeps its detail at any depth. The Look uses the Classic palette. Like Edge glow, it isn't available on Phoenix, Newton, Carpet, Gasket or Apollonian.
 

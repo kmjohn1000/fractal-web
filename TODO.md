@@ -18,6 +18,33 @@ git-ignored file.
       "The whole shape" line (simctl can't tap; check it on a phone or in
       Xcode before the next release). Relates to the portrait-rotation
       item under Next.
+- [ ] Proposed order of work (a suggestion the user pasted 2026-10-23;
+      not approved, not started; reorder freely). Existing items it
+      touches: Minimap, Auto-dive/flyover, deep flights (reverted in
+      1.40.3), the WebGL context-loss note, the Sierpinski/gasket pair.
+      1. Stabilize: no new fractal types for about a month, weekly
+         batched releases, experiments behind flags rather than shipped
+         and reverted; first the real-device checks above, and the iPhone
+         WebGL context loss.
+      2. Split `app.js` as a pure move along its section headers into
+         plain scripts, released alone with zero pixel changes (add each
+         file to `APP_SHELL`). Two parts need care: the places list into
+         `places.js`, and the deep-zoom code made free of DOM
+         dependencies so a Web Worker can run it later.
+      3. An index of the ~100 named places, browsable by fractal and
+         region, with thumbnails; tap to fly.
+      4. The info card says "near X" between named places; the minimap
+         (see Minimap); a one- or two-sentence caption per place, with
+         established names kept apart from our own names. Later, name the
+         actual bulb or minibrot on Mandelbrot.
+      5. Deep flights: reference orbits computed in a worker, the next
+         destination prepared while the viewer pauses on the current one;
+         then the flyover as a tour (a playlist plus pause timing). Skip
+         ambient drift and video export for now.
+      6. Small IFS wins: an equilateral Sierpinski triangle, settle its
+         overlap with the gasket, color the IFS modes by address through
+         the palettes; the hexaflake (built on a branch) after that, if
+         at all.
 
 ## Next — discovery and delight
 Help people find beautiful places, and give them more ways to see them.
