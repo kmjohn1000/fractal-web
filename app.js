@@ -1709,11 +1709,14 @@ const COLOR_STYLES = [
   // (and the share-link codes below) never change.
   { id: "point", glsl: 4, variant: 3, label: "Orbs", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
   { id: "cross", glsl: 5, variant: 3, label: "Rays", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
+  // Relief is lit from the distance estimate's derivative, so it shares Edge
+  // glow's compiled program (variant 1) and its limits.
+  { id: "relief", glsl: 6, variant: 1, label: "Relief", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
 ];
 const COLOR_BANDS_RANGE = [0.25, 8];
 // A style's id in share links (st=); "c" is taken by the vector modes' solid
 // color, so the three fields are st (style), cd (bands) and co (shift).
-const STYLE_LINK_CODES = new Map([["smooth", "sm"], ["bands", "bd"], ["glow", "de"], ["stripes", "sp"], ["point", "pt"], ["cross", "xt"]]);
+const STYLE_LINK_CODES = new Map([["smooth", "sm"], ["bands", "bd"], ["glow", "de"], ["stripes", "sp"], ["point", "pt"], ["cross", "xt"], ["relief", "rl"]]);
 // trap: an [x, y] override of the orbit traps' center (the checks use it to
 // match the oracle); null for the per-fractal default, see trapCenterFor.
 const colorStyle = { style: "smooth", density: 1, offset: 0, trap: null };
@@ -4152,6 +4155,7 @@ const COLOR_LOOKS = [
   { id: "bands", label: "Bands", style: "bands", palette: "Turbo" },
   { id: "orbs", label: "Orbs", style: "point", palette: "Twilight" },
   { id: "rays", label: "Rays", style: "cross", palette: "Plasma" },
+  { id: "relief", label: "Relief", style: "relief", palette: "Classic" },
 ];
 let colorSheetTab = "looks";
 
@@ -4487,16 +4491,17 @@ function renderColorSheet() {
   if (focusKey) sheet.querySelector(`[data-key="${focusKey}"]`)?.focus({ preventScroll: true });
 }
 
-// The style segments: all six in one row when every name fits its cell (a
+// The style segments: all seven in one row when every name fits its cell (a
 // word wider than its cell would overflow, which is what's measured), else
-// three and three. Measured on the open sheet, so it runs after it opens, after
+// four and three. Measured on the open sheet, so it runs after it opens, after
 // a rebuild and when the sheet's width changes (a rotation, the text size).
 function fitColorSegment() {
   const seg = els.colorSheet.querySelector(".seg");
   if (!seg || !els.colorSheet.classList.contains("open")) return;
-  seg.style.gridTemplateColumns = "repeat(6, minmax(0, 1fr))";
-  const over = [...seg.children].some((b) => b.scrollWidth > b.clientWidth + 1);
-  seg.style.gridTemplateColumns = over ? "repeat(3, minmax(0, 1fr))" : "repeat(6, minmax(0, 1fr))";
+  const count = seg.children.length;
+  const columns = (n) => { seg.style.gridTemplateColumns = `repeat(${n}, minmax(0, 1fr))`; };
+  columns(count);
+  if ([...seg.children].some((b) => b.scrollWidth > b.clientWidth + 1)) columns(Math.ceil(count / 2));
 }
 if (typeof ResizeObserver !== "undefined") new ResizeObserver(fitColorSegment).observe(els.colorSheet);
 

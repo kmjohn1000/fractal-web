@@ -8,7 +8,7 @@ import { test, expect } from "@playwright/test";
 import { PNG } from "pngjs";
 
 /* global setColorStyle, colorStyle, colorStyleFor, mainState, enterDual, mainRenderer, markInteracting, renderAll,
-   COLORMAPS, captureShareBlob, decodeTrapRange, trapRangeFor */
+   COLORMAPS, captureShareBlob, decodeTrapRange, trapRangeFor, requestRender */
 
 const DRIVER = new URL("../driver.js", import.meta.url).pathname;
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
@@ -172,6 +172,66 @@ test.describe("Glow", () => {
   });
 });
 
+test.describe("Relief", () => {
+  const classic = () => COLORMAPS.findIndex((c) => c.name === "Classic");
+
+  test("is Glow's compiled program with its own style number, on the same fractal types", async ({ page }) => {
+    const r = await page.evaluate(() => {
+      const out = {};
+      for (const f of ["Mandelbrot", "Burn. Ship", "Tricorn", "Celtic", "Multibrot³", "Julia:Rabbit", "Phoenix", "Newton z³", "Carpet"]) {
+        window["__vt"].fractal(f); setColorStyle({ style: "relief" });
+        const c = colorStyleFor(mainState);
+        out[f] = `${c.glsl}/${c.variant}`;
+      }
+      return out;
+    });
+    expect(r).toEqual({ "Mandelbrot": "6/1", "Burn. Ship": "6/1", "Tricorn": "6/1", "Celtic": "6/1", "Multibrot³": "6/1",
+      "Julia:Rabbit": "6/1", "Phoenix": "0/0", "Newton z³": "0/0", "Carpet": "0/0" });
+  });
+
+  for (const [name, fractal] of [["mandelbrot", "Mandelbrot"], ["ship", "Burn. Ship"], ["tricorn", "Tricorn"], ["celtic", "Celtic"],
+    ["multibrot", "Multibrot³"], ["julia-rabbit", "Julia:Rabbit"]]) {
+    test(`${fractal} opening view`, async ({ page }) => {
+      await page.evaluate(([f, g]) => { window["__vt"].fractal(f, g); setColorStyle({ style: "relief" }); }, [fractal, await page.evaluate(classic)]);
+      await checkStyled(page, `style-relief-${name}`);
+    });
+  }
+
+  test("Seahorse Valley (deep, perturbation)", async ({ page }) => {
+    await page.evaluate(`${place("Seahorse Valley")}; colormapIndex = COLORMAPS.findIndex((c) => c.name === "Classic"); updateLUT(); setColorStyle({ style: "relief" })`);
+    await checkStyled(page, "style-relief-seahorse");
+  });
+
+  test("Sunken Crown on Burning Ship (1.2e-12)", async ({ page }) => {
+    await page.evaluate(`${place("Sunken Crown")}; colormapIndex = COLORMAPS.findIndex((c) => c.name === "Classic"); updateLUT(); setColorStyle({ style: "relief" })`);
+    await checkStyled(page, "style-relief-sunken-crown");
+  });
+
+  // The light stays at the upper left of the screen when the view is twisted.
+  // The Rabbit's Julia set is point symmetric (z and -z escape alike), so
+  // centered on 0 a half turn draws the same picture: it is the same only if
+  // the shading's gradient is turned with the view (left in the plane's
+  // axes, the half turn would light it from the lower right).
+  test("the light doesn't turn with the view", async ({ page }) => {
+    await page.evaluate((g) => { window["__vt"].fractal("Julia:Rabbit", g); setColorStyle({ style: "relief" }); }, await page.evaluate(classic));
+    const grab = async (rotation) => {
+      await page.evaluate((r) => { Object.assign(mainState, { cx: 0, cy: 0, scale: 1.4, rotation: r }); requestRender(); }, rotation);
+      await waitSettled(page);
+      return page.evaluate(() => {
+        const c = mainRenderer.canvas, t = document.createElement("canvas");
+        t.width = 160; t.height = 160;
+        const g = t.getContext("2d");
+        g.drawImage(c, 0, 0, 160, 160);
+        return Array.from(g.getImageData(0, 0, 160, 160).data);
+      });
+    };
+    const [a, b] = [await grab(0), await grab(Math.PI)];
+    let sum = 0;
+    for (let k = 0; k < a.length; k += 4) sum += Math.abs(a[k] - b[k]) + Math.abs(a[k + 1] - b[k + 1]) + Math.abs(a[k + 2] - b[k + 2]);
+    expect(sum / (a.length / 4) / 3, "mean difference of 255 between the view and its half turn").toBeLessThan(2);
+  });
+});
+
 test.describe("Bands", () => {
   test("Mandelbrot opening view", async ({ page }) => {
     await page.evaluate(() => { window["__vt"].fractal("Mandelbrot"); setColorStyle({ style: "bands" }); });
@@ -213,7 +273,7 @@ test.describe("Stripes", () => {
 // Save and Share capture the canvas through captureShareBlob (plus a
 // watermark pill, bottom right): the file must be the frame on screen.
 test.describe("Save image", () => {
-  for (const style of ["glow", "stripes", "point", "bands"]) {
+  for (const style of ["glow", "stripes", "point", "bands", "relief"]) {
     test(`the saved image of a ${style} view is the frame on screen`, async ({ page }) => {
       await page.evaluate((s) => { window["__vt"].fractal("Mandelbrot"); setColorStyle({ style: s, density: 1.5, offset: 0.1 }); }, style);
       await waitSettled(page);

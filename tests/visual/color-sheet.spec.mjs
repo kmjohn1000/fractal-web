@@ -72,7 +72,7 @@ test.describe("the Color sheet", () => {
     await expect(page.locator('#colorSheet [role="tab"]')).toHaveText(["Looks", "Custom"]);
     await expect(page.locator('#colorSheet [role="tab"][aria-selected="true"]')).toHaveText("Looks");
     await expect(page.locator('#colorSheet [role="radiogroup"][aria-label="Looks"] [role="radio"]')).toHaveText(
-      ["Default", "Edge glow", "Stripes", "Bands", "Orbs", "Rays"]);
+      ["Default", "Edge glow", "Stripes", "Bands", "Orbs", "Rays", "Relief"]);
     // The default (Smooth on Inferno) is the Default Look. (Classic and Inferno are palettes, not Looks.)
     await expect(page.locator(LOOK_CHECKED)).toHaveText("Default");
     await expect(page.locator("#colormapBtn")).toHaveAttribute("aria-label", "Choose colors (Default, Inferno)");
@@ -135,8 +135,8 @@ test.describe("the Color sheet", () => {
   test("Custom has the style, palette, repeat and shift controls with names", async ({ page }) => {
     await page.locator("#colormapBtn").click();
     await page.locator('#colorSheet [role="tab"]', { hasText: "Custom" }).click();
-    // The same words as the Look tiles (Edge glow, Stripes, Bands, Orbs, Rays).
-    await expect(page.locator('#colorSheet [aria-label="Style"] [role="radio"]')).toHaveText(["Smooth", "Bands", "Edge glow", "Stripes", "Orbs", "Rays"]);
+    // The same words as the Look tiles (Edge glow, Stripes, Bands, Orbs, Rays, Relief).
+    await expect(page.locator('#colorSheet [aria-label="Style"] [role="radio"]')).toHaveText(["Smooth", "Bands", "Edge glow", "Stripes", "Orbs", "Rays", "Relief"]);
     await expect(page.locator('#colorSheet [aria-label="Palette"] [role="radio"]')).toHaveCount(await page.evaluate(() => COLORMAPS.length));
     await page.locator('#colorSheet [aria-label="Style"] [role="radio"]', { hasText: "Stripes" }).click();
     expect(await page.evaluate(() => colorStyle.style)).toBe("stripes");
@@ -195,13 +195,13 @@ test.describe("the Color sheet", () => {
     // It is exactly the Default Look, so the Looks tab says so (and opens there).
     await expect(page.locator('#colorSheet [role="tab"][aria-selected="true"]')).toHaveText("Looks");
     await expect(page.locator(LOOK_CHECKED)).toHaveText("Default");
-    await expect(page.locator("#colorSheetNote-looks")).toContainText("Edge glow, Stripes, Orbs and Rays aren't available for Phoenix.");
+    await expect(page.locator("#colorSheetNote-looks")).toContainText("Edge glow, Stripes, Orbs, Rays and Relief aren't available for Phoenix.");
     await page.locator('#colorSheet [role="tab"]', { hasText: "Custom" }).click();
     const states = await page.locator('#colorSheet [aria-label="Style"] [role="radio"]').evaluateAll((els) => els.map((e) => !e.disabled));
-    expect(states).toEqual([true, true, false, false, false, false]);
+    expect(states).toEqual([true, true, false, false, false, false, false]);
     const checked = await page.locator('#colorSheet [aria-label="Style"] [role="radio"][aria-checked="true"]').allInnerTexts();
     expect(checked, "only what is drawn is selected, not the greyed Rays").toEqual(["Smooth"]);
-    await expect(page.locator("#colorSheetNote-custom")).toContainText("Edge glow, Stripes, Orbs and Rays aren't available for Phoenix.");
+    await expect(page.locator("#colorSheetNote-custom")).toContainText("Edge glow, Stripes, Orbs, Rays and Relief aren't available for Phoenix.");
   });
 
   test("Newton, Carpet, Gasket and Apollonian open the same sheet with just the palette grid", async ({ page }) => {
@@ -400,7 +400,7 @@ test.describe("the Color sheet", () => {
       const rows = [...new Set(tiles.map((q) => Math.round(q.t)))].length;
       return { tiles, rows, inside: tiles.every((q) => q.l >= sheet.left && q.r <= sheet.right && q.b <= sheet.bottom), scrolls: grid.scrollWidth > grid.clientWidth + 1, fade: grid.dataset.fade || null, firstRow: tiles.filter((q) => Math.round(q.t) === Math.round(tiles[0].t)).length };
     });
-    expect(r.tiles.map((q) => q.name)).toEqual(["Default", "Edge glow", "Stripes", "Bands", "Orbs", "Rays"]);
+    expect(r.tiles.map((q) => q.name)).toEqual(["Default", "Edge glow", "Stripes", "Bands", "Orbs", "Rays", "Relief"]);
     expect(r.firstRow, "four across").toBe(4);
     expect(r.rows).toBe(2);
     expect(r.inside, "every tile inside the sheet").toBe(true);
@@ -444,7 +444,7 @@ test.describe("the Color sheet", () => {
     });
   }
 
-  test("a small phone (360x640): all six styles in one row, both sliders and Reset reachable, nothing cut off", async ({ page }) => {
+  test("a small phone (360x640): all seven styles in one row, both sliders and Reset reachable, nothing cut off", async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 640 });
     await settle(page);
     await page.evaluate(() => setColorStyle({ density: 2 })); // so Reset shows too
@@ -459,7 +459,7 @@ test.describe("the Color sheet", () => {
       return { segRow: new Set(segs).size, repeat: inside(rect('input[aria-label="Color repeat"]')), shift: inside(rect('input[aria-label="Color shift"]')),
         reset: inside(rect(".reset")), fits: sheet.scrollHeight <= sheet.clientHeight + 1, top: s.top, noSide: sheet.scrollWidth <= sheet.clientWidth + 1 };
     });
-    expect(r.segRow, "the six styles share one row").toBe(1);
+    expect(r.segRow, "the seven styles share one row").toBe(1);
     expect(r.repeat && r.shift && r.reset, "sliders and Reset inside the sheet").toBe(true);
     expect(r.fits, "no scrolling needed at this size").toBe(true);
     expect(r.top).toBeGreaterThanOrEqual(0);
@@ -568,7 +568,7 @@ test.describe("share links", () => {
   test("every style, bands and shift round-trip, and rebuilding is stable", async ({ page }) => {
     const r = await page.evaluate(() => {
       const out = [];
-      for (const [style, density, offset] of [["bands", 1, 0], ["glow", 1, 0], ["stripes", 2.5, 0.25], ["point", 0.25, 0.999], ["cross", 8, 0.001], ["smooth", 3, 0.5], ["smooth", 1, 0.125]]) {
+      for (const [style, density, offset] of [["bands", 1, 0], ["glow", 1, 0], ["stripes", 2.5, 0.25], ["point", 0.25, 0.999], ["cross", 8, 0.001], ["relief", 1.5, 0.75], ["smooth", 3, 0.5], ["smooth", 1, 0.125]]) {
         window["__vt"].fractal("Mandelbrot");
         setColorStyle({ style, density, offset });
         const hash = buildShareHash();
@@ -579,7 +579,7 @@ test.describe("share links", () => {
       }
       return out;
     });
-    const wanted = [["bands", 1, 0], ["glow", 1, 0], ["stripes", 2.5, 0.25], ["point", 0.25, 0.999], ["cross", 8, 0.001], ["smooth", 3, 0.5], ["smooth", 1, 0.125]];
+    const wanted = [["bands", 1, 0], ["glow", 1, 0], ["stripes", 2.5, 0.25], ["point", 0.25, 0.999], ["cross", 8, 0.001], ["relief", 1.5, 0.75], ["smooth", 3, 0.5], ["smooth", 1, 0.125]];
     r.forEach((x, i) => {
       const [style, density, offset] = wanted[i];
       expect(x.parsed, `link ${i}`).toEqual({ style, density, offset });

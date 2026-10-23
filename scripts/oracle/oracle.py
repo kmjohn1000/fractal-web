@@ -22,7 +22,7 @@ Needs python3 with numpy and Pillow (`python3 -c "import numpy, PIL"`).
   oracle.py views                          the views as JSON (for oracle-compare.mjs)
   oracle.py render VIEW STYLE CMAP OUT.png [--density D] [--shift S] [--size PX]
             [--ss N] [--trap=X,Y]
-  STYLE is one of smooth, bands, glow, stripes, stripes_atan, point, cross
+  STYLE is one of smooth, bands, glow, stripes, stripes_atan, point, cross, relief
       writes OUT.png and OUT.mask.png (white = escaped); fields are cached in
       test-results/oracle/ (git-ignored)
 """
@@ -116,7 +116,7 @@ def render_fields(name, tile=360, ss=2):
         da = np.zeros(N); db = np.zeros(N); dc_ = np.zeros(N); dd = np.zeros(N)
         add = 1.0
     tx, ty = v["trap"]
-    names = ("steps", "zabs", "logD", "E", "Eprev", "Ea", "Eaprev", "pt", "cross", "escaped")
+    names = ("steps", "zabs", "logD", "E", "Eprev", "Ea", "Eaprev", "pt", "cross", "escaped", "gx", "gy")
     out = {k: np.zeros(N) for k in names}
     out["pt"][:] = 1e9; out["cross"][:] = 1e9
     idx = np.arange(N)
@@ -158,6 +158,9 @@ def render_fields(name, tile=360, ss=2):
                 for k, arr in (("E", E), ("Eprev", Eprev), ("Ea", Ea), ("Eaprev", Eaprev), ("pt", pt), ("cross", cr)):
                     out[k][e] = arr[esc]
                 out["escaped"][e] = 1
+                # J^T z, the gradient of 0.5 |z|^2 (the relief style's surface normal)
+                out["gx"][e] = da[esc] * zx[esc] + dc_[esc] * zy[esc]
+                out["gy"][e] = db[esc] * zx[esc] + dd[esc] * zy[esc]
                 k = ~esc
                 idx = idx[k]
                 zx, zy, cx, cy = zx[k], zy[k], cx[k], cy[k]
@@ -179,7 +182,7 @@ def render_fields(name, tile=360, ss=2):
 
 def cached_fields(name, tile, ss):
     CACHE.mkdir(parents=True, exist_ok=True)
-    f = CACHE / f"{name}-{tile}-{ss}-v2.npz"  # bump when render_fields changes
+    f = CACHE / f"{name}-{tile}-{ss}-v3.npz"  # bump when render_fields changes
     if f.exists():
         z = np.load(f)
         return {k: z[k] for k in z.files if k != "meta"}, json.loads(str(z["meta"]))
@@ -234,6 +237,8 @@ def style_t(F, P, style):
         return smooth_n(F, P) * 0.025, esc
     if style == "bands":
         return np.floor(F["steps"]) * 0.025, esc
+    if style == "relief":  # the smooth color; relief_shade() multiplies it
+        return smooth_n(F, P) * 0.025, esc
     if style == "glow":
         with np.errstate(all="ignore"):
             b = 2 * F["zabs"] * np.log(F["zabs"]) / (10.0 ** F["logD"])
@@ -277,7 +282,19 @@ def trap_range(v, escaped, fixed_hi):
     return float(lo), float(hi)
 
 
-STYLES = ("smooth", "bands", "glow", "stripes", "stripes_atan", "point", "cross", "point_fixed", "cross_fixed")
+STYLES = ("smooth", "bands", "glow", "stripes", "stripes_atan", "point", "cross", "point_fixed", "cross_fixed", "relief")
+
+RELIEF_HEIGHT = 1.5
+RELIEF_LIGHT = (-np.sqrt(0.5), np.sqrt(0.5))   # upper left of the screen (the oracle views aren't rotated)
+
+
+def relief_shade(F):
+    """Lambert shading of the unit gradient, as reliefColor in shaders.js."""
+    gx, gy = F["gx"], F["gy"]
+    with np.errstate(all="ignore"):
+        n = np.hypot(gx, gy)
+        ux, uy = np.where(n > 0, gx / n, 0.0), np.where(n > 0, gy / n, 0.0)
+    return (ux * RELIEF_LIGHT[0] + uy * RELIEF_LIGHT[1] + RELIEF_HEIGHT) / (1.0 + RELIEF_HEIGHT)
 
 
 def colorize(F, meta, style, lut, density=1.0, shift=0.0):
@@ -285,6 +302,8 @@ def colorize(F, meta, style, lut, density=1.0, shift=0.0):
     t, colored = style_t(F, meta, style)
     t = np.nan_to_num(t, nan=0.0, posinf=1.0, neginf=0.0)
     img = lut_color(lut, t * density + shift)
+    if style == "relief":
+        img = img * np.nan_to_num(relief_shade(F), nan=0.6)[..., None]
     img[~colored] = 0
     ss = meta["ss"]
     n = img.shape[0] // ss

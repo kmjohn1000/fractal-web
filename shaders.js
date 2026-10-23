@@ -293,6 +293,36 @@ vec3 glowColor(vec2 z, vec4 D) {
   float t = 1.0 - clamp(log(1.0 + distPx) / log(1.0 + COLOR_DE_RANGE), 0.0, 1.0);
   return styleColor(t);
 }
+
+// Relief: the fractal lit as an embossed surface, from the same derivative.
+// The escape potential 0.5 |z|^2 rises away from the set, and its gradient
+// with respect to the pixel's position is J^T z, where J is the 2x2 matrix D
+// holds (for the plain maps D is a complex number, a rotation and scale, and
+// J^T z is conj(D) z). Only the direction matters, so D is scaled first, as in
+// glowColor, which keeps the products inside float32. The unit gradient is
+// shaded the way the classic 3D Mandelbrot is (a Lambert term with a height
+// factor), lit from the upper left of the screen whatever the view's rotation,
+// and multiplies the smooth escape color. It is the Smooth coloring with
+// the shading on top, so the palette, Repeat and Shift all apply.
+const int STYLE_RELIEF = 6;
+const float RELIEF_HEIGHT = 1.5;
+const vec2 RELIEF_LIGHT = vec2(-0.70710678, 0.70710678);
+
+vec3 reliefColor(int iter, vec2 z, vec4 D) {
+  float m = max(max(abs(D.x), abs(D.y)), max(max(abs(D.z), abs(D.w)), 1e-30));
+  vec4 d = D / m;
+  vec2 g = u_ftype == FTYPE_ESCAPE
+    ? vec2(d.x * z.x + d.y * z.y, d.x * z.y - d.y * z.x)
+    : vec2(d.x * z.x + d.z * z.y, d.y * z.x + d.w * z.y);
+  // From the plane's axes to the screen's (the view is rotated by u_rotCos/u_rotSin).
+  g = vec2(g.x * u_rotCos + g.y * u_rotSin, g.y * u_rotCos - g.x * u_rotSin);
+  float len = length(g);
+  vec2 u = len > 1e-30 ? g / len : vec2(0.0);
+  float shade = (dot(u, RELIEF_LIGHT) + RELIEF_HEIGHT) / (1.0 + RELIEF_HEIGHT);
+  float logBase = u_power > 2.5 ? log2(3.0) : 1.0;
+  float n = max(float(iter) + 1.0 - log2(log2(sqrt(dot(z, z)))) / logBase, 0.0);
+  return styleColor(n * 0.025) * shade;
+}
 #elif COLOR_VARIANT == 2
 // Stripes: Härkönen's stripe average. Each iterate z contributes
 // a = 0.5 + 0.5 sin(4 arg z), computed from x and y alone (sin 4t = 2 sin 2t
@@ -616,7 +646,7 @@ vec3 renderEscapeFast(vec2 p) {
   if (!escaped) return vec3(0.0);
 
 #if COLOR_VARIANT == 1
-  return glowColor(z, D);
+  return u_style == STYLE_RELIEF ? reliefColor(iter, z, D) : glowColor(z, D);
 #elif COLOR_VARIANT == 2
   return stripeColor(iter, z, S);
 #else
@@ -754,7 +784,7 @@ vec3 renderEscapePerturbation(vec2 uv) {
 #endif
   if (!escaped) return vec3(0.0);
 #if COLOR_VARIANT == 1
-  return glowColor(fullAtEscape, D);
+  return u_style == STYLE_RELIEF ? reliefColor(iter, fullAtEscape, D) : glowColor(fullAtEscape, D);
 #elif COLOR_VARIANT == 2
   return stripeColor(iter, fullAtEscape, S);
 #else

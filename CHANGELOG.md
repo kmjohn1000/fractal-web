@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.41.0 — 2026-10-23
+- Relief, a new Look and style: the fractal lit like an embossed surface, with the light at the upper left of the screen however you twist the view. It shades the palette's colors, so Repeat, Shift and every palette work with it, and it keeps its detail at any depth. The Look uses the Classic palette. Like Edge glow, it isn't available on Phoenix, Newton, Carpet, Gasket or Apollonian.
+
 ## 1.40.4 — 2026-10-22
 - Flights are back to how they were in 1.40.1: Surprise me takes 1 to 2.5 seconds again, long flights ease the way they used to, and a deep flight shows one stretched picture until it lands. The longer, depth-scaled flights of 1.40.2 and the mid-flight redraws of 1.40.3 are undone.
 

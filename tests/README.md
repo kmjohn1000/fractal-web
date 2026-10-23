@@ -43,8 +43,13 @@ hand-edited link must render quickly without errors; and three deep-zoom
 screenshots are compared with baselines.
 
 `styles.spec.mjs` and `color-sheet.spec.mjs` cover the color styles (Smooth,
-Bands, Edge glow, Stripes, Orbs and Rays; the style ids are `smooth`, `bands`,
-`glow`, `stripes`, `point` and `cross`, see `COLOR_STYLES` in `app.js`).
+Bands, Edge glow, Stripes, Orbs, Rays and Relief; the style ids are `smooth`,
+`bands`, `glow`, `stripes`, `point`, `cross` and `relief`, see `COLOR_STYLES` in
+`app.js`). Relief shares Edge glow's compiled program; its specs check the
+types it draws on, baselines on six fractals and two deep views, that the saved
+image is the frame on screen, and that the light stays at the upper left of the
+screen when the view is rotated (the Rabbit's Julia set is point symmetric, so
+a half turn must draw the same picture).
 They check that the style API is strict, which fractal
 types draw which style (Phoenix has Smooth and Bands; Newton, Carpet, Gasket
 and Apollonian color by their own schemes), that the orbit traps are offered
@@ -72,7 +77,8 @@ Three scripts back them, outside the suite because they take a few minutes
 or need Python with numpy and Pillow:
 
 - `node scripts/default-identity.mjs record|check`: the default style must
-  draw exactly as before the styles work. It renders 26 states (every
+  draw exactly as before the styles work (with all 16 sharpening passes, as
+  the suite pins them). It renders 26 states (every
   fractal type, the perturbation, Newton and Phoenix deep paths, dual view)
   and `check` fails on a single differing pixel against the reference
   recorded in `tests/baselines/identity/`. Run it after any shader edit: a
@@ -89,8 +95,8 @@ or need Python with numpy and Pillow:
   "calm" views (low iteration counts) also need a mean difference of at most
   5 and at most 4% of pixels off by more than 40. Measured, all within the
   gates: Smooth 0.16-1.60, Bands 0.29-1.62, Glow 0.14-1.17, Stripes 0.37-1.94,
-  Point 0.07-0.41 and Cross 0.08-1.28 (blurred difference; those two with
-  the old fixed ranges). The deep views run the perturbation path against
+  Relief 0.16-1.29, Point 0.07-0.41 and Cross 0.08-1.28 (blurred difference;
+  those two with the old fixed ranges). The deep views run the perturbation path against
   straight float64. Point and Cross take a per-view range: the 2nd-98th
   percentile of the escaped pixels' trap distance, from a small probe of the
   view (`trapRange` in `app.js`), blended with the old fixed range (`trapRangeFor`:

@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Fractal Atlas&trade;</title>
 
-<link rel="manifest" href="manifest.webmanifest?v=1.40.4">
+<link rel="manifest" href="manifest.webmanifest?v=1.41.0">
 <meta name="theme-color" content="#111111">
-<link rel="icon" href="icons/favicon-32.png?v=1.40.4" sizes="32x32" type="image/png">
+<link rel="icon" href="icons/favicon-32.png?v=1.41.0" sizes="32x32" type="image/png">
 
 <!-- iOS Safari ignores the manifest entirely for install/homescreen purposes
      and needs its own meta tags + a dedicated (non-transparent) icon. -->
@@ -15,7 +15,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fractal Atlas">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.40.4">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.41.0">
 
 <!-- Smart App Banner: Safari on iPhone/iPad offers the App Store app.
      Ignored everywhere else, including the app's own web view. -->
@@ -314,7 +314,7 @@
      live is costly on a phone. Centered above the toolbar when the screen is
      wider than the sheet. */
   #colorSheet {
-    position: absolute; left: 10px; right: 10px; max-width: 460px; bottom: 100%; margin: 0 auto 8px; box-sizing: border-box;
+    position: absolute; left: 10px; right: 10px; max-width: 540px; bottom: 100%; margin: 0 auto 8px; box-sizing: border-box;
     padding: 6px 12px 8px; display: none;
     max-height: 45vh; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
     background: rgba(28,28,28,0.92); border: 1px solid #444; border-radius: 10px;
@@ -337,12 +337,12 @@
     flex: 1 1 0; min-width: 0; padding: 0 2px; border: none; border-radius: 8px; background: transparent; color: #ddd;
     font: 500 0.8125rem -apple-system, system-ui, sans-serif;
   }
-  /* Six styles in one row on a phone (down to 360 pt), three and three at the
+  /* Seven styles in one row on a phone (down to 360 pt), four and three at the
      larger Dynamic Type sizes, where their names no longer fit: fitColorSegment
      in app.js sets the columns after measuring, so one is never left alone on
      a row. A name of two words ("Edge glow") wraps to two lines. */
-  #colorSheet .seg { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
-  #colorSheet .seg button { min-width: 0; padding: 0 2px; font-size: 0.75rem; line-height: 1.1; white-space: normal; }
+  #colorSheet .seg { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  #colorSheet .seg button { min-width: 0; padding: 0 2px; font-size: 0.6875rem; line-height: 1.1; white-space: normal; }
   #colorSheet .tabs button.active, #colorSheet .seg button.active { background: #3a6ea5; box-shadow: 0 0 0 1px #6cf inset; color: #fff; }
   #colorSheet .seg button:disabled { color: rgba(235,235,245,0.3); }
   #colorSheet .tabs button:active, #colorSheet .seg button:active { transform: none; }
@@ -917,17 +917,17 @@
   </div>
 </div>
 
-<script src="colormaps.js?v=1.40.4"></script>
-<script src="shaders.js?v=1.40.4"></script>
-<script src="lsystem.js?v=1.40.4"></script>
-<script src="vectorgeom.js?v=1.40.4"></script>
-<script src="koch.js?v=1.40.4"></script>
-<script src="pythagoras.js?v=1.40.4"></script>
-<script src="dragon.js?v=1.40.4"></script>
-<script src="fern.js?v=1.40.4"></script>
-<script src="platform.js?v=1.40.4"></script>
-<script src="diag.js?v=1.40.4"></script>
-<script src="app.js?v=1.40.4"></script>
+<script src="colormaps.js?v=1.41.0"></script>
+<script src="shaders.js?v=1.41.0"></script>
+<script src="lsystem.js?v=1.41.0"></script>
+<script src="vectorgeom.js?v=1.41.0"></script>
+<script src="koch.js?v=1.41.0"></script>
+<script src="pythagoras.js?v=1.41.0"></script>
+<script src="dragon.js?v=1.41.0"></script>
+<script src="fern.js?v=1.41.0"></script>
+<script src="platform.js?v=1.41.0"></script>
+<script src="diag.js?v=1.41.0"></script>
+<script src="app.js?v=1.41.0"></script>
 <script>
   // Service workers only register on secure origins or localhost, so this is
   // a silent no-op during phone-over-LAN dev testing (plain http://<lan-ip>)
