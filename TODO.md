@@ -591,7 +591,11 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       picker opens.
 - [ ] Flight time and detail during deep flights (user idea 2026-10-22;
       tried in 1.40.2 and 1.40.3, reverted in 1.40.4 because it did not
-      work; the owner did not say how, so ask before a second try).
+      work: the owner reported it stuttered too much on the phone. Which
+      of the two changes caused it was not separated; the likely cause is
+      the 1.40.3 keyframes, each a blocking full-size render plus a
+      reference orbit on the main thread, but 1.40.2's longer flights
+      were never seen alone on a phone).
       The problem: a Surprise-me flight from a shallow view to a deep one
       goes by too fast to follow, and below `DEEP_ZOOM_THRESHOLD` (1e-3)
       it shows one stretched snapshot (a flat color by the end) because
