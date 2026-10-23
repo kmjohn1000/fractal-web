@@ -33,6 +33,18 @@ const VICSEK_TRANSFORMS = [
   { a: 1 / 3, b: 0, c: 0, d: 1 / 3, e: 2 / 3, f: 1 / 3, p: 0.2 }, // right-mid
 ];
 
+// Hexaflake: a hexagon (circumradius 1, vertices at 0, 60, ... degrees)
+// becomes seven hexagons of 1/3 the size -- one in the middle and one at
+// each corner, centered 2/3 out so each outer one touches the middle one at
+// a vertex. Seven maps at scale 1/3, so the dimension is ln 7 / ln 3.
+const HEXAFLAKE_TRANSFORMS = [{ a: 1 / 3, b: 0, c: 0, d: 1 / 3, e: 0, f: 0, p: 1 / 7 }];
+for (let k = 0; k < 6; k++) {
+  HEXAFLAKE_TRANSFORMS.push({
+    a: 1 / 3, b: 0, c: 0, d: 1 / 3,
+    e: (2 / 3) * Math.cos(k * Math.PI / 3), f: (2 / 3) * Math.sin(k * Math.PI / 3), p: 1 / 7,
+  });
+}
+
 // Every IFS the view can show, keyed by app.js mode name (EXTRA_MODES
 // lists the same keys for the picker).
 const IFS_SYSTEMS = {
@@ -40,6 +52,7 @@ const IFS_SYSTEMS = {
   sierpinski: { transforms: SIERPINSKI_TRANSFORMS },
   levy:       { transforms: LEVY_C_TRANSFORMS },
   vicsek:     { transforms: VICSEK_TRANSFORMS },
+  hexaflake:  { transforms: HEXAFLAKE_TRANSFORMS },
 };
 
 function pickTransform(transforms) {
