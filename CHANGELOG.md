@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.42.0 — 2026-10-23
+- Added the Hexaflake: a hexagon replaced by seven hexagons a third the size (one in the middle, one at each corner), again and again. Zoom into any corner and the same shape keeps appearing; pan, pinch, twist, share links and the points slider work as on the Vicsek fractal.
+
 ## 1.41.1 — 2026-10-23
 - The Pythagoras tree is shaded: each square is lit from the upper left by the way it leans, brightens from trunk to twigs, and every other level turns its hue, so the branching reads as relief. The light stays put on screen as you twist the view, and the color picker still sets the base color.
 

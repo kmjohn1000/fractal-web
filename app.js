@@ -292,6 +292,7 @@ const EXTRA_MODES = [
   { key: "sierpinski", label: "Sierpinski triangle", category: "pattern" },
   { key: "levy", label: "Lévy C curve", category: "pattern" },
   { key: "vicsek", label: "Vicsek fractal", category: "pattern" },
+  { key: "hexaflake", label: "Hexaflake", category: "pattern" },
 ];
 
 // The chaos-game IFS modes (fern.js's IFS_SYSTEMS). They all share one
@@ -3200,7 +3201,7 @@ const VECTOR_VIEWS = {
   koch: [kochView, els.kochCanvas], tree: [treeView, els.treeCanvas],
   dragon: [dragonView, els.dragonCanvas], fern: [fernView, els.fernCanvas],
   sierpinski: [fernView, els.fernCanvas], levy: [fernView, els.fernCanvas],
-  vicsek: [fernView, els.fernCanvas],
+  vicsek: [fernView, els.fernCanvas], hexaflake: [fernView, els.fernCanvas],
   hilbert: [dragonView, els.dragonCanvas], gosper: [dragonView, els.dragonCanvas],
   arrowhead: [dragonView, els.dragonCanvas],
 };

@@ -10,7 +10,8 @@ import { test, expect } from "@playwright/test";
 
 /* global setMode, kochState, treeState, dragonState, fittedVectorModes, VECTOR_VIEWS, requestRender, renderAll,
    fitVectorView, vectorAffine, kochAdaptive, kochSnowflake, treeAdaptive, pythagorasTree, dragonAdaptive,
-   dragonCurve, createKochView, createPythagorasTreeView, createCurveView, startDepthPlay, stopDepthPlay, vectorLite */
+   dragonCurve, createKochView, createPythagorasTreeView, createCurveView, startDepthPlay, stopDepthPlay, vectorLite,
+   IFS_SYSTEMS, ifsData, buildLeaves, ifsPoints, fernView, fernState, mode, buildShareHash, parseShareHash, applyShareLink */
 
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
 
@@ -330,4 +331,137 @@ test.describe("deep zoom screenshots", () => {
       await expect(page).toHaveScreenshot(`vector-deep-${s.name}.png`);
     });
   }
+});
+
+// The Hexaflake is an IFS mode (fern.js): seven maps at 1/3 scale, one at the
+// middle and one at each corner of the hexagon. No baselines: these hold
+// the geometry, the share link, the twist and the zoom to numbers.
+test.describe("Hexaflake", () => {
+  test("is seven maps at 1/3 scale, centered 2/3 out at the six corners", async ({ page }) => {
+    const r = await page.evaluate(() => {
+      const ts = IFS_SYSTEMS.hexaflake.transforms;
+      const centers = ts.map((t) => [t.e, t.f]);
+      return {
+        n: ts.length,
+        scales: ts.map((t) => [t.a, t.b, t.c, t.d]),
+        pSum: ts.reduce((s, t) => s + t.p, 0),
+        radii: centers.map(([x, y]) => Math.hypot(x, y)),
+        angles: centers.slice(1).map(([x, y]) => (Math.atan2(y, x) * 180 / Math.PI + 360) % 360),
+      };
+    });
+    expect(r.n).toBe(7);
+    for (const s of r.scales) expect(s).toEqual([1 / 3, 0, 0, 1 / 3]);
+    expect(r.pSum).toBeCloseTo(1, 12);
+    expect(r.radii[0]).toBe(0);
+    for (const rad of r.radii.slice(1)) expect(rad).toBeCloseTo(2 / 3, 12);
+    r.angles.forEach((a, k) => expect(a).toBeCloseTo(k * 60, 9));
+  });
+
+  test("its pieces are 3^-j across and weigh 7^-j, and every point stays inside the hexagon", async ({ page }) => {
+    const r = await page.evaluate(() => {
+      const ifs = ifsData("hexaflake");
+      // The sampler splits the shape into pieces until they fit the view, so
+      // a view 3^-k as wide as the shape (around its corner (1, 0)) should be
+      // served by pieces 7^-j in weight, each j about k: one 1/3 step per map.
+      const weights = [];
+      for (let k = 2; k <= 6; k++) {
+        const h = 3 ** -k;
+        const { maps, cumWeights } = buildLeaves(ifs, [1 - h, 1 + h, -h, h]);
+        let prev = 0;
+        const ws = [...cumWeights].map((c) => { const w = c - prev; prev = c; return w; });
+        weights.push({ k, n: maps.length, js: ws.map((w) => Math.round(-Math.log(w) / Math.log(7))), exact: ws.every((w) => Math.abs(w * 7 ** Math.round(-Math.log(w) / Math.log(7)) - 1) < 1e-9), scales: maps.map((m) => Math.hypot(m[0], m[2])) });
+      }
+      const all = buildLeaves(ifs, [-2, 2, -2, 2]);
+      const pts = ifsPoints(IFS_SYSTEMS.hexaflake.transforms, 20000);
+      let outside = 0, minR = Infinity, maxR = 0;
+      for (let i = 0; i < pts.length; i += 2) {
+        const x = Math.abs(pts[i]), y = Math.abs(pts[i + 1]);
+        // regular hexagon, circumradius 1, vertices at 0, 60, ...: |y| <= sqrt(3)/2 and sqrt(3)|x| + |y| <= sqrt(3)
+        if (y > Math.sqrt(3) / 2 + 1e-9 || Math.sqrt(3) * x + y > Math.sqrt(3) + 1e-9) outside++;
+        const rad = Math.hypot(x, y);
+        minR = Math.min(minR, rad); maxR = Math.max(maxR, rad);
+      }
+      return { weights, allWeight: all.cumWeights[all.cumWeights.length - 1], outside, maxR, bounds: ifs.bounds };
+    });
+    expect(r.outside, "points outside the hexagon").toBe(0);
+    expect(r.maxR).toBeGreaterThan(0.99); // reaches the corners
+    expect(r.allWeight).toBeCloseTo(1, 9);
+    for (const w of r.weights) {
+      expect(w.n, `k=${w.k}: some pieces reach the view`).toBeGreaterThan(0);
+      expect(w.exact, `k=${w.k}: every piece weighs a power of 1/7`).toBe(true);
+      // A piece j levels down is 3^-j across and weighs 7^-j.
+      w.js.forEach((j, i) => expect(w.scales[i], `k=${w.k}: piece ${i} scale matches its weight`).toBeCloseTo(3 ** -j, 9));
+    }
+    expect(r.bounds[0]).toBeLessThan(-0.99);
+    expect(r.bounds[1]).toBeGreaterThan(0.99);
+  });
+
+  test("a share link round-trips: key, view, points and color", async ({ page }) => {
+    const r = await page.evaluate(() => {
+      setMode("hexaflake");
+      fittedVectorModes.add("hexaflake");
+      Object.assign(fernView.view, { cx: 0.6667, cy: 0.0123, halfHeight: 0.0042, rotation: 0.5 });
+      fernState.count = 500000;
+      const hash = buildShareHash();
+      const parsed = parseShareHash(hash);
+      setMode("koch"); // somewhere else, then arrive by the link
+      applyShareLink(`https://example.org/${hash}`);
+      return { hash, parsed, mode, system: fernView.system, view: { ...fernView.view }, count: fernState.count, again: buildShareHash() };
+    });
+    expect(r.hash).toContain("m=hexaflake");
+    expect(r.parsed.mode).toBe("hexaflake");
+    expect(r.mode).toBe("hexaflake");
+    expect(r.system).toBe("hexaflake");
+    expect(r.view.cx).toBeCloseTo(0.6667, 6);
+    expect(r.view.halfHeight).toBeCloseTo(0.0042, 6);
+    expect(r.view.rotation).toBeCloseTo(0.5, 6);
+    expect(r.count).toBe(500000);
+    expect(r.again).toBe(r.hash);
+  });
+
+  // A corner of the hexagon, (1, 0), is the fixed point of the map for that
+  // corner (z -> z/3 + 2/3), so zooming in 3^k times there shows the whole
+  // shape again: detail must stay as dense at 1e-9 as at the start.
+  test("keeps showing detail as you zoom, and a two-finger twist turns it", async ({ page }) => {
+    await page.evaluate(() => { setMode("hexaflake"); fittedVectorModes.add("hexaflake"); });
+    const lit = (hh) => page.evaluate(async (hh) => {
+      Object.assign(fernView.view, { cx: 1, cy: 0, halfHeight: hh, rotation: 0 });
+      requestRender();
+      for (let i = 0; i < 400 && (fernView.refining || fernView.accepted === 0); i++) await new Promise((res) => setTimeout(res, 50));
+      const canvas = VECTOR_VIEWS.hexaflake[1];
+      const px = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
+      let n = 0;
+      for (let i = 0; i < px.length; i += 4) if (px[i] + px[i + 1] + px[i + 2] > 60) n++;
+      return { n, total: canvas.width * canvas.height, accepted: fernView.accepted };
+    }, hh);
+    const shallow = await lit(0.5);
+    const deep = await lit(0.5 / 3 ** 18);
+    expect(shallow.n, "shallow view isn't blank").toBeGreaterThan(shallow.total * 0.005);
+    expect(deep.n, "deep view isn't blank").toBeGreaterThan(deep.total * 0.005);
+    expect(deep.accepted, "deep view collects its points").toBeGreaterThan(0.5 * shallow.accepted);
+
+    const turned = await page.evaluate(async () => {
+      HTMLElement.prototype.setPointerCapture = () => {};
+      Object.assign(fernView.view, { cx: 0, cy: 0, halfHeight: 1.1, rotation: 0 });
+      const canvas = VECTOR_VIEWS.hexaflake[1];
+      const rect = canvas.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+      const fire = (type, id, x, y) => canvas.dispatchEvent(new PointerEvent(type, { pointerId: id, clientX: x, clientY: y, bubbles: true, pointerType: "touch" }));
+      const frame = () => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)));
+      const R = 80;
+      fire("pointerdown", 1, cx - R, cy);
+      fire("pointerdown", 2, cx + R, cy);
+      for (let s = 1; s <= 10; s++) {
+        const a = (Math.PI / 2) * (s / 10);
+        fire("pointermove", 1, cx - R * Math.cos(a), cy - R * Math.sin(a));
+        fire("pointermove", 2, cx + R * Math.cos(a), cy + R * Math.sin(a));
+        await frame();
+      }
+      fire("pointerup", 1, 0, 0);
+      fire("pointerup", 2, 0, 0);
+      await frame();
+      return Math.abs(fernView.view.rotation);
+    });
+    expect(turned, "rotation changed by about a quarter turn").toBeGreaterThan(1.2);
+  });
 });
