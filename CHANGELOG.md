@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## Unreleased
+- Added the Hexaflake: a hexagon replaced by seven hexagons a third the size (one in the middle, one at each corner), again and again. Zoom into any corner and the same shape keeps appearing; pan, pinch, twist, share links and the points slider work as on the Vicsek fractal.
+
 ## 1.41.0 — 2026-10-23
 - Relief, a new Look and style: the fractal lit like an embossed surface, with the light at the upper left of the screen however you twist the view. It shades the palette's colors, so Repeat, Shift and every palette work with it, and it keeps its detail at any depth. The Look uses the Classic palette. Like Edge glow, it isn't available on Phoenix, Newton, Carpet, Gasket or Apollonian.
 
