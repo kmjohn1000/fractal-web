@@ -62,6 +62,17 @@ const TREE_REACH = 3.85;
 const TREE_STROKE_MIN_PX = 3;    // squares smaller than this get no outline, or the fine canopy turns gray
 const TREE_GROUP = 32;           // squares per fill/stroke path (see render)
 
+// The look. true: the picked color is shaded as if lit from the upper left
+// (a square's lean sets how much light its top face catches), brightens from
+// trunk to twigs, and alternates with a hue-shifted partner on every other
+// level. false: the old flat single color. render's opts.shaded overrides it.
+const TREE_SHADED = true;
+const TREE_LIGHT_UV = [-0.55, 0.835];  // toward the light, on screen (x right, y up); the light stays put as the view rotates
+const TREE_LEAN_MIN = 0.5;       // brightness of a face turned fully from the light (1 = fully lit)
+const TREE_DEPTH_MIN = 0.72;     // brightness at the trunk; it rises to 1 by TREE_DEPTH_BANDS-1 bands out
+const TREE_DEPTH_BANDS = 6;      // trunk-to-twig brightness steps (two levels each)
+const TREE_ALT_HUE = -45;        // degrees the odd levels' hue is turned from the picked color's
+
 // The squares of the tree the viewport needs, in the order and with the
 // geometry of pythagorasTree(depth), written to buf as world-space base
 // edges (ax, ay, bx, by; the square stands on the left of A->B). A square
@@ -70,14 +81,18 @@ const TREE_GROUP = 32;           // squares per fill/stroke path (see render)
 // while it is longer than refPx, so zooming in keeps adding levels (pass
 // Infinity for exactly depth levels); one whose children would be shorter
 // than pxMin stays a leaf.
+// sty, if given (a Uint8Array as long as buf / 4), receives each square's
+// style byte beside it: lean (its base edge's turn from the trunk's, in
+// 45-degree steps mod 8) | level parity << 3 | trunk-to-twig band << 4. It
+// depends only on the square's place in the tree, never on the view.
 // Returns { n, maxLevel, overflow: the budget ran out and buf is incomplete }.
-function treeAdaptive(aff, buf, depth, pxMin, refPx) {
+function treeAdaptive(aff, buf, depth, pxMin, refPx, sty) {
   const { k, a, b, c, d, cx, cy, hw, hh, w, h } = aff;
   const cap = buf.length / 4 - 2;
   const half = Math.SQRT1_2;
   let n = 0, maxLevel = 0, visits = 0, overflow = false;
 
-  function square(ax, ay, bx, by, level, len) {
+  function square(ax, ay, bx, by, level, len, lean) {
     if (overflow) return;
     // Squares off screen whose subtree reaches the screen count as visits
     // but not toward n, so they get their own limit.
@@ -91,6 +106,7 @@ function treeAdaptive(aff, buf, depth, pxMin, refPx) {
     r = px * half + VECTOR_CULL_MARGIN;
     if (!(sx + r < 0 || sx - r > w || sy + r < 0 || sy - r > h)) {
       buf[4 * n] = ax; buf[4 * n + 1] = ay; buf[4 * n + 2] = bx; buf[4 * n + 3] = by;
+      if (sty) sty[n] = (lean & 7) | ((level & 1) << 3) | (Math.min(level >> 1, TREE_DEPTH_BANDS - 1) << 4);
       n++;
       if (level > maxLevel) maxLevel = level;
     }
@@ -100,12 +116,12 @@ function treeAdaptive(aff, buf, depth, pxMin, refPx) {
       const tlx = ax - dy, tly = ay + dx, trx = bx - dy, try_ = by + dx;
       const apx = tlx + (dx - dy) / 2, apy = tly + (dx + dy) / 2;
       const l2 = len * half;
-      square(tlx, tly, apx, apy, level + 1, l2);
-      square(apx, apy, trx, try_, level + 1, l2);
+      square(tlx, tly, apx, apy, level + 1, l2, lean + 1);   // the left child turns 45 degrees left
+      square(apx, apy, trx, try_, level + 1, l2, lean - 1);  // the right child 45 degrees right
     }
   }
 
-  square(-0.5, 0, 0.5, 0, 0, 1);
+  square(-0.5, 0, 0.5, 0, 0, 1, 0);
   return { n, maxLevel, overflow };
 }
 
@@ -117,7 +133,46 @@ function createPythagorasTreeView(canvas) {
   const view = { cx: 0, cy: 2.3, halfHeight: 2.9, rotation: 0 };
   let dpr = Math.min(window.devicePixelRatio || 1, 2);
   const buf = new Float64Array(4 * (TREE_BUDGET + 2));
+  const sty = new Uint8Array(TREE_BUDGET + 2);       // treeAdaptive's style byte per square
+  const order = new Uint32Array(TREE_BUDGET + 2);    // squares' indices grouped by style (see render)
+  const styCount = new Uint32Array(128);
   let extraLevels = 0;
+  let cssKey = "", css = [];                         // the style table for one color and view rotation
+
+  // CSS fill per style byte for the picked color. A square's lean sets how
+  // much of the light from TREE_LIGHT_UV its top face catches; the band dims
+  // the trunk and brightens toward the twigs; odd levels use the picked
+  // color turned TREE_ALT_HUE degrees around the hue wheel.
+  function styleTable(colorIndex, rotation) {
+    const key = colorIndex + "|" + rotation;
+    if (key === cssKey) return css;
+    const [r, g, b] = SOLID_COLORS[colorIndex].rgb;
+    const ha = TREE_ALT_HUE * Math.PI / 180, hc = Math.cos(ha), hs = Math.sin(ha);
+    const alt = [
+      r * (0.213 + hc * 0.787 - hs * 0.213) + g * (0.715 - hc * 0.715 - hs * 0.715) + b * (0.072 - hc * 0.072 + hs * 0.928),
+      r * (0.213 - hc * 0.213 + hs * 0.143) + g * (0.715 + hc * 0.285 + hs * 0.140) + b * (0.072 - hc * 0.072 - hs * 0.283),
+      r * (0.213 - hc * 0.213 - hs * 0.787) + g * (0.715 - hc * 0.715 + hs * 0.715) + b * (0.072 + hc * 0.928 + hs * 0.072),
+    ];
+    // The light in world coordinates (screenToWorld's rotation of a screen vector).
+    const rc = Math.cos(rotation), rs = Math.sin(rotation);
+    const lx = TREE_LIGHT_UV[0] * rc - TREE_LIGHT_UV[1] * rs, ly = TREE_LIGHT_UV[0] * rs + TREE_LIGHT_UV[1] * rc;
+    const byte = (v) => Math.max(0, Math.min(255, Math.round(v)));
+    css = [];
+    for (let band = 0; band < TREE_DEPTH_BANDS; band++) {
+      const depthF = TREE_DEPTH_MIN + (1 - TREE_DEPTH_MIN) * band / (TREE_DEPTH_BANDS - 1);
+      for (let parity = 0; parity < 2; parity++) {
+        const src = parity ? alt : [r, g, b];
+        for (let lean = 0; lean < 8; lean++) {
+          const ang = lean * Math.PI / 4 + Math.PI / 2;     // the face's outward normal
+          const lit = 0.5 + 0.5 * (Math.cos(ang) * lx + Math.sin(ang) * ly);
+          const f = depthF * (TREE_LEAN_MIN + (1 - TREE_LEAN_MIN) * lit);
+          css[lean | parity << 3 | band << 4] = `rgb(${byte(src[0] * f)},${byte(src[1] * f)},${byte(src[2] * f)})`;
+        }
+      }
+    }
+    cssKey = key;
+    return css;
+  }
 
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -168,14 +223,30 @@ function createPythagorasTreeView(canvas) {
     // doesn't change as you zoom, so zooming in is what adds levels.
     const refPx = Math.pow(Math.SQRT1_2, opts.depth) * (canvas.height / 2 / (opts.fitHalfHeight || TREE_FIT_HH)) * TREE_ZOOM_SLACK;
     let pxMin = opts.lite ? TREE_LITE_PX_MIN : TREE_PX_MIN;
-    let r = treeAdaptive(aff, buf, opts.depth, pxMin, refPx);
+    const shaded = opts.shaded ?? TREE_SHADED;
+    const styOut = shaded ? sty : undefined;
+    let r = treeAdaptive(aff, buf, opts.depth, pxMin, refPx, styOut);
     for (let tries = 0; r.overflow && tries < 12; tries++) {
       pxMin *= 1.5;
-      r = treeAdaptive(aff, buf, opts.depth, pxMin, refPx);
+      r = treeAdaptive(aff, buf, opts.depth, pxMin, refPx, styOut);
     }
     extraLevels = Math.max(0, r.maxLevel - opts.depth);
 
-    ctx.fillStyle = solidCss(opts.colorIndex);
+    // Squares are drawn grouped by style (the fill color is set once per
+    // style, not per square): a counting sort puts their indices in order[],
+    // low style bytes first, so the twig bands are painted over the trunk's.
+    // Flat mode is one run in tree order.
+    let fills;
+    if (shaded) {
+      fills = styleTable(opts.colorIndex, view.rotation || 0);
+      styCount.fill(0);
+      for (let i = 0; i < r.n; i++) styCount[sty[i]]++;
+      for (let s = 0, sum = 0; s < 128; s++) { const c = styCount[s]; styCount[s] = sum; sum += c; }
+      for (let i = 0; i < r.n; i++) order[styCount[sty[i]]++] = i;
+      // styCount[s] is now where style s's run ends.
+    } else {
+      for (let i = 0; i < r.n; i++) order[i] = i;
+    }
     ctx.strokeStyle = "rgba(255,255,255,0.15)";
     ctx.lineWidth = 1;
 
@@ -199,17 +270,34 @@ function createPythagorasTreeView(canvas) {
       ctx.lineTo(x0 + px, y0 + py);
       ctx.closePath();
     };
-    for (let from = 0; from < r.n; from += TREE_GROUP) {
-      const end = Math.min(r.n, from + TREE_GROUP);
-      ctx.beginPath();
-      for (let i = from; i < end; i++) addSquare(i);
-      ctx.fill();
-      ctx.beginPath();
-      for (let i = from; i < end; i++) {
-        const ex = buf[4 * i + 2] - buf[4 * i], ey = buf[4 * i + 3] - buf[4 * i + 1];
-        if ((ex * ex + ey * ey) * aff.k * aff.k >= strokeMinSq) addSquare(i);
+    // Draws order[runFrom..runEnd) in the current fill style.
+    const drawRun = (runFrom, runEnd) => {
+      for (let from = runFrom; from < runEnd; from += TREE_GROUP) {
+        const end = Math.min(runEnd, from + TREE_GROUP);
+        ctx.beginPath();
+        for (let j = from; j < end; j++) addSquare(order[j]);
+        ctx.fill();
+        ctx.beginPath();
+        for (let j = from; j < end; j++) {
+          const i = order[j];
+          const ex = buf[4 * i + 2] - buf[4 * i], ey = buf[4 * i + 3] - buf[4 * i + 1];
+          if ((ex * ex + ey * ey) * aff.k * aff.k >= strokeMinSq) addSquare(i);
+        }
+        ctx.stroke();
       }
-      ctx.stroke();
+    };
+    if (shaded) {
+      for (let s = 0, runFrom = 0; s < 128; s++) {
+        const runEnd = styCount[s];
+        if (runEnd > runFrom) {
+          ctx.fillStyle = fills[s];
+          drawRun(runFrom, runEnd);
+        }
+        runFrom = runEnd;
+      }
+    } else {
+      ctx.fillStyle = solidCss(opts.colorIndex);
+      drawRun(0, r.n);
     }
   }
 
