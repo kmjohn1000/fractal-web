@@ -66,8 +66,8 @@ git-ignored file.
          ambient drift and video export for now.
       6. Small IFS wins: an equilateral Sierpinski triangle, settle its
          overlap with the gasket, color the IFS modes by address through
-         the palettes; the hexaflake (built on a branch) after that, if
-         at all.
+         the palettes; the hexaflake (shipped in 1.42.0, rebuilt as exact
+         hexagons in 1.43.0) after that, if at all.
 
 ## Next — discovery and delight
 Help people find beautiful places, and give them more ways to see them.
@@ -112,24 +112,6 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       read as a gradient. Needs the new-fractal checklist: twist gesture,
       a picker thumbnail (`node scripts/render_thumbs.mjs`), and a row in
       `docs/learn-more-links.md` (Wikipedia "Peano curve").
-- [ ] Hexaflake that works like the Pythagoras tree (user idea 2026-10-24;
-      not approved to build). Today it is a chaos-game IFS on the fern engine
-      (random dots, a points slider, one solid color, no depth). Rebuild it
-      as exact filled hexagons the way `pythagoras.js` does squares: a depth
-      slider with the play and hold-and-slide buttons, only the hexagons on
-      screen built at any zoom (prune by view, stop splitting below ~1 px,
-      a per-frame budget, a lighter pass during drag and pinch), every level
-      drawn back to front with its own shade, so the gaps show the parent
-      hexagon, and the hue stepping per level like the tree's shading.
-      Seven children per hexagon at 1/3 scale (centers at 0 and 2/3 out at
-      60° steps, as in `HEXAFLAKE_TRANSFORMS`). Keep the `m=hexaflake` share
-      id; old links carry a points value, which the new view ignores. Twist
-      via `attachVectorViewInteraction`; replace the four hexaflake tests in
-      `vector.spec.mjs`; re-render the thumbnail. Once the engine exists,
-      the Sierpinski triangle (3 maps) and Vicsek (5) could follow, and the
-      "color the IFS modes by address" idea in the proposed order becomes
-      mostly unnecessary for them.
-
 - [ ] Render past the screen edges so a drag reveals image, not blank
       (user idea 2026-10-15). Where it matters: only deep zoom (scale <
       1e-3, perturbation). Shallower views already re-render live every
@@ -860,6 +842,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
+- Hexaflake rebuilt as exact hexagons (1.43.0, 2026-10-24, user idea): `hexaflake.js` draws a hexagon as seven at 1/3 scale (middle plus six at 2/3 out, 60° steps) level by level, the way `pythagoras.js` does squares, on its own canvas and control row (`hexaflakeCanvas`, `createHexaflakeView`, `hexaflakeAdaptive`, plain reference `hexaflakeHexagons`): depth slider 0-6 (default 4) with the play and hold-and-slide buttons, only the hexagons on screen at any zoom (disc culling, ~1 canvas px leaf limit, 40,000-hexagon budget, a 3 px pass during drag and pinch, levels added past the slider by zoom), flat shade per level drawn back to front (hue turned 18° and brighter each level, so the gaps show the parent), levels hidden behind a hexagon that covers the canvas are skipped and hexagons over 4,000 px are clipped to the canvas (Canvas2D is float32). Twist, Back, Reset, info card, Save/Share and the color picker work as for the tree. `m=hexaflake` links keep working: 1.42.0 links (points value `n`, no depth) open on the same part of the shape and the depth `dp` is written only when it isn't the default; the chaos-game entry is gone from `fern.js`. Tests: the four IFS hexaflake tests in `vector.spec.mjs` replaced by seven for the new geometry, plus hexaflake cases in the shared adaptive, culling, zoom, twist, pinch and extreme-view loops; `mode-hexaflake` baseline re-recorded. Not checked on a phone. Left from the old item: the Sierpinski triangle (3 maps) and Vicsek (5) could move onto the same engine — `d14f6d1`
 - Hexaflake (1.42.0, 2026-10-23, user idea): an IFS mode on the chaos-game engine (`fern.js`), seven maps at scale 1/3 (one in the middle, six around it); points slider, share links (`m=hexaflake`), twist and zoom as for Vicsek; picker thumbnail, learn-more row, four tests in `vector.spec.mjs`. Also fixed `render_thumbs.mjs` (`Page.enable`), which let the welcome card into thumbnails. Not checked on a phone yet — `d818399`
 - Pythagoras tree shading (1.41.1, 2026-10-23, user idea): squares lit from the upper left by their lean, brighter from trunk to twigs, every other level's hue turned 45°; the light stays fixed on screen under a twist. `TREE_SHADED` in `pythagoras.js` switches back to the flat look. About 10% more frame time at depth 12. Checked by the user on a phone — `667576b`
 - Relief (1.41.0, 2026-10-23, user request): a seventh color style and Look (Classic palette), the fractal lit as an embossed surface. Lambert shading (height factor 1.5) of the unit gradient of the escape potential, `J^T z` from the derivative Edge glow tracks, times the smooth palette color; the light is fixed at the upper left of the screen (the gradient is turned by `u_rotCos`/`u_rotSin`). It is Edge glow's compiled variant (`COLOR_VARIANT 1`) with `u_style == 6`, so the default program is untouched (`scripts/default-identity.mjs`: 26 states, zero differing pixels), the same fractal types (no Phoenix), share-link code `rl`. Oracle (`oracle.py` `relief`): blurred difference 0.16-1.29 over the twelve gate views. Known look, from the prototype review: bland on shallow views, striking at mid and deep zoom; the Ship and Celtic show creases where their folds are (the potential's gradient really is discontinuous there). Not done: a gloss highlight, a light-direction control, a phone cost measurement (it should cost about what Edge glow does). The sheet's style row went to 11 px so seven fit at 360 pt, and the sheet's width cap from 460 to 540 px so seven Looks share a row on an iPad. `default-identity.mjs` now pins 16 passes (its reference predates the 8-pass default and it failed on clean HEAD) — `4b5fb4f`
