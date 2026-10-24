@@ -1,5 +1,5 @@
-// Live frames at a frame-time-driven resolution (adaptLiveResolution, setLiveDivisor
-// in app.js): while a flight or a pinch is on, frames that arrive late make the
+// Live frames at a frame-time-driven resolution (adaptLiveResolution in state-colors.js,
+// setLiveDivisor in renderer.js): while a flight or a pinch is on, frames that arrive late make the
 // next ones draw smaller (scaled up), and the render when it settles is full
 // size, exactly what it was. Run through `npm run test:visual`.
 import { test, expect } from "@playwright/test";

@@ -46,7 +46,7 @@ const SLOTS = [
 ];
 
 // In-page helpers, added as a classic <script> after tests/driver.js so they
-// see app.js's top-level declarations. land() is a Surprise-me landing as
+// see the app's top-level declarations. land() is a Surprise-me landing as
 // __vt.place leaves it, plus what the flight itself leaves behind: the
 // landing index the info card reads its place name from, and a Back step.
 const HELPERS = `

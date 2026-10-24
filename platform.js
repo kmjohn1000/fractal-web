@@ -1,7 +1,7 @@
 "use strict";
 
 // Web vs. native (Capacitor iOS app) implementations of anything
-// platform-specific -- saving and sharing. app.js calls only these and
+// platform-specific -- saving and sharing. The app's scripts call only these and
 // never checks the platform itself (see CLAUDE.md). The same files serve
 // GitHub Pages and the iOS app; inside the app, Capacitor's injected bridge
 // defines window.Capacitor before any page script runs.
@@ -81,7 +81,7 @@ const Platform = (() => {
   // stays up until hideLaunchScreen() -- capacitor.config.json sets
   // launchAutoHide false -- so launch fades straight into a drawn fractal
   // instead of a blank web view. The fallback timer only guarantees it still
-  // goes away if app.js throws before its first frame -- it's generous
+  // goes away if the app's scripts throw before the first frame -- it's generous
   // because a debug build under Xcode's debugger on the iPad simulator took
   // ~4.6s to first paint, and a 3s fallback hid the launch screen too early
   // (black screen until the fractal appeared).

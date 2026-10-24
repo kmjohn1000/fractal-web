@@ -68,8 +68,8 @@ void main() {
 // value is dz" and "the pixel is dz away from Z[0]" are the same statement.
 // It also rebases when it runs off the end of a reference that escaped
 // early. One reference, one draw, no readback. See
-// renderEscapePerturbation and chooseReference in app.js.
-// Gesture preview at deep zoom (see renderPreview in app.js): redraws the
+// renderEscapePerturbation below and chooseReference in deepzoom.js.
+// Gesture preview at deep zoom (see renderPreview in renderer.js): redraws the
 // last accurate frame, captured into u_snap, moved/scaled/rotated to the
 // current view. u_toSnap/u_snapOffset map this frame's uv (same convention
 // as FRAG_SRC's main()) to the snapshot's uv; they're computed on the CPU
@@ -95,7 +95,7 @@ void main() {
 }
 `;
 
-// Color styles (COLOR_STYLES in app.js). Shared by FRAG_SRC and
+// Color styles (COLOR_STYLES in state-colors.js). Shared by FRAG_SRC and
 // PHOENIX_DEEP_FRAG_SRC, which each define lutColor before including this. A
 // style picks the colormap coordinate t; bands and shift then treat every
 // style alike, lutColor(t * u_density + u_offset), which at 1 and 0 is
@@ -128,19 +128,19 @@ precision highp float;
 uniform vec2  u_resolution;
 uniform vec2  u_center;
 uniform float u_scale;
-// cos/sin of the view rotation (two-finger twist, see app.js), computed on
+// cos/sin of the view rotation (two-finger twist, see interaction.js), computed on
 // the CPU in float64 once per frame rather than per pixel -- also exact,
 // where some GPUs' cos()/sin() are approximations.
 uniform float u_rotCos;
 uniform float u_rotSin;
 uniform int   u_maxIter;
-uniform int   u_ftype;   // 0=escape 1=ship 2=tricorn 3=newton 7=celtic (see FTYPE in app.js)
+uniform int   u_ftype;   // 0=escape 1=ship 2=tricorn 3=newton 7=celtic (see FTYPE in configs.js)
 uniform float u_power;   // 2.0 or 3.0 (escape family only)
 uniform bool  u_isJulia;
 uniform vec2  u_juliaC;
 uniform vec2  u_phoenixP; // Phoenix only: fixed p in z' = z^2 + c + p*z_prev
 uniform sampler2D u_lut;
-// Carpet/Gasket only, see renderDigitFractal and digitCellFrame in app.js.
+// Carpet/Gasket only, see renderDigitFractal below and digitCellFrame in fractal-defs.js.
 uniform int   u_digitDepth;    // deepest level resolved per pixel
 uniform int   u_digitLevel;    // level of the cells the CPU rebased to
 uniform vec2  u_digitCenter;   // view center in those cells' units, within its own cell
@@ -148,7 +148,7 @@ uniform float u_digitScale;    // uv to cell units
 uniform float u_cellHole[9];   // 3x3 cells around the center one: level cut out at, or -1
 uniform float u_digitCycle;    // levels per pass through the colormap (digitColorCycle)
 uniform vec3  u_subPixelColor; // color past u_digitDepth (digitSubPixelColor)
-// Apollonian gasket only, see renderApollonian and apolloFrame in app.js.
+// Apollonian gasket only, see renderApollonian below and apolloFrame in fractal-defs.js.
 uniform vec2  u_apoW0;         // the view's composed inversions: w0 + K u / (1 + L u)
 uniform vec2  u_apoK;
 uniform vec2  u_apoL;
@@ -157,7 +157,7 @@ uniform float u_apoSteps;      // inversions the CPU already applied
 uniform vec3  u_apoCapColor;   // color past APOLLO_MAX_STEPS (apolloCapColor)
 // Sub-pixel sample offset in pixels, (0,0) = pixel center. Supersampling
 // accumulates several jittered renders on the CPU side -- see
-// SAMPLE_OFFSETS in app.js.
+// SAMPLE_OFFSETS in deepzoom.js.
 uniform vec2  u_jitter;
 
 uniform bool  u_usePerturbation;
@@ -172,7 +172,7 @@ uniform int   u_critOffset;
 uniform int   u_critLen;
 uniform float u_refTexWidth;
 // World-space offset of the reference orbit's own point from u_center --
-// chooseReference in app.js doesn't always use the view center. See
+// chooseReference in deepzoom.js doesn't always use the view center. See
 // renderEscapePerturbation.
 uniform vec2  u_refOffset;
 
@@ -216,7 +216,7 @@ ${COLOR_STYLE_GLSL}
 // approximation shows up as faint ripples across each iteration band. A bigger
 // radius costs ~2 extra iterations and leaves the colors where they were --
 // the escape iteration and the log-log term both grow by the same amount.
-// Must match ESCAPE_RADIUS_SQ in app.js (reference orbit and its selection).
+// Must match ESCAPE_RADIUS_SQ in deepzoom.js (reference orbit and its selection).
 const float ESCAPE_RADIUS_SQ = 65536.0;
 
 // Color for an escaped escape-time pixel. Smooth iteration count
@@ -235,7 +235,7 @@ vec3 escapeColor(int iter, vec2 z) {
 
 // The styles that need work every iteration are compiled as variants of this
 // program (COLOR_VARIANT, defined ahead of the source by fractalProgram in
-// app.js; 0 is Smooth and Bands and compiles to exactly the code without
+// renderer.js; 0 is Smooth and Bands and compiles to exactly the code without
 // these blocks). Each style's math is mirrored in scripts/oracle/oracle.py;
 // change them together.
 #if COLOR_VARIANT == 1
@@ -361,7 +361,7 @@ vec3 stripeColor(int iter, vec2 z, vec4 S) {
 // The first iterate sits at c, the pixel itself, so it's skipped. Every
 // pixel's orbit shares nearly the same shape in a deep view, so the distances
 // all land in a narrow band that a fixed range paints one color. The range is
-// set per view instead (app.js trapRangeFor): the 2nd-98th percentile of the
+// set per view instead (trapRangeFor in state-colors.js): the 2nd-98th percentile of the
 // distance over a small probe of the same view, so [u_trapLo, u_trapHi] maps
 // to the whole colormap at any depth. Without a probe the app sends the old
 // fixed ranges (0..1 Point, 0..0.2 Cross).
@@ -420,7 +420,7 @@ vec3 trapColor(vec2 T, bool escaped) {
 // percent of the colormap, which for the default colormap is nearly black.
 // Each level keeps the same color at every zoom (see digitColor).
 //
-// Deep zoom is cell rebasing (digitCellFrame in app.js), the digit-test
+// Deep zoom is cell rebasing (digitCellFrame in fractal-defs.js), the digit-test
 // counterpart of perturbation: the CPU works out the top u_digitLevel
 // digits exactly from float64 integer cell addresses, for the 3x3 block of
 // level-u_digitLevel cells the view lies in, and passes which of them are
@@ -430,7 +430,7 @@ vec3 trapColor(vec2 T, bool escaped) {
 // Before it, everything ran from world coordinates in float32 and both
 // stopped resolving new levels: Gasket at ~3,000x, Carpet at ~3.5e4x.
 //
-// The per-pixel levels are still capped (digitMaxDepth in app.js), by base.
+// The per-pixel levels are still capped (digitMaxDepth in fractal-defs.js), by base.
 // Carpet (base 3) stays at 16: *3 rounds, so
 // error compounds ~1.6 bits per level. Gasket (base 2) goes to 22: *2 and
 // subtracting floor() are exact in float32, so the only error is the input
@@ -442,7 +442,7 @@ vec3 trapColor(vec2 T, bool escaped) {
 // canvas tens of thousands of pixels tall.
 //
 // u_digitDepth is the deepest level whose cells are still at least one
-// pixel wide (see digitFractalDepth in app.js), capped as above. It used to be
+// pixel wide (see digitFractalDepth in fractal-defs.js), capped as above. It used to be
 // a fixed 16, which caused visible speckle: at the default view one pixel
 // is ~3^-6.5 wide, so levels ~7-16 were sub-pixel and a single sample per
 // pixel landed on an effectively random one of them. A float64 simulation
@@ -452,22 +452,22 @@ vec3 trapColor(vec2 T, bool escaped) {
 // A point that survives every resolvable level is colored with the
 // area-weighted average of the sub-pixel levels below it
 // (u_subPixelColor, worked out once per view by digitSubPixelColor in
-// app.js) rather than one arbitrary sample — the limit a supersampled
+// fractal-defs.js) rather than one arbitrary sample — the limit a supersampled
 // render converges to, so flat regions and resolved holes agree as you
 // zoom in.
 
 // Color for a hole cut out at this level (0 = top). One pass through the
-// colormap takes u_digitCycle levels (digitColorCycle in app.js). Zooming
+// colormap takes u_digitCycle levels (digitColorCycle in fractal-defs.js). Zooming
 // keeps going deeper than that, so alternate passes run back down the
 // colormap rather than jumping from its end to its start. digitSubPixelColor
-// in app.js mirrors this on the CPU.
+// in fractal-defs.js mirrors this on the CPU.
 vec3 digitColor(float level) {
   float t = level / u_digitCycle;
   return lutColor(1.0 - abs(1.0 - mod(t, 2.0)));
 }
 
 // q is the pixel in level-u_digitLevel cell units, relative to the cell
-// holding the view center (see digitCellFrame in app.js).
+// holding the view center (see digitCellFrame in fractal-defs.js).
 vec3 renderDigitFractal(vec2 q, float base) {
   // Which of the 3x3 rebased cells the pixel is in. Clamped: at level 0 the
   // zoomed-out view can span more cells than that, but none is a hole yet.
@@ -495,7 +495,7 @@ vec3 renderDigitFractal(vec2 q, float base) {
   return u_subPixelColor;
 }
 
-// Apollonian gasket, the (-1, 2, 2, 3) packing (APOLLO_DUAL in app.js has
+// Apollonian gasket, the (-1, 2, 2, 3) packing (APOLLO_DUAL in fractal-defs.js has
 // the geometry). Inverts the pixel in whichever of the four dual circles
 // holds it until none does, and colors it by the number of inversions. Each
 // packing circle shows as nested bands, counts climbing toward its rim, and
@@ -506,7 +506,7 @@ vec3 renderDigitFractal(vec2 q, float base) {
 //
 // u is the pixel's offset from the view center. For deep zoom the CPU has
 // already applied the inversions every pixel shares (apolloFrame in
-// app.js), as one Mobius map of u: K u and L u keep their precision at any
+// fractal-defs.js), as one Mobius map of u: K u and L u keep their precision at any
 // depth, and the result is O(1), where float32 is fine. Same ~1e15 limit as
 // cell rebasing: the float64 center.
 //
@@ -657,7 +657,7 @@ vec3 renderEscapeFast(vec2 p) {
 // ---------------------------------------------------------------- perturbation
 
 // Exact delta step dz' = f(Z+dz) - f(Z) + dc for each type with a
-// perturbation path (perturbationEligibleType in app.js). Each is expanded
+// perturbation path (perturbationEligibleType in deepzoom.js). Each is expanded
 // so no term is a difference of two large nearly-equal values, which is
 // what keeps the delta accurate in float32.
 // |c+d| - |c|, by sign cases so it's never computed as a difference of two
@@ -710,7 +710,7 @@ vec2 refOrbitAt(int index) {
 
 // The pixel's offset from the reference point (uv*u_scale*2.0 is always the
 // offset from u_center, so u_refOffset -- reference minus u_center, see
-// app.js -- is subtracted) is a small value regardless of absolute zoom
+// deepzoom.js -- is subtracted) is a small value regardless of absolute zoom
 // depth, so plain float32 is exact enough with no splitting needed (see
 // comment above FRAG_SRC).
 //
@@ -798,7 +798,7 @@ void main() {
   // Rotate the screen-space offset once, up front — every downstream use of
   // uv (Newton's p, the fast-path p, and the perturbation delta dc inside
   // renderEscapePerturbation) derives from it, so this single rotation
-  // covers all of them. Must match app.js's screenToComplex/centerForAnchor
+  // covers all of them. Must match render-layout.js's screenToComplex/centerForAnchor
   // rotation convention exactly, or the rendered fractal and the pointer/
   // gesture math (panning, box-zoom, the Julia-c crosshair) disagree about
   // which way is "up".
@@ -919,7 +919,7 @@ vec3 lutColor(float t) {
 `;
 
 // Newton: below the deep-zoom threshold and away from the origin (see
-// newtonDeepEligible in app.js). Measured on an iPhone 15: ~12 ms per
+// newtonDeepEligible in deepzoom.js). Measured on an iPhone 15: ~12 ms per
 // 256x256 pass at 1e-9, about 0.2 s full screen (before the u-mode below).
 //
 // The map N(z) = (2z + 1/z^2) / 3 throws an orbit that passes near the pole
@@ -943,10 +943,10 @@ uniform float u_rotCos;
 uniform float u_rotSin;
 uniform float u_scale;
 uniform int   u_maxIter;
-uniform uvec4 u_cx;      // view center, fixed point (fixedLimbs in app.js)
+uniform uvec4 u_cx;      // view center, fixed point (fixedLimbs in deepzoom.js)
 uniform uvec4 u_cy;
 uniform uvec4 u_third;   // 1/3 in fixed point
-// Self-test output (see newtonDeepSelfTest in app.js): iteration count and
+// Self-test output (see newtonDeepSelfTest in renderer.js): iteration count and
 // root as bytes instead of a color.
 uniform bool  u_testMode;
 uniform sampler2D u_lut;
@@ -1089,13 +1089,13 @@ void main() {
 `;
 
 // Phoenix (z' = z^2 + c + p*z_prev) deep zoom, both parameter space and
-// Julia mode, below the deep-zoom threshold (phoenixDeepEligible in app.js).
+// Julia mode, below the deep-zoom threshold (phoenixDeepEligible in deepzoom.js).
 // All-fixed-point Phoenix was exact but ~20x too slow on an iPhone 15, and
 // its long draws made the phone drop the WebGL context. So each pixel runs
 // the cheap float32 perturbation delta first,
 //   d' = 2*Z*d + d^2 + dc + p*d_prev,
 // against one float64 reference orbit Z (u_ref row 0, see
-// phoenixReference in app.js), and only a pixel that glitches -- its value
+// phoenixReference in deepzoom.js), and only a pixel that glitches -- its value
 // Z+d smaller than d, the point where a delta stops being small -- or that
 // outlives the reference switches to exact fixed point. It switches from
 // Z[m] + d, which is exact at that moment because u_ref rows 1-2 hold Z[m]
@@ -1138,7 +1138,7 @@ const float ESCAPE_RADIUS_SQ = 65536.0;
 ${FIXED_POINT_GLSL}
 ${COLOR_STYLE_GLSL}
 // Must match escapeColor in FRAG_SRC (Phoenix is power 2: log base 2). Only
-// Smooth and Bands exist for Phoenix (styleDrawn in app.js). Kept in this
+// Smooth and Bands exist for Phoenix (styleDrawn in state-colors.js). Kept in this
 // exact shape: the version that called a shared helper changed the compiled
 // perturbation loop (see COLOR_STYLE_GLSL).
 vec3 escapeColor(int iter, vec2 z) {

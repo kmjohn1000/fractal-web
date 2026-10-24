@@ -76,7 +76,7 @@ async function render(browser, snippet) {
     try {
       localStorage.setItem("fractalAtlas.visited", "1");
       localStorage.setItem("fractalAtlas.welcomeDismissed", "1");
-      // The reference has all 16 sharpening passes; deep views stop at 8 by default (DEEP_PASSES in app.js).
+      // The reference has all 16 sharpening passes; deep views stop at 8 by default (DEEP_PASSES in render-layout.js).
       localStorage.setItem("fractalAtlas.deepPasses", "16");
     } catch { /* storage blocked */ }
   });

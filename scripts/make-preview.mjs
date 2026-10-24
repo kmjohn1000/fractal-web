@@ -59,7 +59,7 @@ if (existsSync(framesDir)) {
 mkdirSync(framesDir, { recursive: true });
 
 // Page-context helpers (a classic script after tests/driver.js, so it sees
-// app.js's top-level declarations). Transitions are switched off in the page,
+// the app's top-level declarations). Transitions are switched off in the page,
 // so a click shows its result on the next frame.
 const HELPERS = `
 window.__pv = {
@@ -119,7 +119,7 @@ async function startServer() {
   throw new Error(`the static server didn't start on port ${PORT}`);
 }
 
-// The app's own flight easing (steadyEase in app.js): speed ramps up over the
+// The app's own flight easing (steadyEase in teleport.js): speed ramps up over the
 // first 12%, cruises, and slows over the last 18%; returns 0..1.
 function steadyEase(t, a = 0.12, b = 0.18) {
   const vmax = 1 / (1 - a / 2 - b / 2);

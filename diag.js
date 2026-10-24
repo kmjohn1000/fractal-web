@@ -36,7 +36,7 @@ const Diag = (() => {
   // A test and tuning override ("#passes=16" for full quality, "#passes=6" to
   // try fewer; "#passes=0" or anything invalid clears it): how many of the 16
   // sharpening passes the slow deep-zoom views draw, instead of the default
-  // (DEEP_PASSES in app.js). Read live, so no reload is needed; null when unset.
+  // (DEEP_PASSES in render-layout.js). Read live, so no reload is needed; null when unset.
   const PASSES_KEY = "fractalAtlas.deepPasses";
   const parsePasses = (v) => { const n = Number(v); return v !== null && v !== "" && Number.isInteger(n) && n >= 2 && n <= 16 ? n : null; };
   let passesOverride = (() => {

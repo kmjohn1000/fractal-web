@@ -279,8 +279,8 @@ document.addEventListener("pointerdown", (e) => {
 
 // Sliders: keep each one's filled-track position (--fill, 0-1, read by
 // the track's gradient in index.html) in sync with its value. Dragging fires
-// "input" (each listener below calls syncSliderFill); everything app.js
-// sets from code (URL restore, fractal switches, Koch's depth animation,
+// "input" (each listener below calls syncSliderFill); everything the app's
+// scripts set from code (URL restore, fractal switches, Koch's depth animation,
 // a curve's max depth changing) goes through the value/max setters, which
 // are wrapped here once per slider instead of patched at every call site.
 const SLIDERS = [els.iterSlider, els.kochDepthSlider, els.treeDepthSlider, els.dragonDepthSlider, els.fernPointsSlider];

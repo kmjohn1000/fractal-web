@@ -1,4 +1,4 @@
-// Color styles (COLOR_STYLES in app.js): the style API is strict, each style
+// Color styles (COLOR_STYLES in state-colors.js): the style API is strict, each style
 // draws on its fractal types, and a handful of states are compared with
 // baselines like app.spec.mjs's. The default style's output is guarded by
 // scripts/default-identity.mjs, and the styles' colors against the float64

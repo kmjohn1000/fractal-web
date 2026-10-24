@@ -113,7 +113,7 @@ const COLORMAPS = [
 // used to sample COLORMAPS at depth/maxDepth, which puts low depths at the
 // colormap's dark end -- near-invisible on the black background. Index 0
 // (green) is the fern's default; each line mode has its own default in
-// app.js (vectorColors).
+// state-colors.js (vectorColors).
 const SOLID_COLORS = [
   { name: "Green",  rgb: [70, 190, 90] },
   { name: "Autumn", rgb: [214, 122, 47] },

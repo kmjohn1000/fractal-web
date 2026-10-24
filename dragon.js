@@ -173,7 +173,7 @@ const LINE_CURVES = {
 };
 
 // Same Canvas2D view shape as createKochView/createPythagorasTreeView, so
-// attachVectorViewInteraction in app.js works on this unmodified. One view
+// attachVectorViewInteraction in interaction.js works on this unmodified. One view
 // serves every LINE_CURVES entry; setCurve switches which one it draws,
 // keeping each curve's pan/zoom separately.
 function createCurveView(canvas) {
@@ -210,7 +210,7 @@ function createCurveView(canvas) {
     }
   }
 
-  // Rotation-aware; matches app.js's screenToComplex/centerForAnchor
+  // Rotation-aware; matches render-layout.js's screenToComplex/centerForAnchor
   // convention exactly, see koch.js's identical functions for the full
   // comment.
   function worldToScreen(x, y) {
@@ -248,7 +248,7 @@ function createCurveView(canvas) {
       // Built from the viewport each frame, so there's no depth limit to
       // zoom into. refPx: how long a segment may stay at the slider's
       // depth: the length a depth-sized segment has when the curve is
-      // fitted to this canvas (the half-height app.js's Reset framing
+      // fitted to this canvas (the half-height interaction.js's Reset framing
       // uses), with some headroom. It doesn't change as you zoom, so
       // zooming in is what adds levels.
       const refPx = Math.pow(Math.SQRT1_2, opts.depth) * (canvas.height / 2 / (opts.fitHalfHeight || DRAGON_FIT_HH)) * DRAGON_ZOOM_SLACK;
