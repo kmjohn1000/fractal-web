@@ -45,7 +45,7 @@ for (let k = 0; k < 6; k++) {
   });
 }
 
-// Every IFS the view can show, keyed by app.js mode name (EXTRA_MODES
+// Every IFS the view can show, keyed by fractal-defs.js mode name (EXTRA_MODES
 // lists the same keys for the picker).
 const IFS_SYSTEMS = {
   fern:       { transforms: FERN_TRANSFORMS },
@@ -189,7 +189,7 @@ function buildLeaves(ifs, viewBox) {
 }
 
 // Same Canvas2D view shape as createKochView/createPythagorasTreeView, so
-// attachVectorViewInteraction in app.js works on this unmodified. One view
+// attachVectorViewInteraction in interaction.js works on this unmodified. One view
 // (one canvas) serves every IFS in IFS_SYSTEMS; setSystem switches which
 // one it shows, keeping each system's pan/zoom separately.
 function createIfsView(canvas) {
@@ -221,7 +221,7 @@ function createIfsView(canvas) {
     }
   }
 
-  // Rotation-aware; matches app.js's screenToComplex/centerForAnchor
+  // Rotation-aware; matches render-layout.js's screenToComplex/centerForAnchor
   // convention exactly, see koch.js's identical functions for the full
   // comment.
   function worldToScreen(x, y) {

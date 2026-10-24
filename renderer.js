@@ -78,7 +78,7 @@ function createFractalRenderer(canvas) {
     }
     return entry;
   }
-  // Compiling a variant before it's asked for (warmColorVariants in app.js),
+  // Compiling a variant before it's asked for (warmColorVariants in color-sheet.js),
   // so that picking a style doesn't wait on the compiler. With
   // KHR_parallel_shader_compile the compile runs off the main thread: this
   // starts it and later calls report "pending" until it's done, without
@@ -225,7 +225,7 @@ function createFractalRenderer(canvas) {
   }
 
   // Live frames (a flight, a pinch above the deep-zoom threshold) draw one
-  // pass each. When they're running late, app.js asks for a smaller one
+  // pass each. When they're running late, state-colors.js asks for a smaller one
   // (setLiveDivisor): the fractal is drawn at 1/div of the canvas size into a
   // small texture, and that is painted over the canvas through the preview
   // program. Only while a gesture or flight is on (isInteracting); the full

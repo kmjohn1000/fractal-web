@@ -1,4 +1,4 @@
-// Fewer sharpening passes on slow deep-zoom views (DEEP_PASSES in app.js, 8 of
+// Fewer sharpening passes on slow deep-zoom views (DEEP_PASSES in render-layout.js, 8 of
 // 16 by default; "#passes=N" overrides it for tests and tuning). These checks
 // hold that only deep views are reduced, that Save and Share still finish all 16
 // samples, that the override works, and that the reduced picture is still the

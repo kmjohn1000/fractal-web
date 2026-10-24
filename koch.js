@@ -8,7 +8,7 @@
 // KOCH_SNOWFLAKE). The turtle is placed so the result is exactly the old
 // koch.py port's snowflake -- a triangle on the unit circle with vertices at
 // 90/210/330 degrees, spanning x +-0.866, y -0.5..1 at depth 0 -- which
-// app.js's vectorViewBox("koch") is fitted to: start at the top vertex
+// interaction.js's vectorViewBox("koch") is fitted to: start at the top vertex
 // heading -60 degrees, one step = edge length sqrt(3) / 3^depth.
 // KOCH_SNOWFLAKE turns right at the corners (clockwise), so bumps go out
 // to the left; the old code walked the triangle counter-clockwise, so
@@ -113,7 +113,7 @@ function createKochView(canvas) {
     }
   }
 
-  // Rotation-aware; matches app.js's screenToComplex/centerForAnchor
+  // Rotation-aware; matches render-layout.js's screenToComplex/centerForAnchor
   // convention exactly (rotate the screen-space offset by +rotation to get
   // world axes, by -rotation for the inverse) so attachVectorViewInteraction's
   // two-finger twist and pan both work the same way the WebGL canvases do.
@@ -149,7 +149,7 @@ function createKochView(canvas) {
 
     // refPx: how long a piece may stay at the slider's depth: the length a
     // depth-sized piece has when the shape is fitted to this canvas (the
-    // half-height app.js's Reset framing uses), with some headroom. It
+    // half-height interaction.js's Reset framing uses), with some headroom. It
     // doesn't change as you zoom, so zooming in is what adds levels.
     const refPx = KOCH_EDGE * Math.pow(1 / 3, opts.depth) * (canvas.height / 2 / (opts.fitHalfHeight || KOCH_FIT_HH)) * KOCH_ZOOM_SLACK;
     let pxMin = (opts.lite ? KOCH_LITE_PX_MIN : KOCH_PX_MIN) * dpr;

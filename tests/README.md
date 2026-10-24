@@ -24,7 +24,7 @@ if:
   `tests/baselines/<project>/` by more than 1% of pixels.
 
 Deep-zoom views draw 8 of the 16 sharpening passes by default (`DEEP_PASSES`
-in `app.js`), which adds a little grain, so the suite pins 16
+in `render-layout.js`), which adds a little grain, so the suite pins 16
 (`playwright.config.mjs` sets `fractalAtlas.deepPasses` for every test) and
 the baselines stay valid. `deep-passes.spec.mjs` clears the pin to test the
 default itself: only deep views are reduced, Save and Share still finish all
@@ -45,7 +45,7 @@ screenshots are compared with baselines.
 `styles.spec.mjs` and `color-sheet.spec.mjs` cover the color styles (Smooth,
 Bands, Edge glow, Stripes, Orbs, Rays and Relief; the style ids are `smooth`,
 `bands`, `glow`, `stripes`, `point`, `cross` and `relief`, see `COLOR_STYLES` in
-`app.js`). Relief shares Edge glow's compiled program; its specs check the
+`state-colors.js`). Relief shares Edge glow's compiled program; its specs check the
 types it draws on, baselines on six fractals and two deep views, that the saved
 image is the frame on screen, and that the light stays at the upper left of the
 screen when the view is rotated (the Rabbit's Julia set is point symmetric, so
@@ -99,7 +99,7 @@ or need Python with numpy and Pillow:
   those two with the old fixed ranges). The deep views run the perturbation path against
   straight float64. Point and Cross take a per-view range: the 2nd-98th
   percentile of the escaped pixels' trap distance, from a small probe of the
-  view (`trapRange` in `app.js`), blended with the old fixed range (`trapRangeFor`:
+  view (`trapRange` in `renderer.js`), blended with the old fixed range (`trapRangeFor`:
   the fixed range while the probe's is as wide as it, the probe's once it is half
   as wide or less, so shallow views look as they always did). The oracle's
   `point` and `cross` styles use the same rule (`point_fixed` and `cross_fixed`

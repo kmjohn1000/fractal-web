@@ -208,7 +208,7 @@
   #crosshair.shown { opacity: 1; transition-duration: 0.15s; }
   @media (prefers-reduced-motion: reduce) { #crosshair, #crosshair.shown { transition: none; } }
 
-  /* Rotation compass, one per rotatable pane (created in app.js). Fades in
+  /* Rotation compass, one per rotatable pane (created in compass-ui.js). Fades in
      while the view is being rotated and out once it's been still for a
      moment; tapping it animates the rotation back to 0. The needle's red
      tip points at the unrotated view's "up". pointer-events only while
@@ -299,7 +299,7 @@
   #fractalTypeRow .pickTile.active img { box-shadow: 0 0 0 2px #6cf; }
   #fractalTypeRow .pickTile:focus-visible { outline: none; }
   #fractalTypeRow .pickTile:focus-visible img { box-shadow: 0 0 0 2px #fff; }
-  /* Color sheet (see COLOR_STYLES in app.js): the
+  /* Color sheet (see COLOR_STYLES in state-colors.js): the
      same popover pattern as the picker (out of flow, above the toolbar, so
      opening it never resizes the canvas). A Looks tab with a grid of
      thumbnails, and a Custom tab with the style, every palette and two
@@ -339,7 +339,7 @@
   }
   /* Seven styles in one row on a phone (down to 360 pt), four and three at the
      larger Dynamic Type sizes, where their names no longer fit: fitColorSegment
-     in app.js sets the columns after measuring, so one is never left alone on
+     in color-sheet.js sets the columns after measuring, so one is never left alone on
      a row. A name of two words ("Edge glow") wraps to two lines. */
   #colorSheet .seg { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
   #colorSheet .seg button { min-width: 0; padding: 0 2px; font-size: 0.6875rem; line-height: 1.1; white-space: normal; }
@@ -359,7 +359,7 @@
     background: none; border: none; white-space: normal; text-align: center; color: #ddd; overflow-wrap: anywhere;
     font: 0.75rem/1.2 -apple-system, system-ui, sans-serif;
   }
-  /* A swatch is a window onto the sprite (see lookSwatch in app.js): size and
+  /* A swatch is a window onto the sprite (see lookSwatch in color-sheet.js): size and
      position come from the tile, the picture from icons/looks/sprite.webp. */
   #colorSheet .swatch {
     display: block; width: 100%; max-width: 4.75rem; aspect-ratio: 1; border-radius: 10px; background-color: #000;
@@ -525,7 +525,7 @@
   .iconBtn.active:active { background: #2f5a86; }
   .iconBtn svg { width: 20px; height: 20px; display: block; }
   /* Color buttons show the current colormap (or solid color) as a small
-     strip, a miniature of the picker's rows; app.js sets the background.
+     strip, a miniature of the picker's rows; render-layout.js and colormap-picker.js set the background.
      The faint ring keeps dark palettes (Inferno, Grayscale) from melting
      into the toolbar. */
   .colorPill {
@@ -544,7 +544,7 @@
     font-variant-numeric: tabular-nums; touch-action: none;
   }
   .depthSpeedBtn.dragging { background: rgba(255,255,255,0.18); }
-  /* Readout above the speed button while it's held: app.js positions it. */
+  /* Readout above the speed button while it's held: teleport.js positions it. */
   #speedBubble {
     position: fixed; z-index: 40; pointer-events: none;
     transform: translate(-50%, -100%); margin-top: -10px;
@@ -576,7 +576,7 @@
      dot sits flush on the track's rounded cap: --sl-inset is where the
      straight part starts, --sl-c0 is the dot center's distance in from
      there at the minimum. A track pseudo-element can't read the value, so
-     app.js keeps --fill (0-1) in sync on each slider. Colors are opaque
+     compass-ui.js keeps --fill (0-1) in sync on each slider. Colors are opaque
      because the caps overlap the straight part, and the dot fades to a
      transparent copy of its own color, not "transparent" (black), or
      WebKit draws a gray fringe around it.

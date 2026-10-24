@@ -4,8 +4,8 @@
    refineDone, mode, isIfsMode, fernView, colormapIndex:writable, mainRenderer, juliaRenderer */
 
 // In-page helpers for the visual suite (tests/visual/app.spec.mjs). Added to
-// the page as a classic <script> after app.js loads, so it sees app.js's
-// top-level declarations just as app.js's own code does. Each loader puts
+// the page as a classic <script> after the app's scripts load, so it sees their
+// top-level declarations just as the app's own code does. Each loader puts
 // the app in one state the same way the app itself would (selectFractal,
 // setMode, a Surprise-me landing) without animating there.
 window.__vt = {
