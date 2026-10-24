@@ -12,7 +12,7 @@
 // explicitly: enterDual only seeds it from the main center; tapping the
 // main pane moves it independently afterward.
 function depthStateFor(m) {
-  return isCurveMode(m) ? dragonState : { koch: kochState, tree: treeState }[m];
+  return isCurveMode(m) ? dragonState : { koch: kochState, tree: treeState, hexaflake: hexaflakeState }[m];
 }
 
 function buildShareHash() {
@@ -46,7 +46,9 @@ function buildShareHash() {
     } else {
       put("cm", COLORMAPS[colormapIndex].name);
       put("c", vectorColors[mode]);
-      put("dp", depthStateFor(mode).depth);
+      // The hexaflake leaves the depth out at its default (its links, which
+      // 1.42.0 wrote without one, read the same either way).
+      if (mode !== "hexaflake" || hexaflakeState.depth !== HEXAFLAKE_DEFAULT_DEPTH) put("dp", depthStateFor(mode).depth);
       if (mode === "koch") p.set("fl", kochState.fill ? "1" : "0");
     }
   }
@@ -122,6 +124,16 @@ function parseShareHash(hash) {
       return st;
     }
     if (isIfsMode(m)) return { mode: m, ...view, count: int("n", 100000, 4000000), colorIndex: int("c", 0, SOLID_COLORS.length - 1) };
+    if (m === "hexaflake") {
+      // Lenient, because 1.42.0 links (a chaos-game mode) carry a points value
+      // "n" and no depth: n is ignored, and a missing or out-of-range depth,
+      // like a missing color, falls back to the default.
+      const d = p.has("dp") ? Number(p.get("dp")) : NaN;
+      const c = p.has("c") ? Number(p.get("c")) : NaN;
+      return { mode: m, ...view, cm: cmIndex(), fill: true,
+        colorIndex: Number.isInteger(c) && c >= 0 && c < SOLID_COLORS.length ? c : vectorColors[m],
+        depth: Number.isInteger(d) && d >= 0 && d <= HEXAFLAKE_MAX_DEPTH ? d : HEXAFLAKE_DEFAULT_DEPTH };
+    }
     const maxDepth = isCurveMode(m) ? LINE_CURVES[m].maxDepth : { koch: 8, tree: 12 }[m];
     if (maxDepth === undefined || !Object.prototype.hasOwnProperty.call(vectorColors, m)) return null;
     const minDepth = isCurveMode(m) ? LINE_CURVES[m].minDepth || 0 : 0;

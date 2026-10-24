@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Fractal Atlas&trade;</title>
 
-<link rel="manifest" href="manifest.webmanifest?v=1.42.3">
+<link rel="manifest" href="manifest.webmanifest?v=1.43.0">
 <meta name="theme-color" content="#111111">
-<link rel="icon" href="icons/favicon-32.png?v=1.42.3" sizes="32x32" type="image/png">
+<link rel="icon" href="icons/favicon-32.png?v=1.43.0" sizes="32x32" type="image/png">
 
 <!-- iOS Safari ignores the manifest entirely for install/homescreen purposes
      and needs its own meta tags + a dedicated (non-transparent) icon. -->
@@ -15,7 +15,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fractal Atlas">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.42.3">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.43.0">
 
 <!-- Smart App Banner: Safari on iPhone/iPad offers the App Store app.
      Ignored everywhere else, including the app's own web view. -->
@@ -187,7 +187,7 @@
     box-sizing: border-box;
   }
   #canvasArea.stacked { flex-direction: column; }
-  #mainCanvas, #juliaCanvas, #kochCanvas, #treeCanvas, #dragonCanvas, #fernCanvas {
+  #mainCanvas, #juliaCanvas, #kochCanvas, #treeCanvas, #hexaflakeCanvas, #dragonCanvas, #fernCanvas {
     flex: 1 1 0; min-width: 0; min-height: 0; width: 100%; height: 100%;
     touch-action: none; display: block;
   }
@@ -258,7 +258,7 @@
      the row still fills evenly; on wider screens Back/Share/Reset sit at
      the right edge, in the same place whichever mode is showing. */
   .control-row .trailStart { margin-left: auto; }
-  #fractalControls.hidden, #kochControls.hidden, #treeControls.hidden,
+  #fractalControls.hidden, #kochControls.hidden, #treeControls.hidden, #hexaflakeControls.hidden,
   #dragonControls.hidden, #fernControls.hidden { display: none; }
 
   /* Fractal-type picker: a dropdown panel opened by the hamburger button,
@@ -675,6 +675,7 @@
   <canvas id="juliaCanvas" class="hidden"></canvas>
   <canvas id="kochCanvas" class="hidden"></canvas>
   <canvas id="treeCanvas" class="hidden"></canvas>
+  <canvas id="hexaflakeCanvas" class="hidden"></canvas>
   <canvas id="dragonCanvas" class="hidden"></canvas>
   <canvas id="fernCanvas" class="hidden"></canvas>
 </div>
@@ -836,6 +837,45 @@
       </svg>
     </button>
   </div>
+  <div id="hexaflakeControls" class="control-row hidden">
+    <label class="field">depth <input id="hexaflakeDepthSlider" type="range" min="0" max="6" step="1" value="4"></label>
+    <button class="iconBtn fractalMenuBtn" aria-haspopup="true" aria-label="Choose fractal type" title="Choose fractal type">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/>
+        <rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>
+      </svg>
+    </button>
+    <button id="hexaflakeColormapBtn" class="iconBtn" aria-label="Choose color" title="Choose color">
+      <span id="hexaflakeColorSwatch" class="colorPill"></span>
+    </button>
+    <button id="hexaflakeHudBtn" class="iconBtn hudToggleBtn" aria-label="Toggle info overlay" title="Toggle info overlay">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/>
+        <circle cx="12" cy="7.5" r="1.3" fill="currentColor" stroke="none"/>
+      </svg>
+    </button>
+    <button class="iconBtn depthPlayBtn" aria-label="Play depth" title="Play depth">
+      <svg class="playIcon" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 5v14l12-7z"/></svg>
+      <svg class="pauseIcon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+    </button>
+    <button class="iconBtn depthSpeedBtn" aria-label="Play speed" title="Play speed: tap for the next speed, or hold and slide left or right">1×</button>
+    <button id="hexaflakeBackBtn" class="iconBtn trailStart" aria-label="Back" title="Back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>
+      </svg>
+    </button>
+    <button id="hexaflakeShareBtn" class="iconBtn shareBtn" aria-label="Share" title="Share" aria-haspopup="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3.5V14"/><path d="M8 7.5l4-4 4 4"/>
+        <path d="M8.5 10.5H7a2 2 0 0 0-2 2V19a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6.5a2 2 0 0 0-2-2h-1.5"/>
+      </svg>
+    </button>
+    <button id="hexaflakeResetBtn" class="iconBtn" aria-label="Reset view" title="Reset view">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3.5 11.5L12 4l8.5 7.5"/><path d="M6 9.5V19a1 1 0 0 0 1 1h3.5v-5.5h3V20H17a1 1 0 0 0 1-1V9.5"/>
+      </svg>
+    </button>
+  </div>
   <div id="dragonControls" class="control-row hidden">
     <label class="field">depth <input id="dragonDepthSlider" type="range" min="0" max="16" step="1" value="13"></label>
     <button class="iconBtn fractalMenuBtn" aria-haspopup="true" aria-label="Choose fractal type" title="Choose fractal type">
@@ -917,31 +957,32 @@
   </div>
 </div>
 
-<script src="colormaps.js?v=1.42.3"></script>
-<script src="shaders.js?v=1.42.3"></script>
-<script src="lsystem.js?v=1.42.3"></script>
-<script src="vectorgeom.js?v=1.42.3"></script>
-<script src="koch.js?v=1.42.3"></script>
-<script src="pythagoras.js?v=1.42.3"></script>
-<script src="dragon.js?v=1.42.3"></script>
-<script src="fern.js?v=1.42.3"></script>
-<script src="platform.js?v=1.42.3"></script>
-<script src="diag.js?v=1.42.3"></script>
-<script src="configs.js?v=1.42.3"></script>
-<script src="places.js?v=1.42.3"></script>
-<script src="fractal-defs.js?v=1.42.3"></script>
-<script src="deepzoom.js?v=1.42.3"></script>
-<script src="renderer.js?v=1.42.3"></script>
-<script src="state-colors.js?v=1.42.3"></script>
-<script src="render-layout.js?v=1.42.3"></script>
-<script src="modes.js?v=1.42.3"></script>
-<script src="interaction.js?v=1.42.3"></script>
-<script src="compass-ui.js?v=1.42.3"></script>
-<script src="teleport.js?v=1.42.3"></script>
-<script src="colormap-picker.js?v=1.42.3"></script>
-<script src="color-sheet.js?v=1.42.3"></script>
-<script src="share.js?v=1.42.3"></script>
-<script src="app.js?v=1.42.3"></script>
+<script src="colormaps.js?v=1.43.0"></script>
+<script src="shaders.js?v=1.43.0"></script>
+<script src="lsystem.js?v=1.43.0"></script>
+<script src="vectorgeom.js?v=1.43.0"></script>
+<script src="koch.js?v=1.43.0"></script>
+<script src="pythagoras.js?v=1.43.0"></script>
+<script src="hexaflake.js?v=1.43.0"></script>
+<script src="dragon.js?v=1.43.0"></script>
+<script src="fern.js?v=1.43.0"></script>
+<script src="platform.js?v=1.43.0"></script>
+<script src="diag.js?v=1.43.0"></script>
+<script src="configs.js?v=1.43.0"></script>
+<script src="places.js?v=1.43.0"></script>
+<script src="fractal-defs.js?v=1.43.0"></script>
+<script src="deepzoom.js?v=1.43.0"></script>
+<script src="renderer.js?v=1.43.0"></script>
+<script src="state-colors.js?v=1.43.0"></script>
+<script src="render-layout.js?v=1.43.0"></script>
+<script src="modes.js?v=1.43.0"></script>
+<script src="interaction.js?v=1.43.0"></script>
+<script src="compass-ui.js?v=1.43.0"></script>
+<script src="teleport.js?v=1.43.0"></script>
+<script src="colormap-picker.js?v=1.43.0"></script>
+<script src="color-sheet.js?v=1.43.0"></script>
+<script src="share.js?v=1.43.0"></script>
+<script src="app.js?v=1.43.0"></script>
 <script>
   // Service workers only register on secure origins or localhost, so this is
   // a silent no-op during phone-over-LAN dev testing (plain http://<lan-ip>)

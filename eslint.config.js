@@ -23,9 +23,10 @@ const sharedGlobals = {
   VECTOR_CULL_MARGIN: "readonly",
   vectorAffine: "readonly",
   vectorDiscOffscreen: "readonly",
-  // koch.js / pythagoras.js / dragon.js / fern.js
+  // koch.js / pythagoras.js / hexaflake.js / dragon.js / fern.js
   createKochView: "readonly",
   createPythagorasTreeView: "readonly",
+  createHexaflakeView: "readonly",
   createCurveView: "readonly",
   LINE_CURVES: "readonly",
   // lsystem.js
@@ -120,6 +121,7 @@ const sharedGlobals = {
   juliaRenderer: "readonly",
   kochView: "readonly",
   treeView: "readonly",
+  hexaflakeView: "readonly",
   dragonView: "readonly",
   fernView: "readonly",
   mainCanvasAspect: "readonly",
@@ -132,6 +134,9 @@ const sharedGlobals = {
   curveBoxCache: "readonly",
   kochState: "readonly",
   treeState: "readonly",
+  HEXAFLAKE_DEFAULT_DEPTH: "readonly",
+  HEXAFLAKE_MAX_DEPTH: "readonly",
+  hexaflakeState: "readonly",
   dragonState: "readonly",
   fernState: "readonly",
   vectorColors: "readonly",
@@ -167,6 +172,7 @@ const sharedGlobals = {
   vectorFitHalfHeight: "readonly",
   kochNav: "readonly",
   treeNav: "readonly",
+  hexaflakeNav: "readonly",
   dragonNav: "readonly",
   fernNav: "readonly",
   KEY_PAN_FRACTION: "readonly",

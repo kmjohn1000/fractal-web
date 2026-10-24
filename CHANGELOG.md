@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.43.0 — 2026-10-24
+- The Hexaflake is now drawn exactly, as filled hexagons level by level, like the Pythagoras tree: a depth slider with the play button and hold-and-slide speed, every level shaded in its own hue so the gaps show the hexagon they came from, and as much detail as you zoom into. It replaces the dots version; links to it still open, on the same part of the shape.
+
 ## 1.42.3 — 2026-10-24
 - The Sierpinski triangle is now a true equilateral triangle, a little wider and lower than before and centered on the screen. Share links made with the old triangle open on a different part of it.
 

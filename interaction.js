@@ -461,12 +461,13 @@ function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive = () =>
 // to the canvas aspect with the same viewFromBounds the WebGL fractals use
 // (a fixed zoom level cut the sides off wide shapes on portrait phones).
 // Koch spans x +-0.866, y +-1; the tree (depth 12) x +-2.95, y 0..3.95; the
-// fern FERN_BOUNDS. The dragon rotates 45 degrees per depth level, so a
+// hexaflake x +-1, y +-0.866; the fern FERN_BOUNDS. The dragon rotates 45 degrees per depth level, so a
 // box covering every depth would open it badly zoomed out -- it's fitted
 // to the current depth instead.
 function vectorViewBox(modeKey) {
   if (modeKey === "koch") return [-0.95, 0.95, -1.08, 1.08];
   if (modeKey === "tree") return [-3.1, 3.1, -0.15, 4.1];
+  if (modeKey === "hexaflake") return [-1.08, 1.08, -0.96, 0.96];
   if (modeKey === "fern") return [-2.4, 2.9, -0.2, 10.25];
   if (isIfsMode(modeKey)) {
     const [x0, x1, y0, y1] = ifsData(modeKey).bounds;
@@ -493,7 +494,7 @@ const VECTOR_VIEWS = {
   koch: [kochView, els.kochCanvas], tree: [treeView, els.treeCanvas],
   dragon: [dragonView, els.dragonCanvas], fern: [fernView, els.fernCanvas],
   sierpinski: [fernView, els.fernCanvas], levy: [fernView, els.fernCanvas],
-  vicsek: [fernView, els.fernCanvas], hexaflake: [fernView, els.fernCanvas],
+  vicsek: [fernView, els.fernCanvas], hexaflake: [hexaflakeView, els.hexaflakeCanvas],
   hilbert: [dragonView, els.dragonCanvas], gosper: [dragonView, els.dragonCanvas],
   arrowhead: [dragonView, els.dragonCanvas],
 };
@@ -515,10 +516,12 @@ const vectorFitHalfHeight = (modeKey) => vectorFitView(modeKey).scale;
 
 const kochNav = attachVectorViewInteraction(els.kochCanvas, kochView);
 const treeNav = attachVectorViewInteraction(els.treeCanvas, treeView);
+const hexaflakeNav = attachVectorViewInteraction(els.hexaflakeCanvas, hexaflakeView);
 const dragonNav = attachVectorViewInteraction(els.dragonCanvas, dragonView);
 const fernNav = attachVectorViewInteraction(els.fernCanvas, fernView, () => fernBoxZoomActive);
 els.kochBackBtn.addEventListener("click", () => kochNav.back());
 els.treeBackBtn.addEventListener("click", () => treeNav.back());
+els.hexaflakeBackBtn.addEventListener("click", () => hexaflakeNav.back());
 els.dragonBackBtn.addEventListener("click", () => dragonNav.back());
 els.fernBackBtn.addEventListener("click", () => fernNav.back());
 
@@ -556,6 +559,7 @@ function keyAction(e) {
 function activeVectorTarget() {
   if (mode === "koch") return { v: kochView, canvas: els.kochCanvas, nav: kochNav, resetBtn: els.kochResetBtn };
   if (mode === "tree") return { v: treeView, canvas: els.treeCanvas, nav: treeNav, resetBtn: els.treeResetBtn };
+  if (mode === "hexaflake") return { v: hexaflakeView, canvas: els.hexaflakeCanvas, nav: hexaflakeNav, resetBtn: els.hexaflakeResetBtn };
   if (isCurveMode(mode)) return { v: dragonView, canvas: els.dragonCanvas, nav: dragonNav, resetBtn: els.dragonResetBtn };
   if (isIfsMode(mode)) return { v: fernView, canvas: els.fernCanvas, nav: fernNav, resetBtn: els.fernResetBtn };
   return null;

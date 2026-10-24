@@ -12,6 +12,7 @@ const els = {
   juliaCanvas: document.getElementById("juliaCanvas"),
   kochCanvas: document.getElementById("kochCanvas"),
   treeCanvas: document.getElementById("treeCanvas"),
+  hexaflakeCanvas: document.getElementById("hexaflakeCanvas"),
   dragonCanvas: document.getElementById("dragonCanvas"),
   fernCanvas: document.getElementById("fernCanvas"),
   boxRect: document.getElementById("boxZoomRect"),
@@ -31,6 +32,7 @@ const els = {
   fractalControls: document.getElementById("fractalControls"),
   kochControls: document.getElementById("kochControls"),
   treeControls: document.getElementById("treeControls"),
+  hexaflakeControls: document.getElementById("hexaflakeControls"),
   dragonControls: document.getElementById("dragonControls"),
   fernControls: document.getElementById("fernControls"),
   iterField: document.getElementById("iterField"),
@@ -49,6 +51,9 @@ const els = {
   treeDepthSlider: document.getElementById("treeDepthSlider"),
   treeColormapBtn: document.getElementById("treeColormapBtn"),
   treeResetBtn: document.getElementById("treeResetBtn"),
+  hexaflakeDepthSlider: document.getElementById("hexaflakeDepthSlider"),
+  hexaflakeColormapBtn: document.getElementById("hexaflakeColormapBtn"),
+  hexaflakeResetBtn: document.getElementById("hexaflakeResetBtn"),
   dragonDepthSlider: document.getElementById("dragonDepthSlider"),
   dragonColormapBtn: document.getElementById("dragonColormapBtn"),
   dragonResetBtn: document.getElementById("dragonResetBtn"),
@@ -57,11 +62,13 @@ const els = {
   fernColorSwatch: document.getElementById("fernColorSwatch"),
   kochColorSwatch: document.getElementById("kochColorSwatch"),
   treeColorSwatch: document.getElementById("treeColorSwatch"),
+  hexaflakeColorSwatch: document.getElementById("hexaflakeColorSwatch"),
   dragonColorSwatch: document.getElementById("dragonColorSwatch"),
   fernResetBtn: document.getElementById("fernResetBtn"),
   fernBoxZoomBtn: document.getElementById("fernBoxZoomBtn"),
   kochBackBtn: document.getElementById("kochBackBtn"),
   treeBackBtn: document.getElementById("treeBackBtn"),
+  hexaflakeBackBtn: document.getElementById("hexaflakeBackBtn"),
   dragonBackBtn: document.getElementById("dragonBackBtn"),
   fernBackBtn: document.getElementById("fernBackBtn"),
   shareMenu: document.getElementById("shareMenu"),
@@ -72,7 +79,7 @@ const els = {
   shareNativeBtn: document.getElementById("shareNativeBtn"),
 };
 
-let mode = "fractal"; // "fractal" | "koch" | "tree" | a LINE_CURVES key ("dragon", ...) | an IFS_SYSTEMS key ("fern", ...)
+let mode = "fractal"; // "fractal" | "koch" | "tree" | "hexaflake" | a LINE_CURVES key ("dragon", ...) | an IFS_SYSTEMS key ("fern", ...)
 let colormapIndex = 0;
 
 // ---------------------------------------------------------------- color styles
@@ -290,6 +297,7 @@ const mainRenderer = createFractalRenderer(els.mainCanvas);
 const juliaRenderer = createFractalRenderer(els.juliaCanvas);
 const kochView = createKochView(els.kochCanvas);
 const treeView = createPythagorasTreeView(els.treeCanvas);
+const hexaflakeView = createHexaflakeView(els.hexaflakeCanvas);
 const dragonView = createCurveView(els.dragonCanvas);
 const fernView = createIfsView(els.fernCanvas);
 
@@ -363,6 +371,9 @@ let juliaHistory = [];
 const curveBoxCache = new Map(); // vectorViewBox's boxes for the line curves, by curve and depth
 const kochState = { depth: 4, fill: true };
 const treeState = { depth: 9 };
+const HEXAFLAKE_DEFAULT_DEPTH = 4;
+const HEXAFLAKE_MAX_DEPTH = 6; // the depth slider's max in index.html: at the fitted view level 6 is already about a pixel across
+const hexaflakeState = { depth: HEXAFLAKE_DEFAULT_DEPTH };
 // Each line curve keeps its own depth; dragonState.depth reads/writes the
 // one currently shown, so code written for the dragon alone still works.
 const curveDepths = Object.fromEntries(Object.entries(LINE_CURVES).map(([k, c]) => [k, c.defaultDepth]));
@@ -376,7 +387,7 @@ const fernState = { count: 1000000, colorIndex: 0 };
 // depth, which left low depths near-black and hard to see.
 const solidIndex = (name) => SOLID_COLORS.findIndex((c) => c.name === name);
 const vectorColors = {
-  koch: solidIndex("Ice"), tree: solidIndex("Green"), dragon: solidIndex("Autumn"),
+  koch: solidIndex("Ice"), tree: solidIndex("Green"), hexaflake: solidIndex("Green"), dragon: solidIndex("Autumn"),
   hilbert: solidIndex("Violet"), gosper: solidIndex("Rose"), arrowhead: solidIndex("Gold"),
 };
 

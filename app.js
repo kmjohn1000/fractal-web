@@ -20,7 +20,7 @@ for (const btn of TOGGLE_BUTTONS) {
 
 const POPOVERS = [
   { menu: els.fractalTypeRow, openers: [...document.querySelectorAll(".fractalMenuBtn")] },
-  { menu: els.colormapMenu, openers: [els.colormapBtn, els.kochColormapBtn, els.treeColormapBtn, els.dragonColormapBtn, els.fernColorBtn] },
+  { menu: els.colormapMenu, openers: [els.colormapBtn, els.kochColormapBtn, els.treeColormapBtn, els.hexaflakeColormapBtn, els.dragonColormapBtn, els.fernColorBtn] },
   { menu: els.colorSheet, openers: [els.colormapBtn] },
   { menu: els.shareMenu, openers: [...document.querySelectorAll(".shareBtn")] },
 ];

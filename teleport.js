@@ -257,7 +257,7 @@ els.kochFillBtn.addEventListener("click", () => {
 });
 
 
-// Depth play/pause (Koch, tree, line curves): steps the row's depth slider
+// Depth play/pause (Koch, tree, hexaflake, line curves): steps the row's depth slider
 // up to its max and back down, over and over, by setting its value and
 // firing "input" -- the same path as a drag, so each mode's own listener
 // does the redraw. The speed button beside it is pressed and slid: left
@@ -271,6 +271,7 @@ const depthPlayer = { slider: null, dir: 1, timer: 0, speedIndex: PLAY_SPEEDS.in
 function depthSliderForMode() {
   if (mode === "koch") return els.kochDepthSlider;
   if (mode === "tree") return els.treeDepthSlider;
+  if (mode === "hexaflake") return els.hexaflakeDepthSlider;
   if (isCurveMode(mode)) return els.dragonDepthSlider;
   return null;
 }
@@ -324,7 +325,7 @@ function startDepthPlay() {
 for (const btn of document.querySelectorAll(".depthPlayBtn")) {
   btn.addEventListener("click", () => (depthPlayer.slider ? stopDepthPlay() : startDepthPlay()));
 }
-for (const s of [els.kochDepthSlider, els.treeDepthSlider, els.dragonDepthSlider]) {
+for (const s of [els.kochDepthSlider, els.treeDepthSlider, els.hexaflakeDepthSlider, els.dragonDepthSlider]) {
   s.addEventListener("pointerdown", stopDepthPlay);
 }
 
@@ -420,6 +421,18 @@ els.treeDepthSlider.addEventListener("input", () => {
 els.treeResetBtn.addEventListener("click", () => {
   treeNav.clearHistory();
   fitVectorView("tree");
+  requestRender();
+});
+
+els.hexaflakeDepthSlider.addEventListener("input", () => {
+  syncSliderFill(els.hexaflakeDepthSlider);
+  hexaflakeState.depth = parseInt(els.hexaflakeDepthSlider.value, 10);
+  requestRender();
+});
+
+els.hexaflakeResetBtn.addEventListener("click", () => {
+  hexaflakeNav.clearHistory();
+  fitVectorView("hexaflake");
   requestRender();
 });
 

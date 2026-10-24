@@ -178,12 +178,14 @@ function setMode(next) {
   els.fractalControls.classList.toggle("hidden", mode !== "fractal");
   els.kochControls.classList.toggle("hidden", mode !== "koch");
   els.treeControls.classList.toggle("hidden", mode !== "tree");
+  els.hexaflakeControls.classList.toggle("hidden", mode !== "hexaflake");
   els.dragonControls.classList.toggle("hidden", !isCurveMode(mode));
   els.fernControls.classList.toggle("hidden", !isIfsMode(mode));
   els.mainCanvas.classList.toggle("hidden", mode !== "fractal");
   els.juliaCanvas.classList.toggle("hidden", mode !== "fractal" || !dualActive);
   els.kochCanvas.classList.toggle("hidden", mode !== "koch");
   els.treeCanvas.classList.toggle("hidden", mode !== "tree");
+  els.hexaflakeCanvas.classList.toggle("hidden", mode !== "hexaflake");
   els.dragonCanvas.classList.toggle("hidden", !isCurveMode(mode));
   if (isCurveMode(mode)) {
     // Same sharing as the IFS modes below, plus the depth slider, whose

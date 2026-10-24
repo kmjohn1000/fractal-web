@@ -283,7 +283,7 @@ document.addEventListener("pointerdown", (e) => {
 // scripts set from code (URL restore, fractal switches, Koch's depth animation,
 // a curve's max depth changing) goes through the value/max setters, which
 // are wrapped here once per slider instead of patched at every call site.
-const SLIDERS = [els.iterSlider, els.kochDepthSlider, els.treeDepthSlider, els.dragonDepthSlider, els.fernPointsSlider];
+const SLIDERS = [els.iterSlider, els.kochDepthSlider, els.treeDepthSlider, els.hexaflakeDepthSlider, els.dragonDepthSlider, els.fernPointsSlider];
 
 function syncSliderFill(slider) {
   const min = parseFloat(slider.min), max = parseFloat(slider.max);

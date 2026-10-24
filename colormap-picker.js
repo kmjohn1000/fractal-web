@@ -32,6 +32,7 @@ function updateColorSwatches() {
     [els.fernColorBtn, els.fernColorSwatch, fernState.colorIndex],
     [els.kochColormapBtn, els.kochColorSwatch, vectorColors.koch],
     [els.treeColormapBtn, els.treeColorSwatch, vectorColors.tree],
+    [els.hexaflakeColormapBtn, els.hexaflakeColorSwatch, vectorColors.hexaflake],
     [els.dragonColormapBtn, els.dragonColorSwatch, vectorColors[dragonView.curve]],
   ].forEach(([btn, pill, i]) => {
     pill.style.background = solidCss(i);
@@ -79,7 +80,7 @@ function openColormapMenu(solidKey) {
   els.colormapMenu.querySelector(".active")?.scrollIntoView({ block: "nearest" });
 }
 
-[els.colormapBtn, els.kochColormapBtn, els.treeColormapBtn, els.dragonColormapBtn, els.fernColorBtn].forEach((btn) => {
+[els.colormapBtn, els.kochColormapBtn, els.treeColormapBtn, els.hexaflakeColormapBtn, els.dragonColormapBtn, els.fernColorBtn].forEach((btn) => {
   btn.setAttribute("aria-haspopup", "true");
   btn.addEventListener("click", (e) => {
     e.stopPropagation(); // don't let the outside-tap closer below fire on this same tap
@@ -97,7 +98,7 @@ function openColormapMenu(solidKey) {
     if (els.colormapMenu.classList.contains("open")) els.colormapMenu.classList.remove("open");
     else openColormapMenu({
       [els.fernColorBtn.id]: "fern", [els.kochColormapBtn.id]: "koch",
-      [els.treeColormapBtn.id]: "tree", [els.dragonColormapBtn.id]: dragonView.curve,
+      [els.treeColormapBtn.id]: "tree", [els.hexaflakeColormapBtn.id]: "hexaflake", [els.dragonColormapBtn.id]: dragonView.curve,
     }[btn.id] || null);
   });
 });

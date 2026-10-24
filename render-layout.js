@@ -86,6 +86,9 @@ function renderAll() {
   } else if (mode === "tree") {
     treeView.render({ depth: treeState.depth, colorIndex: vectorColors.tree, fitHalfHeight: vectorFitHalfHeight("tree"), lite: vectorLite });
     updateTreeHud();
+  } else if (mode === "hexaflake") {
+    hexaflakeView.render({ depth: hexaflakeState.depth, colorIndex: vectorColors.hexaflake, fitHalfHeight: vectorFitHalfHeight("hexaflake"), lite: vectorLite });
+    updateHexaflakeHud();
   } else if (isCurveMode(mode)) {
     dragonView.render({
       depth: dragonState.depth, colorIndex: vectorColors[dragonView.curve], lite: vectorLite,
@@ -167,7 +170,7 @@ let renderPending = false;
 // The vector navs are declared further down; renderAll first runs after
 // they exist.
 function updateBackButtons() {
-  const nav = mode === "koch" ? kochNav : mode === "tree" ? treeNav
+  const nav = mode === "koch" ? kochNav : mode === "tree" ? treeNav : mode === "hexaflake" ? hexaflakeNav
     : isCurveMode(mode) ? dragonNav : isIfsMode(mode) ? fernNav : null;
   const canGoBack = nav ? nav.canGoBack() : (activePane === "julia" ? juliaHistory : mainHistory).length > 0;
   const btn = nav ? els[`${isCurveMode(mode) ? "dragon" : isIfsMode(mode) ? "fern" : mode}BackBtn`] : els.backBtn;
@@ -417,6 +420,11 @@ function updateKochHud() {
 function updateTreeHud() {
   setHud(modeLabel("tree"), [depthHudText(treeState.depth, treeView.extraLevels), rotationHudText(treeView.view.rotation)],
     patternBar(treeView.view, els.treeCanvas));
+}
+
+function updateHexaflakeHud() {
+  setHud(modeLabel("hexaflake"), [depthHudText(hexaflakeState.depth, hexaflakeView.extraLevels), rotationHudText(hexaflakeView.view.rotation)],
+    patternBar(hexaflakeView.view, els.hexaflakeCanvas));
 }
 
 function updateDragonHud() {
