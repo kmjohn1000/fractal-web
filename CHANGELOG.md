@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.42.3 — 2026-10-24
+- The Sierpinski triangle is now a true equilateral triangle, a little wider and lower than before and centered on the screen. Share links made with the old triangle open on a different part of it.
+
 ## 1.42.2 — 2026-10-23
 - Behind-the-scenes tidy-up of the code; nothing should look or behave differently.
 
