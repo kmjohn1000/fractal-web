@@ -511,8 +511,11 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       place); the Default Look's tile swatch is the Inferno picture, so on
       the seven fractals with another default palette it shows Inferno while
       applying that fractal's own (a per-fractal swatch, or a neutral one);
-      phone check of the upright Ship (twist, pinch, dual view tap, deep
-      places) is still to do
+      phone check of the upright Ship: the user ran 1.44.0 on an iPhone 15
+      on 2026-10-24 and said it looks good (the opening view, Surprise me and
+      a recolored fractal were asked for; what exactly was tried isn't
+      recorded), so twist, pinch, the dual view tap and deep places are still
+      unconfirmed
 - [ ] Minimap: small inset of the whole fractal with a marker for the
       current view, so deep zooms keep their bearings. Render the overview
       once per fractal/colormap into a small texture; at deep zoom the view
