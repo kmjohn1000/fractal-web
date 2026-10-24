@@ -73,18 +73,44 @@ lenient parsing, written only when not the default; the ids didn't change when
 the display names did), the info card, and baselines of each style on several
 fractals and of both sheet tabs.
 
+`palettes.spec.mjs` covers the per-fractal default palettes and the upright
+Burning Ship (1.44.0). Palettes: every `defaultColormap` names a real colormap
+and the table is what the app ships; a fractal opens in its own palette (also a
+remembered one) until one is picked in the Color sheet, then the pick holds for
+every fractal and Reset or the Default Look give the defaults back; a share
+link's palette is exactly what it names and counts as a pick unless it is the
+fractal's own; a place's `colormap` applies on the flight and never over a pick.
+Burning Ship: the flag (`flipY`) is on for a plain pick, Reset and a remembered
+view, off for everything else and for the Julia pane; the top of the screen is
+-Im; screen-to-complex and back round-trips flipped and turned; the picture is
+the old one mirrored top to bottom (also turned, and deep on the perturbation
+path); the Julia pane doesn't depend on it; a tap in dual view sets c where the
+finger is; share links without `fl` open as they always did (place, turn, palette),
+`fl=1` opens upright and is written only when on; Surprise me from an old-link
+view lands upright and Back restores the old view.
+
 Three scripts back them, outside the suite because they take a few minutes
 or need Python with numpy and Pillow:
 
 - `node scripts/default-identity.mjs record|check`: the default style must
   draw exactly as before the styles work (with all 16 sharpening passes, as
-  the suite pins them). It renders 26 states (every
+  the suite pins them). It renders 29 states (every
   fractal type, the perturbation, Newton and Phoenix deep paths, dual view)
   and `check` fails on a single differing pixel against the reference
-  recorded in `tests/baselines/identity/`. Run it after any shader edit: a
-  reshaped `escapeColor` in `PHOENIX_DEEP_FRAG_SRC` once changed 10% of a
+  recorded in `tests/baselines/identity/`. Every state pins Inferno, so the
+  per-fractal default palettes don't touch it, and the two Burning Ship
+  states recorded before 1.44.0 (`ship-open`, `ship-twin-ships`) ask for the old
+  orientation (`flipY: false`, and the old half turn for Twin Ships): they prove the
+  old path is pixel-identical, while `ship-open-upright`, `ship-twin-ships-upright`
+  and `dual-ship-upright` have references of their own. Run it after any shader
+  edit: a reshaped `escapeColor` in `PHOENIX_DEEP_FRAG_SRC` once changed 10% of a
   deep Phoenix frame, and the shader compiler is the only thing that knows.
-- `node scripts/oracle-compare.mjs --styles glow,stripes ...`: renders a view
+- `node scripts/oracle-compare.mjs --styles glow,stripes ...` (`--flip 1` draws the
+  Burning Ship views the way the app opens them since 1.44.0 and flips the picture
+  back before comparing; the oracle's relief light follows. Measured for ship, armada
+  and twinships (deep, perturbation) in Smooth, Glow, Stripes, Relief, Point and
+  Cross: all within the gates, Smooth 0.25 / 0.62 / 1.55 blurred, the same as the
+  old orientation): renders a view
   in the app and in a float64 reference (`scripts/oracle/oracle.py`, which
   reads the app's own palettes) and compares them. Gates, set from what
   Smooth measures against the oracle (blurred difference 0.16-1.60 of 255

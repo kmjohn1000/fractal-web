@@ -65,11 +65,10 @@ function openColormapMenu(solidKey) {
         vectorColors[solidKey] = i;
         updateColorSwatches();
       } else {
-        colormapIndex = i;
-        // Always refresh the shader's LUT, whichever mode picked it: the
+        // Always refreshes the shader's LUT, whichever mode picked it: the
         // old koch/tree/dragon cycle handlers skipped this, leaving the
         // fractal on a stale colormap after switching back.
-        updateLUT();
+        pickColormap(i);
       }
       els.colormapMenu.classList.remove("open");
       requestRender();

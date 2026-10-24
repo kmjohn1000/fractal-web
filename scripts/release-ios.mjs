@@ -43,7 +43,7 @@ const LINK = "https://kmjohn1000.github.io/fractal-web/";
 const SHOTS = [
   { name: "01-mandelbrot", url: null },
   { name: "02-seahorse-valley", url: `${LINK}#v=1&m=fractal&f=Mandelbrot&x=-0.743643887037151&y=0.13182590420533&s=4e-10&r=0&i=2000&cm=Turbo` },
-  { name: "03-armada", url: `${LINK}#v=1&m=fractal&f=Burn.+Ship&x=-1.7595&y=-0.036&s=0.068&r=3.141592653589793&i=610&cm=Inferno` },
+  { name: "03-armada", url: `${LINK}#v=1&m=fractal&f=Burn.+Ship&x=-1.7595&y=-0.036&s=0.068&r=0&fl=1&i=610&cm=Inferno` },
   { name: "04-fern", url: `${LINK}#v=1&m=fern&x=0.25&y=5.025&s=5.225&r=0&n=1000000&c=0` },
 ];
 

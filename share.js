@@ -24,6 +24,10 @@ function buildShareHash() {
     const s = mainState;
     p.set("f", currentName);
     put("x", s.cx); put("y", s.cy); put("s", s.scale); put("r", s.rotation || 0);
+    // The Burning Ship's upright picture (state.flipY), written only when it
+    // is on: x and y are real coordinates either way, and a link without
+    // the field (every link made before 1.44.0) opens as it always did.
+    if (s.flipY) p.set("fl", "1");
     put("i", s.maxIter); if (s.iterAutoLocked) p.set("il", "1");
     put("cm", COLORMAPS[colormapIndex].name);
     // The color style, only when it isn't the default coloring, so links made
@@ -114,6 +118,8 @@ function parseShareHash(hash) {
       const name = p.get("f");
       if (!Object.prototype.hasOwnProperty.call(FRACTAL_CONFIGS, name)) return null;
       const st = { mode: m, name, ...view, maxIter: int("i", 50, 2000), iterAutoLocked: p.get("il") === "1",
+        // fl=1 only counts on a fractal that has the flipped picture; lenient, like the style fields.
+        flipY: !!FRACTAL_CONFIGS[name].flipY && p.get("fl") === "1",
         cm: cmIndex(), dual: false, color: parseStyleFields(p) };
       if (p.get("d") === "1" && FRACTAL_CONFIGS[name].dual) {
         st.dual = true;
@@ -147,13 +153,18 @@ function parseShareHash(hash) {
 
 function applyShareState(st) {
   if (st.mode === "fractal") {
+    // A link names its palette and opens in exactly that one. It counts as a
+    // pick (so later fractals keep it) unless it is the fractal's own default,
+    // where the next fractal still opens in its own. Set before selectFractal,
+    // which applies the default when nothing is picked.
     colormapIndex = st.cm;
+    colormapPicked = st.cm !== colormapIndexNamed(defaultColormapName(st.name));
     // The style travels with the colormap (both global); a link without one
     // means the default coloring.
     setColorStyle({ style: st.color.style, density: st.color.density, offset: st.color.offset });
     if (dualActive) exitDual();
     selectFractal(st.name, { fresh: true });
-    Object.assign(mainState, { cx: st.cx, cy: st.cy, scale: st.scale, rotation: st.rotation,
+    Object.assign(mainState, { cx: st.cx, cy: st.cy, scale: st.scale, rotation: st.rotation, flipY: st.flipY,
       maxIter: st.maxIter, iterAutoLocked: st.iterAutoLocked });
     if (st.dual) {
       enterDual();

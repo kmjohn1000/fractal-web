@@ -51,7 +51,7 @@ function createFractalRenderer(canvas) {
   // code stays exactly what it was. The others (see colorStyleFor) compile
   // the first time a style asks for them.
   const programs = new Map();
-  const UNIFORMS = ["resolution", "center", "scale", "rotCos", "rotSin", "maxIter", "ftype", "power", "isJulia",
+  const UNIFORMS = ["resolution", "center", "scale", "rotCos", "rotSin", "flipY", "maxIter", "ftype", "power", "isJulia",
     "juliaC", "phoenixP", "lut", "style", "density", "offset", "pixelSize", "trapCenter", "digitDepth", "digitLevel",
     "digitCenter", "digitScale", "cellHole", "digitCycle", "subPixelColor", "apoW0", "apoK", "apoL", "apoFlip",
     "apoSteps", "apoCapColor", "jitter", "usePerturbation", "refOrbitTex", "refOrbitLen", "critOffset",
@@ -313,7 +313,7 @@ function createFractalRenderer(canvas) {
     return trapRangeFor(px, trapFixedRange(cs));
   }
   function updateTrapRange(u, state, cs, sampleIndex) {
-    const key = [cs.glsl, cs.trap[0], cs.trap[1], state.ftype, state.cx, state.cy, state.scale, state.rotation || 0,
+    const key = [cs.glsl, cs.trap[0], cs.trap[1], state.ftype, state.cx, state.cy, state.scale, state.rotation || 0, !!state.flipY,
       state.power, state.maxIter, state.isJulia, state.juliaC[0], state.juliaC[1], canvas.width, canvas.height].join(",");
     if (sampleIndex === 0 && (!trapRange || (trapRange.key !== key && !isInteracting))) {
       trapRange = { key, ...probeTrapRange(u, cs) };
@@ -565,6 +565,7 @@ function createFractalRenderer(canvas) {
     const rot = state.rotation || 0;
     gl.uniform1f(u.rotCos, Math.cos(rot));
     gl.uniform1f(u.rotSin, Math.sin(rot));
+    gl.uniform1f(u.flipY, state.flipY ? -1 : 1);
     gl.uniform1i(u.maxIter, state.maxIter | 0);
     gl.uniform1i(u.ftype, state.ftype);
     gl.uniform1f(u.power, state.power);
@@ -624,7 +625,7 @@ function createFractalRenderer(canvas) {
       return null;
     }
 
-    const key = [state.ftype, state.cx, state.cy, state.scale, state.rotation || 0,
+    const key = [state.ftype, state.cx, state.cy, state.scale, state.rotation || 0, !!state.flipY,
       state.power, state.maxIter, state.isJulia, state.juliaC[0], state.juliaC[1],
       canvas.width, canvas.height].join(",");
     gl.activeTexture(gl.TEXTURE1);
@@ -690,7 +691,9 @@ function createFractalRenderer(canvas) {
     const dRot = (state.rotation || 0) - snapView.rotation;
     const c = Math.cos(dRot) * k, s = Math.sin(dRot) * k;
     const rc = Math.cos(snapView.rotation), rs = Math.sin(snapView.rotation);
-    const dx = state.cx - snapView.cx, dy = state.cy - snapView.cy;
+    // A flipped view (the Burning Ship) mirrors the center's imaginary offset
+    // into screen axes; the rest of the mapping is the same on both sides.
+    const dx = state.cx - snapView.cx, dy = (state.cy - snapView.cy) * (state.flipY ? -1 : 1);
     const inv = 1 / (2 * snapView.scale);
 
     gl.useProgram(previewProg);

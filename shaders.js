@@ -133,6 +133,11 @@ uniform float u_scale;
 // where some GPUs' cos()/sin() are approximations.
 uniform float u_rotCos;
 uniform float u_rotSin;
+// -1 mirrors the view's imaginary axis (the Burning Ship's upright picture,
+// state.flipY), 1 everywhere else. Applied once, after the rotation, in
+// main(): the offset from u_center (and every perturbation delta built on
+// it) is then in the real plane's axes, and the iteration is untouched.
+uniform float u_flipY;
 uniform int   u_maxIter;
 uniform int   u_ftype;   // 0=escape 1=ship 2=tricorn 3=newton 7=celtic (see FTYPE in configs.js)
 uniform float u_power;   // 2.0 or 3.0 (escape family only)
@@ -314,7 +319,9 @@ vec3 reliefColor(int iter, vec2 z, vec4 D) {
   vec2 g = u_ftype == FTYPE_ESCAPE
     ? vec2(d.x * z.x + d.y * z.y, d.x * z.y - d.y * z.x)
     : vec2(d.x * z.x + d.z * z.y, d.y * z.x + d.w * z.y);
-  // From the plane's axes to the screen's (the view is rotated by u_rotCos/u_rotSin).
+  // From the plane's axes to the screen's (the view is rotated by u_rotCos/u_rotSin,
+  // and mirrored by u_flipY first when the view is flipped).
+  g.y *= u_flipY;
   g = vec2(g.x * u_rotCos + g.y * u_rotSin, g.y * u_rotCos - g.x * u_rotSin);
   float len = length(g);
   vec2 u = len > 1e-30 ? g / len : vec2(0.0);
@@ -803,6 +810,7 @@ void main() {
   // gesture math (panning, box-zoom, the Julia-c crosshair) disagree about
   // which way is "up".
   uv = vec2(uv.x * u_rotCos - uv.y * u_rotSin, uv.x * u_rotSin + uv.y * u_rotCos);
+  uv.y *= u_flipY; // see u_flipY; render-layout.js's screenToComplex does the same
 
   if (u_ftype == FTYPE_NEWTON) {
     vec2 p = u_center + uv * u_scale * 2.0;

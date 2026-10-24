@@ -67,8 +67,8 @@ window.__pv = {
   state() { return { cx: mainState.cx, cy: mainState.cy, scale: mainState.scale, base: mainState.baseScale, rotation: mainState.rotation || 0 }; },
   look(styleId, palette) {
     setColorStyle({ style: styleId });
-    colormapIndex = COLORMAPS.findIndex((c) => c.name === palette);
-    updateLUT(); updateColorSwatches(); requestRender();
+    pickColormap(COLORMAPS.findIndex((c) => c.name === palette)); // a pick: a later fractal switch keeps it
+    updateColorSwatches(); requestRender();
   },
   // Lands exactly on a Surprise-me place, as the app's flight does: the info
   // card names a place only while the view equals it to the last digit, and a

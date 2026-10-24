@@ -5,7 +5,12 @@
 // "Surprise me" destinations (see teleport()). Keyed by FRACTAL_CONFIGS name,
 // not FTYPE: FTYPE.ESCAPE is shared by Mandelbrot, Multibrot³ and the Julia
 // presets, whose coordinates mean different things. scale is the view's
-// half-height, as everywhere else. Every entry was checked by rendering it
+// half-height, as everywhere else. Optional fields: rotation (radians; the
+// landed view turns to it), maxIter (lands with detail locked), spiral (a
+// spinning dive) and colormap (a COLORMAPS name: the flight to this place
+// applies it unless the user has picked a palette, and a place without one
+// goes to the fractal's own default, defaultColormap in FRACTAL_CONFIGS; no
+// place names one yet). Every entry was checked by rendering it
 // (not taken on faith): each lands on visible boundary detail at its scale.
 // re/im are strings so the source keeps every digit it was given. Each is
 // the feature's center, not just a point near it: Spiral Cluster is the
@@ -51,25 +56,27 @@ const TELEPORT_DESTINATIONS = [
   { fractal: "Mandelbrot", label: "Twin Medallions", re: "-1.768620774", im: "0.002428273", scale: 4.5e-6 },
   { fractal: "Mandelbrot", label: "Sea Urchin", re: "0.370624233423", im: "-0.670428331878", scale: 1e-6 },
   { fractal: "Mandelbrot", label: "Cross Medallion", re: "-1.7576852691", im: "0.0176750996", scale: 1.9e-7 },
-  // Burning Ship is drawn in math orientation (+im up), which hangs every
-  // ship's masts below its hull; rotation (radians, optional) turns the
-  // landed view ship-side up. A half turn also mirrors left-right compared
-  // with the classic picture, which flips the im axis instead. Scales are
-  // sized so each hull fits a portrait phone's width. Sunken Crown sits
-  // just off the real axis (screen top edge at im = 2e-13): across the
-  // axis there, the set is a hard black block with streaks.
-  { fractal: "Burn. Ship", label: "Armada", re: "-1.7595", im: "-0.036", scale: 6.8e-2, rotation: Math.PI },
-  { fractal: "Burn. Ship", label: "Ghost Ship", re: "-1.941", im: "-0.0038", scale: 6e-3, rotation: Math.PI },
-  { fractal: "Burn. Ship", label: "Burning Galleon", re: "-1.6268", im: "-0.03", scale: 5e-2, rotation: Math.PI },
-  { fractal: "Burn. Ship", label: "Lightning", re: "-1.93932", im: "-0.00178", scale: 6e-4, rotation: Math.PI },
-  { fractal: "Burn. Ship", label: "Twin Ships", re: "-1.9393403", im: "-0.0017282", scale: 4.5e-5, rotation: Math.PI },
-  { fractal: "Burn. Ship", label: "Sunken Crown", re: "-1.7490033572229", im: "0.0000000000014", scale: 1.2e-12, rotation: Math.PI },
+  // Burning Ship opens with the screen's up at -im (flipY, see
+  // FRACTAL_CONFIGS), the classic upright picture with every ship's masts
+  // above its hull; rotation 0 lands a place upright whatever the view was
+  // turned to. (Until 1.44.0 the places turned the view a half turn
+  // instead, which mirrored them left to right compared with the classic
+  // picture.) Scales are sized so each hull fits a portrait phone's width.
+  // Sunken Crown sits just off the real axis (screen top edge at im = 2e-13):
+  // across the axis there, the set is a hard black block with streaks.
+  { fractal: "Burn. Ship", label: "Armada", re: "-1.7595", im: "-0.036", scale: 6.8e-2, rotation: 0 },
+  { fractal: "Burn. Ship", label: "Ghost Ship", re: "-1.941", im: "-0.0038", scale: 6e-3, rotation: 0 },
+  { fractal: "Burn. Ship", label: "Burning Galleon", re: "-1.6268", im: "-0.03", scale: 5e-2, rotation: 0 },
+  { fractal: "Burn. Ship", label: "Lightning", re: "-1.93932", im: "-0.00178", scale: 6e-4, rotation: 0 },
+  { fractal: "Burn. Ship", label: "Twin Ships", re: "-1.9393403", im: "-0.0017282", scale: 4.5e-5, rotation: 0 },
+  { fractal: "Burn. Ship", label: "Sunken Crown", re: "-1.7490033572229", im: "0.0000000000014", scale: 1.2e-12, rotation: 0 },
   // Clipper sits by the "wake" near -1.861-0.002i, Needle Forest among the
   // spires on the horizon near -1.51; Stingray is the off-axis period-3
-  // copy (nucleus 0.877438833 - 1.519768640i), turned to point down.
-  { fractal: "Burn. Ship", label: "Clipper", re: "-1.8605", im: "-0.0035", scale: 4.5e-3, rotation: Math.PI },
-  { fractal: "Burn. Ship", label: "Needle Forest", re: "-1.5099", im: "-0.00115", scale: 1.8e-3, rotation: Math.PI },
-  { fractal: "Burn. Ship", label: "Stingray", re: "0.8774", im: "-1.5198", scale: 4e-2, rotation: 2.5 },
+  // copy (nucleus 0.877438833 - 1.519768640i), turned to point down (its
+  // 2.5 rad turn of the old orientation, mirrored for the new one).
+  { fractal: "Burn. Ship", label: "Clipper", re: "-1.8605", im: "-0.0035", scale: 4.5e-3, rotation: 0 },
+  { fractal: "Burn. Ship", label: "Needle Forest", re: "-1.5099", im: "-0.00115", scale: 1.8e-3, rotation: 0 },
+  { fractal: "Burn. Ship", label: "Stingray", re: "0.8774", im: "-1.5198", scale: 4e-2, rotation: Math.PI - 2.5 },
   // Tricorn copies alternate in kind: odd periods are baby Tricorns, even
   // ones little Mandelbrot sets. Each starts from its copy's nucleus; Baby
   // Tricorn, Hidden Mandelbrot, Antenna Talons and Flame Minibrot are then

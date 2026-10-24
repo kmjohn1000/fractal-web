@@ -1,7 +1,8 @@
 "use strict";
 /* global FRACTAL_CONFIGS, EXTRA_MODES, TELEPORT_DESTINATIONS, dualActive, exitDual, selectFractal,
    setMode, mainState, applyAutoIter, updateLUT, requestRender, renderPending, isInteracting,
-   refineDone, mode, isIfsMode, fernView, colormapIndex:writable, mainRenderer, juliaRenderer */
+   refineDone, mode, isIfsMode, fernView, colormapIndex:writable, colormapPicked:writable, applyDefaultColormap,
+   mainRenderer, juliaRenderer */
 
 // In-page helpers for the visual suite (tests/visual/app.spec.mjs). Added to
 // the page as a classic <script> after the app's scripts load, so it sees their
@@ -18,9 +19,12 @@ window.__vt = {
     };
   },
 
-  fractal(name, cm = 0) {
+  // cm: a COLORMAPS index to pick, as the user does in the Color sheet; left
+  // out, nothing is picked and the fractal opens in its own default palette.
+  fractal(name, cm) {
     if (dualActive) exitDual();
-    colormapIndex = cm;
+    colormapPicked = cm !== undefined;
+    if (cm !== undefined) colormapIndex = cm;
     selectFractal(name, { fresh: true });
     updateLUT();
     requestRender();
@@ -39,9 +43,10 @@ window.__vt = {
   },
 
   // A Surprise-me landing, as teleport() leaves it once the flight ends.
-  place(index) {
+  place(index, cm) {
     const d = TELEPORT_DESTINATIONS[index];
-    this.fractal(d.fractal);
+    this.fractal(d.fractal, cm);
+    applyDefaultColormap(d); // the place's own palette, if it has one and none was picked
     Object.assign(mainState, { cx: Number(d.re), cy: Number(d.im), scale: d.scale });
     if (d.rotation !== undefined) mainState.rotation = d.rotation;
     if (d.maxIter) {

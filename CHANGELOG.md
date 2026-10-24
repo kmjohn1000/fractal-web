@@ -2,6 +2,10 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.44.0 — 2026-10-24
+- Each fractal now opens in a palette that suits it instead of one for all: the Burning Ship in Fire, Tricorn in Classic, Multibrot³ in Viridis, both Phoenix views in Hot, the carpet in Glacier and the gasket in Plasma. The rest stay in Inferno. Once you pick a palette in the Color sheet it holds for every fractal, and the Default Look and Reset in the sheet bring each fractal's own back. Links keep the palette they were made with.
+- The Burning Ship now opens the classic way up, hull below and masts above, from the opening view, the picker preview and a plain pick, and Surprise me lands its places the same way up. Links made before this open exactly as they did.
+
 ## 1.43.0 — 2026-10-24
 - The Hexaflake is now drawn exactly, as filled hexagons level by level, like the Pythagoras tree: a depth slider with the play button and hold-and-slide speed, every level shaded in its own hue so the gaps show the hexagon they came from, and as much detail as you zoom into. It replaces the dots version; links to it still open, on the same part of the shape.
 

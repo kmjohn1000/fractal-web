@@ -40,7 +40,9 @@ async function waitSettled(page) {
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
 }
 
-const place = (label) => `__vt.place(TELEPORT_DESTINATIONS.findIndex((d) => d.label === ${JSON.stringify(label)}))`;
+// Inferno is picked (the second argument), as it always was here: the style baselines are about the
+// styles, not about each fractal's default palette (palettes.spec.mjs covers those).
+const place = (label) => `__vt.place(TELEPORT_DESTINATIONS.findIndex((d) => d.label === ${JSON.stringify(label)}), 0)`;
 
 // A frame that is one flat color is a broken style (a NaN, a missing uniform).
 function dominantShare(png) {
@@ -117,7 +119,7 @@ test.describe("Glow", () => {
   for (const [name, fractal] of [["mandelbrot", "Mandelbrot"], ["ship", "Burn. Ship"], ["tricorn", "Tricorn"], ["celtic", "Celtic"],
     ["multibrot", "Multibrot³"], ["julia-rabbit", "Julia:Rabbit"]]) {
     test(`${fractal} opening view`, async ({ page }) => {
-      await page.evaluate((f) => { window["__vt"].fractal(f); setColorStyle({ style: "glow" }); }, fractal);
+      await page.evaluate((f) => { window["__vt"].fractal(f, 0); setColorStyle({ style: "glow" }); }, fractal);
       await checkStyled(page, `style-glow-${name}`);
     });
   }
@@ -244,7 +246,7 @@ test.describe("Bands", () => {
   });
 
   test("bands 2.5 and shift 0.25 on Burning Ship", async ({ page }) => {
-    await page.evaluate(() => { window["__vt"].fractal("Burn. Ship"); setColorStyle({ density: 2.5, offset: 0.25 }); });
+    await page.evaluate(() => { window["__vt"].fractal("Burn. Ship", 0); setColorStyle({ density: 2.5, offset: 0.25 }); });
     await checkStyled(page, "style-density-shift-ship");
   });
 });

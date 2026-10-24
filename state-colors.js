@@ -82,6 +82,53 @@ const els = {
 let mode = "fractal"; // "fractal" | "koch" | "tree" | "hexaflake" | a LINE_CURVES key ("dragon", ...) | an IFS_SYSTEMS key ("fern", ...)
 let colormapIndex = 0;
 
+// ---------------------------------------------------------------- default colormaps
+
+// Each fractal opens in its own palette (defaultColormap in FRACTAL_CONFIGS;
+// the first colormap, Inferno, when it names none), and a Surprise-me place
+// can name one too (colormap in places.js). That holds until the user picks
+// a palette (the Color sheet's palettes, a Look, or a share link naming one
+// that isn't the fractal's own): from then on the pick applies everywhere,
+// as the colormap has been one global since 1.17.0. colormapPicked is in
+// memory only, like fractalMemory: a new launch starts on the defaults.
+// fractalMemory keeps views, not palettes, so a remembered fractal comes back
+// in its default too unless something was picked.
+let colormapPicked = false;
+// The palette that is the default for what is on screen (the fractal's or
+// the landed place's): what the Default Look and Reset return to.
+let colormapDefaultIndex = 0;
+
+function colormapIndexNamed(name) {
+  return Math.max(0, COLORMAPS.findIndex((c) => c.name === name));
+}
+// The default palette's name for a fractal, or for one of its places.
+function defaultColormapName(fractal, place = null) {
+  return (place && place.colormap) || FRACTAL_CONFIGS[fractal].defaultColormap || COLORMAPS[0].name;
+}
+// The user's own pick: it holds for every fractal and place from now on.
+function pickColormap(i) {
+  colormapPicked = true;
+  colormapIndex = i;
+  updateLUT();
+}
+// Called when the fractal changes (selectFractal) or a flight starts
+// (flyTo, with the place it lands on): moves to the default unless a palette
+// has been picked.
+function applyDefaultColormap(place = null) {
+  colormapDefaultIndex = colormapIndexNamed(defaultColormapName(currentName, place));
+  if (colormapPicked || colormapDefaultIndex === colormapIndex) return;
+  colormapIndex = colormapDefaultIndex;
+  updateLUT();
+}
+// Back to the defaults: the Default Look and Reset in the Color sheet.
+function releaseColormapPick() {
+  colormapPicked = false;
+  if (colormapIndex !== colormapDefaultIndex) {
+    colormapIndex = colormapDefaultIndex;
+    updateLUT();
+  }
+}
+
 // ---------------------------------------------------------------- color styles
 
 // How an escape-time pixel picks its colormap coordinate (see
@@ -335,6 +382,9 @@ function freshState(config) {
   const v = viewFromBounds(config.view, mainCanvasAspect());
   return {
     cx: v.cx, cy: v.cy, scale: v.scale, rotation: 0,
+    // Mirrors the view's imaginary axis (the Burning Ship's classic upright
+    // picture); cx/cy stay real coordinates. See screenToComplex.
+    flipY: !!config.flipY,
     ftype: config.ftype, power: config.power,
     isJulia: config.juliaC !== null,
     juliaC: config.juliaC || [0, 0],
@@ -395,7 +445,7 @@ function pushHistory(pane) {
   const st = pane === "julia" ? juliaState : mainState;
   const hist = pane === "julia" ? juliaHistory : mainHistory;
   if (!st) return;
-  hist.push({ cx: st.cx, cy: st.cy, scale: st.scale, rotation: st.rotation || 0 });
+  hist.push({ cx: st.cx, cy: st.cy, scale: st.scale, rotation: st.rotation || 0, flipY: !!st.flipY });
   if (hist.length > 50) hist.shift();
 }
 
@@ -404,7 +454,7 @@ function popHistory(pane) {
   const snap = hist.pop();
   if (!snap) return;
   const st = pane === "julia" ? juliaState : mainState;
-  st.cx = snap.cx; st.cy = snap.cy; st.scale = snap.scale; st.rotation = snap.rotation ?? 0;
+  st.cx = snap.cx; st.cy = snap.cy; st.scale = snap.scale; st.rotation = snap.rotation ?? 0; st.flipY = !!snap.flipY;
   applyAutoIter();
   renderAll();
 }

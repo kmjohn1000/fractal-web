@@ -188,11 +188,10 @@ test.describe("the Color sheet", () => {
     // Cross chosen on Mandelbrot, then Phoenix, which can't draw it: the choice is kept, Smooth is what shows as selected.
     await page.evaluate(() => setColorStyle({ style: "cross" }));
     await page.evaluate(() => window["__vt"].fractal("Phoenix"));
-    await page.evaluate(() => { colormapIndex = COLORMAPS.findIndex((c) => c.name === "Inferno"); updateLUT(); });
     await settle(page);
     expect(await page.evaluate(() => colorStyle.style), "the choice is kept for Mandelbrot").toBe("cross");
     await page.locator("#colormapBtn").click();
-    // It is exactly the Default Look, so the Looks tab says so (and opens there).
+    // It is exactly the Default Look (Smooth in Phoenix's own palette, Hot), so the Looks tab says so (and opens there).
     await expect(page.locator('#colorSheet [role="tab"][aria-selected="true"]')).toHaveText("Looks");
     await expect(page.locator(LOOK_CHECKED)).toHaveText("Default");
     await expect(page.locator("#colorSheetNote-looks")).toContainText("Edge glow, Stripes, Orbs, Rays and Relief aren't available for Phoenix.");

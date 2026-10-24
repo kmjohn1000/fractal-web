@@ -323,7 +323,13 @@ def main():
     r.add_argument("--size", type=int, default=360)
     r.add_argument("--ss", type=int, default=2)
     r.add_argument("--trap", help="trap center as X,Y (written --trap=-0.5,0 when X is negative)")
+    r.add_argument("--flip", action="store_true",
+                   help="the app's flipped view (the Burning Ship's upright picture, state.flipY): its relief light is "
+                        "at the screen's upper left, which is -Im, so in this +Im-up image it comes from the lower left")
     a = ap.parse_args()
+    global RELIEF_LIGHT
+    if a.cmd == "render" and a.flip:
+        RELIEF_LIGHT = (-np.sqrt(0.5), -np.sqrt(0.5))
     if a.cmd == "views":
         print(json.dumps(VIEWS))
         return

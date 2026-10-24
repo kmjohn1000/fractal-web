@@ -32,19 +32,29 @@ function colorSheetStyles() {
   return colorSheetApplies() && ESCAPE_TIME_TYPES.includes(mainState.ftype);
 }
 
+// The palette a Look is on: its own, except the Default's, which is the
+// default of what is on screen (the fractal's, or the landed place's; Inferno
+// unless a fractal or place names another, see applyDefaultColormap).
+function lookPalette(look) {
+  return look.id === "default" ? COLORMAPS[colormapDefaultIndex].name : look.palette;
+}
+
 // The Look the current choices amount to, or null (Custom). What the view
 // draws counts, not what was chosen: on Phoenix a Cross choice draws Smooth.
 function currentLookId() {
   if (colorStyle.density !== 1 || colorStyle.offset !== 0) return null;
   const palette = COLORMAPS[colormapIndex].name;
   const drawn = styleDrawn(colorStyle.style, mainState);
-  const look = COLOR_LOOKS.find((l) => l.style === drawn && l.palette === palette);
+  const look = COLOR_LOOKS.find((l) => l.style === drawn && lookPalette(l) === palette);
   return look ? look.id : null;
 }
 
+// The Default Look (and so Reset) goes back to how the fractal starts,
+// palette included, and lets the next fractal open in its own again; any
+// other Look is a pick of its palette, which then holds for every fractal.
 function applyLook(look) {
-  colormapIndex = COLORMAPS.findIndex((c) => c.name === look.palette);
-  updateLUT();
+  if (look.id === "default") releaseColormapPick();
+  else pickColormap(COLORMAPS.findIndex((c) => c.name === look.palette));
   setColorStyle({ style: look.style, density: 1, offset: 0 });
   requestRender();
 }
@@ -224,7 +234,7 @@ function colorSheetPalettes() {
       class: `pal${i === colormapIndex ? " active" : ""}`, role: "radio", "aria-checked": i === colormapIndex, "aria-label": c.name,
       title: c.name, "data-key": `pal-${i}`, style: `background:${cmGradient(c.stops)}`,
     });
-    btn.addEventListener("click", () => { colormapIndex = i; updateLUT(); requestRender(); renderColorSheet(); });
+    btn.addEventListener("click", () => { pickColormap(i); requestRender(); renderColorSheet(); });
     pals.append(btn);
   });
   rovingRadios(pals);
@@ -292,7 +302,7 @@ function colorSheetCustom() {
 // sheet was built, opening it again keeps the DOM it has.
 function colorSheetStateKey() {
   return JSON.stringify([
-    colorSheetTab, colorSheetStyles(), colorStyle.style, colorStyle.density, colorStyle.offset, colormapIndex, currentName,
+    colorSheetTab, colorSheetStyles(), colorStyle.style, colorStyle.density, colorStyle.offset, colormapIndex, colormapDefaultIndex, currentName,
     COLOR_STYLES.map((s) => styleBlocked(s, mainState) || "").join(","),
   ]);
 }

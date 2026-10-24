@@ -393,7 +393,7 @@ function colorStyleHud(s) {
   const { density, offset } = colorStyle;
   if (id === "smooth" && density === 1 && offset === 0) return none;
   const palette = COLORMAPS[colormapIndex].name;
-  const look = density === 1 && offset === 0 ? COLOR_LOOKS.find((l) => l.style === id && l.palette === palette) : null;
+  const look = density === 1 && offset === 0 ? COLOR_LOOKS.find((l) => l.style === id && lookPalette(l) === palette) : null;
   const label = COLOR_STYLES.find((c) => c.id === id).label;
   const tech = [id !== "smooth" ? `style: ${label}` : "", density !== 1 ? `repeat: ${bandsText(density)}` : "", offset !== 0 ? `shift: ${shiftText(offset)}` : ""]
     .filter(Boolean).join("   ");
@@ -469,7 +469,9 @@ function screenToComplex(renderer, state, sx, sy) {
   // fractal and every pointer/gesture computation that goes through this
   // function (pan, box-zoom, the Julia-c crosshair) disagree about "up".
   const wx = uvx * cos - uvy * sin;
-  const wy = uvx * sin + uvy * cos;
+  // flipY (the Burning Ship): the rotated offset's imaginary part is
+  // mirrored, last, as FRAG_SRC's main() does with u_flipY.
+  const wy = (uvx * sin + uvy * cos) * (state.flipY ? -1 : 1);
   return { x: state.cx + wx * state.scale * 2.0, y: state.cy + wy * state.scale * 2.0 };
 }
 
@@ -497,7 +499,7 @@ function centerForAnchor(renderer, state, sx, sy, targetX, targetY) {
   const rot = state.rotation || 0;
   const cos = Math.cos(rot), sin = Math.sin(rot);
   const wx = uvx * cos - uvy * sin;
-  const wy = uvx * sin + uvy * cos;
+  const wy = (uvx * sin + uvy * cos) * (state.flipY ? -1 : 1); // see screenToComplex
   return { cx: targetX - wx * state.scale * 2.0, cy: targetY - wy * state.scale * 2.0 };
 }
 

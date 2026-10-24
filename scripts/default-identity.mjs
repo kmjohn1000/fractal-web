@@ -24,23 +24,36 @@ const PORT = 8747;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Page-context snippets, run through the in-page tests/driver.js helpers.
-const place = (label) => `__vt.place(TELEPORT_DESTINATIONS.findIndex((d) => d.label === ${JSON.stringify(label)}))`;
+// Every state pins Inferno (the second argument), the palette the references
+// were recorded in: this check is about the geometry and the shaders, and
+// the per-fractal default palettes (FRACTAL_CONFIGS' defaultColormap) are
+// covered by the visual suite.
+const place = (label) => `__vt.place(TELEPORT_DESTINATIONS.findIndex((d) => d.label === ${JSON.stringify(label)}), 0)`;
+const open = (name) => `__vt.fractal(${JSON.stringify(name)}, 0)`;
+// The Burning Ship opens upright (flipY, 1.44.0). Its references are the
+// pre-1.44.0 pictures, so those two states ask for the old orientation (the one
+// share links without an fl field open in); the upright views have references
+// of their own.
+const LEGACY_SHIP = "Object.assign(mainState, { flipY: false }); requestRender()";
 const STATES = [
-  ["mandelbrot-open", `__vt.fractal("Mandelbrot")`],
-  ["ship-open", `__vt.fractal("Burn. Ship")`],
-  ["tricorn-open", `__vt.fractal("Tricorn")`],
-  ["celtic-open", `__vt.fractal("Celtic")`],
-  ["multibrot-open", `__vt.fractal("Multibrot³")`],
-  ["phoenix-open", `__vt.fractal("Phoenix")`],
-  ["julia-rabbit-open", `__vt.fractal("Julia:Rabbit")`],
-  ["julia-phoenix-open", `__vt.fractal("Julia:Phoenix")`],
-  ["newton-open", `__vt.fractal("Newton z³")`],
-  ["carpet-open", `__vt.fractal("Carpet")`],
-  ["gasket-open", `__vt.fractal("Gasket")`],
-  ["apollonian-open", `__vt.fractal("Apollonian")`],
+  ["mandelbrot-open", open("Mandelbrot")],
+  ["ship-open", `${open("Burn. Ship")}; ${LEGACY_SHIP}`],
+  ["ship-open-upright", open("Burn. Ship")],
+  ["tricorn-open", open("Tricorn")],
+  ["celtic-open", open("Celtic")],
+  ["multibrot-open", open("Multibrot³")],
+  ["phoenix-open", open("Phoenix")],
+  ["julia-rabbit-open", open("Julia:Rabbit")],
+  ["julia-phoenix-open", open("Julia:Phoenix")],
+  ["newton-open", open("Newton z³")],
+  ["carpet-open", open("Carpet")],
+  ["gasket-open", open("Gasket")],
+  ["apollonian-open", open("Apollonian")],
   ["mandelbrot-seahorse-deep", place("Seahorse Valley")],
   ["mandelbrot-minibrot-deep", place("Mini Mandelbrot")],
-  ["ship-twin-ships", place("Twin Ships")],
+  // Twin Ships was a half turn (rotation PI) before 1.44.0.
+  ["ship-twin-ships", `${place("Twin Ships")}; Object.assign(mainState, { flipY: false, rotation: Math.PI }); requestRender()`],
+  ["ship-twin-ships-upright", place("Twin Ships")],
   ["celtic-halo-bell-deep", place("Halo Bell")],
   ["tricorn-lace-deep", place("Lace Tricorn")],
   ["multibrot-spiral-galaxy", place("Spiral Galaxy")],
@@ -51,8 +64,10 @@ const STATES = [
   ["julia-phoenix-deep", `${place("Ember Spiral")}; Object.assign(mainState, { scale: 5e-7 }); requestRender()`],
   ["newton-deep-necklace", place("Deep Necklace")],
   ["julia-rabbit-hole", place("Rabbit Hole")],
-  ["dual-mandelbrot-open", `__vt.fractal("Mandelbrot"); enterDual()`],
+  ["dual-mandelbrot-open", `${open("Mandelbrot")}; enterDual()`],
   ["dual-mandelbrot-spiral", `${place("Spiral Cluster")}; enterDual()`],
+  // Dual view on the upright Ship: the Julia pane is symmetric top to bottom, so it must not change.
+  ["dual-ship-upright", `${open("Burn. Ship")}; enterDual()`],
 ];
 
 async function startServer() {

@@ -115,13 +115,22 @@ function teleport() {
 // The flight itself, shared by Surprise me and the web's first-visit cold
 // open (flyToPlace).
 function flyTo(st, d, target, landingIndex, spinSign) {
-  // A destination with a rotation lands turned to it (Burning Ship's ships
-  // are drawn masts-down in math orientation); one without leaves the
-  // view's rotation alone, as before. The turn takes the shorter way round.
+  // A destination with a rotation lands turned to it (0 for the Burning
+  // Ship's places, so they land upright whatever the view was turned to);
+  // one without leaves the view's rotation alone, as before. The turn takes
+  // the shorter way round.
   const r0 = st.rotation || 0;
   let turn = d.rotation === undefined ? 0 : normalizeAngle(d.rotation - r0);
   if (d.rotation !== undefined) target.rotation = d.rotation;
   pushHistory("main");
+  // Places are drawn the way the fractal opens: a Burning Ship view that
+  // came from a link made before 1.44.0 (flipY off, masts down) takes the
+  // upright picture here, the mirror changing at takeoff (Back restores it).
+  st.flipY = !!FRACTAL_CONFIGS[currentName].flipY;
+  // A place can name its own palette (colormap); heading home, or a place
+  // without one, goes to the fractal's default. A palette the user picked
+  // stays (applyDefaultColormap).
+  applyDefaultColormap(landingIndex >= 0 ? d : null);
   activePane = "main";
   const path = zoomPath([st.cx, st.cy, 2 * st.scale], [target.cx, target.cy, 2 * target.scale]);
   // A spiral adds whole turns to the landing turn, as many as its zoom

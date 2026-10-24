@@ -247,13 +247,14 @@ function chooseReference(state, widthPx, heightPx) {
   const rot = state.rotation || 0;
   const rc = Math.cos(rot), rs = Math.sin(rot);
   const halfW = 0.5 * widthPx / heightPx;
+  const flip = state.flipY ? -1 : 1; // the view's mirrored imaginary axis (FRAG_SRC's u_flipY)
   let best = { dx: 0, dy: 0, iter: -1 };
   for (let gy = 0; gy < REFERENCE_GRID; gy++) {
     for (let gx = 0; gx < REFERENCE_GRID; gx++) {
       const uvx = ((gx + 0.5) / REFERENCE_GRID * 2 - 1) * halfW;
       const uvy = ((gy + 0.5) / REFERENCE_GRID * 2 - 1) * 0.5;
       const dx = (uvx * rc - uvy * rs) * state.scale * 2.0;
-      const dy = (uvx * rs + uvy * rc) * state.scale * 2.0;
+      const dy = (uvx * rs + uvy * rc) * state.scale * 2.0 * flip;
       const iter = escapeIter(state.cx + dx, state.cy + dy);
       if (iter > best.iter) {
         best = { dx, dy, iter };

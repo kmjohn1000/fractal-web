@@ -52,9 +52,10 @@ const SLOTS = [
 const HELPERS = `
 window.__store = {
   colormap(name) {
-    colormapIndex = COLORMAPS.findIndex((c) => c.name === name);
-    if (colormapIndex < 0) throw new Error("no colormap " + name);
-    updateLUT(); updateColorSwatches(); requestRender();
+    const i = COLORMAPS.findIndex((c) => c.name === name);
+    if (i < 0) throw new Error("no colormap " + name);
+    pickColormap(i); // a pick, so a later fractal switch keeps it (see applyDefaultColormap)
+    updateColorSwatches(); requestRender();
   },
   land(fractal, label) {
     const i = TELEPORT_DESTINATIONS.findIndex((d) => d.fractal === fractal && d.label === label);

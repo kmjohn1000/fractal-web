@@ -7,7 +7,9 @@
 
 // Leaving a fractal stashes its live view here, and picking it again restores
 // it, so switching never costs you your place (the colormap is already one
-// global). In memory only: a fresh launch starts from the default views.
+// global, and a remembered fractal gets its default palette again unless one
+// was picked: see applyDefaultColormap). In memory only: a fresh launch
+// starts from the default views.
 // Reset and share links want a clean slate and pass { fresh: true }.
 const fractalMemory = new Map();
 
@@ -21,6 +23,7 @@ function selectFractal(name, { fresh = false } = {}) {
   const remembered = fresh ? null : fractalMemory.get(name);
   currentName = name;
   const config = FRACTAL_CONFIGS[name];
+  applyDefaultColormap(); // its own palette, unless one has been picked
   mainState = remembered ? remembered.mainState : freshState(config);
   mainHistory = remembered ? remembered.mainHistory : [];
   juliaHistory = [];

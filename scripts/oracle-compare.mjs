@@ -46,6 +46,11 @@ const density = Number(opt("density", "1"));
 const shift = Number(opt("shift", "0"));
 const outDir = opt("out", "");
 const trapOverride = opt("trap-from-oracle", "1") === "1";
+// --flip 1: draw the Burning Ship views the way the app opens them since 1.44.0
+// (flipY: the screen's up is -Im c) and flip the app's picture back before the
+// comparison, since the oracle draws +Im up. Without it the Ship views are drawn
+// in the old orientation (what a share link without an fl field opens in).
+const flip = opt("flip", "0") === "1";
 if (outDir) mkdirSync(outDir, { recursive: true });
 
 async function startServer() {
@@ -61,6 +66,18 @@ async function startServer() {
 async function waitSettled(page) {
   await page.waitForFunction("window.__vt.settled()", null, { timeout: 120_000, polling: 100 });
   await page.evaluate("new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))");
+}
+
+// Mirrors a PNG top to bottom, in place.
+function flipRows(png) {
+  const row = png.width * 4;
+  const tmp = Buffer.alloc(row);
+  for (let y = 0; y < Math.floor(png.height / 2); y++) {
+    const a = y * row, b = (png.height - 1 - y) * row;
+    png.data.copy(tmp, 0, a, a + row);
+    png.data.copy(png.data, a, b, b + row);
+    tmp.copy(png.data, b);
+  }
 }
 
 async function renderApp(browser, v, style) {
@@ -84,7 +101,7 @@ async function renderApp(browser, v, style) {
       setColorStyle({ style: ${JSON.stringify(style)}, density: ${density}, offset: ${shift}${trapOverride ? `, trap: ${JSON.stringify(v.trap)}` : ""} });`;
     await page.evaluate(`(() => {
       __vt.fractal(${JSON.stringify(v.fractal)}, ${cmIndex});
-      Object.assign(mainState, { cx: ${v.c[0]}, cy: ${v.c[1]}, scale: ${v.s}, rotation: 0, maxIter: ${v.it}, iterAutoLocked: true,
+      Object.assign(mainState, { cx: ${v.c[0]}, cy: ${v.c[1]}, scale: ${v.s}, rotation: 0, flipY: ${flip && v.ftype === "ship"}, maxIter: ${v.it}, iterAutoLocked: true,
         baseScale: ${v.s} /* so the orbit traps' depth limit doesn't switch them off at deep views */ });${styleCall}
       requestRender();
     })()`);
@@ -94,7 +111,9 @@ async function renderApp(browser, v, style) {
     const state = await page.evaluate("window.__vt.inspect()");
     const path = await page.evaluate("lastMainDeepPath");
     if (errors.length || state.error || state.contextLost) throw new Error(`page problem: ${errors.join("; ")} ${state.error || ""}`);
-    return { png: PNG.sync.read(png), path };
+    const img = PNG.sync.read(png);
+    if (flip && v.ftype === "ship") flipRows(img);
+    return { png: img, path };
   } finally {
     await context.close();
   }
@@ -102,8 +121,9 @@ async function renderApp(browser, v, style) {
 
 function oracleRender(view, style) {
   const out = join(outDir || "/tmp", `oracle-${view}-${style}.png`);
+  const flipped = flip && oracleViews[view].ftype === "ship"; // the oracle's relief light follows the app's flipped view
   const r = spawnSync("python3", ["-I", ORACLE, "render", view, style, cmap, out, "--density", String(density), "--shift", String(shift),
-    "--size", String(TILE)], { encoding: "utf8", maxBuffer: 1 << 24 });
+    "--size", String(TILE), ...(flipped ? ["--flip"] : [])], { encoding: "utf8", maxBuffer: 1 << 24 });
   if (r.status !== 0) throw new Error(`oracle failed: ${r.stderr}`);
   return {
     img: PNG.sync.read(readFileSync(out)),
