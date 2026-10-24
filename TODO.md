@@ -27,8 +27,12 @@ git-ignored file.
       1.40.3), the WebGL context-loss note, the Sierpinski/gasket pair.
       1. Stabilize: no new fractal types for about a month, weekly
          batched releases, experiments behind flags rather than shipped
-         and reverted; first the real-device checks above, and the iPhone
-         WebGL context loss.
+         and reverted; first the real-device checks above. (The iPhone
+         WebGL context loss: the user reports it fixed, 2026-10-24; a
+         read-only investigation that day found no loss recorded after
+         2026-10-16. Optional hardening it suggested, not approved: a
+         "Reload graphics" button after a timeout if `restored` never
+         fires, and an exact-step cap on Newton deep like Phoenix's.)
       2. Split `app.js` as a pure move along its section headers into
          plain scripts, released alone with zero pixel changes (add each
          file to `APP_SHELL`). Two parts need care: the places list into
