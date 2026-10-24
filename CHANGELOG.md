@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.42.1 — 2026-10-23
+- Behind-the-scenes tidy-up of the code; nothing should look or behave differently.
+
 ## 1.42.0 — 2026-10-23
 - Added the Hexaflake: a hexagon replaced by seven hexagons a third the size (one in the middle, one at each corner), again and again. Zoom into any corner and the same shape keeps appearing; pan, pinch, twist, share links and the points slider work as on the Vicsek fractal.
 
