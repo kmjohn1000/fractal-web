@@ -8,6 +8,9 @@
 //
 // No dependencies: a built-in static server plus the Chrome DevTools
 // protocol. Set CHROME=/path/to/chrome if Chrome isn't in /Applications.
+// Prints one "file  N.N KB" line per tile and a final count; exits non-zero
+// with a message if no picker tiles appear, a tile has no img, or a
+// screenshot is empty.
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -42,6 +45,11 @@ const chrome = spawn(CHROME, [
   "--headless=new", `--remote-debugging-port=${DEBUG_PORT}`, `--user-data-dir=${profile}`,
   "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--hide-scrollbars", "about:blank",
 ], { stdio: "ignore" });
+chrome.once("error", (err) => {
+  console.error(`render_thumbs failed: couldn't start Chrome (${CHROME}): ${err.message}`);
+  rmSync(profile, { recursive: true, force: true });
+  process.exit(1);
+});
 
 let ws;
 try {
@@ -50,7 +58,9 @@ try {
     await sleep(200);
     targets = await fetch(`http://127.0.0.1:${DEBUG_PORT}/json`).then((r) => r.json()).catch(() => null);
   }
-  ws = new WebSocket(targets.find((t) => t.type === "page").webSocketDebuggerUrl);
+  const page = targets?.find((t) => t.type === "page");
+  if (!page) throw new Error(`Chrome's DevTools endpoint on port ${DEBUG_PORT} didn't come up (is ${CHROME} installed, and the port free?)`);
+  ws = new WebSocket(page.webSocketDebuggerUrl);
   await new Promise((r) => ws.addEventListener("open", r));
   let id = 0;
   const pending = new Map();
@@ -74,15 +84,30 @@ try {
     source: `try { localStorage.setItem("fractalAtlas.visited", "1"); localStorage.setItem("fractalAtlas.welcomeDismissed", "1"); } catch {}`,
   });
   await send("Page.navigate", { url: appUrl });
-  await sleep(2500);
+  // The app's ~25 script files and the software-GL start-up keep the page busy
+  // for 3-4 s, so wait for the picker to build instead of sleeping a fixed time.
+  const TILE_SELECTOR = "#fractalTypeRow .pickTile";
+  let count = 0;
+  for (let i = 0; i < 150 && !count; i++) {
+    await sleep(200);
+    count = (await evaluate(`document.querySelectorAll(${JSON.stringify(TILE_SELECTOR)}).length`).catch(() => 0)) || 0;
+  }
+  if (!count) {
+    const state = await evaluate(`document.readyState + ", url " + location.href`).catch(() => "unreachable");
+    throw new Error(`no picker tiles (${TILE_SELECTOR}) after 30 s; page state: ${state}`);
+  }
 
-  const tiles = await evaluate(`[...document.querySelectorAll("#fractalTypeRow .pickTile")].map((b) => ({
+  const tiles = await evaluate(`[...document.querySelectorAll(${JSON.stringify(TILE_SELECTOR)})].map((b) => ({
     selector: b.dataset.name ? '[data-name="' + CSS.escape(b.dataset.name) + '"]' : '[data-mode="' + b.dataset.mode + '"]',
-    file: b.querySelector("img").getAttribute("src").split("/").pop(),
+    file: b.querySelector("img")?.getAttribute("src")?.split("/").pop() || null,
     ifs: isIfsMode(b.dataset.mode),
   }))`);
+  if (!Array.isArray(tiles) || !tiles.length) throw new Error("tile query returned no tiles");
+  const noImg = tiles.filter((t) => !t.file);
+  if (noImg.length) throw new Error(`${noImg.length} tile(s) have no img src: ${noImg.map((t) => t.selector).join(", ")}`);
   mkdirSync(outDir, { recursive: true });
 
+  let written = 0;
   for (const t of tiles) {
     await evaluate(`document.querySelector('#fractalTypeRow ${t.selector}').click()`);
     await sleep(300);
@@ -106,9 +131,16 @@ try {
       format: "webp", quality: 82,
       clip: { x: r.x + (r.w - side) / 2, y: r.y + (r.h - side) / 2, width: side, height: side, scale: SIZE / side },
     });
-    writeFileSync(join(outDir, t.file), Buffer.from(shot.data, "base64"));
-    console.log(`${t.file}  ${(shot.data.length * 0.75 / 1024).toFixed(1)} KB`);
+    const png = Buffer.from(shot.data || "", "base64");
+    if (!png.length) throw new Error(`empty screenshot for ${t.file}`);
+    writeFileSync(join(outDir, t.file), png);
+    written++;
+    console.log(`${t.file}  ${(png.length / 1024).toFixed(1)} KB`);
   }
+  console.log(`${written} of ${tiles.length} thumbnails written to ${outDir}`);
+} catch (err) {
+  console.error(`render_thumbs failed: ${err?.message || err}`);
+  process.exitCode = 1;
 } finally {
   ws?.close();
   server.close();
