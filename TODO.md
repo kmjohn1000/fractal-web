@@ -631,9 +631,26 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
 - [ ] Copy image (and Save to Files) in the share menu, beside Save to
       Photos and Copy link; `@capacitor/filesystem` is already installed
 - [ ] Accessibility pass: the buttons have aria-labels, but the fractal
-      canvas gives VoiceOver nothing. Add a short label describing the
-      current view (fractal, zoom, rotation), then run VoiceOver and Voice
-      Control over the app
+      canvas gives VoiceOver nothing. Items below; after them, run
+      VoiceOver and Voice Control over the app
+- [ ] Flashing check: record deep flights in Bands and Stripes (high Repeat)
+      and step through frame by frame against the three-flashes-per-second
+      limit. If they flash, Reduce Motion crossfades instead of flying, and
+      consider calming Bands/Stripes during flights for everyone.
+- [ ] Label the fractal for screen readers: `role="img"` on the main canvas
+      with a label that updates as you move ("Elephant Valley, Mandelbrot
+      set, 40 times in"); reuse the index captions once they exist.
+- [ ] Announcements: say the place name when Surprise me lands; make the
+      "graphics turned off" message an alert.
+- [ ] One-finger alternatives: double-tap to zoom in, a one-finger way to
+      zoom out, and a rotate control that doesn't need a twist. Box zoom is
+      the only one-finger zoom today, so keep it until these exist.
+- [ ] VoiceOver zoom in the app: zoom buttons only screen readers see, or an
+      adjustable canvas where swiping up and down zooms.
+- [ ] Color sheet focus: focus moves into the sheet when it opens and back to
+      the color button when it closes (check with VoiceOver).
+- [ ] Website only: try dropping `user-scalable=no` and `maximum-scale=1` so
+      visitors can enlarge the page; check on an iPhone that gestures still work.
 - [ ] iPad check: layout at Stage Manager window sizes and in split view
       (untested)
 - [ ] Smooth (mirrored) palette option: escape-time colors wrap every 40
