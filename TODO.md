@@ -59,6 +59,21 @@ git-ignored file.
 Help people find beautiful places, and give them more ways to see them.
 Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-minibrot.
 
+- [ ] Regroup and reorder the fractal picker (analysis 2026-10-24; not
+      approved, not started). Today: "Infinite zoom" (Mandelbrot family,
+      Newton, carpet, gaskets, then the Julia sets as a sub-header at tile
+      11-14, below the fold) and "Patterns". Proposed: Zoom forever =
+      Mandelbrot family (Mandelbrot, Burning Ship, Tricorn, Celtic,
+      Multibrot³, Phoenix), Julia sets (Spiral, Rabbit, Dragon, Phoenix),
+      More to zoom into (Newton, Apollonian, carpet, gasket); Watch it
+      grow = Build level by level (Koch, tree, dragon, Gosper, Hilbert,
+      arrowhead) and Dots that build up (fern, Sierpinski, Lévy,
+      Hexaflake, Vicsek). Do it with a display-only `PICKER_LAYOUT` list
+      in `fractal-defs.js` and the loop at `compass-ui.js` ~243; keep
+      `category` (box zoom and Surprise me use it) and `FRACTAL_CONFIGS`
+      order as they are; a test that each key appears once. Optional
+      label tweaks ("Newton fractal", "Dragon Julia", "Phoenix Julia").
+      Re-render the store "2-picker" shot at the next listing refresh.
 - [ ] Peano curve, shaded by component with the colormaps (user idea
       2026-10-23): the 3x3 space-filling curve (nine sub-squares per level,
       snaking through them), colored along its length so each component
