@@ -14,10 +14,13 @@ const FERN_TRANSFORMS = [
   { p: 0.07, a: -0.15, b: 0.28,  c: 0.26, d: 0.24, e: 0, f: 0.44 },
 ];
 
+// Equilateral triangle with vertices (0, 1), (-sqrt(3)/2, -1/2) and
+// (sqrt(3)/2, -1/2) (circumradius 1, centered on the origin). Each map
+// halves toward one vertex v: p -> p/2 + v/2, so e, f = v/2.
 const SIERPINSKI_TRANSFORMS = [
-  { a: 0.5, b: 0, c: 0, d: 0.5, e: 0,    f: 0,   p: 1 / 3 },
-  { a: 0.5, b: 0, c: 0, d: 0.5, e: 0.5,  f: 0,   p: 1 / 3 },
-  { a: 0.5, b: 0, c: 0, d: 0.5, e: 0.25, f: 0.5, p: 1 / 3 },
+  { a: 0.5, b: 0, c: 0, d: 0.5, e: 0,                f: 0.5,   p: 1 / 3 },
+  { a: 0.5, b: 0, c: 0, d: 0.5, e: -Math.sqrt(3) / 4, f: -0.25, p: 1 / 3 },
+  { a: 0.5, b: 0, c: 0, d: 0.5, e: Math.sqrt(3) / 4,  f: -0.25, p: 1 / 3 },
 ];
 
 const LEVY_C_TRANSFORMS = [
