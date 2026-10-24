@@ -74,6 +74,17 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       order as they are; a test that each key appears once. Optional
       label tweaks ("Newton fractal", "Dragon Julia", "Phoenix Julia").
       Re-render the store "2-picker" shot at the next listing refresh.
+- [ ] Picker cards: variant B, rows with a one-line descriptor (user choice
+      2026-10-24, after the evaluation of three mockups; not started). One
+      row per fractal (about 76 px, a 64 px thumbnail, a bold name and a
+      one-line blurb; two columns from 640 px up), scoped to
+      `#fractalTypeRow`. The user wants to edit the blurb wording and see it
+      on a phone first. Needs a `blurb` field per fractal (not keys), the
+      `.pickTile` / `button[data-name]` / `button[data-mode]` selectors
+      kept (cold-open spec and store scripts use them), `aria-current` on
+      the active tile, and a unique accessible name for the Julia Phoenix
+      tile. Re-render the store "2-picker" shot at the next listing
+      refresh. Do it together with the regrouping item above.
 - [ ] Peano curve, shaded by component with the colormaps (user idea
       2026-10-23): the 3x3 space-filling curve (nine sub-squares per level,
       snaking through them), colored along its length so each component
