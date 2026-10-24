@@ -112,6 +112,23 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       read as a gradient. Needs the new-fractal checklist: twist gesture,
       a picker thumbnail (`node scripts/render_thumbs.mjs`), and a row in
       `docs/learn-more-links.md` (Wikipedia "Peano curve").
+- [ ] Hexaflake that works like the Pythagoras tree (user idea 2026-10-24;
+      not approved to build). Today it is a chaos-game IFS on the fern engine
+      (random dots, a points slider, one solid color, no depth). Rebuild it
+      as exact filled hexagons the way `pythagoras.js` does squares: a depth
+      slider with the play and hold-and-slide buttons, only the hexagons on
+      screen built at any zoom (prune by view, stop splitting below ~1 px,
+      a per-frame budget, a lighter pass during drag and pinch), every level
+      drawn back to front with its own shade, so the gaps show the parent
+      hexagon, and the hue stepping per level like the tree's shading.
+      Seven children per hexagon at 1/3 scale (centers at 0 and 2/3 out at
+      60° steps, as in `HEXAFLAKE_TRANSFORMS`). Keep the `m=hexaflake` share
+      id; old links carry a points value, which the new view ignores. Twist
+      via `attachVectorViewInteraction`; replace the four hexaflake tests in
+      `vector.spec.mjs`; re-render the thumbnail. Once the engine exists,
+      the Sierpinski triangle (3 maps) and Vicsek (5) could follow, and the
+      "color the IFS modes by address" idea in the proposed order becomes
+      mostly unnecessary for them.
 
 - [ ] Render past the screen edges so a drag reveals image, not blank
       (user idea 2026-10-15). Where it matters: only deep zoom (scale <
