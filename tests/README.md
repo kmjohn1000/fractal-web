@@ -10,7 +10,7 @@ npm run test:visual -- --update-snapshots=all -g X    # re-record X's baselines
 Playwright (`playwright.config.mjs`) loads the app in four projects
 (Chromium and WebKit, each at 1280x800 desktop and iPhone 15) and puts it in
 every state the app lists: each fractal and pattern, each colormap, and
-each Surprise-me place (read from `app.js`/`colormaps.js` by `cases.mjs`, so
+each Surprise-me place (read from `configs.js`/`fractal-defs.js`/`places.js`/`colormaps.js` by `cases.mjs`, so
 new ones are picked up automatically). For each state, once the frame has
 settled (every supersample blended in, every IFS point plotted), it fails
 if:

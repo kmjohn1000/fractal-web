@@ -1,6 +1,7 @@
 // The lists the visual suite walks: every fractal/mode, every colormap and
-// every Surprise-me place. Read straight from the app's sources (app.js and
-// colormaps.js are classic browser scripts, not modules), so a new fractal,
+// every Surprise-me place. Read straight from the app's sources (configs.js,
+// fractal-defs.js, places.js and colormaps.js are classic browser scripts,
+// not modules), so a new fractal,
 // colormap or place gets a test without editing the suite. app.spec.mjs
 // also checks these against the live page, so a parse that silently drops
 // entries fails loudly.
@@ -8,7 +9,9 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
 const root = new URL("..", import.meta.url).pathname;
-const app = readFileSync(root + "app.js", "utf8");
+const configs = readFileSync(root + "configs.js", "utf8");       // FTYPE, FRACTAL_CONFIGS
+const defs = readFileSync(root + "fractal-defs.js", "utf8");     // EXTRA_MODES
+const places = readFileSync(root + "places.js", "utf8");         // TELEPORT_DESTINATIONS
 const colormaps = readFileSync(root + "colormaps.js", "utf8");
 
 // A top-level `const NAME = ...;` declaration: on one line, or ending at
@@ -22,10 +25,10 @@ function literal(src, name, close) {
 
 const ctx = vm.createContext({ Math });
 vm.runInContext([
-  literal(app, "FTYPE", "}"),
-  literal(app, "FRACTAL_CONFIGS", "}"),
-  literal(app, "EXTRA_MODES", "]"),
-  literal(app, "TELEPORT_DESTINATIONS", "]"),
+  literal(configs, "FTYPE", "}"),
+  literal(configs, "FRACTAL_CONFIGS", "}"),
+  literal(defs, "EXTRA_MODES", "]"),
+  literal(places, "TELEPORT_DESTINATIONS", "]"),
   literal(colormaps, "COLORMAPS", "]"),
   "globalThis.out = { FRACTAL_CONFIGS, EXTRA_MODES, TELEPORT_DESTINATIONS, COLORMAPS };",
 ].join("\n"), ctx);
