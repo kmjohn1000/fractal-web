@@ -73,8 +73,10 @@ git-ignored file.
 Help people find beautiful places, and give them more ways to see them.
 Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-minibrot.
 
-- [ ] Regroup and reorder the fractal picker (analysis 2026-10-24; not
-      approved, not started). Today: "Infinite zoom" (Mandelbrot family,
+- [ ] Regroup and reorder the fractal picker (analysis 2026-10-24; the
+      user approved it 2026-10-24 as a small follow-up right after picker
+      cards variant B merges; the Places sheet follows the same order;
+      not started). Today: "Infinite zoom" (Mandelbrot family,
       Newton, carpet, gaskets, then the Julia sets as a sub-header at tile
       11-14, below the fold) and "Patterns". Proposed: Zoom forever =
       Mandelbrot family (Mandelbrot, Burning Ship, Tricorn, Celtic,
