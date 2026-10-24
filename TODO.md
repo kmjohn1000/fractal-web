@@ -18,6 +18,9 @@ git-ignored file.
       "The whole shape" line (simctl can't tap; check it on a phone or in
       Xcode before the next release). Relates to the portrait-rotation
       item under Next.
+      Checked by the user on a phone 2026-10-23: the cold-open flight
+      works. Still open: the welcome card's placement, Back on a share
+      link, and a link preview in Messages and Slack.
 - [ ] Proposed order of work (a suggestion the user pasted 2026-10-23;
       not approved, not started; reorder freely). Existing items it
       touches: Minimap, Auto-dive/flyover, deep flights (reverted in
