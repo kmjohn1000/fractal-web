@@ -508,9 +508,10 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
          shallow views are unchanged. It held up in the float64 oracle
          comparison down to 1.5e-12, and float32 resolution wasn't the limit
          (the views are mostly interior past about 1e-12 whatever the style),
-         so the depth limit is gone. Phone check: the first Point or Cross
-         pick at a deep place, and the colors while dragging (the range is
-         reused during a gesture and refreshed on settle)
+         so the depth limit is gone. Phone check passed 2026-10-24 (user, on
+         an iPhone 15: Orbs and Rays at Sunburst Fan, 7e-12, both look
+         great); options 2 and 3 are only worth doing if a later check
+         shows a need, so this item can close
       2. Not needed so far: compute the trap distance as a difference from the reference orbit
          (the perturbation trick), keeping tiny differences exact in float32,
          together with auto-range; might carry traps to about 1e-12
