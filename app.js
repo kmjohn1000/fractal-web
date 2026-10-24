@@ -1,7 +1,7 @@
 // Entry point; must load last. Holds, in order: compass, UI wiring, teleport (Surprise me), colormap
-// picker, color sheet, share links and image, toolbar accessibility, init. One file on purpose: the
-// applyHudVisibility() call in the compass section schedules a render, and the frame must not be
-// able to run before the rest of this code (e.g. teleportLandingIndex) has loaded.
+// picker, color sheet, share links and image, toolbar accessibility, init. The load-time lines that
+// schedule a frame or a callback (render, idle callback, resize, ResizeObserver) are at the start
+// of init, so they cannot run before the last script has loaded.
 "use strict";
 
 // ---------------------------------------------------------------- compass
@@ -199,7 +199,7 @@ document.querySelectorAll(".hudToggleBtn").forEach((b) => b.addEventListener("cl
   hudVisible = !hudVisible;
   applyHudVisibility();
 }));
-applyHudVisibility();
+// (The first applyHudVisibility() call is at the start of init: it schedules a render.)
 
 // Website welcome card (never shown in the app, see platform.js). The
 // fractal count comes from the picker's tiles so it can't go stale.
@@ -1027,7 +1027,7 @@ function warmNextVariant() {
     else warmRunning = false;
   }, { timeout: 2500 });
 }
-(window.requestIdleCallback || ((f) => setTimeout(f, 1000)))(prepareColorSheet, { timeout: 3000 });
+// (prepareColorSheet is scheduled at the start of init.)
 
 // A greyed-out Look says why when it's tapped: the note under the grid lights
 // up briefly.
@@ -1239,7 +1239,7 @@ function fitColorSegment() {
   columns(count);
   if ([...seg.children].some((b) => b.scrollWidth > b.clientWidth + 1)) columns(Math.ceil(count / 2));
 }
-if (typeof ResizeObserver !== "undefined") new ResizeObserver(fitColorSegment).observe(els.colorSheet);
+// (fitColorSegment is observed from the start of init.)
 
 function openColorSheet() {
   colorSheetTab = colorSheetOpeningTab();
@@ -1299,13 +1299,7 @@ els.fernResetBtn.addEventListener("click", () => {
   requestRender();
 });
 
-window.addEventListener("resize", () => { layoutCanvasArea(); requestRender(); });
-// The toolbar is in flow under the canvas, so the canvas area also changes
-// size without a window resize (e.g. a mode's control row wrapping
-// differently); re-lay out and re-render then too.
-if (typeof ResizeObserver !== "undefined") {
-  new ResizeObserver(() => { layoutCanvasArea(); requestRender(); }).observe(els.canvasArea);
-}
+// (The window resize listener and the canvasArea ResizeObserver are set up at the start of init.)
 
 // ---------------------------------------------------------------- share: links
 
@@ -1741,6 +1735,20 @@ els.shareNativeBtn.addEventListener("click", async () => {
 window.addEventListener("hashchange", applyShareHashFromUrl);
 
 // ---------------------------------------------------------------- init
+
+// Everything that can schedule a frame or a callback at load lives here, in
+// the last script, so nothing can run before all the scripts above have
+// loaded (these were top-level lines in the sections above; same order).
+applyHudVisibility();
+(window.requestIdleCallback || ((f) => setTimeout(f, 1000)))(prepareColorSheet, { timeout: 3000 });
+if (typeof ResizeObserver !== "undefined") new ResizeObserver(fitColorSegment).observe(els.colorSheet);
+window.addEventListener("resize", () => { layoutCanvasArea(); requestRender(); });
+// The toolbar is in flow under the canvas, so the canvas area also changes
+// size without a window resize (e.g. a mode's control row wrapping
+// differently); re-lay out and re-render then too.
+if (typeof ResizeObserver !== "undefined") {
+  new ResizeObserver(() => { layoutCanvasArea(); requestRender(); }).observe(els.canvasArea);
+}
 
 updateLUT(); // first: Carpet/Gasket renders read the LUT on the CPU
 selectFractal(currentName, { fresh: true });
