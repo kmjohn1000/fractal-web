@@ -35,7 +35,13 @@ git-ignored file.
          `places.js`, and the deep-zoom code made free of DOM
          dependencies so a Web Worker can run it later.
       3. An index of the ~100 named places, browsable by fractal and
-         region, with thumbnails; tap to fly.
+         region, with thumbnails; tap to fly. Decided 2026-10-23: group
+         by fractal only for now; region/type tags can come later. Entry
+         point (decided 2026-10-23): a Places sheet, a bottom sheet like
+         the Color sheet, opened from an entry near Surprise me; places
+         grouped by fractal with thumbnails, tap to fly. Must not change
+         the toolbar height (see the launch-screen constants in CLAUDE.md).
+         Start after the `app.js` split (1.42.2) is merged.
       4. The info card says "near X" between named places; the minimap
          (see Minimap); a one- or two-sentence caption per place, with
          established names kept apart from our own names. Later, name the
