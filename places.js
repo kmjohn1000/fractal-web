@@ -1,5 +1,5 @@
 // The "Surprise me" places: only TELEPORT_DESTINATIONS (split from app.js, a pure move).
-// Plain data; needs nothing from earlier files (Math.PI only). Used by app.js and the mode code.
+// Plain data; needs nothing from earlier files (Math.PI only). Used by teleport.js and the mode code.
 "use strict";
 
 // "Surprise me" destinations (see teleport()). Keyed by FRACTAL_CONFIGS name,

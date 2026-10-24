@@ -1,6 +1,6 @@
 // App state (els, mode, per-pane states, histories, renderers, live-resolution adaptation) and the
 // color styles (COLOR_STYLES, trap ranges). Needs configs.js, fractal-defs.js and, inside function
-// bodies only, renderer.js, render-layout.js and app.js; the views come from koch.js and friends.
+// bodies only, renderer.js, render-layout.js and the later scripts; the views come from koch.js and friends.
 "use strict";
 
 // ---------------------------------------------------------------- app state
