@@ -1,6 +1,6 @@
 // Fractal-type and mode switching: selectFractal, dual view, setMode and the menu's active state.
 // Needs the state (state-colors.js), render-layout.js, places.js and fractal-defs.js; calls into
-// interaction.js and app.js only inside function bodies.
+// interaction.js and the later scripts only inside function bodies.
 "use strict";
 
 // ---------------------------------------------------------------- fractal-type / mode switching

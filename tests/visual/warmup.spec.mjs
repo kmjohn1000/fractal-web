@@ -1,4 +1,4 @@
-// Shader warm-up (warmColorVariants in app.js): the variants the color styles
+// Shader warm-up (warmColorVariants in color-sheet.js): the variants the color styles
 // need are compiled while the app is idle, one at a time, for the main pane and
 // (where dual view is offered) the Julia pane, so picking a style doesn't wait
 // on the compiler. Run through `npm run test:visual`.

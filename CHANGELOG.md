@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.42.2 — 2026-10-23
+- Behind-the-scenes tidy-up of the code; nothing should look or behave differently.
+
 ## 1.42.1 — 2026-10-23
 - Behind-the-scenes tidy-up of the code; nothing should look or behave differently.
 

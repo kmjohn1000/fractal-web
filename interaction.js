@@ -1,6 +1,6 @@
 // Pointer, touch and keyboard interaction: the fractal canvases, the vector views (Koch, tree,
 // dragon, fern) and the keyboard actions. Needs the state (state-colors.js), render-layout.js and
-// fractal-defs.js; calls app.js (cancelTeleport, glideMainTo, ...) only inside function bodies.
+// fractal-defs.js; calls the later scripts (cancelTeleport, glideMainTo, ...) only inside function bodies.
 "use strict";
 
 // ---------------------------------------------------------------- interaction: fractal canvases

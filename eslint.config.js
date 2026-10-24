@@ -44,8 +44,9 @@ const sharedGlobals = {
   // diag.js
   Diag: "readonly",
   // The pieces app.js was split into, in the order index.html loads them
-  // (app.js itself is last). Only names another piece uses are listed;
-  // "writable" marks the `let`s that get reassigned.
+  // (app.js itself is last and defines nothing the others use). Only names
+  // another piece uses are listed; "writable" marks the `let`s that get
+  // reassigned.
   // configs.js
   FTYPE: "readonly",
   PHOENIX_P: "readonly",
@@ -171,23 +172,44 @@ const sharedGlobals = {
   KEY_PAN_FRACTION: "readonly",
   keyAction: "readonly",
   activeVectorTarget: "readonly",
-  // app.js (compass .. init: the names the pieces above call into)
+  // compass-ui.js
   flash: "readonly",
+  prefersReducedMotion: "readonly",
   updateCompasses: "readonly",
+  applyHudVisibility: "readonly",
+  initWelcomeCard: "readonly",
+  syncSliderFill: "readonly",
+  // teleport.js
   teleportLandingIndex: "writable",
   cancelTeleport: "readonly",
+  coldOpen: "readonly",
   glideMainTo: "readonly",
   stopDepthPlay: "readonly",
+  // colormap-picker.js
   cmGradient: "readonly",
+  setFernColor: "readonly",
   labelColorButton: "readonly",
   updateColorSwatches: "readonly",
+  // color-sheet.js
   COLOR_LOOKS: "readonly",
+  colorSheetApplies: "readonly",
   colorSheetStyles: "readonly",
   currentLookId: "readonly",
+  prepareColorSheet: "readonly",
   bandsText: "readonly",
   shiftText: "readonly",
+  fitColorSegment: "readonly",
+  openColorSheet: "readonly",
   colorSheetTapJustClosed: "readonly",
+  // share.js
   buildShareHash: "readonly",
+  buildShareUrl: "readonly",
+  parseShareHash: "readonly",
+  applyShareHashFromUrl: "readonly",
+  applyShareLink: "readonly",
+  shareFileName: "readonly",
+  pendingCapture: "writable",
+  closeShareMenu: "readonly",
 };
 
 export default [
