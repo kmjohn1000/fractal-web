@@ -453,19 +453,6 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       listing (2026-10-09). Candidate formulas (mostly unconfirmed: check
       each against a source before building) and a comparison render are in
       the local `docs/mandelbrot-variants/` (2026-10-20)
-- [ ] Burning Ship looks like a ship. Partly done: the Surprise-me places
-      land ship-side up by turning the view 180° (`rotation: Math.PI`,
-      1.21.0; the compass turns it back). Still open: the default Opening
-      view, the picker thumbnail and a plain pick of Burning Ship are
-      still drawn masts-down, and a half turn mirrors left-right compared
-      with the classic picture. The standard images show it upright,
-      which means mirroring the imaginary axis (the set sits at y < 0 and
-      the picker thumbnail shows the hull on top, upside down), plus a fire
-      default palette (Ember/Hot) for this fractal only. Caveats: existing
-      share links store y, so a mirror needs a link-version bump or a flag
-      so old Burning Ship links keep opening the same place; check whether
-      colormaps can have a per-fractal default today (user idea 2026-10-08);
-      see "Curated palettes" below
 - [ ] More Looks (user, 2026-10-22; not approved to build). The list rework
       is done behind the styles flag (`29febe2`, `799750c`): Classic and
       Inferno left the Looks (they are Smooth plus a palette; the palettes are
@@ -518,18 +505,14 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       3. Trap relative to the view: put the trap on the reference orbit at an
          iteration where the pixels have spread out, so it follows the zoom;
          a different look from the fixed trap, an experiment
-- [ ] Curated palettes instead of one global default (2026-10-17;
-      considered randomizing the palette per fractal and recommended
-      against it: a random pick gambles the first impression, gives bad
-      pairings like Grayscale on Newton, and overrides a user's choice,
-      since the colormap is global since 1.17.0). Instead:
-      1. A default colormap (or Look, see the coloring Style item) per
-         fractal, used until the user picks one; after that their pick
-         applies everywhere.
-      2. An optional colormap per Surprise-me destination, the same way
-         destinations already carry `rotation`.
-      Share links are unaffected (`cm=` stores the name). Check how
-      fractalMemory and the global colormap interact before designing.
+- [ ] Palette follow-ups after the curated defaults and the upright Burning
+      Ship (1.44.0, see Done): no Surprise-me place names its own palette yet
+      (the `colormap` field and its tests are in; pick by looking at each
+      place); the Default Look's tile swatch is the Inferno picture, so on
+      the seven fractals with another default palette it shows Inferno while
+      applying that fractal's own (a per-fractal swatch, or a neutral one);
+      phone check of the upright Ship (twist, pinch, dual view tap, deep
+      places) is still to do
 - [ ] Minimap: small inset of the whole fractal with a marker for the
       current view, so deep zooms keep their bearings. Render the overview
       once per fractal/colormap into a small texture; at deep zoom the view
@@ -843,6 +826,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
+- Curated palettes and an upright Burning Ship (1.44.0, 2026-10-24, from the "Curated palettes" and "Burning Ship looks like a ship" items): (1) a default palette per fractal, `defaultColormap` in `FRACTAL_CONFIGS` (Burning Ship Fire, Tricorn Classic, Multibrot³ Viridis, Phoenix and its Julia set Hot, Carpet Glacier, Gasket Plasma; the rest stay Inferno), chosen from contact sheets of every fractal's opening view and places in each palette; and an optional `colormap` per Surprise-me place. `colormapPicked` in `state-colors.js` (in memory only, like `fractalMemory`, which keeps views and not palettes) is set by a palette pick in the Color sheet, a Look other than Default, or a share link naming a palette other than the fractal's own default; until then `applyDefaultColormap` (from `selectFractal` and `flyTo`) follows the fractal or place, and the Default Look and Reset (`releaseColormapPick`) put the defaults back. The Default Look's palette is the default of what's on screen (`lookPalette`). Links keep the palette they name (a link without `cm=` is Inferno, as before). (2) The Ship's classic upright picture: `state.flipY` (from `config.flipY`) mirrors the view's imaginary axis last, after the rotation, in `main()` of the escape-time shader (`u_flipY`), `screenToComplex`/`centerForAnchor`, the perturbation reference grid (`chooseReference`) and the deep-zoom gesture preview; the iteration is untouched and `cx`/`cy` stay real coordinates, so Back history carries the flag and links are unchanged except `fl=1`, written only when on and read only for a fractal that has it (old links open exactly as before: `scripts/default-identity.mjs` proves the old path pixel-identical). The places moved from a half turn to rotation 0 (Stingray to `Math.PI - 2.5`) and now look like the classic picture, mirrored left to right from before; Surprise me from an old-link view takes the upright picture at takeoff. The Julia pane is symmetric top to bottom and takes no flag. Checked against the float64 oracle with `oracle-compare.mjs --flip 1` (ship, armada and deep twinships in six styles, within the gates and equal to the old orientation's numbers), 29 identity states with the 26 earlier ones at zero differing pixels, `palettes.spec.mjs` (new) and the covering specs on all four projects. Baselines re-recorded for the Ship, Tricorn, Multibrot³, Phoenix, Julia Phoenix, Carpet and Gasket (and their places) and the Ship's style baselines; the style specs now pin Inferno. Not checked on a phone. What's left is the "Palette follow-ups" item under Next — `8033d0d`
 - Hexaflake rebuilt as exact hexagons (1.43.0, 2026-10-24, user idea): `hexaflake.js` draws a hexagon as seven at 1/3 scale (middle plus six at 2/3 out, 60° steps) level by level, the way `pythagoras.js` does squares, on its own canvas and control row (`hexaflakeCanvas`, `createHexaflakeView`, `hexaflakeAdaptive`, plain reference `hexaflakeHexagons`): depth slider 0-6 (default 4) with the play and hold-and-slide buttons, only the hexagons on screen at any zoom (disc culling, ~1 canvas px leaf limit, 40,000-hexagon budget, a 3 px pass during drag and pinch, levels added past the slider by zoom), flat shade per level drawn back to front (hue turned 18° and brighter each level, so the gaps show the parent), levels hidden behind a hexagon that covers the canvas are skipped and hexagons over 4,000 px are clipped to the canvas (Canvas2D is float32). Twist, Back, Reset, info card, Save/Share and the color picker work as for the tree. `m=hexaflake` links keep working: 1.42.0 links (points value `n`, no depth) open on the same part of the shape and the depth `dp` is written only when it isn't the default; the chaos-game entry is gone from `fern.js`. Tests: the four IFS hexaflake tests in `vector.spec.mjs` replaced by seven for the new geometry, plus hexaflake cases in the shared adaptive, culling, zoom, twist, pinch and extreme-view loops; `mode-hexaflake` baseline re-recorded. Not checked on a phone. Left from the old item: the Sierpinski triangle (3 maps) and Vicsek (5) could move onto the same engine — `d14f6d1`
 - Hexaflake (1.42.0, 2026-10-23, user idea): an IFS mode on the chaos-game engine (`fern.js`), seven maps at scale 1/3 (one in the middle, six around it); points slider, share links (`m=hexaflake`), twist and zoom as for Vicsek; picker thumbnail, learn-more row, four tests in `vector.spec.mjs`. Also fixed `render_thumbs.mjs` (`Page.enable`), which let the welcome card into thumbnails. Not checked on a phone yet — `d818399`
 - Pythagoras tree shading (1.41.1, 2026-10-23, user idea): squares lit from the upper left by their lean, brighter from trunk to twigs, every other level's hue turned 45°; the light stays fixed on screen under a twist. `TREE_SHADED` in `pythagoras.js` switches back to the flat look. About 10% more frame time at depth 12. Checked by the user on a phone — `667576b`
