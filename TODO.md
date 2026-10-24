@@ -42,10 +42,20 @@ git-ignored file.
          region, with thumbnails; tap to fly. Decided 2026-10-23: group
          by fractal only for now; region/type tags can come later. Entry
          point (decided 2026-10-23): a Places sheet, a bottom sheet like
-         the Color sheet, opened from an entry near Surprise me; places
-         grouped by fractal with thumbnails, tap to fly. Must not change
-         the toolbar height (see the launch-screen constants in CLAUDE.md).
-         Start after the `app.js` split (1.42.2) is merged.
+         the Color sheet; places grouped by fractal with thumbnails, tap
+         to fly. Revised 2026-10-24: NO new toolbar button; it opens from
+         a "Browse places" button in the info card and a "Places" row at
+         the top of the fractal picker. Design done (a read-only agent,
+         2026-10-24): rows with a 64 pt thumbnail, name, depth in words
+         and a "Dive" pill; a chip strip to jump between fractals; sticky
+         headers; 1 column on phone, 2 on iPad/desktop; about 230 lines in
+         a new `places-sheet.js`, about 1 day, 1.43.0. Decided by the
+         user: picking a place turns the info card on; a place on another
+         fractal flies from that fractal's whole-shape view (not its
+         remembered view); sections follow the picker's order (and the
+         regrouped order once that lands); commit the ~98 pre-rendered
+         160 px webp thumbnails (about 0.5 MB, `icons/places/<id>.webp`,
+         not in `APP_SHELL`) to the repo. Not started.
       4. The info card says "near X" between named places; the minimap
          (see Minimap); a one- or two-sentence caption per place, with
          established names kept apart from our own names. Later, name the
