@@ -53,8 +53,8 @@ git-ignored file.
          a new `places-sheet.js`, about 1 day, 1.43.0. Decided by the
          user: picking a place turns the info card on; a place on another
          fractal flies from that fractal's whole-shape view (not its
-         remembered view); sections follow the picker's order (and the
-         regrouped order once that lands); commit the ~98 pre-rendered
+         remembered view); sections follow the picker's order
+         (`PICKER_LAYOUT`, regrouped in 1.44.1); commit the ~98 pre-rendered
          160 px webp thumbnails (about 0.5 MB, `icons/places/<id>.webp`,
          not in `APP_SHELL`) to the repo. Not started.
       4. The info card says "near X" between named places; the minimap
@@ -74,23 +74,6 @@ git-ignored file.
 Help people find beautiful places, and give them more ways to see them.
 Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-minibrot.
 
-- [ ] Regroup and reorder the fractal picker (analysis 2026-10-24; the
-      user approved it 2026-10-24 as a small follow-up right after picker
-      cards variant B merges; the Places sheet follows the same order;
-      not started). Today: "Infinite zoom" (Mandelbrot family,
-      Newton, carpet, gaskets, then the Julia sets as a sub-header at tile
-      11-14, below the fold) and "Patterns". Proposed: Zoom forever =
-      Mandelbrot family (Mandelbrot, Burning Ship, Tricorn, Celtic,
-      Multibrot³, Phoenix), Julia sets (Spiral, Rabbit, Dragon, Phoenix),
-      More to zoom into (Newton, Apollonian, carpet, gasket); Watch it
-      grow = Build level by level (Koch, tree, dragon, Gosper, Hilbert,
-      arrowhead) and Dots that build up (fern, Sierpinski, Lévy,
-      Hexaflake, Vicsek). Do it with a display-only `PICKER_LAYOUT` list
-      in `fractal-defs.js` and the loop at `compass-ui.js` ~243; keep
-      `category` (box zoom and Surprise me use it) and `FRACTAL_CONFIGS`
-      order as they are; a test that each key appears once. Optional
-      label tweaks ("Newton fractal", "Dragon Julia", "Phoenix Julia").
-      Re-render the store "2-picker" shot at the next listing refresh.
 - [ ] Picker cards: variant B, rows with a one-line descriptor (user choice
       2026-10-24, after the evaluation of three mockups; not started). One
       row per fractal (about 76 px, a 64 px thumbnail, a bold name and a
@@ -101,7 +84,9 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       kept (cold-open spec and store scripts use them), `aria-current` on
       the active tile, and a unique accessible name for the Julia Phoenix
       tile. Re-render the store "2-picker" shot at the next listing
-      refresh. Do it together with the regrouping item above.
+      refresh (it needs the regrouped picker from 1.44.1, see Done, too).
+      The regrouping shipped first, on its own; the rows go into
+      `PICKER_LAYOUT`'s loop in `compass-ui.js`.
 - [ ] Peano curve, shaded by component with the colormaps (user idea
       2026-10-23): the 3x3 space-filling curve (nine sub-squares per level,
       snaking through them), colored along its length so each component
@@ -830,6 +815,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
+- Fractal picker regrouped (1.44.1, 2026-10-24, approved the same day): a display-only `PICKER_LAYOUT` in `fractal-defs.js` (sections "Zoom forever" and "Watch it grow", each with titled groups) replaces `FRACTAL_CATEGORIES`, and the loop in `compass-ui.js` builds the picker from it. Zoom forever = Mandelbrot family (Mandelbrot, Burning Ship, Tricorn, Celtic, Multibrot³, Phoenix), Julia sets (Spiral, Rabbit, Dragon, Phoenix; no longer below the fold), More to zoom into (Newton, Apollonian, carpet, gasket); Watch it grow = Build level by level (Koch, tree, Hexaflake, dragon, Hilbert, Gosper, arrowhead) and Dots that build up (fern, Sierpinski triangle, Lévy, Vicsek). The Hexaflake went under "level by level" instead of "dots" as first proposed, since 1.43.0 draws it as exact hexagons by level like the tree. `category`, `FRACTAL_CONFIGS` order and every share-link key are untouched; no label tweaks. The new `app.spec.mjs` test checks every fractal and mode appears exactly once, in `PICKER_LAYOUT` order, on all four projects. Looked at on a 390 px viewport in headless Chromium, not on a phone. The Places sheet's sections should follow this order — `631eda8`
 - `app.js` split into plain scripts (2026-10-23, from step 2 of the proposed order of work): a pure move along the section headers into plain scripts (the commit says 10; among them `places.js`, `deepzoom.js`, `renderer.js`, `state-colors.js`, `render-layout.js`, `modes.js`, `interaction.js`, `compass-ui.js`, `teleport.js`, `colormap-picker.js`, `color-sheet.js`, `share.js`), section order kept; `app.js` is now 158 lines. `deepzoom.js` has no DOM references and needs only `FTYPE` and `PHOENIX_P` from `configs.js` (checked 2026-10-24), so it can move into a Web Worker once the reference-orbit callers are made asynchronous — `b7fb4a4`
 - Curated palettes and an upright Burning Ship (1.44.0, 2026-10-24, from the "Curated palettes" and "Burning Ship looks like a ship" items): (1) a default palette per fractal, `defaultColormap` in `FRACTAL_CONFIGS` (Burning Ship Fire, Tricorn Classic, Multibrot³ Viridis, Phoenix and its Julia set Hot, Carpet Glacier, Gasket Plasma; the rest stay Inferno), chosen from contact sheets of every fractal's opening view and places in each palette; and an optional `colormap` per Surprise-me place. `colormapPicked` in `state-colors.js` (in memory only, like `fractalMemory`, which keeps views and not palettes) is set by a palette pick in the Color sheet, a Look other than Default, or a share link naming a palette other than the fractal's own default; until then `applyDefaultColormap` (from `selectFractal` and `flyTo`) follows the fractal or place, and the Default Look and Reset (`releaseColormapPick`) put the defaults back. The Default Look's palette is the default of what's on screen (`lookPalette`). Links keep the palette they name (a link without `cm=` is Inferno, as before). (2) The Ship's classic upright picture: `state.flipY` (from `config.flipY`) mirrors the view's imaginary axis last, after the rotation, in `main()` of the escape-time shader (`u_flipY`), `screenToComplex`/`centerForAnchor`, the perturbation reference grid (`chooseReference`) and the deep-zoom gesture preview; the iteration is untouched and `cx`/`cy` stay real coordinates, so Back history carries the flag and links are unchanged except `fl=1`, written only when on and read only for a fractal that has it (old links open exactly as before: `scripts/default-identity.mjs` proves the old path pixel-identical). The places moved from a half turn to rotation 0 (Stingray to `Math.PI - 2.5`) and now look like the classic picture, mirrored left to right from before; Surprise me from an old-link view takes the upright picture at takeoff. The Julia pane is symmetric top to bottom and takes no flag. Checked against the float64 oracle with `oracle-compare.mjs --flip 1` (ship, armada and deep twinships in six styles, within the gates and equal to the old orientation's numbers), 29 identity states with the 26 earlier ones at zero differing pixels, `palettes.spec.mjs` (new) and the covering specs on all four projects. Baselines re-recorded for the Ship, Tricorn, Multibrot³, Phoenix, Julia Phoenix, Carpet and Gasket (and their places) and the Ship's style baselines; the style specs now pin Inferno. Not checked on a phone. What's left is the "Palette follow-ups" item under Next — `8033d0d`
 - Hexaflake rebuilt as exact hexagons (1.43.0, 2026-10-24, user idea): `hexaflake.js` draws a hexagon as seven at 1/3 scale (middle plus six at 2/3 out, 60° steps) level by level, the way `pythagoras.js` does squares, on its own canvas and control row (`hexaflakeCanvas`, `createHexaflakeView`, `hexaflakeAdaptive`, plain reference `hexaflakeHexagons`): depth slider 0-6 (default 4) with the play and hold-and-slide buttons, only the hexagons on screen at any zoom (disc culling, ~1 canvas px leaf limit, 40,000-hexagon budget, a 3 px pass during drag and pinch, levels added past the slider by zoom), flat shade per level drawn back to front (hue turned 18° and brighter each level, so the gaps show the parent), levels hidden behind a hexagon that covers the canvas are skipped and hexagons over 4,000 px are clipped to the canvas (Canvas2D is float32). Twist, Back, Reset, info card, Save/Share and the color picker work as for the tree. `m=hexaflake` links keep working: 1.42.0 links (points value `n`, no depth) open on the same part of the shape and the depth `dp` is written only when it isn't the default; the chaos-game entry is gone from `fern.js`. Tests: the four IFS hexaflake tests in `vector.spec.mjs` replaced by seven for the new geometry, plus hexaflake cases in the shared adaptive, culling, zoom, twist, pinch and extreme-view loops; `mode-hexaflake` baseline re-recorded. Not checked on a phone. Left from the old item: the Sierpinski triangle (3 maps) and Vicsek (5) could move onto the same engine — `d14f6d1`
