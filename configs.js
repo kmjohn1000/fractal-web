@@ -16,9 +16,8 @@ const FTYPE = { ESCAPE: 0, SHIP: 1, TRICORN: 2, NEWTON: 3, CARPET: 4, GASKET: 5,
 // tilted lobe in either mode. A constant for the fractal, not view state.
 const PHOENIX_P = [-0.5, 0];
 
-// category splits the fractal picker into its two labeled parts (see
-// FRACTAL_CATEGORIES), and gates the zoom-only toolbar buttons (box zoom,
-// Surprise me):
+// category gates the zoom-only toolbar buttons (box zoom, Surprise me); where
+// a tile sits in the fractal picker is PICKER_LAYOUT's job (fractal-defs.js):
 //   "zoom"    - fractals you explore by zooming: every escape-time type
 //               (Mandelbrot and its variants, the Julia presets, Newton)
 //               the digit-test Carpet/Gasket and the Apollonian gasket's

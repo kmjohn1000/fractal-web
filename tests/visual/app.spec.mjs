@@ -1,6 +1,7 @@
 // Renders every fractal/mode, colormap and Surprise-me place, checks the
 // frame and layout, and compares a screenshot against its baseline in
 // tests/baselines/<project>/. Run through `npm run test:visual`.
+/* global FRACTAL_NAMES, EXTRA_MODES, PICKER_LAYOUT */
 import { test, expect } from "@playwright/test";
 import { PNG } from "pngjs";
 import { COLORMAP_NAMES, FRACTALS, MODES, PLACES, slug } from "../cases.mjs";
@@ -102,6 +103,17 @@ async function checkFrame(page, testInfo, name) {
 test("the suite covers everything the app lists", async ({ page }) => {
   const live = await page.evaluate(() => window["__vt"].counts());
   expect(live).toEqual({ fractals: FRACTALS.length, modes: MODES.length, places: PLACES.length, colormaps: COLORMAP_NAMES.length });
+});
+
+test("the picker lists every fractal and mode exactly once, in PICKER_LAYOUT order", async ({ page }) => {
+  const { expected, shown } = await page.evaluate(() => ({
+    expected: [...FRACTAL_NAMES, ...EXTRA_MODES.map((m) => m.key)].sort(),
+    shown: [...document.querySelectorAll("#fractalTypeRow button[data-name], #fractalTypeRow button[data-mode]")]
+      .map((b) => b.dataset.name || b.dataset.mode),
+  }));
+  expect([...shown].sort()).toEqual(expected);
+  const layout = await page.evaluate(() => PICKER_LAYOUT.flatMap((s) => s.groups.flatMap((g) => g.keys)));
+  expect(shown).toEqual(layout);
 });
 
 // The checks themselves: each must fire on a frame that really is broken.

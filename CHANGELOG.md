@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.44.1 — 2026-10-24
+- The fractal picker is regrouped so everything you can zoom into sits together: "Zoom forever" holds the Mandelbrot family, the Julia sets (no longer below the fold) and Newton, Apollonian, carpet and gasket; "Watch it grow" holds the curves and shapes that build level by level (Koch, tree, Hexaflake, dragon, Hilbert, Gosper, arrowhead) and those that build up from dots (fern, Sierpinski triangle, Lévy, Vicsek).
+
 ## 1.44.0 — 2026-10-24
 - Each fractal now opens in a palette that suits it instead of one for all: the Burning Ship in Fire, Tricorn in Classic, Multibrot³ in Viridis, both Phoenix views in Hot, the carpet in Glacier and the gasket in Plasma. The rest stay in Inferno. Once you pick a palette in the Color sheet it holds for every fractal, and the Default Look and Reset in the sheet bring each fractal's own back. Links keep the palette they were made with.
 - The Burning Ship now opens the classic way up, hull below and masts above, from the opening view, the picker preview and a plain pick, and Surprise me lands its places the same way up. Links made before this open exactly as they did.

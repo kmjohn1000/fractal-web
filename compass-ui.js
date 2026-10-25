@@ -217,8 +217,8 @@ els.welcomeClose.addEventListener("click", () => {
 
 // Picker: a grid of tiles, each a pre-rendered thumbnail plus the name
 // (thumbnails come from scripts/render_thumbs.mjs; re-run it after adding a
-// fractal or changing a default view). Julia presets get their own
-// subsection under Infinite zoom.
+// fractal or changing a default view). Sections and groups come from
+// PICKER_LAYOUT in fractal-defs.js.
 function addPickerHeader(text, isSub = false) {
   const header = document.createElement("div");
   header.className = isSub ? "menuSectionHeader sub" : "menuSectionHeader";
@@ -240,19 +240,20 @@ function addPickerTile(label, slug, onPick, data) {
   btn.addEventListener("click", onPick);
   els.fractalTypeRow.appendChild(btn);
 }
-FRACTAL_CATEGORIES.forEach((fam) => {
-  const names = FRACTAL_NAMES.filter((n) => FRACTAL_CONFIGS[n].category === fam.key);
-  const extraModes = EXTRA_MODES.filter((m) => m.category === fam.key);
-  if (names.length === 0 && extraModes.length === 0) return;
-  addPickerHeader(fam.label);
-  const addFractal = (name) => addPickerTile(FRACTAL_CONFIGS[name].label, slugify(name), () => selectFractal(name), { name });
-  names.filter((n) => !FRACTAL_CONFIGS[n].group).forEach(addFractal);
-  const julias = names.filter((n) => FRACTAL_CONFIGS[n].group === "julia");
-  if (julias.length) {
-    addPickerHeader("Julia sets", true);
-    julias.forEach(addFractal);
-  }
-  extraModes.forEach((m) => addPickerTile(m.label, m.key, () => setMode(m.key), { mode: m.key }));
+PICKER_LAYOUT.forEach((section) => {
+  addPickerHeader(section.label);
+  section.groups.forEach((group) => {
+    addPickerHeader(group.label, true);
+    group.keys.forEach((key) => {
+      const config = FRACTAL_CONFIGS[key];
+      if (config) {
+        addPickerTile(config.label, slugify(key), () => selectFractal(key), { name: key });
+      } else {
+        const mode = EXTRA_MODES.find((m) => m.key === key);
+        addPickerTile(mode.label, mode.key, () => setMode(mode.key), { mode: mode.key });
+      }
+    });
+  });
 });
 updateMenuActiveState();
 

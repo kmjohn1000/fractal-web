@@ -3,15 +3,26 @@
 // lsystem.js/koch.js (IFS_SYSTEMS, LINE_CURVES), which only its function bodies use.
 "use strict";
 
-// Picker sections, in display order.
-const FRACTAL_CATEGORIES = [
-  { key: "zoom",    label: "Infinite zoom" },
-  { key: "pattern", label: "Patterns" },
+// The fractal picker's layout, in display order: sections with a title, each
+// split into titled groups of tiles. Display only: a key is a FRACTAL_CONFIGS
+// name or an EXTRA_MODES key, and each must appear exactly once (app.spec.mjs
+// checks). `category` on the configs and modes is separate -- it decides what
+// the zoom-only buttons (box zoom, Surprise me) do, not where a tile sits.
+const PICKER_LAYOUT = [
+  { label: "Zoom forever", groups: [
+    { label: "Mandelbrot family", keys: ["Mandelbrot", "Burn. Ship", "Tricorn", "Celtic", "Multibrot³", "Phoenix"] },
+    { label: "Julia sets", keys: ["Julia:Spiral", "Julia:Rabbit", "Julia:Dragon", "Julia:Phoenix"] },
+    { label: "More to zoom into", keys: ["Newton z³", "Apollonian", "Carpet", "Gasket"] },
+  ] },
+  { label: "Watch it grow", groups: [
+    { label: "Build level by level", keys: ["koch", "tree", "hexaflake", "dragon", "hilbert", "gosper", "arrowhead"] },
+    { label: "Dots that build up", keys: ["fern", "sierpinski", "levy", "vicsek"] },
+  ] },
 ];
 
 // Menu entries that switch the whole app mode (Canvas2D vector views, not a
 // WebGL shader ftype) rather than selecting a FRACTAL_CONFIGS entry. All are
-// in the picker's "pattern" section.
+// in the "pattern" category.
 const EXTRA_MODES = [
   { key: "koch", label: "Koch snowflake", category: "pattern" },
   { key: "tree", label: "Pythagoras tree", category: "pattern" },

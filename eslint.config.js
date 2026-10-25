@@ -58,7 +58,7 @@ const sharedGlobals = {
   // places.js
   TELEPORT_DESTINATIONS: "readonly",
   // fractal-defs.js
-  FRACTAL_CATEGORIES: "readonly",
+  PICKER_LAYOUT: "readonly",
   EXTRA_MODES: "readonly",
   isIfsMode: "readonly",
   isCurveMode: "readonly",
