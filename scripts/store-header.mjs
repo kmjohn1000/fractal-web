@@ -3,6 +3,13 @@
 // picker's fractals.
 //
 //   node scripts/store-header.mjs
+//   node scripts/store-header.mjs search <version>
+//
+// The second form makes the 3:2 search-results asset (3840x2560, App Store
+// Connect's creative asset shown in search instead of the screenshots): the
+// same render under the title and a plain line, with the app's real picker
+// screen (listing/<version>/app/iphone-6.3/2-picker.png) in a phone frame, so
+// the interface shows. Writes listing/search-results-3840x2560.png.
 //
 // Renders the bare canvas from the web build in headless WebKit (the engine
 // of the iOS app's WKWebView) at 1920x823 CSS px, dpr 2, then composes the
@@ -11,18 +18,25 @@
 // error, the error banner or a lost WebGL context.
 import { webkit } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { PNG } from "pngjs";
 
+const [mode, shotVersion] = process.argv.slice(2);
+const SEARCH = mode === "search";
+if (mode && (!SEARCH || !/^\d+\.\d+\.\d+$/.test(shotVersion || ""))) {
+  console.error("usage: node scripts/store-header.mjs [search <version>]");
+  process.exit(2);
+}
+
 const root = new URL("..", import.meta.url).pathname;
 const OUT_DIR = join(root, "listing");
-const OUT = join(OUT_DIR, "product-page-header-3840x1646.png");
+const OUT = join(OUT_DIR, SEARCH ? "search-results-3840x2560.png" : "product-page-header-3840x1646.png");
 const PORT = 8746;
 const DRIVER = join(root, "tests/driver.js");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-const W = 3840, H = 1646, DPR = 2;
+const W = 3840, H = SEARCH ? 2560 : 1646, DPR = 2;
 const PLACE = { fractal: "Mandelbrot", label: "Seahorse Valley", colormap: "Classic" };
 // Text sizes in output pixels; the title and the subtitle left edge sit in
 // the dark part of the fade, clear of the bright fractal on the right.
@@ -98,8 +112,32 @@ async function renderCanvas(browser) {
   }
 }
 
+// The search-results asset's page: Apple asks it to state the obvious and show
+// the firsthand experience, so the picker screen (bare, from the store
+// screenshots) sits in a phone frame beside the title and a plain line. At
+// search-result size the asset is about 580 px wide, so the text is large.
+function searchHtml(canvasPng, count) {
+  const shot = readFileSync(join(OUT_DIR, shotVersion, "app/iphone-6.3/2-picker.png"));
+  const icon = readFileSync(join(root, "icons/icon-512.png"));
+  const screenH = 2240, screenW = Math.round(screenH * 1206 / 2622), bezel = 26;
+  return `<!doctype html><html><head><style>
+    html,body{margin:0;width:${W}px;height:${H}px;overflow:hidden;background:#05060f}
+    .bg{position:absolute;inset:0;width:${W}px;height:${H}px;object-fit:cover}
+    .fade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(4,5,18,.95) 0%,rgba(4,5,18,.9) 36%,rgba(4,5,18,.5) 52%,rgba(4,5,18,0) 68%)}
+    .text{position:absolute;left:300px;top:50%;transform:translateY(-50%);font-family:-apple-system,"SF Pro Display","Helvetica Neue",sans-serif;color:#fff;white-space:nowrap}
+    .icon{width:200px;border-radius:22%;display:block;margin:0 0 70px 6px;box-shadow:0 12px 50px rgba(0,0,0,.5)}
+    h1{margin:0;font-size:230px;font-weight:700;letter-spacing:-0.02em;line-height:1}
+    p{margin:44px 0 0 8px;font-size:120px;font-weight:500;color:#f3dcab;line-height:1}
+    .phone{position:absolute;right:330px;top:50%;transform:translateY(-50%);padding:${bezel}px;border-radius:170px;background:#0b0b10;
+      box-shadow:0 70px 220px rgba(0,0,0,.7),inset 0 0 0 4px #2b2b35}
+    .phone img{display:block;width:${screenW}px;height:${screenH}px;border-radius:144px}
+  </style></head><body><img class="bg" src="data:image/png;base64,${canvasPng.toString("base64")}"><div class="fade"></div>
+  <div class="text"><img class="icon" src="data:image/png;base64,${icon.toString("base64")}"><h1>Fractal Atlas</h1><p>Zoom into ${count} fractals</p></div>
+  <div class="phone"><img src="data:image/png;base64,${shot.toString("base64")}"></div></body></html>`;
+}
+
 async function compose(browser, canvasPng, count) {
-  const html = `<!doctype html><html><head><style>
+  const html = SEARCH ? searchHtml(canvasPng, count) : `<!doctype html><html><head><style>
     html,body{margin:0;width:${W}px;height:${H}px;overflow:hidden;background:#05060f}
     .bg{position:absolute;inset:0;width:${W}px;height:${H}px;object-fit:cover}
     .fade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(4,5,18,.94) 0%,rgba(4,5,18,.92) 34%,rgba(4,5,18,.6) 46%,rgba(4,5,18,0) 62%)}
@@ -133,7 +171,7 @@ try {
   mkdirSync(OUT_DIR, { recursive: true });
   if (existsSync(OUT)) copyFileSync(OUT, `${OUT}.bak`);
   writeFileSync(OUT, header);
-  console.log(`${OUT}: "Explore ${count} fractals, zoom deep"`);
+  console.log(`${OUT}: "${SEARCH ? `Zoom into ${count} fractals` : `Explore ${count} fractals, zoom deep`}"`);
 } finally {
   await browser.close();
   server.kill();
