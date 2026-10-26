@@ -160,7 +160,7 @@ document.addEventListener("keydown", (e) => {
       st.cx = c.x;
       st.cy = c.y;
     } else if (action.zoom) {
-      st.scale *= action.zoom;
+      st.scale = limitScale(st, st.scale * action.zoom);
     } else if (action.rotate) {
       st.rotation = normalizeAngle((st.rotation || 0) + action.rotate);
     }

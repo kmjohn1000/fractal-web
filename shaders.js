@@ -190,6 +190,7 @@ const int FTYPE_GASKET  = 5;
 const int FTYPE_PHOENIX = 6;
 const int FTYPE_CELTIC  = 7;
 const int FTYPE_APOLLONIAN = 8;
+const int FTYPE_NOVA    = 9;
 
 const vec2 NEWTON_ROOT0 = vec2( 1.0,  0.0);
 const vec2 NEWTON_ROOT1 = vec2(-0.5,  0.8660254037844386);
@@ -551,6 +552,52 @@ vec3 renderApollonian(vec2 u) {
   return u_apoCapColor;
 }
 
+// Nova (Paul Derbyshire): Newton's method for z^3 - 1 with the pixel's c added
+// every step, z <- z - (z^3 - 1) / (3 z^2) + c, started at the root z = 1 (R = 1).
+// Colored by how fast the orbit settles: converged once a step moves z by less
+// than NOVA_EPS. Pixels that never settle are black. The count is smoothed, so
+// the colormap flows. Like Newton it is float32 only, with no deep zoom path
+// (NOVA_MIN_SCALE in deepzoom.js stops the zoom where float32 gives out).
+const float NOVA_EPS2 = 1e-10;     // NOVA_EPS squared, NOVA_EPS = 1e-5
+const float NOVA_CYCLE = 20.0;    // iterations per pass through the colormap
+
+vec3 renderNova(vec2 c) {
+  vec2 z = vec2(1.0, 0.0);
+  float prevD2 = 4.0;
+  for (int i = 0; i < 2000; i++) {
+    if (i >= u_maxIter) break;
+    // z - (z^3 - 1)/(3z^2) as (2z + (1/z)^2)/3, the form renderNewton uses, so
+    // it never forms z^2 or z^4.
+    vec2 zn = c;
+    float d = dot(z, z);
+    if (d > 0.0) {
+      vec2 w = vec2(z.x, -z.y) / d;
+      zn += (2.0 * z + cMul(w, w)) / 3.0;
+    } else {
+      zn += z;
+    }
+    vec2 dz = zn - z;
+    float d2 = dot(dz, dz);
+    z = zn;
+    // Settled when the step is under NOVA_EPS relative to |z| (but never less
+    // than NOVA_EPS itself): float32 can't step finer than ~1e-7 * |z|, and with
+    // a flat 1e-6 the pixels whose fixed point is far out (|z| > 5, most of the
+    // plane away from the crescent) never settled and drew as noise.
+    float thr = NOVA_EPS2 * max(dot(z, z), 1.0);
+    if (d2 < thr) {
+      // Where log|step| crosses the threshold between the last two steps (a
+      // converging orbit shrinks its steps by a steady factor), counted from 0.
+      float lo = log(max(d2, 1e-36));
+      float hi = log(max(prevD2, 1e-36));
+      float frac = hi - lo > 1e-6 ? (log(thr) - lo) / (hi - lo) : 0.0;
+      float n = max(float(i) - frac, 0.0);
+      return lutColor(n / NOVA_CYCLE);
+    }
+    prevD2 = d2;
+  }
+  return vec3(0.0);
+}
+
 vec3 renderNewton(vec2 p) {
   // Matches _newton_chunk: z starts at the grid point itself.
   vec2 z = p;
@@ -815,6 +862,11 @@ void main() {
   if (u_ftype == FTYPE_NEWTON) {
     vec2 p = u_center + uv * u_scale * 2.0;
     gl_FragColor = vec4(renderNewton(p), 1.0);
+    return;
+  }
+
+  if (u_ftype == FTYPE_NOVA) {
+    gl_FragColor = vec4(renderNova(u_center + uv * u_scale * 2.0), 1.0);
     return;
   }
 

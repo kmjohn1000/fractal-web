@@ -130,7 +130,7 @@ function attachFractalInteraction(canvas, getState, paneName, renderer) {
       const midClient = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
       const mid = toLocal(midClient.x, midClient.y);
       const before = screenToWorldHere(mid.x, mid.y);
-      st.scale = pinchStartScale * (pinchStartDist / Math.max(dist, 1));
+      st.scale = limitScale(st, pinchStartScale * (pinchStartDist / Math.max(dist, 1)));
       // Two-finger twist: rotate by however much the finger-pair's angle has
       // changed since the gesture started. Setting rotation here, before
       // recomputing `after`, means the existing before/after anchor trick
@@ -198,7 +198,7 @@ function attachFractalInteraction(canvas, getState, paneName, renderer) {
     const st = getState();
     const local = toLocal(e.clientX, e.clientY);
     const before = screenToWorldHere(local.x, local.y);
-    st.scale *= Math.exp(e.deltaY * 0.0015);
+    st.scale = limitScale(st, st.scale * Math.exp(e.deltaY * 0.0015));
     const after = screenToWorldHere(local.x, local.y);
     st.cx += before.x - after.x;
     st.cy += before.y - after.y;
@@ -230,7 +230,7 @@ function commitBoxZoom(paneName, state, renderer, canvas) {
   const halfW = (w / 2) * dpr / canvas.height * state.scale * 2.0;
   const halfH = (h / 2) * dpr / canvas.height * state.scale * 2.0;
   const aspect = canvas.clientWidth / canvas.clientHeight;
-  const newScale = Math.max(halfH, halfW / Math.max(aspect, 1e-6));
+  const newScale = limitScale(state, Math.max(halfH, halfW / Math.max(aspect, 1e-6)));
 
   pushHistory(paneName);
   const cx = centerPoint.x, cy = centerPoint.y;

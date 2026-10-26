@@ -56,7 +56,7 @@ test.describe("default palettes", () => {
     expect(table.bad).toEqual([]);
     expect(table.first).toBe("Inferno");
     expect(table.own).toEqual({
-      "Burn. Ship": "Fire", "Tricorn": "Classic", "Multibrot³": "Viridis", "Phoenix": "Hot", "Julia:Phoenix": "Hot", "Carpet": "Glacier", "Gasket": "Plasma",
+      "Burn. Ship": "Fire", "Tricorn": "Classic", "Multibrot³": "Viridis", "Phoenix": "Hot", "Julia:Phoenix": "Hot", "Nova": "Classic", "Carpet": "Glacier", "Gasket": "Plasma",
     });
     expect(await paletteName(page), "Mandelbrot opens in Inferno").toBe("Inferno");
   });

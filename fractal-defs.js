@@ -12,7 +12,7 @@ const PICKER_LAYOUT = [
   { label: "Zoom forever", groups: [
     { label: "Mandelbrot family", keys: ["Mandelbrot", "Burn. Ship", "Tricorn", "Celtic", "Multibrot³", "Phoenix"] },
     { label: "Julia sets", keys: ["Julia:Spiral", "Julia:Rabbit", "Julia:Dragon", "Julia:Phoenix"] },
-    { label: "More to zoom into", keys: ["Newton z³", "Apollonian", "Carpet", "Gasket"] },
+    { label: "More to zoom into", keys: ["Newton z³", "Nova", "Apollonian", "Carpet", "Gasket"] },
   ] },
   { label: "Watch it grow", groups: [
     { label: "Build level by level", keys: ["koch", "tree", "hexaflake", "dragon", "hilbert", "gosper", "arrowhead"] },

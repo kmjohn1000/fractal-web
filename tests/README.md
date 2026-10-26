@@ -73,6 +73,13 @@ lenient parsing, written only when not the default; the ids didn't change when
 the display names did), the info card, and baselines of each style on several
 fractals and of both sheet tabs.
 
+`nova.spec.mjs` covers Nova (float32 only, no deep path): it draws a full smooth
+picture in Classic, sits beside Newton in the picker with its thumbnail, a share
+link round-trips, a half turn draws the left-right mirror (the set is symmetric
+about the real axis), a rotated view keeps its center, two baselines (rotated,
+and deep near its limit), and the zoom stops at `NOVA_MIN_SCALE` however it is
+asked for (link, wheel, box, keys) with the info card saying so; Back and Reset.
+
 `palettes.spec.mjs` covers the per-fractal default palettes and the upright
 Burning Ship (1.44.0). Palettes: every `defaultColormap` names a real colormap
 and the table is what the app ships; a fractal opens in its own palette (also a

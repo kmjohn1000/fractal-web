@@ -203,8 +203,8 @@ test.describe("the Color sheet", () => {
     await expect(page.locator("#colorSheetNote-custom")).toContainText("Edge glow, Stripes, Orbs, Rays and Relief aren't available for Phoenix.");
   });
 
-  test("Newton, Carpet, Gasket and Apollonian open the same sheet with just the palette grid", async ({ page }) => {
-    for (const f of ["Newton z³", "Carpet", "Gasket", "Apollonian"]) {
+  test("Newton, Nova, Carpet, Gasket and Apollonian open the same sheet with just the palette grid", async ({ page }) => {
+    for (const f of ["Newton z³", "Nova", "Carpet", "Gasket", "Apollonian"]) {
       await page.evaluate((n) => window["__vt"].fractal(n), f);
       await settle(page);
       await page.locator("#colormapBtn").click();

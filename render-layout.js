@@ -335,6 +335,9 @@ function updateHud() {
     if (apollo.steps > 0) precision = "composed inversions (deep zoom)";
   } else if (usesFixedDepth) {
     if (s.scale < DEEP_ZOOM_THRESHOLD) precision = "cell rebasing (deep zoom)";
+  } else if (s.ftype === FTYPE.NOVA) {
+    // Float32 only; limitScale holds the zoom where it stops being sharp.
+    precision = atZoomLimit(s) ? "float32 (zoom limit: no deeper without losing detail)" : "float32";
   } else if (isInteracting && deepZoomEligible(mainRenderer, s)) {
     precision = "preview (renders at deep zoom once you stop)";
   } else if (lastMainDeepPath) {
@@ -373,6 +376,7 @@ function updateHud() {
   setHud(place || label, [
     place ? `${label}, ${deep}` : capitalize(deep),
     apollo ? apolloCurvatureText(s.cx, s.cy, s.scale) : "",
+    atZoomLimit(s) ? "As deep as this fractal goes" : "",
     rotationHudText(s.rotation),
     styleHud.plain,
   ], {

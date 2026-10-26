@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.45.0 — 2026-10-26
+- Added Nova, Newton's method for z³ − 1 with a constant added: a swooping crescent with a glowing core and a frilly edge to zoom into, about 37,000 times deep. It sits next to Newton's method in the picker.
+
 ## 1.44.1 — 2026-10-24
 - The fractal picker is regrouped so everything you can zoom into sits together: "Zoom forever" holds the Mandelbrot family, the Julia sets (no longer below the fold) and Newton, Apollonian, carpet and gasket; "Watch it grow" holds the curves and shapes that build level by level (Koch, tree, Hexaflake, dragon, Hilbert, Gosper, arrowhead) and those that build up from dots (fern, Sierpinski triangle, Lévy, Vicsek).
 

@@ -38,6 +38,26 @@ function newtonDeepEligible(state) {
     && r > NEWTON_FLOAT32_REACH * state.scale && r * 2 ** -23 > 2 ** -48 && r < 100;
 }
 
+// Nova has no deep zoom path (its orbit starts at z = 1 and the pixel's c is
+// added every step, so there is nothing to rebase), so its depth is the one
+// float32 gives: measured on the frilly boundary at 402x874 @3x, the picture
+// is sharp to a view half-height of ~5e-5 (a pixel is then about one float32
+// step of the center), shows stair-steps on the boundary by 2.5e-5, goes
+// grainy and blocky by 1e-5 and is mush by 1e-6. Every way of zooming (pinch,
+// wheel, box, keys, share links) goes through limitScale, which stops at
+// 4e-5, and the info card says so. About 37,000 times deeper than the opening
+// view on a phone.
+const NOVA_MIN_SCALE = 4e-5;
+function minScaleFor(state) {
+  return state.ftype === FTYPE.NOVA ? NOVA_MIN_SCALE : 0;
+}
+function limitScale(state, scale) {
+  return Math.max(scale, minScaleFor(state));
+}
+function atZoomLimit(state) {
+  return minScaleFor(state) > 0 && state.scale <= minScaleFor(state) * 1.0001;
+}
+
 // A float64 value as the deep shaders' 16.48 fixed point: four 16-bit limbs
 // of the two's-complement integer round(x * 2^48), most significant first.
 // Exact for |x| < 2^15 (rounded to 2^-48); the eligibility checks keep every

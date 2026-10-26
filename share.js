@@ -164,7 +164,7 @@ function applyShareState(st) {
     setColorStyle({ style: st.color.style, density: st.color.density, offset: st.color.offset });
     if (dualActive) exitDual();
     selectFractal(st.name, { fresh: true });
-    Object.assign(mainState, { cx: st.cx, cy: st.cy, scale: st.scale, rotation: st.rotation, flipY: st.flipY,
+    Object.assign(mainState, { cx: st.cx, cy: st.cy, scale: limitScale(mainState, st.scale), rotation: st.rotation, flipY: st.flipY,
       maxIter: st.maxIter, iterAutoLocked: st.iterAutoLocked });
     if (st.dual) {
       enterDual();
