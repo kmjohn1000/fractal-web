@@ -211,7 +211,9 @@ test("the zoom stops at the limit however it is asked for: link, wheel, box and 
   expect(await page.evaluate(() => mainState.scale)).toBe(r.limit);
   await page.evaluate(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "-", bubbles: true })));
   expect(await page.evaluate(() => mainState.scale)).toBeCloseTo(r.limit * 1.25, 12);
-  await page.evaluate((limit) => { mainState.scale = limit; requestRender(); }, r.limit);
+  // (Look at the boundary, where there is detail: the opening view's center is a smooth gradient, which
+  // at the limit draws a plain picture with fewer colors but isn't broken.)
+  await page.evaluate(({ boundary, limit }) => { Object.assign(mainState, boundary, { scale: limit }); requestRender(); }, { boundary: BOUNDARY, limit: r.limit });
   await settle(page);
 
   // At the limit the info card says so, and what it draws is still a picture.

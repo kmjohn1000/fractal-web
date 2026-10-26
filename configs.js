@@ -58,7 +58,7 @@ const FRACTAL_CONFIGS = {
   // Newton's method for z^3 - 1 plus the pixel's c, started at z = 1 (see
   // renderNova). Float32 only, no deep zoom: NOVA_MIN_SCALE (deepzoom.js)
   // stops the zoom where float32 gives out.
-  "Nova":         { label: "Nova", ftype: FTYPE.NOVA, power: 3, juliaC: null,                          view: [-0.7, 0.9, -0.75, 0.75],   dual: false, category: "zoom", defaultColormap: "Classic" },
+  "Nova":         { label: "Nova", ftype: FTYPE.NOVA, power: 3, juliaC: null,                          view: [-1.5349683626594732, 0.7651604068431261, -1.103032752613002, 1.1970960168895974],   dual: false, category: "zoom", defaultColormap: "Classic" },
   // Digit-test fractals (see FRAG_SRC's renderDigitFractal) — defined on
   // the unit square, so centered there with a little margin. power is
   // unused by these but kept non-null for consistency with the others.

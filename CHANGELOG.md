@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.45.2 — 2026-10-26
+- Nova now opens on a centered view of the whole shape, with the crescent, its frilly tail and the glowing core all in view, on a phone as well as on a computer (before, the edges were cut off).
+
 ## 1.45.1 — 2026-10-26
 - Four toolbar icons are redrawn so they say what they do: the fractal picker is a Sierpinski triangle instead of a grid of squares, Box zoom is a dashed selection box with a plus (the corner brackets looked like "fullscreen"), Dual view is a screen split in two, and Back is an undo arrow instead of a plain left arrow.
 
