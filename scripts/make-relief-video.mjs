@@ -34,18 +34,21 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const [version, ...flags] = process.argv.slice(2);
 const quick = flags.includes("--quick");
 const web = flags.includes("--web");
+const thumbnail = flags.includes("--thumbnail");
 if (!version) {
-  console.error("usage: node scripts/make-relief-video.mjs <version> [--quick] [--web]");
+  console.error("usage: node scripts/make-relief-video.mjs <version> [--quick] [--web] [--thumbnail]");
   process.exit(1);
 }
 
 const outDir = join(root, "store-assets/preview", version, "relief-720p");
 const framesDir = join(outDir, quick ? "frames-quick" : "frames");
-if (existsSync(framesDir)) {
-  console.error(`${framesDir} already exists: move it to the Trash first`);
-  process.exit(1);
+if (!thumbnail) {
+  if (existsSync(framesDir)) {
+    console.error(`${framesDir} already exists: move it to the Trash first`);
+    process.exit(1);
+  }
+  mkdirSync(framesDir, { recursive: true });
 }
-mkdirSync(framesDir, { recursive: true });
 
 // Page-context helpers (a classic script after tests/driver.js, so it sees the
 // app's top-level declarations).
@@ -194,6 +197,37 @@ try {
     const envelope = smooth(0, 0.08, t) * (1 - smooth(0.85, 1, t));
     return (degrees * Math.PI / 180) * Math.sin(2 * Math.PI * 3 * t) * envelope;
   };
+
+  // --thumbnail: one 1280x720 JPEG of the landing (no info card, no toolbar)
+  // under a title, with the app icon in the corner, and nothing else.
+  if (thumbnail) {
+    await ev("__vt.fractal('Mandelbrot'); __pv.look('relief', 'Classic')");
+    await page.addStyleTag({ content: "#controls { display: none !important; }" });
+    await page.evaluate("window.dispatchEvent(new Event('resize'))");
+    await ev("__pv.land('Mandelbrot', 'Mini Mandelbrot')");
+    await settle();
+    await page.evaluate(`(async () => {
+      const el = document.createElement("div");
+      el.style.cssText = "position:fixed;inset:0;z-index:100000;pointer-events:none;font-family:-apple-system,system-ui,sans-serif;color:#fff;" +
+        "background:linear-gradient(to bottom,rgba(0,0,0,.62) 0,rgba(0,0,0,.25) 38%,rgba(0,0,0,0) 62%);";
+      el.innerHTML = '<div style="position:absolute;left:52px;top:34px;text-shadow:0 4px 24px rgba(0,0,0,.8),0 1px 3px rgba(0,0,0,.7)">' +
+        '<div style="font-weight:900;font-size:150px;line-height:1;letter-spacing:-2px">830 BILLION&times;</div>' +
+        '<div style="font-weight:700;font-size:50px;margin-top:10px">deeper into the Mandelbrot set</div></div>' +
+        '<img src="icons/icon-512.png" style="position:absolute;right:40px;bottom:40px;width:120px;border-radius:22%;box-shadow:0 4px 24px rgba(0,0,0,.6)">';
+      document.body.appendChild(el);
+      await el.querySelector("img").decode().catch(() => {});
+    })()`);
+    await page.evaluate("new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))");
+    const previews = join(root, "listing", version, "previews");
+    mkdirSync(previews, { recursive: true });
+    const file = join(previews, "relief-720p-thumbnail.jpg");
+    await page.screenshot({ path: file, type: "jpeg", quality: 93, animations: "disabled", caret: "hide" });
+    if (errors.length) throw new Error(`page errors: ${errors.join("; ")}`);
+    console.log(file);
+    await browser.close();
+    server.kill();
+    process.exit(0); // skips the video encoding below
+  }
 
   // The whole set, diving to the Mini Mandelbrot.
   await ev("__vt.fractal('Mandelbrot'); __pv.look('relief', 'Classic')");
