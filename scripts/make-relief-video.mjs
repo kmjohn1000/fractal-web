@@ -9,8 +9,10 @@
 // fills the frame (the info card stays); the page uses the app's screens, or
 // with --web the website's layout.
 //
-// Storyboard (600 frames, 20 s), Relief look with the Classic palette: the
-// whole Mandelbrot set, one dive (17 s) to the Mini Mandelbrot, then a 3 s hold.
+// Storyboard (1589 frames, 53 s), Relief look with the Classic palette: the
+// whole Mandelbrot set, one 44 s dive to the Mini Mandelbrot (the view banks
+// left and right about the horizon line 20-45 degrees as it zooms), a 4 s
+// hold, then a 1.5 s fade to the Fractal Atlas end card, held 3.5 s.
 //
 // Output (git-ignored): store-assets/preview/<version>/relief-720p/frames/*.jpg
 // (throwaway) and relief-720p.mp4 beside them, copied to
@@ -65,6 +67,19 @@ window.__pv = {
     lastTeleportIndex = teleportLandingIndex = i;
     applyAutoIter();
     requestRender();
+  },
+  // The teaser card (the social preview's end card, laid out for a wide frame):
+  // starts transparent, so the caller can fade it in.
+  async endCard(title, line) {
+    const el = document.createElement("div");
+    el.id = "pvEndCard";
+    el.style.cssText = "position:fixed;inset:0;z-index:100000;background:#000;opacity:0;display:flex;align-items:center;" +
+      "justify-content:center;gap:" + Math.round(innerHeight * 0.07) + "px;color:#fff;font-family:-apple-system,system-ui,sans-serif;";
+    el.innerHTML = '<img src="icons/icon-512.png" style="width:' + Math.round(innerHeight * 0.38) + 'px;border-radius:22%">' +
+      '<div><div style="font-weight:700;font-size:' + Math.round(innerHeight * 0.13) + 'px">' + title + '</div>' +
+      '<div style="font-size:' + Math.round(innerHeight * 0.058) + 'px;opacity:.8;margin-top:' + Math.round(innerHeight * 0.02) + 'px">' + line + '</div></div>';
+    document.body.appendChild(el);
+    await el.querySelector("img").decode().catch(() => {}); // the icon has to be in the frame
   },
   place(fractal, label) {
     const d = TELEPORT_DESTINATIONS.find((d) => d.fractal === fractal && d.label === label);
@@ -145,24 +160,39 @@ try {
   const t0 = Date.now();
   const log = (msg) => console.log(`${((Date.now() - t0) / 1000).toFixed(0)}s  frame ${frameCount}  ${msg}`);
 
-  // A dive from the fractal's opening view to a place: the target stays put as
-  // the view closes in, and the view twists on the way and is upright on
-  // arrival (so the info card can name the place).
-  const dive = async (fractal, label, frames, twist) => {
+  // A dive from the fractal's opening view to a place. The target keeps its
+  // place on the screen as the view closes in (the point under the target
+  // stays put), and its offset from the center eases to nothing, so the dive
+  // ends exactly on the place: the last frame is the landing, with no snap
+  // (k alone would end a view-width off). `bank(p)` is the view's rotation at
+  // progress p (0 at both ends, so the view arrives upright).
+  const dive = async (fractal, label, frames, bank) => {
     const s = await ev("__pv.state()");
     const target = await ev(`__pv.place(${JSON.stringify(fractal)}, ${JSON.stringify(label)})`);
     await shot(); // the opening view, before the move
-    for (let i = 1; i <= frames; i++) {
-      const p = steadyEase(i / frames);
+    for (let i = 1; i < frames; i++) {
+      const t = i / frames;
+      const p = steadyEase(t);
       const scale = Math.exp(Math.log(s.scale) + (Math.log(target.scale) - Math.log(s.scale)) * p);
-      const k = scale / s.scale;
-      await view({ cx: target.x + (s.cx - target.x) * k, cy: target.y + (s.cy - target.y) * k, scale, rotation: twist * Math.sin(Math.PI * p) });
+      const k = scale / s.scale * (1 - t * t * (3 - 2 * t));
+      await view({ cx: target.x + (s.cx - target.x) * k, cy: target.y + (s.cy - target.y) * k, scale, rotation: bank(t) });
       await settle();
       await shot();
     }
-    await ev(`__pv.land(${JSON.stringify(fractal)}, ${JSON.stringify(label)})`);
+    await ev(`__pv.land(${JSON.stringify(fractal)}, ${JSON.stringify(label)})`); // the exact place, named on the info card
     await settle();
     await shot();
+  };
+
+  // Banking, as a plane does in a turn: the view rolls left and right about
+  // the horizon line, three swings each way, each a little wider or narrower
+  // (20 to 45 degrees), easing in over the first 8% and out over the last 15%
+  // so the view starts and ends upright.
+  const smooth = (a, b, x) => { const u = Math.min(1, Math.max(0, (x - a) / (b - a))); return u * u * (3 - 2 * u); };
+  const bank = (t) => {
+    const degrees = 32.5 + 12.5 * Math.sin(2 * Math.PI * 1.3 * t + 1);
+    const envelope = smooth(0, 0.08, t) * (1 - smooth(0.85, 1, t));
+    return (degrees * Math.PI / 180) * Math.sin(2 * Math.PI * 3 * t) * envelope;
   };
 
   // The whole set, diving to the Mini Mandelbrot.
@@ -172,9 +202,21 @@ try {
   await page.addStyleTag({ content: "#controls { display: none !important; }" });
   await page.evaluate("window.dispatchEvent(new Event('resize'))");
   await settle();
-  await dive("Mandelbrot", "Mini Mandelbrot", n(510), -0.5);
-  hold(n(89));
+  await dive("Mandelbrot", "Mini Mandelbrot", n(1320), bank);
+  hold(n(119));
   log("Mini Mandelbrot");
+
+  // ---- The teaser: the end card fades in over the held view (the overlay's
+  // opacity is set per frame, since the page's transitions are off), then holds.
+  await page.evaluate("__pv.endCard('Fractal Atlas', 'Free for iPhone and iPad')");
+  const fade = n(45);
+  for (let i = 1; i <= fade; i++) {
+    await ev(`document.getElementById('pvEndCard').style.opacity = ${i / fade}`);
+    await page.evaluate("new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))");
+    await shot();
+  }
+  hold(n(104));
+  log("end card");
 
   if (errors.length) throw new Error(`page errors: ${errors.join("; ")}`);
 } finally {
