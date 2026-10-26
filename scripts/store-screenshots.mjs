@@ -97,7 +97,7 @@ const SHOTS = [
     steps: ["__vt.mode('tree'); __store.solidColor('tree', 'Autumn')"] },
   // Added with 1.40.0 (the Color sheet): upload it as a seventh screenshot and
   // drag it up the list in App Store Connect.
-  { name: "7-looks", caption: () => "Six Looks.\nEvery palette.",
+  { name: "7-looks", caption: () => "Seven Looks.\nEvery palette.",
     steps: ["__store.land('Mandelbrot', 'Seahorse Valley')", "#colormapBtn", '#colorSheet [data-key="look-stripes"]'] },
 ];
 
