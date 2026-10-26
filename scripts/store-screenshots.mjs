@@ -34,15 +34,14 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // App Store Connect's slots, as of 2026-10-15: the iPhone slot ("Dynamic
 // Island, medium display") takes only 1206x2622 or 1179x2556 and rejected
-// 6.5" 1284x2778; the iPad 13" slot takes 2064x2752, and 2048x2732 (12.9")
-// is kept as a spare. 6.5" is made as a promo image only. The promo layout
-// (caption band, margin under the screen, font size, corner radius) is in
-// output pixels, as in the 1.30.0 promo set.
+// 6.5" 1284x2778; the iPad 13" slot takes 2064x2752. Those two are the only
+// sizes the listing uses, so they are the only ones made (the 6.5" promo and
+// the 12.9" spare were dropped after 1.44.1; earlier versions' folders keep
+// them). The promo layout (caption band, margin under the screen, font size,
+// corner radius) is in output pixels, as in the 1.30.0 promo set.
 const SLOTS = [
   { slot: "iphone-6.3", width: 402, height: 874, dpr: 3, upload: true, promo: { captionPx: 380, bottomPx: 85, fontPx: 96, radius: 66 } },
-  { slot: "iphone-6.5", width: 428, height: 926, dpr: 3, upload: false, promo: { captionPx: 400, bottomPx: 90, fontPx: 100, radius: 70 } },
   { slot: "ipad-13", width: 1032, height: 1376, dpr: 2, upload: true, promo: { captionPx: 330, bottomPx: 80, fontPx: 104, radius: 50 } },
-  { slot: "ipad-12.9", width: 1024, height: 1366, dpr: 2, upload: true, promo: { captionPx: 330, bottomPx: 80, fontPx: 104, radius: 50 } },
 ];
 
 // In-page helpers, added as a classic <script> after tests/driver.js so they
