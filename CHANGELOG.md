@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.45.1 — 2026-10-26
+- Four toolbar icons are redrawn so they say what they do: the fractal picker is a Sierpinski triangle instead of a grid of squares, Box zoom is a dashed selection box with a plus (the corner brackets looked like "fullscreen"), Dual view is a screen split in two, and Back is an undo arrow instead of a plain left arrow.
+
 ## 1.45.0 — 2026-10-26
 - Added Nova, Newton's method for z³ − 1 with a constant added: a swooping crescent with a glowing core and a frilly edge to zoom into, about 37,000 times deep. It sits next to Newton's method in the picker.
 

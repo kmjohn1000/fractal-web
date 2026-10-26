@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Fractal Atlas&trade;</title>
 
-<link rel="manifest" href="manifest.webmanifest?v=1.45.0">
+<link rel="manifest" href="manifest.webmanifest?v=1.45.1">
 <meta name="theme-color" content="#111111">
-<link rel="icon" href="icons/favicon-32.png?v=1.45.0" sizes="32x32" type="image/png">
+<link rel="icon" href="icons/favicon-32.png?v=1.45.1" sizes="32x32" type="image/png">
 
 <!-- iOS Safari ignores the manifest entirely for install/homescreen purposes
      and needs its own meta tags + a dedicated (non-transparent) icon. -->
@@ -15,7 +15,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fractal Atlas">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.45.0">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.45.1">
 
 <!-- Smart App Banner: Safari on iPhone/iPad offers the App Store app.
      Ignored everywhere else, including the app's own web view. -->
@@ -695,9 +695,9 @@
   <div id="fractalControls" class="control-row">
     <label id="iterField" class="field">detail <input id="iterSlider" type="range" min="50" max="2000" step="10" value="300"></label>
     <button class="iconBtn fractalMenuBtn" aria-haspopup="true" aria-label="Choose fractal type" title="Choose fractal type">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/>
-        <rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>
+      <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+        <!-- A Sierpinski triangle, one step: three corner triangles round the half-size hole. -->
+        <path d="M12 3.5L16.75 11.75L7.25 11.75ZM7.25 11.75L12 20L2.5 20ZM16.75 11.75L21.5 20L12 20Z"/>
       </svg>
     </button>
     <button id="colormapBtn" class="iconBtn" aria-label="Choose colormap" title="Choose colormap">
@@ -711,13 +711,14 @@
     </button>
     <button id="dualBtn" class="iconBtn" aria-label="Toggle dual (Julia) view" title="Toggle dual (Julia) view">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="4" y="3.5" width="16" height="7" rx="2"/><rect x="4" y="13.5" width="16" height="7" rx="2"/>
+        <rect x="3.5" y="3" width="17" height="18" rx="3"/>
+        <path d="M3.5 12H20.5V18A3 3 0 0 1 17.5 21H6.5A3 3 0 0 1 3.5 18Z" fill="currentColor"/>
       </svg>
     </button>
     <button id="boxZoomBtn" class="iconBtn" aria-label="Box zoom" title="Box zoom">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M4 9V6a2 2 0 0 1 2-2h3"/><path d="M15 4h3a2 2 0 0 1 2 2v3"/>
-        <path d="M20 15v3a2 2 0 0 1-2 2h-3"/><path d="M9 20H6a2 2 0 0 1-2-2v-3"/>
+        <rect x="3.5" y="3.5" width="10" height="10" rx="2" stroke-linecap="butt" stroke-dasharray="3.4 2.7" stroke-dashoffset="0.23"/>
+        <path d="M18 15v6"/><path d="M15 18h6"/>
       </svg>
     </button>
     <button id="teleportBtn" class="iconBtn" aria-label="Surprise me" title="Surprise me">
@@ -732,7 +733,7 @@
     </button>
     <button id="backBtn" class="iconBtn trailStart" aria-label="Back" title="Back">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>
+        <path d="M9 4.5L4.5 9L9 13.5"/><path d="M4.5 9H14.5A4.8 4.8 0 0 1 14.5 18.6H8.5"/>
       </svg>
     </button>
     <button id="shareBtn" class="iconBtn shareBtn" aria-label="Share" title="Share" aria-haspopup="true">
@@ -750,9 +751,9 @@
   <div id="kochControls" class="control-row hidden">
     <label class="field">depth <input id="kochDepthSlider" type="range" min="0" max="8" step="1" value="4"></label>
     <button class="iconBtn fractalMenuBtn" aria-haspopup="true" aria-label="Choose fractal type" title="Choose fractal type">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/>
-        <rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>
+      <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+        <!-- A Sierpinski triangle, one step: three corner triangles round the half-size hole. -->
+        <path d="M12 3.5L16.75 11.75L7.25 11.75ZM7.25 11.75L12 20L2.5 20ZM16.75 11.75L21.5 20L12 20Z"/>
       </svg>
     </button>
     <button id="kochColormapBtn" class="iconBtn" aria-label="Choose color" title="Choose color">
@@ -783,7 +784,7 @@
     </button>
     <button id="kochBackBtn" class="iconBtn trailStart" aria-label="Back" title="Back">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>
+        <path d="M9 4.5L4.5 9L9 13.5"/><path d="M4.5 9H14.5A4.8 4.8 0 0 1 14.5 18.6H8.5"/>
       </svg>
     </button>
     <button id="kochShareBtn" class="iconBtn shareBtn" aria-label="Share" title="Share" aria-haspopup="true">
@@ -801,9 +802,9 @@
   <div id="treeControls" class="control-row hidden">
     <label class="field">depth <input id="treeDepthSlider" type="range" min="0" max="12" step="1" value="9"></label>
     <button class="iconBtn fractalMenuBtn" aria-haspopup="true" aria-label="Choose fractal type" title="Choose fractal type">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/>
-        <rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>
+      <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+        <!-- A Sierpinski triangle, one step: three corner triangles round the half-size hole. -->
+        <path d="M12 3.5L16.75 11.75L7.25 11.75ZM7.25 11.75L12 20L2.5 20ZM16.75 11.75L21.5 20L12 20Z"/>
       </svg>
     </button>
     <button id="treeColormapBtn" class="iconBtn" aria-label="Choose color" title="Choose color">
@@ -822,7 +823,7 @@
     <button class="iconBtn depthSpeedBtn" aria-label="Play speed" title="Play speed: tap for the next speed, or hold and slide left or right">1×</button>
     <button id="treeBackBtn" class="iconBtn trailStart" aria-label="Back" title="Back">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>
+        <path d="M9 4.5L4.5 9L9 13.5"/><path d="M4.5 9H14.5A4.8 4.8 0 0 1 14.5 18.6H8.5"/>
       </svg>
     </button>
     <button id="treeShareBtn" class="iconBtn shareBtn" aria-label="Share" title="Share" aria-haspopup="true">
@@ -840,9 +841,9 @@
   <div id="hexaflakeControls" class="control-row hidden">
     <label class="field">depth <input id="hexaflakeDepthSlider" type="range" min="0" max="6" step="1" value="4"></label>
     <button class="iconBtn fractalMenuBtn" aria-haspopup="true" aria-label="Choose fractal type" title="Choose fractal type">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/>
-        <rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>
+      <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+        <!-- A Sierpinski triangle, one step: three corner triangles round the half-size hole. -->
+        <path d="M12 3.5L16.75 11.75L7.25 11.75ZM7.25 11.75L12 20L2.5 20ZM16.75 11.75L21.5 20L12 20Z"/>
       </svg>
     </button>
     <button id="hexaflakeColormapBtn" class="iconBtn" aria-label="Choose color" title="Choose color">
@@ -861,7 +862,7 @@
     <button class="iconBtn depthSpeedBtn" aria-label="Play speed" title="Play speed: tap for the next speed, or hold and slide left or right">1×</button>
     <button id="hexaflakeBackBtn" class="iconBtn trailStart" aria-label="Back" title="Back">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>
+        <path d="M9 4.5L4.5 9L9 13.5"/><path d="M4.5 9H14.5A4.8 4.8 0 0 1 14.5 18.6H8.5"/>
       </svg>
     </button>
     <button id="hexaflakeShareBtn" class="iconBtn shareBtn" aria-label="Share" title="Share" aria-haspopup="true">
@@ -879,9 +880,9 @@
   <div id="dragonControls" class="control-row hidden">
     <label class="field">depth <input id="dragonDepthSlider" type="range" min="0" max="16" step="1" value="13"></label>
     <button class="iconBtn fractalMenuBtn" aria-haspopup="true" aria-label="Choose fractal type" title="Choose fractal type">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/>
-        <rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>
+      <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+        <!-- A Sierpinski triangle, one step: three corner triangles round the half-size hole. -->
+        <path d="M12 3.5L16.75 11.75L7.25 11.75ZM7.25 11.75L12 20L2.5 20ZM16.75 11.75L21.5 20L12 20Z"/>
       </svg>
     </button>
     <button id="dragonColormapBtn" class="iconBtn" aria-label="Choose color" title="Choose color">
@@ -900,7 +901,7 @@
     <button class="iconBtn depthSpeedBtn" aria-label="Play speed" title="Play speed: tap for the next speed, or hold and slide left or right">1×</button>
     <button id="dragonBackBtn" class="iconBtn trailStart" aria-label="Back" title="Back">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>
+        <path d="M9 4.5L4.5 9L9 13.5"/><path d="M4.5 9H14.5A4.8 4.8 0 0 1 14.5 18.6H8.5"/>
       </svg>
     </button>
     <button id="dragonShareBtn" class="iconBtn shareBtn" aria-label="Share" title="Share" aria-haspopup="true">
@@ -918,9 +919,9 @@
   <div id="fernControls" class="control-row hidden">
     <label class="field">points <input id="fernPointsSlider" type="range" min="100000" max="4000000" step="100000" value="1000000"></label>
     <button class="iconBtn fractalMenuBtn" aria-haspopup="true" aria-label="Choose fractal type" title="Choose fractal type">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/>
-        <rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>
+      <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+        <!-- A Sierpinski triangle, one step: three corner triangles round the half-size hole. -->
+        <path d="M12 3.5L16.75 11.75L7.25 11.75ZM7.25 11.75L12 20L2.5 20ZM16.75 11.75L21.5 20L12 20Z"/>
       </svg>
     </button>
     <button id="fernColorBtn" class="iconBtn" aria-label="Choose color" title="Choose color">
@@ -934,13 +935,13 @@
     </button>
     <button id="fernBoxZoomBtn" class="iconBtn" aria-label="Box zoom" title="Box zoom">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M4 9V6a2 2 0 0 1 2-2h3"/><path d="M15 4h3a2 2 0 0 1 2 2v3"/>
-        <path d="M20 15v3a2 2 0 0 1-2 2h-3"/><path d="M9 20H6a2 2 0 0 1-2-2v-3"/>
+        <rect x="3.5" y="3.5" width="10" height="10" rx="2" stroke-linecap="butt" stroke-dasharray="3.4 2.7" stroke-dashoffset="0.23"/>
+        <path d="M18 15v6"/><path d="M15 18h6"/>
       </svg>
     </button>
     <button id="fernBackBtn" class="iconBtn trailStart" aria-label="Back" title="Back">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>
+        <path d="M9 4.5L4.5 9L9 13.5"/><path d="M4.5 9H14.5A4.8 4.8 0 0 1 14.5 18.6H8.5"/>
       </svg>
     </button>
     <button id="fernShareBtn" class="iconBtn shareBtn" aria-label="Share" title="Share" aria-haspopup="true">
@@ -957,32 +958,32 @@
   </div>
 </div>
 
-<script src="colormaps.js?v=1.45.0"></script>
-<script src="shaders.js?v=1.45.0"></script>
-<script src="lsystem.js?v=1.45.0"></script>
-<script src="vectorgeom.js?v=1.45.0"></script>
-<script src="koch.js?v=1.45.0"></script>
-<script src="pythagoras.js?v=1.45.0"></script>
-<script src="hexaflake.js?v=1.45.0"></script>
-<script src="dragon.js?v=1.45.0"></script>
-<script src="fern.js?v=1.45.0"></script>
-<script src="platform.js?v=1.45.0"></script>
-<script src="diag.js?v=1.45.0"></script>
-<script src="configs.js?v=1.45.0"></script>
-<script src="places.js?v=1.45.0"></script>
-<script src="fractal-defs.js?v=1.45.0"></script>
-<script src="deepzoom.js?v=1.45.0"></script>
-<script src="renderer.js?v=1.45.0"></script>
-<script src="state-colors.js?v=1.45.0"></script>
-<script src="render-layout.js?v=1.45.0"></script>
-<script src="modes.js?v=1.45.0"></script>
-<script src="interaction.js?v=1.45.0"></script>
-<script src="compass-ui.js?v=1.45.0"></script>
-<script src="teleport.js?v=1.45.0"></script>
-<script src="colormap-picker.js?v=1.45.0"></script>
-<script src="color-sheet.js?v=1.45.0"></script>
-<script src="share.js?v=1.45.0"></script>
-<script src="app.js?v=1.45.0"></script>
+<script src="colormaps.js?v=1.45.1"></script>
+<script src="shaders.js?v=1.45.1"></script>
+<script src="lsystem.js?v=1.45.1"></script>
+<script src="vectorgeom.js?v=1.45.1"></script>
+<script src="koch.js?v=1.45.1"></script>
+<script src="pythagoras.js?v=1.45.1"></script>
+<script src="hexaflake.js?v=1.45.1"></script>
+<script src="dragon.js?v=1.45.1"></script>
+<script src="fern.js?v=1.45.1"></script>
+<script src="platform.js?v=1.45.1"></script>
+<script src="diag.js?v=1.45.1"></script>
+<script src="configs.js?v=1.45.1"></script>
+<script src="places.js?v=1.45.1"></script>
+<script src="fractal-defs.js?v=1.45.1"></script>
+<script src="deepzoom.js?v=1.45.1"></script>
+<script src="renderer.js?v=1.45.1"></script>
+<script src="state-colors.js?v=1.45.1"></script>
+<script src="render-layout.js?v=1.45.1"></script>
+<script src="modes.js?v=1.45.1"></script>
+<script src="interaction.js?v=1.45.1"></script>
+<script src="compass-ui.js?v=1.45.1"></script>
+<script src="teleport.js?v=1.45.1"></script>
+<script src="colormap-picker.js?v=1.45.1"></script>
+<script src="color-sheet.js?v=1.45.1"></script>
+<script src="share.js?v=1.45.1"></script>
+<script src="app.js?v=1.45.1"></script>
 <script>
   // Service workers only register on secure origins or localhost, so this is
   // a silent no-op during phone-over-LAN dev testing (plain http://<lan-ip>)
