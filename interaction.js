@@ -466,7 +466,7 @@ function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive = () =>
 // to the current depth instead.
 function vectorViewBox(modeKey) {
   if (modeKey === "koch") return [-0.95, 0.95, -1.08, 1.08];
-  if (modeKey === "tree") return [-3.1, 3.1, -0.15, 4.1];
+  if (modeKey === "tree") return [-3.0, 3.0, -0.1, 4.05];
   if (modeKey === "hexaflake") return [-1.08, 1.08, -0.96, 0.96];
   if (modeKey === "fern") return [-2.4, 2.9, -0.2, 10.25];
   if (isIfsMode(modeKey)) {

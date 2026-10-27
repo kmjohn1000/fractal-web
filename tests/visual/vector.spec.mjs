@@ -147,7 +147,10 @@ test.describe("culling changes nothing on screen", () => {
     { kind: "tree", depth: 9, view: { cx: -1.2, cy: 2.8, halfHeight: 0.4, rotation: 0 } },
     { kind: "tree", depth: 9, view: { cx: -1.2, cy: 2.8, halfHeight: 0.15, rotation: 1.1 } },
     { kind: "hexaflake", depth: 5, view: { cx: 0.7778, cy: 0.1925, halfHeight: 0.05, rotation: 0 } },
-    { kind: "hexaflake", depth: 5, view: { cx: 0.7778, cy: 0.1925, halfHeight: 0.02, rotation: 0.7 } },
+    // 0.04, not the 0.02 this once was: that deep, the twice-as-big canvas hits the frame budget and draws a level
+    // fewer than the small one, which was invisible while the finest levels were all one shade, but the
+    // gutters on hexagons over 7 px now show the difference.
+    { kind: "hexaflake", depth: 5, view: { cx: 0.7778, cy: 0.1925, halfHeight: 0.04, rotation: 0.7 } },
     // cx, cy null: a point a third of the way along the curve.
     { kind: "dragon", depth: 12, view: { cx: null, cy: null, halfHeight: 0.12, rotation: 0 } },
     { kind: "dragon", depth: 12, view: { cx: null, cy: null, halfHeight: 0.05, rotation: 0.6 } },

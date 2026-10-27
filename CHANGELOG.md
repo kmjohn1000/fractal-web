@@ -2,6 +2,10 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.48.1 — 2026-10-27
+- The Pythagoras tree now has a brown wooden trunk and first two branches under a canopy in the color you picked, with no more olive camouflage, and fits a little more snugly on a phone.
+- The Hexaflake keeps the color you picked at every depth and zoom instead of drifting through olive and salmon: each level is brighter than its parent, the finest levels are the picked color itself, and the bigger hexagons get a thin dark outline.
+
 ## 1.48.0 — 2026-10-27
 - All eleven shapes now sit on a soft dark-blue backdrop that fades to near-black at the edges instead of flat black, and so do the pictures you save or share.
 - The Dragon, Hilbert, Gosper and Arrowhead curves are colored along their length, the picked color shifting in hue from one end to the other with a soft glow, and their lines are never thinner than a hairline you can see.

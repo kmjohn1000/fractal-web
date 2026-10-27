@@ -71,7 +71,9 @@ const TREE_LIGHT_UV = [-0.55, 0.835];  // toward the light, on screen (x right, 
 const TREE_LEAN_MIN = 0.5;       // brightness of a face turned fully from the light (1 = fully lit)
 const TREE_DEPTH_MIN = 0.72;     // brightness at the trunk; it rises to 1 by TREE_DEPTH_BANDS-1 bands out
 const TREE_DEPTH_BANDS = 6;      // trunk-to-twig brightness steps (two levels each)
-const TREE_ALT_HUE = -45;        // degrees the odd levels' hue is turned from the picked color's
+const TREE_ALT_HUE = -22;        // degrees the odd levels' hue is turned from the picked color's (-45 read as olive camouflage on Green)
+const TREE_WOOD_RGB = [158, 104, 62];  // the trunk and first two branches' wood, whatever color is picked (a blend of brown and green read as khaki)
+const TREE_WOOD_BANDS = 1;     // bands (two levels each) of wood from the trunk up; the picked color carries the canopy
 
 // The squares of the tree the viewport needs, in the order and with the
 // geometry of pythagorasTree(depth), written to buf as world-space base
@@ -142,17 +144,14 @@ function createPythagorasTreeView(canvas) {
   // CSS fill per style byte for the picked color. A square's lean sets how
   // much of the light from TREE_LIGHT_UV its top face catches; the band dims
   // the trunk and brightens toward the twigs; odd levels use the picked
-  // color turned TREE_ALT_HUE degrees around the hue wheel.
+  // color turned TREE_ALT_HUE degrees around the hue wheel. The trunk and
+  // the first two branches are wood (TREE_WOOD_RGB) whatever the picked
+  // color; everything above them is the picked color.
   function styleTable(colorIndex, rotation) {
     const key = colorIndex + "|" + rotation;
     if (key === cssKey) return css;
-    const [r, g, b] = SOLID_COLORS[colorIndex].rgb;
-    const ha = TREE_ALT_HUE * Math.PI / 180, hc = Math.cos(ha), hs = Math.sin(ha);
-    const alt = [
-      r * (0.213 + hc * 0.787 - hs * 0.213) + g * (0.715 - hc * 0.715 - hs * 0.715) + b * (0.072 - hc * 0.072 + hs * 0.928),
-      r * (0.213 - hc * 0.213 + hs * 0.143) + g * (0.715 + hc * 0.285 + hs * 0.140) + b * (0.072 - hc * 0.072 - hs * 0.283),
-      r * (0.213 - hc * 0.213 - hs * 0.787) + g * (0.715 - hc * 0.715 + hs * 0.715) + b * (0.072 + hc * 0.928 + hs * 0.072),
-    ];
+    const base = SOLID_COLORS[colorIndex].rgb;
+    const alt = hueTurned(base, TREE_ALT_HUE);
     // The light in world coordinates (screenToWorld's rotation of a screen vector).
     const rc = Math.cos(rotation), rs = Math.sin(rotation);
     const lx = TREE_LIGHT_UV[0] * rc - TREE_LIGHT_UV[1] * rs, ly = TREE_LIGHT_UV[0] * rs + TREE_LIGHT_UV[1] * rc;
@@ -161,7 +160,7 @@ function createPythagorasTreeView(canvas) {
     for (let band = 0; band < TREE_DEPTH_BANDS; band++) {
       const depthF = TREE_DEPTH_MIN + (1 - TREE_DEPTH_MIN) * band / (TREE_DEPTH_BANDS - 1);
       for (let parity = 0; parity < 2; parity++) {
-        const src = parity ? alt : [r, g, b];
+        const src = band < TREE_WOOD_BANDS ? TREE_WOOD_RGB : parity ? alt : base;
         for (let lean = 0; lean < 8; lean++) {
           const ang = lean * Math.PI / 4 + Math.PI / 2;     // the face's outward normal
           const lit = 0.5 + 0.5 * (Math.cos(ang) * lx + Math.sin(ang) * ly);

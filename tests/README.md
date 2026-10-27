@@ -60,6 +60,27 @@ the color picker still work for a curve and a dot shape. `vector.spec.mjs` adds
 that the dragon stays colored when turned, when zoomed past the slider's depth,
 and in a lite frame, and that a deep zoom keeps the backdrop.
 
+`tree-hexaflake-palette.spec.mjs` covers the palettes of the Pythagoras tree and
+the Hexaflake across all seven picker colors (including White and Gold). Tree: the
+trunk is the same brown wood whatever color is picked and differs from the canopy
+by a visible distance; the canopy keeps the picked hue (the alternate levels are
+turned only 22 degrees) at depths 5, 9 and 12; a square and its child differ in
+shade; the lean shading keeps its upper-left light when the view is rotated (the
+two level-1 squares are compared at several rotations); and on a phone the default
+view spans over 90% of the width without being cut off. Hexaflake: the fill of
+each level 0 to 8 is read from the gap it shows (a view centered on the gap of
+the middle chain's hexagon of that level), and must climb level by level to the
+picked color itself at level 4, then dim on every other level, with the hue never
+more than 4 degrees off the picked color from level 4 on and under 30 degrees
+for the shadows; the hue of the shape's pixels stays within 24 degrees of the
+picked hue at depths 2, 4, 6 and zoomed in (so the old drift to olive, amber and
+salmon fails); every color lights over 50,000 pixels at each depth and depth 2,
+4 and 6 are different pictures (4 to 6 is checked only on a 2x screen, where the
+new level is over a pixel); and the larger hexagons carry a dark gutter (a stroke is
+drawn, the edge pixel is darker than both sides) that small hexagons don't and a
+lite frame draws fewer of. The `mode-tree` and `mode-hexaflake` baselines are in
+`app.spec.mjs`.
+
 `styles.spec.mjs` and `color-sheet.spec.mjs` cover the color styles (Smooth,
 Bands, Edge glow, Stripes, Orbs, Rays and Relief; the style ids are `smooth`,
 `bands`, `glow`, `stripes`, `point`, `cross` and `relief`, see `COLOR_STYLES` in

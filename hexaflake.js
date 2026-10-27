@@ -46,12 +46,21 @@ const HEX_CLIP_PX = 4000;        // hexagons with a larger radius (canvas px) ar
                                  // Canvas2D paths are float32 inside, and a corner 1e9 px away is off by tens of px
 
 // The look: a flat shade per level, drawn from the outermost level inward so
-// the gaps show the parent's. Each level turns the picked color's hue by
-// HEX_HUE_STEP degrees (the tree turns every other level by 45) and is
-// brighter than the one above it, up to HEX_BRIGHT_LEVELS levels in.
-const HEX_HUE_STEP = -18;
-const HEX_BRIGHT_MIN = 0.42;     // brightness of the outermost hexagon (1 = the picked color's own)
-const HEX_BRIGHT_LEVELS = 5;
+// the gaps show the parent's. Each level is brighter than the one above it
+// and its hue is closer to the picked color's, both up to HEX_BRIGHT_LEVELS
+// levels in: the outer levels are shadows turned a little from the picked
+// hue and the finest levels, which carry most of the picture, are the picked
+// color itself. From there the shade holds (the hue never wanders into
+// another color family, however deep a zoom goes) except that every other
+// level is dimmer, so a level is told from its parent at any depth. A thin
+// dark gutter outlines the hexagons big enough to carry one.
+const HEX_HUE_SPAN = -18;      // degrees the outermost level's hue is turned from the picked color's (the old -18 per level ran Green on through olive to salmon)
+const HEX_BRIGHT_MIN = 0.30;     // brightness of the outermost hexagon (1 = the picked color's own)
+const HEX_BRIGHT_LEVELS = 4;
+const HEX_ALT_DIM = 0.82;        // brightness of every other level past HEX_BRIGHT_LEVELS
+const HEX_GUTTER_PX_MIN = 7;     // canvas px: hexagons with a smaller radius get no gutter
+const HEX_GUTTER_RGB = "rgba(4,7,14,0.6)";  // near-black navy, not pure black
+const HEX_GUTTER_LITE_PX_MIN = 40;  // the same limit while a drag or pinch is in progress (opts.lite)
 
 // The hexagons of the flake the viewport needs, in the order of
 // hexaflakeHexagons(depth) (the ones that are visible, only), written to buf
@@ -125,25 +134,19 @@ function createHexaflakeView(canvas) {
   let extraLevels = 0;
   let cssKey = -1, css = [];                           // the fill per level for one picked color
 
-  // The picked color with its hue turned by deg degrees (the same turn as
-  // the tree's alternate levels, pythagoras.js).
-  function hueTurned([r, g, b], deg) {
-    const ha = deg * Math.PI / 180, hc = Math.cos(ha), hs = Math.sin(ha);
-    return [
-      r * (0.213 + hc * 0.787 - hs * 0.213) + g * (0.715 - hc * 0.715 - hs * 0.715) + b * (0.072 - hc * 0.072 + hs * 0.928),
-      r * (0.213 - hc * 0.213 + hs * 0.143) + g * (0.715 + hc * 0.285 + hs * 0.140) + b * (0.072 - hc * 0.072 - hs * 0.283),
-      r * (0.213 - hc * 0.213 - hs * 0.787) + g * (0.715 - hc * 0.715 + hs * 0.715) + b * (0.072 + hc * 0.928 + hs * 0.072),
-    ];
-  }
-
+  // The fill per level for the picked color (see the constants above): a
+  // brightness ramp with a hue drift that stops after HEX_BRIGHT_LEVELS
+  // levels, and every other level past it dimmer so deep levels still read.
   function levelFills(colorIndex) {
     if (colorIndex === cssKey) return css;
     const base = SOLID_COLORS[colorIndex].rgb;
     const byte = (v) => Math.max(0, Math.min(255, Math.round(v)));
     css = [];
     for (let level = 0; level <= HEX_MAX_LEVEL; level++) {
-      const f = HEX_BRIGHT_MIN + (1 - HEX_BRIGHT_MIN) * Math.min(level, HEX_BRIGHT_LEVELS) / HEX_BRIGHT_LEVELS;
-      const [r, g, b] = hueTurned(base, HEX_HUE_STEP * level);
+      const t = Math.min(level, HEX_BRIGHT_LEVELS) / HEX_BRIGHT_LEVELS;
+      let f = HEX_BRIGHT_MIN + (1 - HEX_BRIGHT_MIN) * t;
+      if (level > HEX_BRIGHT_LEVELS && (level - HEX_BRIGHT_LEVELS) % 2) f *= HEX_ALT_DIM;
+      const [r, g, b] = hueTurned(base, HEX_HUE_SPAN * (1 - t));
       css.push(`rgb(${byte(r * f)},${byte(g * f)},${byte(b * f)})`);
     }
     cssKey = colorIndex;
@@ -248,6 +251,7 @@ function createHexaflakeView(canvas) {
       vy[j] = c * HEX_DIRS[j][0] + d * HEX_DIRS[j][1];
     }
     const fills = levelFills(opts.colorIndex);
+    const gutterMin = opts.lite ? HEX_GUTTER_LITE_PX_MIN : HEX_GUTTER_PX_MIN;
     const pts = new Array(12);
     // One path per group of hexagons, instead of a path and a fill per
     // hexagon (the tree's reasoning, pythagoras.js: Canvas2D's cost per path
@@ -259,6 +263,12 @@ function createHexaflakeView(canvas) {
       if (to <= from) continue;
       ctx.fillStyle = fills[level];
       const s = HEX_SCALE[level], R = s * aff.k;
+      const gutter = R >= gutterMin;
+      if (gutter) {
+        ctx.strokeStyle = HEX_GUTTER_RGB;
+        ctx.lineWidth = Math.min(1.6 * dpr, R * 0.06);
+        ctx.lineJoin = "round";
+      }
       for (let g = from; g < to; g += HEX_GROUP) {
         const end = Math.min(to, g + HEX_GROUP);
         ctx.beginPath();
@@ -279,6 +289,7 @@ function createHexaflakeView(canvas) {
           ctx.closePath();
         }
         ctx.fill();
+        if (gutter) ctx.stroke();
       }
     }
   }
