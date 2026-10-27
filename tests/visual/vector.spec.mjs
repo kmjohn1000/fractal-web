@@ -13,7 +13,7 @@ import { test, expect } from "@playwright/test";
    fitVectorView, vectorAffine, kochAdaptive, kochSnowflake, treeAdaptive, pythagorasTree, hexaflakeAdaptive, hexaflakeHexagons,
    dragonAdaptive, dragonCurve, createKochView, createPythagorasTreeView, createHexaflakeView, createCurveView, startDepthPlay,
    stopDepthPlay, vectorLite, mode, buildShareHash, parseShareHash, applyShareLink, els, HEX_SCALE, HEXAFLAKE_DEFAULT_DEPTH,
-   vectorColors, hexaflakeView, activeVectorTarget */
+   vectorColors, hexaflakeView, activeVectorTarget, dragonView, LINE_CURVES */
 
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
 
@@ -608,5 +608,58 @@ test.describe("Hexaflake", () => {
     expect(on, "the corner view isn't blank").toBeGreaterThan(near.total * 0.1);
     expect(far.extra - near.extra, "20 more levels from zoom").toBeGreaterThanOrEqual(15);
     expect(differ / near.total, `${differ} of ${near.total} pixels differ`).toBeLessThan(0.01);
+  });
+});
+
+// A curve's extent changes with its depth (the dragon turns 45 degrees per
+// level), so stepping the depth slider, or playing it, must keep the curve in
+// frame: a view still at its framing follows the depth, one the user has
+// moved stays where it is.
+test.describe("the line curves stay framed as the depth changes", () => {
+  for (const curve of ["dragon", "hilbert", "gosper", "arrowhead"]) {
+    test(`${curve}: every depth is centered and on screen`, async ({ page }) => {
+      await page.setViewportSize({ width: 393, height: 852 });
+      const r = await page.evaluate((curve) => {
+        setMode(curve);
+        dragonView.resize();
+        const slider = els.dragonDepthSlider;
+        const bad = [];
+        for (let d = parseInt(slider.min, 10); d <= parseInt(slider.max, 10); d++) {
+          slider.value = String(d);
+          slider.dispatchEvent(new Event("input"));
+          dragonView.resize();
+          const canvas = VECTOR_VIEWS[curve][1];
+          let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+          for (const [x, y] of LINE_CURVES[curve].points(d)) {
+            const [sx, sy] = dragonView.worldToScreen(x, y);
+            x0 = Math.min(x0, sx); x1 = Math.max(x1, sx); y0 = Math.min(y0, sy); y1 = Math.max(y1, sy);
+          }
+          const w = canvas.width, h = canvas.height;
+          const inside = x0 >= 0 && x1 <= w && y0 >= 0 && y1 <= h;
+          const centered = Math.abs((x0 + x1) / 2 - w / 2) < 0.01 * w && Math.abs((y0 + y1) / 2 - h / 2) < 0.01 * h;
+          if (!inside || !centered) bad.push(`depth ${d}: x ${x0.toFixed(0)}..${x1.toFixed(0)}, y ${y0.toFixed(0)}..${y1.toFixed(0)} on ${w}x${h}`);
+        }
+        return bad;
+      }, curve);
+      expect(r).toEqual([]);
+    });
+  }
+
+  test("a view you have zoomed or panned is left alone when the depth changes", async ({ page }) => {
+    const r = await page.evaluate(() => {
+      setMode("dragon");
+      dragonView.resize();
+      const slider = els.dragonDepthSlider;
+      const before = { cx: dragonView.view.cx, cy: dragonView.view.cy, halfHeight: dragonView.view.halfHeight * 0.5, rotation: 0 };
+      Object.assign(dragonView.view, before);
+      slider.value = String(parseInt(slider.value, 10) - 2);
+      slider.dispatchEvent(new Event("input"));
+      const after = { ...dragonView.view };
+      // Reset gives the framing back.
+      els.dragonResetBtn.click();
+      return { before, after, reset: { ...dragonView.view } };
+    });
+    expect(r.after).toEqual(r.before);
+    expect(r.reset.halfHeight).toBeGreaterThan(r.before.halfHeight);
   });
 });

@@ -447,7 +447,12 @@ els.hexaflakeResetBtn.addEventListener("click", () => {
 
 els.dragonDepthSlider.addEventListener("input", () => {
   syncSliderFill(els.dragonDepthSlider);
+  // A curve's extent changes with its depth (the dragon turns 45 degrees per
+  // level), so a view still at its framing is refitted to the new depth, which
+  // also keeps depth play centered; one you have moved stays where it is.
+  const followDepth = vectorViewIsFitted(mode);
   dragonState.depth = parseInt(els.dragonDepthSlider.value, 10);
+  if (followDepth) fitVectorView(mode);
   requestRender();
 });
 

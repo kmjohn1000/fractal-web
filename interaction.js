@@ -510,6 +510,14 @@ function fitVectorView(modeKey) {
   Object.assign(VECTOR_VIEWS[modeKey][0].view, { cx: v.cx, cy: v.cy, halfHeight: v.scale, rotation: 0 });
   fittedVectorModes.add(modeKey);
 }
+// True while a pattern view is still at the framing Reset would give it: not
+// panned, zoomed or turned since.
+function vectorViewIsFitted(modeKey) {
+  const fit = vectorFitView(modeKey);
+  const v = VECTOR_VIEWS[modeKey][0].view;
+  const same = (a, b) => Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(b));
+  return same(v.cx, fit.cx) && same(v.cy, fit.cy) && same(v.halfHeight, fit.scale) && same(v.rotation || 0, 0);
+}
 // Koch, tree and dragon add detail beyond the depth slider as you zoom in
 // past this framing's half-height, so the views are told what it is.
 const vectorFitHalfHeight = (modeKey) => vectorFitView(modeKey).scale;

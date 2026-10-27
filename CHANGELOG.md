@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.46.2 — 2026-10-27
+- The Dragon, Hilbert, Gosper and Arrowhead curves stay centered and fully in view as you change their depth, or press play: before, the Dragon slid and rotated off screen at most depths. A view you have zoomed or panned stays where you put it.
+
 ## 1.46.1 — 2026-10-27
 - Nova now has nine named places, from Dark Moon to Seahorse Cove, reachable from Surprise me and the Places sheet.
 

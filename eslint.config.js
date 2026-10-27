@@ -180,6 +180,7 @@ const sharedGlobals = {
   VECTOR_VIEWS: "readonly",
   fittedVectorModes: "readonly",
   fitVectorView: "readonly",
+  vectorViewIsFitted: "readonly",
   vectorFitHalfHeight: "readonly",
   kochNav: "readonly",
   treeNav: "readonly",
