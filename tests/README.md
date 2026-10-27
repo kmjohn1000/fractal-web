@@ -80,6 +80,15 @@ about the real axis), a rotated view keeps its center, two baselines (rotated,
 and deep near its limit), and the zoom stops at `NOVA_MIN_SCALE` however it is
 asked for (link, wheel, box, keys) with the info card saying so; Back and Reset.
 
+`dot-colors.spec.mjs` covers the coloring of the chaos-game modes (fern, Sierpinski
+triangle, Lévy C, Vicsek; 1.47.0): each picture spans several hues around its picked
+color, picking another color moves the whole picture to it, a deep zoom stays tinted
+(not gray or black), each mode has its own color (Green, Violet, Rose, Gold to start)
+and a pick changes only that mode, the toolbar pill and its name follow the mode, and
+share links carry the mode's color (links from before 1.47.0 still open). Their
+baselines are `mode-fern`, `mode-sierpinski`, `mode-levy` and `mode-vicsek` in
+app.spec.mjs.
+
 `places-sheet.spec.mjs` covers the Places sheet (1.46.0): every place has a unique
 id and an `icons/places/<id>.webp` thumbnail (`node scripts/render_place_thumbs.mjs
 --missing` makes the missing ones; the thumbnails are committed), the sheet lists

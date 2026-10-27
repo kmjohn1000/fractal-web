@@ -210,6 +210,7 @@ function setMode(next) {
     fernView.setSystem(mode);
     fernNav.clearHistory();
   }
+  if (isIfsMode(mode)) updateColorSwatches(); // each system has its own color
   // First visit to a vector mode: fit its view now that its canvas is
   // visible and has a real size (later visits keep wherever you left it).
   if (mode !== "fractal" && !fittedVectorModes.has(mode)) fitVectorView(mode);

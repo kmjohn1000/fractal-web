@@ -37,13 +37,34 @@ const VICSEK_TRANSFORMS = [
 ];
 
 // Every IFS the view can show, keyed by fractal-defs.js mode name (EXTRA_MODES
-// lists the same keys for the picker).
+// lists the same keys for the picker). hueOffsets: the degrees each transform
+// turns the picked color's hue, so every self-similar piece takes its own tint
+// (see "Coloring by address" below).
 const IFS_SYSTEMS = {
-  fern:       { transforms: FERN_TRANSFORMS },
-  sierpinski: { transforms: SIERPINSKI_TRANSFORMS },
-  levy:       { transforms: LEVY_C_TRANSFORMS },
-  vicsek:     { transforms: VICSEK_TRANSFORMS },
+  fern:       { transforms: FERN_TRANSFORMS, hueOffsets: [-30, 0, 38, 72] },
+  sierpinski: { transforms: SIERPINSKI_TRANSFORMS, hueOffsets: [-65, 0, 65] },
+  levy:       { transforms: LEVY_C_TRANSFORMS, hueOffsets: [-55, 55] },
+  vicsek:     { transforms: VICSEK_TRANSFORMS, hueOffsets: [0, -70, 70, -35, 35] },
 };
+// Each transform knows its place in its table (.ci), for the color tables.
+for (const sys of Object.values(IFS_SYSTEMS)) sys.transforms.forEach((t, i) => { t.ci = i; });
+
+// rgb with its hue turned by deg degrees (the same matrix as CSS hue-rotate).
+function ifsHueTurned([r, g, b], deg) {
+  const a = deg * Math.PI / 180, hc = Math.cos(a), hs = Math.sin(a);
+  return [
+    r * (0.213 + hc * 0.787 - hs * 0.213) + g * (0.715 - hc * 0.715 - hs * 0.715) + b * (0.072 - hc * 0.072 + hs * 0.928),
+    r * (0.213 - hc * 0.213 + hs * 0.143) + g * (0.715 + hc * 0.285 + hs * 0.140) + b * (0.072 - hc * 0.072 - hs * 0.283),
+    r * (0.213 - hc * 0.213 - hs * 0.787) + g * (0.715 - hc * 0.715 + hs * 0.715) + b * (0.072 + hc * 0.928 + hs * 0.072),
+  ].map((v) => Math.max(0, Math.min(255, v)));
+}
+
+// One rgb per transform of a system: the picked SOLID_COLORS color, hue-turned
+// by that transform's offset.
+function ifsTransformColors(key, colorIndex) {
+  const base = SOLID_COLORS[colorIndex % SOLID_COLORS.length].rgb;
+  return IFS_SYSTEMS[key].hueOffsets.map((deg) => ifsHueTurned(base, deg));
+}
 
 function pickTransform(transforms) {
   const r = Math.random();
@@ -78,7 +99,32 @@ function ifsPoints(transforms, n) {
   return pts.subarray(0, len * 2);
 }
 
-// Background the fern fades its SOLID_COLORS color from (colormaps.js).
+// Same chaos game as ifsPoints, and each point also keeps the mix of
+// transforms that led to it: a running average in which the newest transform
+// weighs half, the one before a quarter, and so on, so the mix (summing to 1)
+// says which piece of the attractor the point is in, coarse to fine. Returns
+// { pts, mix } with mix holding transforms.length weights per point.
+function ifsAddressPoints(transforms, n) {
+  const T = transforms.length;
+  const pts = new Float64Array(n * 2), mix = new Float32Array(n * T);
+  const now = new Float32Array(T).fill(1 / T);
+  let x = 0, y = 0;
+  for (let i = 0; i < n + 20; i++) { // 20 burn-in steps, as ifsPoints
+    const t = pickTransform(transforms);
+    const nx = t.a * x + t.b * y + t.e;
+    y = t.c * x + t.d * y + t.f;
+    x = nx;
+    for (let q = 0; q < T; q++) now[q] = 0.5 * now[q] + (q === t.ci ? 0.5 : 0);
+    if (i >= 20) {
+      pts[(i - 20) * 2] = x;
+      pts[(i - 20) * 2 + 1] = y;
+      mix.set(now, (i - 20) * T);
+    }
+  }
+  return { pts, mix };
+}
+
+// Background the fern fades its colors from (colormaps.js).
 const IFS_BG = [0, 0, 0];
 
 // --- Viewport-adaptive sampling --------------------------------------------
@@ -116,7 +162,7 @@ function ifsData(key) {
   let data = ifsDataCache.get(key);
   if (data) return data;
   const transforms = IFS_SYSTEMS[key].transforms;
-  const base = ifsPoints(transforms, 50000);
+  const { pts: base, mix: baseMix } = ifsAddressPoints(transforms, 50000);
   let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
   for (let i = 0; i < base.length; i += 2) {
     x0 = Math.min(x0, base[i]); x1 = Math.max(x1, base[i]);
@@ -126,7 +172,7 @@ function ifsData(key) {
   // original height-based margin; the others (not all taller than wide)
   // use the larger side.
   const m = 0.02 * (key === "fern" ? y1 - y0 : Math.max(x1 - x0, y1 - y0));
-  data = { transforms, base, bounds: [x0 - m, x1 + m, y0 - m, y1 + m] };
+  data = { transforms, base, baseMix, bounds: [x0 - m, x1 + m, y0 - m, y1 + m] };
   ifsDataCache.set(key, data);
   return data;
 }
@@ -155,27 +201,41 @@ function affineBoxImage(m, box) {
 }
 
 // ifs is an ifsData() entry; viewBox is the world-space bounding box of the
-// (possibly rotated) screen. Returns { maps, cumWeights } for weighted leaf
-// selection; empty if the attractor doesn't intersect the view at all.
-function buildLeaves(ifs, viewBox) {
+// (possibly rotated) screen; cols is ifsTransformColors for the system.
+// Returns { maps, cumWeights } for weighted leaf selection (empty if the
+// attractor doesn't intersect the view at all), and per leaf the color its
+// address gives the coarse digits (leafRGB, the transforms' colors weighing
+// 1/2, 1/4, ... from the outermost map in, scaled to the share they keep) and
+// the share left for the finer digits of a point drawn through it (leafS,
+// 1/2^depth but never below a half: deep inside one piece the coarse digits
+// are all alike, so the point's own digits must still tint what is in view).
+function buildLeaves(ifs, viewBox, cols) {
   const viewDiag = Math.hypot(viewBox[1] - viewBox[0], viewBox[3] - viewBox[2]);
-  const maps = [], weights = [];
-  const stack = [{ m: [1, 0, 0, 1, 0, 0], w: 1 }];
+  const maps = [], weights = [], leafRGB = [], leafS = [];
+  const stack = [{ m: [1, 0, 0, 1, 0, 0], w: 1, c: [0, 0, 0], s: 1 }];
   while (stack.length) {
     const node = stack.pop();
     const img = affineBoxImage(node.m, ifs.bounds);
     if (img[1] < viewBox[0] || img[0] > viewBox[1] || img[3] < viewBox[2] || img[2] > viewBox[3]) continue;
     const diag = Math.hypot(img[1] - img[0], img[3] - img[2]);
     if (diag <= viewDiag || maps.length + stack.length >= IFS_LEAF_CAP) {
-      maps.push(node.m); weights.push(node.w);
+      // The address' own digits weigh 1 - node.s in all; they keep 1 - share of the color.
+      const share = Math.max(node.s, 0.5), k = node.s < 1 ? (1 - share) / (1 - node.s) : 0;
+      maps.push(node.m); weights.push(node.w); leafRGB.push(k * node.c[0], k * node.c[1], k * node.c[2]); leafS.push(share);
       continue;
     }
-    for (const t of ifs.transforms) stack.push({ m: composeAffine(node.m, t), w: node.w * t.p });
+    for (const t of ifs.transforms) {
+      const col = cols[t.ci], h = node.s * 0.5;
+      stack.push({
+        m: composeAffine(node.m, t), w: node.w * t.p,
+        c: [node.c[0] + h * col[0], node.c[1] + h * col[1], node.c[2] + h * col[2]], s: h,
+      });
+    }
   }
   const cumWeights = new Float64Array(weights.length);
   let sum = 0;
   weights.forEach((w, i) => { sum += w; cumWeights[i] = sum; });
-  return { maps, cumWeights };
+  return { maps, cumWeights, leafRGB: Float32Array.from(leafRGB), leafS: Float32Array.from(leafS) };
 }
 
 // Same Canvas2D view shape as createKochView/createPythagorasTreeView, so
@@ -246,17 +306,32 @@ function createIfsView(canvas) {
   let leaves = null;
   let imageData = null;
   let pendingFrame = 0;
+  // Coloring by address: the picked color, per transform (cols), and per
+  // device pixel the sum of its hits' colors (sumR/G/B, divided by counts to
+  // get the pixel's mean color). baseRGB is each base point's own color.
+  let colorIndex = 0, cols = null, baseRGB = null;
+  let sumR = null, sumG = null, sumB = null;
 
   function resetForView() {
     const W = canvas.width, H = canvas.height;
-    const key = `${system},${view.cx},${view.cy},${view.halfHeight},${view.rotation},${W},${H}`;
+    const key = `${system},${view.cx},${view.cy},${view.halfHeight},${view.rotation},${W},${H},${colorIndex}`;
     if (key === viewKey) return;
     viewKey = key;
+    cols = ifsTransformColors(system, colorIndex);
+    const T = ifs.transforms.length, nBase = ifs.base.length / 2;
+    baseRGB = new Float32Array(nBase * 3);
+    for (let i = 0; i < nBase; i++) {
+      for (let q = 0; q < T; q++) {
+        const w = ifs.baseMix[i * T + q];
+        baseRGB[i * 3] += w * cols[q][0]; baseRGB[i * 3 + 1] += w * cols[q][1]; baseRGB[i * 3 + 2] += w * cols[q][2];
+      }
+    }
     if (!counts || counts.length !== W * H) {
       counts = new Uint32Array(W * H);
+      sumR = new Float32Array(W * H); sumG = new Float32Array(W * H); sumB = new Float32Array(W * H);
       imageData = ctx.createImageData(W, H);
     } else {
-      counts.fill(0);
+      counts.fill(0); sumR.fill(0); sumG.fill(0); sumB.fill(0);
     }
     nonzero = 0; accepted = 0; attempts = 0;
     let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
@@ -265,7 +340,7 @@ function createIfsView(canvas) {
       x0 = Math.min(x0, x); x1 = Math.max(x1, x);
       y0 = Math.min(y0, y); y1 = Math.max(y1, y);
     }
-    leaves = buildLeaves(ifs, [x0, x1, y0, y1]);
+    leaves = buildLeaves(ifs, [x0, x1, y0, y1], cols);
   }
 
   function isDone(target) {
@@ -277,7 +352,7 @@ function createIfsView(canvas) {
   // Runs the sampler for about IFS_SLICE_MS, binning on-screen hits.
   function runSlice(target) {
     const W = canvas.width, H = canvas.height;
-    const { maps, cumWeights } = leaves;
+    const { maps, cumWeights, leafRGB, leafS } = leaves;
     const { base, transforms } = ifs;
     const total = cumWeights[cumWeights.length - 1];
     const nBase = base.length / 2;
@@ -298,12 +373,18 @@ function createIfsView(canvas) {
         const m = maps[lo];
         const bi = (Math.random() * nBase) | 0;
         let x = base[bi * 2], y = base[bi * 2 + 1];
+        let cr = baseRGB[bi * 3], cg = baseRGB[bi * 3 + 1], cb = baseRGB[bi * 3 + 2];
         for (let s = 0; s < IFS_FRESHEN_STEPS; s++) {
           const t = pickTransform(transforms);
           const nx = t.a * x + t.b * y + t.e;
           y = t.c * x + t.d * y + t.f;
           x = nx;
+          const col = cols[t.ci]; // the newest transform weighs half, as in the base points' mix
+          cr = 0.5 * cr + 0.5 * col[0]; cg = 0.5 * cg + 0.5 * col[1]; cb = 0.5 * cb + 0.5 * col[2];
         }
+        // The leaf's own address gives the coarse digits, the point the fine ones.
+        const ls = leafS[lo];
+        cr = leafRGB[lo * 3] + ls * cr; cg = leafRGB[lo * 3 + 1] + ls * cg; cb = leafRGB[lo * 3 + 2] + ls * cb;
         const wx = m[0] * x + m[1] * y + m[4] - view.cx;
         const wy = m[2] * x + m[3] * y + m[5] - view.cy;
         const px = Math.floor(W / 2 + wx * kc - wy * ks);
@@ -311,6 +392,7 @@ function createIfsView(canvas) {
         if (px < 0 || px >= W || py < 0 || py >= H) continue;
         const idx = py * W + px;
         if (counts[idx]++ === 0) nonzero++;
+        sumR[idx] += cr; sumG[idx] += cg; sumB[idx] += cb;
         accepted++;
       }
       if (performance.now() > deadline) break;
@@ -320,26 +402,24 @@ function createIfsView(canvas) {
   // Log-density shading: a pixel's brightness grows with log(hits),
   // normalized against 1.5x the mean hits per lit pixel, so sparse
   // regions render as a soft, dim haze rather than isolated hard dots and
-  // the dense rachis doesn't blow everything else out.
-  function draw(colorIndex) {
-    const fg = SOLID_COLORS[colorIndex % SOLID_COLORS.length].rgb;
-    const palette = new Uint32Array(256);
-    for (let i = 0; i < 256; i++) {
-      const t = i / 255;
-      const r = Math.round(IFS_BG[0] + (fg[0] - IFS_BG[0]) * t);
-      const g = Math.round(IFS_BG[1] + (fg[1] - IFS_BG[1]) * t);
-      const b = Math.round(IFS_BG[2] + (fg[2] - IFS_BG[2]) * t);
-      palette[i] = (255 << 24) | (b << 16) | (g << 8) | r; // little-endian RGBA
-    }
+  // the dense rachis doesn't blow everything else out. The pixel's color is
+  // the mean of its hits' address colors, faded in from the background by
+  // that brightness.
+  function draw() {
     const out = new Uint32Array(imageData.data.buffer);
     const ref = Math.log1p(Math.max(1, 1.5 * accepted / Math.max(1, nonzero)));
-    const lut = new Uint32Array(64); // counts are small; cache the common ones
-    for (let c = 0; c < lut.length; c++) {
-      lut[c] = palette[Math.min(255, Math.round(255 * Math.log1p(c) / ref))];
-    }
+    const lut = new Float32Array(64); // counts are small; cache the common ones
+    for (let c = 0; c < lut.length; c++) lut[c] = Math.min(1, Math.log1p(c) / ref);
+    const [bgR, bgG, bgB] = IFS_BG;
+    const bg = (255 << 24) | (bgB << 16) | (bgG << 8) | bgR; // little-endian RGBA
     for (let i = 0; i < counts.length; i++) {
       const c = counts[i];
-      out[i] = c < 64 ? lut[c] : palette[Math.min(255, Math.round(255 * Math.log1p(c) / ref))];
+      if (c === 0) { out[i] = bg; continue; }
+      const t = c < 64 ? lut[c] : Math.min(1, Math.log1p(c) / ref), inv = 1 / c;
+      const r = Math.round(bgR + (sumR[i] * inv - bgR) * t);
+      const g = Math.round(bgG + (sumG[i] * inv - bgG) * t);
+      const b = Math.round(bgB + (sumB[i] * inv - bgB) * t);
+      out[i] = (255 << 24) | (Math.min(255, b) << 16) | (Math.min(255, g) << 8) | Math.min(255, r);
     }
     ctx.putImageData(imageData, 0, 0);
   }
@@ -351,13 +431,14 @@ function createIfsView(canvas) {
   function render(opts) {
     lastOpts = opts; // a pending refinement frame picks up the newest opts
     resize();
+    colorIndex = opts.colorIndex;
     resetForView();
     if (accepted > opts.count) { // slider lowered: start over
       viewKey = "";
       resetForView();
     }
     runSlice(opts.count);
-    draw(opts.colorIndex);
+    draw();
     if (!isDone(opts.count) && !pendingFrame) {
       pendingFrame = requestAnimationFrame(() => {
         pendingFrame = 0;

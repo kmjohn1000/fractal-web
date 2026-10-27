@@ -46,7 +46,7 @@ function buildShareHash() {
     const v = VECTOR_VIEWS[mode][0].view;
     put("x", v.cx); put("y", v.cy); put("s", v.halfHeight); put("r", v.rotation || 0);
     if (isIfsMode(mode)) {
-      put("n", fernState.count); put("c", fernState.colorIndex);
+      put("n", fernState.count); put("c", vectorColors[mode]);
     } else {
       put("cm", COLORMAPS[colormapIndex].name);
       put("c", vectorColors[mode]);

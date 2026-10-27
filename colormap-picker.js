@@ -13,8 +13,9 @@ function cmGradient(stops) {
   return `linear-gradient(to right, ${stops.map(([t, r, g, b]) => `rgb(${r},${g},${b}) ${t * 100}%`).join(", ")})`;
 }
 
+// The chaos-game modes (fern, Sierpinski, ...) each keep their own color.
 function setFernColor(i) {
-  fernState.colorIndex = i;
+  vectorColors[fernView.system] = i;
   updateColorSwatches();
 }
 
@@ -29,7 +30,7 @@ function labelColorButton(btn, action, name) {
 // row's pill follows whichever curve is shown.
 function updateColorSwatches() {
   [
-    [els.fernColorBtn, els.fernColorSwatch, fernState.colorIndex],
+    [els.fernColorBtn, els.fernColorSwatch, vectorColors[fernView.system]],
     [els.kochColormapBtn, els.kochColorSwatch, vectorColors.koch],
     [els.treeColormapBtn, els.treeColorSwatch, vectorColors.tree],
     [els.hexaflakeColormapBtn, els.hexaflakeColorSwatch, vectorColors.hexaflake],
@@ -40,12 +41,12 @@ function updateColorSwatches() {
   });
 }
 
-// solidKey: null for the escape-time colormap, "fern", or a vectorColors key.
+// solidKey: null for the escape-time colormap, or a vectorColors key.
 function openColormapMenu(solidKey) {
   const items = solidKey
     ? SOLID_COLORS.map((c, i) => ({ name: c.name, bg: solidCss(i) }))
     : COLORMAPS.map((c) => ({ name: c.name, bg: cmGradient(c.stops) }));
-  const current = !solidKey ? colormapIndex : solidKey === "fern" ? fernState.colorIndex : vectorColors[solidKey];
+  const current = !solidKey ? colormapIndex : vectorColors[solidKey];
   els.colormapMenu.replaceChildren(...items.map((item, i) => {
     const btn = document.createElement("button");
     btn.setAttribute("role", "menuitemradio");
@@ -59,9 +60,7 @@ function openColormapMenu(solidKey) {
     name.textContent = item.name;
     btn.append(name, swatch);
     btn.addEventListener("click", () => {
-      if (solidKey === "fern") {
-        setFernColor(i);
-      } else if (solidKey) {
+      if (solidKey) {
         vectorColors[solidKey] = i;
         updateColorSwatches();
       } else {
@@ -97,7 +96,7 @@ function openColormapMenu(solidKey) {
     els.colorSheet.classList.remove("open");
     if (els.colormapMenu.classList.contains("open")) els.colormapMenu.classList.remove("open");
     else openColormapMenu({
-      [els.fernColorBtn.id]: "fern", [els.kochColormapBtn.id]: "koch",
+      [els.fernColorBtn.id]: fernView.system, [els.kochColormapBtn.id]: "koch",
       [els.treeColormapBtn.id]: "tree", [els.hexaflakeColormapBtn.id]: "hexaflake", [els.dragonColormapBtn.id]: dragonView.curve,
     }[btn.id] || null);
   });

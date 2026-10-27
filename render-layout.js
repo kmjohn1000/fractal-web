@@ -99,7 +99,7 @@ function renderAll() {
   } else {
     fernView.render({
       count: fernState.count,
-      colorIndex: fernState.colorIndex,
+      colorIndex: vectorColors[fernView.system],
       isActive: () => mode === fernView.system,
       onProgress: updateFernHud,
     });

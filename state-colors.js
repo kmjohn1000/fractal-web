@@ -432,14 +432,17 @@ const dragonState = {
   get depth() { return curveDepths[dragonView.curve]; },
   set depth(v) { curveDepths[dragonView.curve] = v; },
 };
-const fernState = { count: 1000000, colorIndex: 0 };
+const fernState = { count: 1000000 };
 // Solid color (a SOLID_COLORS index) per line/shape mode. The escape-time
 // fractals keep the gradient colormapIndex; these used to sample it by
-// depth, which left low depths near-black and hard to see.
+// depth, which left low depths near-black and hard to see. The four chaos-game
+// modes (fern.js) each have one too: the picked color is the base that their
+// transforms turn the hue of, so each starts in its own color.
 const solidIndex = (name) => SOLID_COLORS.findIndex((c) => c.name === name);
 const vectorColors = {
   koch: solidIndex("Ice"), tree: solidIndex("Green"), hexaflake: solidIndex("Green"), dragon: solidIndex("Autumn"),
   hilbert: solidIndex("Violet"), gosper: solidIndex("Rose"), arrowhead: solidIndex("Gold"),
+  fern: solidIndex("Green"), sierpinski: solidIndex("Violet"), levy: solidIndex("Rose"), vicsek: solidIndex("Gold"),
 };
 
 function pushHistory(pane) {

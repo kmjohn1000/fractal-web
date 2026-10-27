@@ -2,6 +2,10 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.47.0 — 2026-10-27
+- The four dot shapes (the Barnsley fern, Sierpinski triangle, Lévy C curve and Vicsek fractal) are now colored by which piece of the shape each dot belongs to: every self-similar piece takes its own tint of the color you picked, so the fern shades from teal to lime, the triangle from blue to rose, and the pieces stay tinted as you zoom in.
+- Each dot shape keeps its own color, starting fern green, Sierpinski violet, Lévy rose and Vicsek gold, and picking a color changes only that shape. Links made before open in the color they carry.
+
 ## 1.46.2 — 2026-10-27
 - The Dragon, Hilbert, Gosper and Arrowhead curves stay centered and fully in view as you change their depth, or press play: before, the Dragon slid and rotated off screen at most depths. A view you have zoomed or panned stays where you put it.
 
