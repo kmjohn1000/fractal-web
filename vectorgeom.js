@@ -5,6 +5,40 @@
 // transform thousands of points without allocating, and the visibility test
 // that lets a recursion skip whatever is off screen.
 
+// The backdrop of every pattern view (the eleven shapes): a very dark navy
+// that is lightest around the middle of the canvas and fades to near-black at
+// the edges, so the drawing sits in a little light instead of on a flat black
+// hole. Subtle on purpose: the shapes carry the color. The Canvas2D views
+// paint it with paintBackdrop; the chaos-game views, which draw straight into
+// a pixel buffer, take the same colors from backdropPixels.
+const BACKDROP_CENTER_RGB = [16, 23, 34];
+const BACKDROP_EDGE_RGB = [2, 3, 6];
+const BACKDROP_CENTER_Y = 0.46;  // where the light sits, as a share of the height from the top
+const BACKDROP_RADIUS = 0.55;    // of the canvas diagonal
+
+function paintBackdrop(ctx, w, h) {
+  const cy = h * BACKDROP_CENTER_Y;
+  const g = ctx.createRadialGradient(w / 2, cy, 0, w / 2, cy, Math.hypot(w, h) * BACKDROP_RADIUS);
+  g.addColorStop(0, `rgb(${BACKDROP_CENTER_RGB.join(",")})`);
+  g.addColorStop(1, `rgb(${BACKDROP_EDGE_RGB.join(",")})`);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+}
+
+// The same backdrop as w * h * 3 bytes (r, g, b per pixel, row by row).
+function backdropPixels(w, h) {
+  const out = new Uint8Array(w * h * 3);
+  const cx = w / 2, cy = h * BACKDROP_CENTER_Y, radius = Math.hypot(w, h) * BACKDROP_RADIUS;
+  for (let y = 0; y < h; y++) {
+    const dy = y - cy;
+    for (let x = 0; x < w; x++) {
+      const t = Math.min(1, Math.hypot(x + 0.5 - cx, dy + 0.5) / radius), o = (y * w + x) * 3;
+      for (let q = 0; q < 3; q++) out[o + q] = Math.round(BACKDROP_CENTER_RGB[q] + (BACKDROP_EDGE_RGB[q] - BACKDROP_CENTER_RGB[q]) * t);
+    }
+  }
+  return out;
+}
+
 // Extra room around the canvas (canvas px) inside which a piece still counts
 // as visible, so the stroke of a piece just past the edge isn't clipped short.
 const VECTOR_CULL_MARGIN = 8;

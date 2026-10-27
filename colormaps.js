@@ -133,6 +133,19 @@ function strokeWidthFor(segPx, dpr) {
   return Math.min(2.5 * dpr, Math.max(0.75 * dpr, 0.3 * segPx));
 }
 
+// rgb with its hue turned by deg degrees (the same matrix as CSS hue-rotate),
+// each channel clamped to 0-255 but not rounded. Used where a picked
+// SOLID_COLORS color is spread into a family of tints (fern.js's address
+// colors, dragon.js's color along a curve).
+function hueTurned([r, g, b], deg) {
+  const a = deg * Math.PI / 180, hc = Math.cos(a), hs = Math.sin(a);
+  return [
+    r * (0.213 + hc * 0.787 - hs * 0.213) + g * (0.715 - hc * 0.715 - hs * 0.715) + b * (0.072 - hc * 0.072 + hs * 0.928),
+    r * (0.213 - hc * 0.213 + hs * 0.143) + g * (0.715 + hc * 0.285 + hs * 0.140) + b * (0.072 - hc * 0.072 - hs * 0.283),
+    r * (0.213 - hc * 0.213 - hs * 0.787) + g * (0.715 - hc * 0.715 + hs * 0.715) + b * (0.072 + hc * 0.928 + hs * 0.072),
+  ].map((v) => Math.max(0, Math.min(255, v)));
+}
+
 function sampleColor(stops, t) {
   // Wrap into [0, 1) -- except exactly 1.0, which is the colormap's end
   // color, not its start: plain % made every palette's final stop

@@ -12,6 +12,7 @@ const sharedGlobals = {
   SOLID_COLORS: "readonly",
   solidCss: "readonly",
   strokeWidthFor: "readonly",
+  hueTurned: "readonly",
   // shaders.js
   VERT_SRC: "readonly",
   FRAG_SRC: "readonly",
@@ -23,6 +24,10 @@ const sharedGlobals = {
   VECTOR_CULL_MARGIN: "readonly",
   vectorAffine: "readonly",
   vectorDiscOffscreen: "readonly",
+  paintBackdrop: "readonly",
+  backdropPixels: "readonly",
+  BACKDROP_CENTER_RGB: "readonly",
+  BACKDROP_EDGE_RGB: "readonly",
   // koch.js / pythagoras.js / hexaflake.js / dragon.js / fern.js
   createKochView: "readonly",
   createPythagorasTreeView: "readonly",

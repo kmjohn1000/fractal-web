@@ -13,7 +13,7 @@ import { test, expect } from "@playwright/test";
    fitVectorView, vectorAffine, kochAdaptive, kochSnowflake, treeAdaptive, pythagorasTree, hexaflakeAdaptive, hexaflakeHexagons,
    dragonAdaptive, dragonCurve, createKochView, createPythagorasTreeView, createHexaflakeView, createCurveView, startDepthPlay,
    stopDepthPlay, vectorLite, mode, buildShareHash, parseShareHash, applyShareLink, els, HEX_SCALE, HEXAFLAKE_DEFAULT_DEPTH,
-   vectorColors, hexaflakeView, activeVectorTarget, dragonView, LINE_CURVES */
+   vectorColors, hexaflakeView, activeVectorTarget, dragonView, LINE_CURVES, vectorFitHalfHeight */
 
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
 
@@ -661,5 +661,74 @@ test.describe("the line curves stay framed as the depth changes", () => {
     });
     expect(r.after).toEqual(r.before);
     expect(r.reset.halfHeight).toBeGreaterThan(r.before.halfHeight);
+  });
+});
+
+// The finish (backdrop, color along the curves; see shape-finish.spec.mjs) must hold in the
+// states the views are used in: turned, zoomed past the slider's depth, and in the middle of
+// a gesture.
+test.describe("the finish holds when the view moves", () => {
+  // Distinct hues among the bright pixels of the dragon's canvas, in 30 degree bins.
+  const hueBins = (page) => page.evaluate(() => {
+    const canvas = VECTOR_VIEWS.dragon[1];
+    const px = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
+    const bins = new Array(12).fill(0);
+    let lit = 0;
+    for (let i = 0; i < px.length; i += 4) {
+      const r = px[i], g = px[i + 1], b = px[i + 2], max = Math.max(r, g, b), min = Math.min(r, g, b);
+      if (max < 110 || max === min) continue;
+      let h;
+      if (max === r) h = ((g - b) / (max - min)) % 6; else if (max === g) h = (b - r) / (max - min) + 2; else h = (r - g) / (max - min) + 4;
+      bins[Math.floor(((h * 60 + 360) % 360) / 30) % 12]++;
+      lit++;
+    }
+    return { lit, wide: bins.filter((n) => n >= 0.04 * lit).length };
+  });
+
+  test("a turned dragon is still colored along its length", async ({ page }) => {
+    await show(page, "dragon", 10, { cx: -0.35, cy: -0.24, halfHeight: 1.2, rotation: 0.9 });
+    const r = await hueBins(page);
+    expect(r.lit, "the curve is drawn").toBeGreaterThan(500);
+    expect(r.wide, "hue bins holding 4% of the lit pixels").toBeGreaterThanOrEqual(3);
+  });
+
+  test("a dragon zoomed past the slider's depth is still colored", async ({ page }) => {
+    await show(page, "dragon", 13, { cx: -0.35, cy: -0.24, halfHeight: 0.02, rotation: 0.3 });
+    expect(await page.evaluate(() => VECTOR_VIEWS.dragon[0].extraLevels), "levels added by zoom").toBeGreaterThan(2);
+    const r = await hueBins(page);
+    expect(r.lit, "the curve is drawn").toBeGreaterThan(500);
+    expect(r.wide, "hue bins holding 4% of the lit pixels").toBeGreaterThanOrEqual(2);
+  });
+
+  test("a deep zoom keeps the backdrop behind every pattern view", async ({ page }) => {
+    let found = 0;
+    for (const [m, depth, view] of [
+      ["koch", 4, { cx: 0.2887, cy: 0.5, halfHeight: 1.08 / 1500, rotation: 0.4 }],
+      ["tree", 9, { cx: -2.4, cy: 3.1, halfHeight: 0.02, rotation: 0 }],
+      ["hexaflake", 4, { cx: 0.4, cy: 0.2, halfHeight: 0.15, rotation: 0 }],
+      ["dragon", 13, { cx: -0.35, cy: -0.24, halfHeight: 0.004, rotation: 0.3 }],
+    ]) {
+      await show(page, m, depth, view);
+      const corner = await page.evaluate((m) => {
+        const canvas = VECTOR_VIEWS[m][1];
+        // The corner can be covered by a big filled shape; the backdrop is checked where it shows:
+        // some pixel of the canvas's border that is not a shape color is the backdrop's navy.
+        const g = canvas.getContext("2d");
+        const px = g.getImageData(0, 0, canvas.width, 1).data;
+        for (let i = 0; i < px.length; i += 4) if (px[i] + px[i + 1] + px[i + 2] > 0 && px[i] + px[i + 1] + px[i + 2] < 40) return [px[i], px[i + 1], px[i + 2]];
+        return null;
+      }, m);
+      if (corner) { found++; expect(corner[2], `${m}: backdrop navy (blue above red)`).toBeGreaterThan(corner[0]); }
+    }
+    expect(found, "views whose top row shows the backdrop").toBeGreaterThanOrEqual(2);
+  });
+
+  test("a gesture frame (lite) is still colored and on the backdrop", async ({ page }) => {
+    await show(page, "dragon", 12, { cx: -0.35, cy: -0.24, halfHeight: 1.0, rotation: 0 });
+    await page.evaluate(() => { VECTOR_VIEWS.dragon[0].render({ depth: 12, colorIndex: vectorColors.dragon, lite: true, fitHalfHeight: vectorFitHalfHeight("dragon") }); });
+    const r = await hueBins(page);
+    expect(r.wide, "hue bins holding 4% of the lit pixels").toBeGreaterThanOrEqual(2);
+    const corner = await page.evaluate(() => Array.from(VECTOR_VIEWS.dragon[1].getContext("2d").getImageData(0, 0, 1, 1).data));
+    expect(corner[0] + corner[1] + corner[2], "the corner is the backdrop, not black").toBeGreaterThan(0);
   });
 });

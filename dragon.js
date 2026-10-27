@@ -98,7 +98,7 @@ function dragonAdaptive(aff, buf, depth, pxMin, refPx) {
 }
 
 // Strokes the polyline of n canvas-pixel x, y pairs in buf, with the pen
-// state (width, color, join) already set. Points closer than half a pixel
+// state (width, join) already set. Points closer than half a pixel
 // to the last one kept are dropped, and a segment with both ends past the
 // same canvas edge isn't drawn, so a curve far larger than the canvas
 // costs only what shows. The strokes go out in paths of CURVE_GROUP
@@ -106,11 +106,21 @@ function dragonAdaptive(aff, buf, depth, pxMin, refPx) {
 // 65,537 dragon points on a phone-sized canvas took 37 ms in one path and
 // 17 ms in groups of 256; the other line curves 4-5 times better still).
 // Groups meet end to end, so the pen is set to round caps, which join them
-// as a round line join would.
+// as a round line join would. With colors (an array of css colors, first to
+// last along the curve) each group takes the color for its place in the
+// polyline, and a short curve gets smaller groups, so that there are about
+// CURVE_COLOR_STEPS of them; without it the pen's own color is used.
 const CURVE_GROUP = 256;
-function strokeScreenPolyline(ctx, buf, n, width, height) {
+const CURVE_COLOR_STEPS = 96;
+function strokeScreenPolyline(ctx, buf, n, width, height, colors) {
   const lo = -VECTOR_CULL_MARGIN, hiX = width + VECTOR_CULL_MARGIN, hiY = height + VECTOR_CULL_MARGIN;
-  let penDown = false, px = 0, py = 0, pcode = 0, inGroup = 0;
+  const group = colors ? Math.min(CURVE_GROUP, Math.max(1, Math.ceil(n / CURVE_COLOR_STEPS))) : CURVE_GROUP;
+  let penDown = false, px = 0, py = 0, pcode = 0, inGroup = 0, groupStart = 0;
+  // Strokes the group in progress, in the color for the middle of its stretch of the polyline.
+  const flush = (end) => {
+    if (colors) ctx.strokeStyle = colors[Math.min(colors.length - 1, Math.floor((groupStart + end) / (2 * n) * colors.length))];
+    ctx.stroke();
+  };
   ctx.lineCap = "round";
   ctx.beginPath();
   for (let i = 0; i < n; i++) {
@@ -125,9 +135,10 @@ function strokeScreenPolyline(ctx, buf, n, width, height) {
         penDown = false;
       } else {
         if (!penDown) { ctx.moveTo(px, py); penDown = true; }
+        if (inGroup === 0) groupStart = i - 1;
         ctx.lineTo(sx, sy);
-        if (++inGroup === CURVE_GROUP) {
-          ctx.stroke();
+        if (++inGroup === group) {
+          flush(i + 1);
           ctx.beginPath();
           penDown = false; // the next segment starts a path of its own, from the point just reached
           inGroup = 0;
@@ -136,7 +147,7 @@ function strokeScreenPolyline(ctx, buf, n, width, height) {
     }
     px = sx; py = sy; pcode = code;
   }
-  ctx.stroke();
+  flush(n);
 }
 
 // The newer curves don't need hand-tuned scaling: normalizePolylines fits
@@ -171,6 +182,34 @@ const LINE_CURVES = {
     points: (depth) => normalizedCurve(SIERPINSKI_ARROWHEAD, depth, { startHeadingDeg: depth % 2 ? 60 : 0 }),
   },
 };
+
+// The curves are drawn in color steps along their length: the picked color's
+// hue turns CURVE_HUE_SPAN degrees from the start to the end of the curve
+// (half either side of the picked color), and it lifts a little toward white
+// at the far end, so the path reads as a path and a dense curve shows where
+// its two ends are. One css color per step, cached for the last picked color.
+const CURVE_HUE_SPAN = 90;
+const CURVE_LIFT_START = 0.04, CURVE_LIFT_END = 0.2; // share of the way to white
+const CURVE_RAMP_STEPS = 128;
+const CURVE_CORE_MIN_PX = 1.1;       // css px
+const CURVE_CORE_ALPHA = 0.95, CURVE_CORE_ALPHA_DENSE = 0.8;
+const CURVE_GLOW_WIDTH = 3.5;        // times the core's width
+const CURVE_GLOW_ALPHA = 0.1;
+const CURVE_GLOW_MIN_SEG = 2.5;      // css px: below this segment length the lines are a mesh the glow would only haze, and stroking it twice costs the most
+let curveRampKey = -1, curveRampColors = [];
+function curveRamp(colorIndex) {
+  if (colorIndex === curveRampKey) return curveRampColors;
+  const base = SOLID_COLORS[colorIndex].rgb;
+  curveRampColors = [];
+  for (let k = 0; k < CURVE_RAMP_STEPS; k++) {
+    const t = k / (CURVE_RAMP_STEPS - 1);
+    const lift = CURVE_LIFT_START + (CURVE_LIFT_END - CURVE_LIFT_START) * t;
+    const [r, g, b] = hueTurned(base, (t - 0.5) * CURVE_HUE_SPAN).map((v) => Math.round(v + (255 - v) * lift));
+    curveRampColors.push(`rgb(${r},${g},${b})`);
+  }
+  curveRampKey = colorIndex;
+  return curveRampColors;
+}
 
 // Same Canvas2D view shape as createKochView/createPythagorasTreeView, so
 // attachVectorViewInteraction in interaction.js works on this unmodified. One view
@@ -237,8 +276,7 @@ function createCurveView(canvas) {
 
   function render(opts) {
     resize();
-    ctx.fillStyle = "#000";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    paintBackdrop(ctx, canvas.width, canvas.height);
     extraLevels = 0;
     const aff = vectorAffine(view, canvas.width, canvas.height);
     if (!aff.ok) return;
@@ -282,10 +320,28 @@ function createCurveView(canvas) {
       // sets the width (see strokeWidthFor).
       segPx = n > 1 ? Math.hypot(buf[2] - buf[0], buf[3] - buf[1]) : 0;
     }
-    ctx.strokeStyle = solidCss(opts.colorIndex);
-    ctx.lineWidth = strokeWidthFor(segPx, dpr);
+    // A soft glow (added to the backdrop's light) under a bright core, the
+    // color turning along the curve (curveRamp). The core is never thinner
+    // than CURVE_CORE_MIN_PX, so the hairlines of a dense Hilbert, Gosper or
+    // arrowhead don't vanish; where lines crowd (short segments) it is also a
+    // little translucent, so the mesh doesn't blow out to solid. The glow is
+    // skipped while a gesture is in progress (opts.lite) and on a dense mesh
+    // (CURVE_GLOW_MIN_SEG).
+    const colors = curveRamp(opts.colorIndex);
+    const core = Math.max(CURVE_CORE_MIN_PX * dpr, strokeWidthFor(segPx, dpr));
+    const crowd = Math.min(1, Math.max(0, (segPx / dpr - 2) / 4));
     ctx.lineJoin = "round";
-    strokeScreenPolyline(ctx, buf, n, canvas.width, canvas.height);
+    if (!opts.lite && segPx >= CURVE_GLOW_MIN_SEG * dpr) {
+      ctx.globalCompositeOperation = "lighter";
+      ctx.lineWidth = core * CURVE_GLOW_WIDTH;
+      ctx.globalAlpha = CURVE_GLOW_ALPHA;
+      strokeScreenPolyline(ctx, buf, n, canvas.width, canvas.height, colors);
+      ctx.globalCompositeOperation = "source-over";
+    }
+    ctx.lineWidth = core;
+    ctx.globalAlpha = CURVE_CORE_ALPHA_DENSE + (CURVE_CORE_ALPHA - CURVE_CORE_ALPHA_DENSE) * crowd;
+    strokeScreenPolyline(ctx, buf, n, canvas.width, canvas.height, colors);
+    ctx.globalAlpha = 1;
   }
 
   return {

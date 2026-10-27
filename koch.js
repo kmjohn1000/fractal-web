@@ -141,8 +141,7 @@ function createKochView(canvas) {
 
   function render(opts) {
     resize();
-    ctx.fillStyle = "#000";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    paintBackdrop(ctx, canvas.width, canvas.height);
     extraLevels = 0;
     const aff = vectorAffine(view, canvas.width, canvas.height);
     if (!aff.ok) return;

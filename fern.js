@@ -49,21 +49,11 @@ const IFS_SYSTEMS = {
 // Each transform knows its place in its table (.ci), for the color tables.
 for (const sys of Object.values(IFS_SYSTEMS)) sys.transforms.forEach((t, i) => { t.ci = i; });
 
-// rgb with its hue turned by deg degrees (the same matrix as CSS hue-rotate).
-function ifsHueTurned([r, g, b], deg) {
-  const a = deg * Math.PI / 180, hc = Math.cos(a), hs = Math.sin(a);
-  return [
-    r * (0.213 + hc * 0.787 - hs * 0.213) + g * (0.715 - hc * 0.715 - hs * 0.715) + b * (0.072 - hc * 0.072 + hs * 0.928),
-    r * (0.213 - hc * 0.213 + hs * 0.143) + g * (0.715 + hc * 0.285 + hs * 0.140) + b * (0.072 - hc * 0.072 - hs * 0.283),
-    r * (0.213 - hc * 0.213 - hs * 0.787) + g * (0.715 - hc * 0.715 + hs * 0.715) + b * (0.072 + hc * 0.928 + hs * 0.072),
-  ].map((v) => Math.max(0, Math.min(255, v)));
-}
-
 // One rgb per transform of a system: the picked SOLID_COLORS color, hue-turned
-// by that transform's offset.
+// by that transform's offset (hueTurned, colormaps.js).
 function ifsTransformColors(key, colorIndex) {
   const base = SOLID_COLORS[colorIndex % SOLID_COLORS.length].rgb;
-  return IFS_SYSTEMS[key].hueOffsets.map((deg) => ifsHueTurned(base, deg));
+  return IFS_SYSTEMS[key].hueOffsets.map((deg) => hueTurned(base, deg));
 }
 
 function pickTransform(transforms) {
@@ -123,9 +113,6 @@ function ifsAddressPoints(transforms, n) {
   }
   return { pts, mix };
 }
-
-// Background the fern fades its colors from (colormaps.js).
-const IFS_BG = [0, 0, 0];
 
 // --- Viewport-adaptive sampling --------------------------------------------
 // A single global point cloud (the original approach) goes sparse on zoom:
@@ -311,6 +298,7 @@ function createIfsView(canvas) {
   // get the pixel's mean color). baseRGB is each base point's own color.
   let colorIndex = 0, cols = null, baseRGB = null;
   let sumR = null, sumG = null, sumB = null;
+  let bgPix = null;      // the backdrop, 3 bytes per pixel, built once per canvas size (vectorgeom.js)
 
   function resetForView() {
     const W = canvas.width, H = canvas.height;
@@ -330,6 +318,7 @@ function createIfsView(canvas) {
       counts = new Uint32Array(W * H);
       sumR = new Float32Array(W * H); sumG = new Float32Array(W * H); sumB = new Float32Array(W * H);
       imageData = ctx.createImageData(W, H);
+      bgPix = backdropPixels(W, H);
     } else {
       counts.fill(0); sumR.fill(0); sumG.fill(0); sumB.fill(0);
     }
@@ -404,17 +393,16 @@ function createIfsView(canvas) {
   // regions render as a soft, dim haze rather than isolated hard dots and
   // the dense rachis doesn't blow everything else out. The pixel's color is
   // the mean of its hits' address colors, faded in from the background by
-  // that brightness.
+  // that brightness, over the backdrop's own color at that pixel.
   function draw() {
     const out = new Uint32Array(imageData.data.buffer);
     const ref = Math.log1p(Math.max(1, 1.5 * accepted / Math.max(1, nonzero)));
     const lut = new Float32Array(64); // counts are small; cache the common ones
     for (let c = 0; c < lut.length; c++) lut[c] = Math.min(1, Math.log1p(c) / ref);
-    const [bgR, bgG, bgB] = IFS_BG;
-    const bg = (255 << 24) | (bgB << 16) | (bgG << 8) | bgR; // little-endian RGBA
     for (let i = 0; i < counts.length; i++) {
-      const c = counts[i];
-      if (c === 0) { out[i] = bg; continue; }
+      const c = counts[i], o = i * 3;
+      const bgR = bgPix[o], bgG = bgPix[o + 1], bgB = bgPix[o + 2];
+      if (c === 0) { out[i] = (255 << 24) | (bgB << 16) | (bgG << 8) | bgR; continue; } // little-endian RGBA
       const t = c < 64 ? lut[c] : Math.min(1, Math.log1p(c) / ref), inv = 1 / c;
       const r = Math.round(bgR + (sumR[i] * inv - bgR) * t);
       const g = Math.round(bgG + (sumG[i] * inv - bgG) * t);

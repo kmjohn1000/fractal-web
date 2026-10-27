@@ -42,6 +42,24 @@ two-finger twist must still work at depth; a nonsense view from a
 hand-edited link must render quickly without errors; and three deep-zoom
 screenshots are compared with baselines.
 
+`shape-finish.spec.mjs` covers the finish on the eleven pattern shapes (Koch,
+tree, hexaflake, the four line curves, the four dot shapes). Every shape's
+four corners are the backdrop's near-black navy, not pure black
+(`paintBackdrop` / `backdropPixels` in `vectorgeom.js`); with the shape moved
+out of the way the middle is the backdrop's center color and the sides and
+corners are darker, in that order; the canvas fills its area with no seam at
+its edge; and Save image (`captureShareBlob`, Koch, Hilbert and the fern) is the
+frame on screen, backdrop and watermark included. The four line curves are
+colored along their length: the hue of the pixels at the start and at the end of
+the polyline differ by tens of degrees, both within the picked color's family and
+the middle the picked color itself (so the test fails if the ramp is flattened);
+picking another color moves the curve; a hairline core is never under 1.1 css px
+wide. In lite mode (a gesture in progress) the curve is stroked once, not
+twice, and fewer pixels are lit, so the glow is really skipped. Share links and
+the color picker still work for a curve and a dot shape. `vector.spec.mjs` adds
+that the dragon stays colored when turned, when zoomed past the slider's depth,
+and in a lite frame, and that a deep zoom keeps the backdrop.
+
 `styles.spec.mjs` and `color-sheet.spec.mjs` cover the color styles (Smooth,
 Bands, Edge glow, Stripes, Orbs, Rays and Relief; the style ids are `smooth`,
 `bands`, `glow`, `stripes`, `point`, `cross` and `relief`, see `COLOR_STYLES` in
