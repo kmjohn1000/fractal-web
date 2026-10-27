@@ -80,6 +80,18 @@ about the real axis), a rotated view keeps its center, two baselines (rotated,
 and deep near its limit), and the zoom stops at `NOVA_MIN_SCALE` however it is
 asked for (link, wheel, box, keys) with the info card saying so; Back and Reset.
 
+`places-sheet.spec.mjs` covers the Places sheet (1.46.0): every place has a unique
+id and an `icons/places/<id>.webp` thumbnail (`node scripts/render_place_thumbs.mjs
+--missing` makes the missing ones; the thumbnails are committed), the sheet lists
+every place once, grouped in the picker's order with a chip per group, a row is a
+button that names the place and its depth, it opens from the picker's first row and
+the info card's button and closes with Done, Escape, a tap on the fractal and the
+other popovers (never resizing the canvas), the chips jump to a group under its
+sticky title, a tap flies there (info card on, name shown on landing; a place on
+another fractal starts from that fractal's whole-shape view; from a pattern mode
+and from dual view it brings the fractals back; Back returns), the layout on a
+phone (one column) and a desktop (two) and in landscape, and a baseline.
+
 `palettes.spec.mjs` covers the per-fractal default palettes and the upright
 Burning Ship (1.44.0). Palettes: every `defaultColormap` names a real colormap
 and the table is what the app ships; a fractal opens in its own palette (also a

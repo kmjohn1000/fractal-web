@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.46.0 — 2026-10-27
+- Added a Places sheet: every named place in one list, grouped by fractal, each with a small picture, how deep it is and a Dive button that flies you there. Open it from the new Places row at the top of the fractal picker or the Browse places button in the info card; chips along the top jump to a fractal.
+
 ## 1.45.2 — 2026-10-26
 - Nova now opens on a centered view of the whole shape, with the crescent, its frilly tail and the glowing core all in view, on a phone as well as on a computer (before, the edges were cut off).
 

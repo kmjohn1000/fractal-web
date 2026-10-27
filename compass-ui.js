@@ -266,6 +266,7 @@ document.querySelectorAll(".fractalMenuBtn").forEach((btn) => {
     e.stopPropagation(); // don't let the outside-click closer below fire on this same tap
     els.colormapMenu.classList.remove("open");
     els.colorSheet.classList.remove("open");
+    els.placesSheet.classList.remove("open");
     els.shareMenu.classList.remove("open");
     els.fractalTypeRow.classList.toggle("open");
   });

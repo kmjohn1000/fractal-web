@@ -161,6 +161,7 @@ const sharedGlobals = {
   finishRefinement: "readonly",
   requestRender: "readonly",
   zoomPhrase: "readonly",
+  capitalize: "readonly",
   modeLabel: "readonly",
   crosshairFlash: "readonly",
   screenToComplex: "readonly",
@@ -198,6 +199,7 @@ const sharedGlobals = {
   // teleport.js
   teleportLandingIndex: "writable",
   cancelTeleport: "readonly",
+  flyToPlace: "readonly",
   coldOpen: "readonly",
   glideMainTo: "readonly",
   stopDepthPlay: "readonly",
@@ -207,6 +209,7 @@ const sharedGlobals = {
   labelColorButton: "readonly",
   updateColorSwatches: "readonly",
   // color-sheet.js
+  colorSheetEl: "readonly",
   COLOR_LOOKS: "readonly",
   lookPalette: "readonly",
   colorSheetApplies: "readonly",

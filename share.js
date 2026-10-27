@@ -336,7 +336,8 @@ document.querySelectorAll(".shareBtn").forEach((btn) => {
     els.fractalTypeRow.classList.remove("open");
     els.colormapMenu.classList.remove("open");
     els.colorSheet.classList.remove("open");
-    const opening = !els.shareMenu.classList.contains("open");
+    els.placesSheet.classList.remove("open");
+    const opening =!els.shareMenu.classList.contains("open");
     els.shareMenu.classList.toggle("open", opening);
     if (opening) {
       pendingCapture = captureShareBlob();

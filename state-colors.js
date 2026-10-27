@@ -74,6 +74,7 @@ const els = {
   shareMenu: document.getElementById("shareMenu"),
   colormapMenu: document.getElementById("colormapMenu"),
   colorSheet: document.getElementById("colorSheet"),
+  placesSheet: document.getElementById("placesSheet"),
   shareSaveBtn: document.getElementById("shareSaveBtn"),
   shareCopyBtn: document.getElementById("shareCopyBtn"),
   shareNativeBtn: document.getElementById("shareNativeBtn"),

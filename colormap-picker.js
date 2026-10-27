@@ -84,6 +84,7 @@ function openColormapMenu(solidKey) {
   btn.addEventListener("click", (e) => {
     e.stopPropagation(); // don't let the outside-tap closer below fire on this same tap
     els.fractalTypeRow.classList.remove("open");
+    els.placesSheet.classList.remove("open");
     els.shareMenu.classList.remove("open");
     // The fractals get the Color sheet; the pattern modes (Koch and the rest)
     // keep the plain palette list.

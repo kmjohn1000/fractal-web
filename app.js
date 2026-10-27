@@ -22,6 +22,7 @@ const POPOVERS = [
   { menu: els.fractalTypeRow, openers: [...document.querySelectorAll(".fractalMenuBtn")] },
   { menu: els.colormapMenu, openers: [els.colormapBtn, els.kochColormapBtn, els.treeColormapBtn, els.hexaflakeColormapBtn, els.dragonColormapBtn, els.fernColorBtn] },
   { menu: els.colorSheet, openers: [els.colormapBtn] },
+  { menu: els.placesSheet, openers: [...document.querySelectorAll("[data-opens-places]")] },
   { menu: els.shareMenu, openers: [...document.querySelectorAll(".shareBtn")] },
 ];
 for (const p of POPOVERS) {

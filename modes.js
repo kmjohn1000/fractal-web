@@ -178,6 +178,7 @@ function setMode(next) {
   els.shareMenu.classList.remove("open");
   els.colormapMenu.classList.remove("open");
   els.colorSheet.classList.remove("open");
+  els.placesSheet.classList.remove("open");
   els.fractalControls.classList.toggle("hidden", mode !== "fractal");
   els.kochControls.classList.toggle("hidden", mode !== "koch");
   els.treeControls.classList.toggle("hidden", mode !== "tree");
