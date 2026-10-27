@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.46.1 — 2026-10-27
+- Nova now has nine named places, from Dark Moon to Seahorse Cove, reachable from Surprise me and the Places sheet.
+
 ## 1.46.0 — 2026-10-27
 - Added a Places sheet: every named place in one list, grouped by fractal, each with a small picture, how deep it is and a Dive button that flies you there. Open it from the new Places row at the top of the fractal picker or the Browse places button in the info card; chips along the top jump to a fractal.
 

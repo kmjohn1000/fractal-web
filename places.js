@@ -152,6 +152,28 @@ const TELEPORT_DESTINATIONS = [
   { fractal: "Newton z³", label: "Quarter Turn", re: "-0.59835788680381585", im: "0.12932136746874948", scale: 1e-3, rotation: 0, spiral: true },
   { fractal: "Newton z³", label: "Deep Necklace", re: "-1.2185320332059983", im: "-0.1375490980309401", scale: 1e-10 },
   { fractal: "Newton z³", label: "Basin Triad", re: "-0.46562397059835542", im: "-0.16972563317200889", scale: 1e-7 },
+  // Nova is float32 only (its zoom stops at NOVA_MIN_SCALE = 4e-5), so none of
+  // these goes deeper than 8e-5. Each was found by a search and checked on a
+  // render. "Minibrot" is the established maths term for a small copy of the
+  // Mandelbrot set; every name here is our own. Dark Moon is the period-2
+  // component (centered on its nucleus); Fiddlehead the hooked tip of the
+  // crescent; Sea Foam a bubble field over gray lace. Mandelbrot Cameo is an
+  // upright copy (the period-3 minibrot, nucleus c = -0.6565181996) in a
+  // filament web; Filament Star a period-4 minibrot at the hub of an
+  // eight-armed beaded star; Pinwheel Field kaleidoscopic pinwheels round a
+  // period-5 minibrot; Pearl Chain a node on a beaded filament (rotation
+  // -0.36 levels the chain); Web Hub a period-12 minibrot in a dense filament
+  // web; Seahorse Cove the Seahorse Valley structure reproduced inside the
+  // period-3 copy, the deepest of them, near Nova's zoom limit.
+  { fractal: "Nova", label: "Dark Moon", re: "-0.4417424305", im: "0", scale: 0.2, rotation: 0 },
+  { fractal: "Nova", label: "Fiddlehead", re: "0.3", im: "0.55", scale: 0.06, rotation: 0 },
+  { fractal: "Nova", label: "Sea Foam", re: "-0.32275", im: "0.27357", scale: 0.01, rotation: 0 },
+  { fractal: "Nova", label: "Mandelbrot Cameo", re: "-0.6674", im: "0", scale: 0.04, rotation: 0 },
+  { fractal: "Nova", label: "Filament Star", re: "-0.7546072144", im: "0", scale: 0.02, rotation: 0 },
+  { fractal: "Nova", label: "Pinwheel Field", re: "-0.6108494908", im: "0", scale: 0.006, rotation: 0 },
+  { fractal: "Nova", label: "Pearl Chain", re: "-0.48047", im: "0.43159", scale: 8e-4, rotation: -0.36 },
+  { fractal: "Nova", label: "Web Hub", re: "-0.7605177785", im: "0", scale: 4e-4, rotation: 0 },
+  { fractal: "Nova", label: "Seahorse Cove", re: "-0.66576", im: "0.0016304", scale: 8e-5, rotation: 0 },
   // Celtic equals Mandelbrot on the real axis, so Mandelbrot's real-axis
   // landmarks reappear in new shapes: Halo Bell is Mini Mandelbrot's
   // period-55 point. Baby Celtic (period 3, nucleus -1.754877666246693),
