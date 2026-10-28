@@ -211,6 +211,9 @@ export default {
   post: postFor,
 };
 
+// What the revised cut (the-chaos-game-v2.mjs) shares with this one.
+export { SIZE, FULL, TILE, VOICES, SCENES, SEQ, TILES, GRADE, START, DISSOLVE, HOOK_FADE, GRID_HOLD, PUSH, clamp01, smooth, f3, plan, audioFor };
+
 // ---------------------------------------------------------------- the post
 // Every number below was read from the repo (fern.js: SIERPINSKI_TRANSFORMS a = d = 0.5 and p = 1/3 each,
 // FERN_TRANSFORMS p = 0.01 / 0.85 / 0.07 / 0.07, LEVY_C_TRANSFORMS p = 0.5 each, VICSEK_TRANSFORMS scale 1/3

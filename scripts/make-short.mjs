@@ -7,6 +7,8 @@
 // Recipes in scripts/shorts/ (the default is the-infinite):
 //   the-infinite.mjs      "The Infinite": a 58 s Mandelbrot dive (renderer "dive")
 //   the-chaos-game.mjs    "The Chaos Game": the dot shapes' replay (renderer "capture")
+//   the-chaos-game-v2.mjs its second cut: all four rules explained, rings on the Vicsek, longer first jumps
+//                         (imports the first cut's scenes, grid, audio; output to the-chaos-game-v2/)
 //
 // To make a new Short: copy the recipe closest to it, change the fields below, and
 // run `build --recipe <name>`. Nothing in this file is specific to one Short.
@@ -53,7 +55,11 @@
 //             {backdrop:true} | {fill:"#000", alpha} |
 //             {scene, frame, x, y, w, h, alpha, feather} (a scene frame; frame numbers past
 //             the scene's last frame show the settled picture) |
-//             {text, x, y, size, alpha, align, color} (the app's serif italic, \n = new line)
+//             {text, x, y, size, alpha, align, color} (the app's serif italic, \n = new line) |
+//             {circle:true, x, y, r, stroke, lw, fillColor, add, alpha, filter} (a ring and/or a disc;
+//             add = drawn with "lighter" as the app's overlay is)
+//             Each scene's meta.json also carries view {cx, cy, halfHeight, rotation}, rgb (one per
+//             transform) and fixed (each map's fixed point), to place such layers (see the-chaos-game-v2).
 //   facts({page, meta, layout}) -> object, for the post
 //
 // audio: { seconds (master length, trimmed by each cut), targetLufs, limiter, layers: [...] }
@@ -109,7 +115,7 @@
 import { webkit } from "@playwright/test";
 import { spawn, spawnSync } from "node:child_process";
 /* global window, setMode, fernView, vectorColors, SOLID_COLORS, fernState, els, fitVectorView, ifsRandom:writable,
-   fernRenderOpts, syncReplayButtons, IFS_SYSTEMS, replayTimeOf */
+   fernRenderOpts, syncReplayButtons, IFS_SYSTEMS, replayTimeOf, ifsTransformColors */
 /* eslint no-unused-vars: ["error", { "vars": "local" }] */
 // (the globals are the app's: the callbacks given to page.evaluate run inside the page)
 import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
@@ -413,7 +419,19 @@ async function startScene(page, sc) {
     // (the app's own hook for a repeatable chaos game)
     ifsRandom = window.__seeded(seed);
     fernView.startReplay({ ...fernRenderOpts(), manual: true, speed: () => 1, onChange: syncReplayButtons });
-    return { cw: els.fernCanvas.width, ch: els.fernCanvas.height, total: fernView.replayState.total, probs: IFS_SYSTEMS[shape].transforms.map((t) => t.p) };
+    // (view, rgb and fixed let a layout draw over the picture where the app does: the canvas pixel of a
+    // world point is  x = cw/2 + ((wx - cx) cos r + (wy - cy) sin r) k,  y = ch/2 - (-(wx - cx) sin r + (wy - cy) cos r) k
+    // with r = -rotation and k = (ch/2)/halfHeight;  fixed = each map's fixed point)
+    const tr = IFS_SYSTEMS[shape].transforms;
+    return {
+      cw: els.fernCanvas.width, ch: els.fernCanvas.height, total: fernView.replayState.total, probs: tr.map((t) => t.p),
+      view: { cx: v.cx, cy: v.cy, halfHeight: v.halfHeight, rotation: v.rotation },
+      rgb: ifsTransformColors(shape, vectorColors[shape]).map((c) => c.map((q) => Math.round(q))),
+      fixed: tr.map((t) => { // the point p = A p + (e, f) solves (I - A) p = (e, f)
+        const det = (1 - t.a) * (1 - t.d) - t.b * t.c;
+        return Math.abs(det) > 1e-9 ? [((1 - t.d) * t.e + t.b * t.f) / det, (t.c * t.e + (1 - t.a) * t.f) / det] : null;
+      }),
+    };
   }, { shape: sc.shape, color: sc.color, count: sc.count, seed: sc.seed, frame: sc.frame });
   return info;
 }
@@ -426,7 +444,8 @@ async function sceneEvents(page, sc, info, prof) {
   const marks = {};
   for (const n of [1000, 10000, 100000, 500000]) if (n < info.total) marks[n] = prof.Sinv(await page.evaluate(([n, total]) => replayTimeOf(n, total), [n, info.total]));
   return {
-    events: ts.map((s, i) => ({ n: i + 1, t: prof.Sinv(s), ci: seq[i + 1].ci })),
+    start: { x: seq[0].x, y: seq[0].y },
+    events: ts.map((s, i) => ({ n: i + 1, t: prof.Sinv(s), ci: seq[i + 1].ci, x: seq[i + 1].x, y: seq[i + 1].y })), // (world coordinates where jump n landed)
     marks,
     doneAt: prof.Sinv(await page.evaluate((total) => replayTimeOf(total, total), info.total)),
   };
@@ -477,7 +496,7 @@ async function captureScenes() {
         // frames left over from an earlier, longer run must not stay behind the settled picture
         for (const f of readdirSync(dir)) if (/^\d+\.png$/.test(f) && Number(f.slice(0, 5)) > last) unlinkSync(join(dir, f));
       }
-      const m = { id, shape: sc.shape, color: sc.color, count: sc.count, total: info.total, seed: sc.seed, canvas: [info.cw, info.ch], probs: info.probs, fps: FPS, frames: last + 1, ...ev, nAt };
+      const m = { id, shape: sc.shape, color: sc.color, count: sc.count, total: info.total, seed: sc.seed, canvas: [info.cw, info.ch], probs: info.probs, view: info.view, rgb: info.rgb, fixed: info.fixed, fps: FPS, frames: last + 1, ...ev, nAt };
       writeFileSync(metaFile(id), JSON.stringify(m, null, 1));
       console.log(`${id}: ${dry ? "meta" : `${written} frames written, ${last + 1} in all`}, canvas ${info.cw}x${info.ch}, replay done at ${ev.doneAt.toFixed(2)} s, ${((Date.now() - t00) / 1000).toFixed(0)} s so far`);
       if (errors.length) throw new Error(`page errors: ${errors.join("; ")}`);
@@ -551,6 +570,13 @@ const COMPOSE_FN = `(() => {
         } else if (L.feather) ctx.drawImage(feathered(im, Math.round(w), Math.round(h), L.feather), L.x, L.y, w, h);
         else ctx.drawImage(im, L.x, L.y, w, h);
         ctx.filter = "none";
+      } else if (L.circle) {
+        // a ring and/or a disc, e.g. the app's corner rings redrawn where a scene does not have them
+        ctx.globalCompositeOperation = L.add ? "lighter" : "source-over";
+        ctx.beginPath(); ctx.arc(L.x, L.y, L.r, 0, 2 * Math.PI);
+        if (L.fillColor) { ctx.fillStyle = L.fillColor; ctx.fill(); }
+        if (L.stroke) { ctx.strokeStyle = L.stroke; ctx.lineWidth = L.lw ?? 2; ctx.stroke(); }
+        ctx.globalCompositeOperation = "source-over";
       } else if (L.text) {
         ctx.font = (L.font || 'italic 400 SIZEpx ui-serif, "New York", Georgia, serif').replace("SIZE", L.size);
         ctx.textAlign = L.align || "center"; ctx.textBaseline = "middle";
