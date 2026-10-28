@@ -914,7 +914,9 @@ test.describe("the finish holds when the view moves", () => {
     await show(page, "dragon", 10, { cx: -0.35, cy: -0.24, halfHeight: 1.2, rotation: 0.9 });
     const r = await hueBins(page);
     expect(r.lit, "the curve is drawn").toBeGreaterThan(500);
-    expect(r.wide, "hue bins holding 4% of the lit pixels").toBeGreaterThanOrEqual(3);
+    // 1.50.1 narrowed the sweep from 90 to 56 OKLCH degrees (about 40 of HSV hue on the dragon's Autumn), so the
+    // picture spans two or three 30 degree bins now, not three or four: still more than one hue.
+    expect(r.wide, "hue bins holding 4% of the lit pixels").toBeGreaterThanOrEqual(2);
   });
 
   // The colors follow the place along the whole curve (1.50.0), so a view this close

@@ -521,9 +521,11 @@ const LINE_CURVES = {
 // hue turns CURVE_HUE_SPAN degrees from the start to the end of the curve
 // (half either side of the picked color), and it lifts a little toward white
 // at the far end, so the path reads as a path and a dense curve shows where
-// its two ends are. One css color per step, cached for the last picked color.
-const CURVE_HUE_SPAN = 90;
+// its two ends are. White has no hue to turn, so it runs from dim to bright
+// instead. One css color per step, cached for the last picked color.
+const CURVE_HUE_SPAN = 56;
 const CURVE_LIFT_START = 0.04, CURVE_LIFT_END = 0.2; // share of the way to white
+const CURVE_GREY_DIM_START = 0.62;  // White: brightness at the start of the curve (1 at the end)
 const CURVE_RAMP_STEPS = 128;
 const CURVE_CORE_MIN_PX = 1.1;       // css px
 const CURVE_CORE_ALPHA = 0.95, CURVE_CORE_ALPHA_DENSE = 0.8;
@@ -533,12 +535,13 @@ const CURVE_GLOW_MIN_SEG = 2.5;      // css px: below this segment length the li
 let curveRampKey = -1, curveRampColors = [];
 function curveRamp(colorIndex) {
   if (colorIndex === curveRampKey) return curveRampColors;
-  const base = SOLID_COLORS[colorIndex].rgb;
+  const base = SOLID_COLORS[colorIndex].rgb, grey = isGreyColor(base);
   curveRampColors = [];
   for (let k = 0; k < CURVE_RAMP_STEPS; k++) {
     const t = k / (CURVE_RAMP_STEPS - 1);
     const lift = CURVE_LIFT_START + (CURVE_LIFT_END - CURVE_LIFT_START) * t;
-    const [r, g, b] = hueTurned(base, (t - 0.5) * CURVE_HUE_SPAN).map((v) => Math.round(v + (255 - v) * lift));
+    const dim = grey ? CURVE_GREY_DIM_START + (1 - CURVE_GREY_DIM_START) * t : 1;
+    const [r, g, b] = hueTurned(base, (t - 0.5) * CURVE_HUE_SPAN).map((v) => Math.round(v * dim + (255 - v * dim) * lift));
     curveRampColors.push(`rgb(${r},${g},${b})`);
   }
   curveRampKey = colorIndex;

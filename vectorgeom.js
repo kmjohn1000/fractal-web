@@ -33,7 +33,12 @@ function backdropPixels(w, h) {
     const dy = y - cy;
     for (let x = 0; x < w; x++) {
       const t = Math.min(1, Math.hypot(x + 0.5 - cx, dy + 0.5) / radius), o = (y * w + x) * 3;
-      for (let q = 0; q < 3; q++) out[o + q] = Math.round(BACKDROP_CENTER_RGB[q] + (BACKDROP_EDGE_RGB[q] - BACKDROP_CENTER_RGB[q]) * t);
+      // Interleaved gradient noise (Jimenez), one value per pixel, shifts the rounding, so
+      // the dark gradient dithers instead of banding in 40 px steps.
+      let dn = 0.06711056 * x + 0.00583715 * y;
+      dn = 52.9829189 * (dn - Math.floor(dn));
+      dn = dn - Math.floor(dn) - 0.5;
+      for (let q = 0; q < 3; q++) out[o + q] = Math.round(BACKDROP_CENTER_RGB[q] + (BACKDROP_EDGE_RGB[q] - BACKDROP_CENTER_RGB[q]) * t + dn);
     }
   }
   return out;

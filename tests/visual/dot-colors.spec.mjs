@@ -8,7 +8,7 @@
 import { test, expect } from "@playwright/test";
 
 /* global setMode, fernView, fernState, vectorColors, SOLID_COLORS, buildShareHash, applyShareLink, els, mode,
-   requestRender, VECTOR_VIEWS */
+   requestRender, VECTOR_VIEWS, ifsTransformColors */
 
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
 const IFS_MODES = ["fern", "sierpinski", "levy", "vicsek"];
@@ -89,6 +89,52 @@ test.describe("colored by address", () => {
         "pixels near the picked color").toBeGreaterThan(0.05);
     });
   }
+
+  // 1.50.1: White has no hue to turn, so its transforms differ in brightness instead (fern.js IFS_GREY_DIM_MIN);
+  // the six chromatic colors still turn their hue and keep their brightness.
+  test("White: each transform has its own brightness so the address cue survives; the other colors are unchanged", async ({ page }) => {
+    const r = await page.evaluate((modes) => {
+      const Y = ([r, g, b]) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      const white = SOLID_COLORS.findIndex((c) => c.name === "White");
+      const out = { white: {}, chromatic: [] };
+      for (const m of modes) {
+        const cols = ifsTransformColors(m, white), ys = cols.map(Y);
+        out.white[m] = { ratio: Math.min(...ys) / Math.max(...ys), chroma: Math.max(...cols.map((c) => Math.max(...c) - Math.min(...c))) };
+      }
+      for (let ci = 0; ci < SOLID_COLORS.length; ci++) {
+        if (ci === white) continue;
+        for (const m of modes) {
+          const ys = ifsTransformColors(m, ci).map(Y), base = Y(SOLID_COLORS[ci].rgb);
+          // Hue turns keep lightness: every transform's color is within 6% of the picked color's luminance.
+          out.chromatic.push({ ci, m, spread: Math.max(...ys.map((y) => Math.abs(y - base) / base)) });
+        }
+      }
+      return out;
+    }, IFS_MODES);
+    for (const m of IFS_MODES) {
+      expect(r.white[m].ratio, `${m}: dimmest transform vs brightest ${r.white[m].ratio.toFixed(2)}`).toBeLessThan(0.76);
+      expect(r.white[m].ratio, `${m}: not too dim`).toBeGreaterThan(0.6);
+      expect(r.white[m].chroma, `${m}: still white, no tint`).toBeLessThan(12);
+    }
+    for (const c of r.chromatic) expect(c.spread, `color ${c.ci} ${c.m}`).toBeLessThan(0.3);
+  });
+
+  test("White dots show brightness differences across the picture", async ({ page }) => {
+    for (const m of IFS_MODES) {
+      await page.evaluate((m) => { vectorColors[m] = SOLID_COLORS.findIndex((c) => c.name === "White"); }, m);
+      await show(page, m);
+      const spread = await page.evaluate(() => {
+        const canvas = VECTOR_VIEWS[fernView.system][1];
+        const px = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
+        const ys = [];
+        for (let i = 0; i < px.length; i += 4) { const s = px[i] + px[i + 1] + px[i + 2]; if (s > 330) ys.push(s); }
+        ys.sort((a, b) => a - b);
+        return { n: ys.length, p10: ys[Math.floor(ys.length * 0.1)], p90: ys[Math.floor(ys.length * 0.9)] };
+      });
+      expect(spread.n, `${m}: bright pixels`).toBeGreaterThan(300);
+      expect(spread.p90 / spread.p10, `${m}: p10 ${spread.p10}, p90 ${spread.p90}`).toBeGreaterThan(1.12);
+    }
+  });
 
   test("picking another color moves the whole picture to it", async ({ page }) => {
     await show(page, "sierpinski");

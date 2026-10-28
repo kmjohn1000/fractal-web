@@ -64,8 +64,20 @@ colored along their length: the hue of the pixels at the start and at the end of
 the polyline differ by tens of degrees, both within the picked color's family and
 the middle the picked color itself (so the test fails if the ramp is flattened);
 picking another color moves the curve; a hairline core is never under 1.1 css px
-wide. In lite mode (a gesture in progress) the curve is stroked once, not
-twice, and fewer pixels are lit, so the glow is really skipped. Share links and
+wide (the sweep is 56 OKLCH degrees since 1.50.1, so the start and end differ
+by over 30 degrees of HSV hue, not 40). In White, which has no hue to turn
+(1.50.1), `curveRamp` runs from dim to bright, brightening at every step, and
+the drawn line is dimmer at the start of each curve than at its end but still
+clearly visible. In lite mode (a gesture in progress) the curve is stroked once, not
+twice, and fewer pixels are lit, so the glow is really skipped. The backdrop of
+the four chaos-game shapes and of Hilbert is dithered, not banded (over 40% of
+horizontal neighbors differ in the empty lower part of the canvas, against 2 to 6%
+before 1.50.1, when `backdropPixels` rounded to the nearest level), and its middle
+is still the center color. `hueTurned` (OKLCH since 1.50.1) keeps lightness
+(within 0.005) and chroma (never more; at least 95%, 75% and 60% for turns of up
+to 10, 28 and 56 degrees, so a color outside sRGB loses chroma only), rotates the
+hue by the angle asked (within half a degree) and gives the color back for a turn
+of 0. Share links and
 the color picker still work for a curve and a dot shape. `vector.spec.mjs` adds
 that the dragon stays colored when turned, when zoomed past the slider's depth
 (one slice of the ramp, the slice of its place), and in a lite frame, and that a
@@ -73,9 +85,12 @@ deep zoom keeps the backdrop.
 
 `tree-hexaflake-palette.spec.mjs` covers the palettes of the Pythagoras tree and
 the Hexaflake across all seven picker colors (including White and Gold). Tree: the
-trunk is the same brown wood whatever color is picked and differs from the canopy
-by a visible distance; the canopy keeps the picked hue (the alternate levels are
-turned only 22 degrees) at depths 5, 9 and 12; a square and its child differ in
+trunk is brown wood and differs from the canopy by a visible distance only in Green
+(1.50.1); in the other six colors it keeps the picked color's proportions, only
+darker; the darkest face of every color (found as flat-fill pixels clearly above the
+backdrop) is over 1.4:1 against the backdrop's center, a WCAG luminance ratio used as a
+proxy for visibility; the canopy keeps the picked hue (the alternate levels are
+turned only 12 OKLCH degrees) at depths 5, 9 and 12; a square and its child differ in
 shade; the lean shading keeps its upper-left light when the view is rotated (the
 two level-1 squares are compared at several rotations); and on a phone the default
 view spans over 90% of the width without being cut off. Hexaflake: the fill of
@@ -83,7 +98,9 @@ each level 0 to 8 is read from the gap it shows (a view centered on the gap of
 the middle chain's hexagon of that level), and must climb level by level to the
 picked color itself at level 4, then dim on every other level, with the hue never
 more than 4 degrees off the picked color from level 4 on and under 30 degrees
-for the shadows; the hue of the shape's pixels stays within 24 degrees of the
+for the shadows, and the outermost level over 1.35:1 against the backdrop (it was
+1.17:1 in Violet before 1.50.1); the hexaflake starts in Gold, not the tree's
+Green; the hue of the shape's pixels stays within 24 degrees of the
 picked hue at depths 2, 4, 6 and zoomed in (so the old drift to olive, amber and
 salmon fails); every color lights over 50,000 pixels at each depth and depth 2,
 4 and 6 are different pictures (4 to 6 is checked only on a 2x screen, where the
@@ -97,7 +114,9 @@ growth of a new generation (1.49.0). Each generation of triangles (the level-0 o
 then the bumps each split adds) is read at its own centroid, computed from the same
 geometry as `kochAdaptive`: it is brighter than its parent, the finest generation is
 the picked color itself at depths 1 to 4 (the ramp is spread over the generations
-there are) and the level-0 triangle is darker and in the same hue family; past the
+there are) and the level-0 triangle is darker (its center under 0.9 of the picked
+brightness since 1.50.1, it was 0.8) and in the same hue family, and its shade near a
+corner is over 2.2:1 against the backdrop in every color; past the
 ramp (zoomed in at depth 8) generations 4, 5 and 6 alternate in brightness by more
 than 8% and keep the picked hue; all seven colors light over 50,000 pixels and have
 the same ramp; the dark gutter between a big triangle and its parent is darker than
@@ -162,7 +181,9 @@ triangle, Lévy C, Vicsek; 1.47.0): each picture spans several hues around its p
 color, picking another color moves the whole picture to it, a deep zoom stays tinted
 (not gray or black), each mode has its own color (Green, Violet, Rose, Gold to start)
 and a pick changes only that mode, the toolbar pill and its name follow the mode, and
-share links carry the mode's color (links from before 1.47.0 still open). Their
+share links carry the mode's color (links from before 1.47.0 still open). In White
+(1.50.1) each transform takes its own brightness (dimmest 0.7 of the brightest) so the
+address cue survives, and the six chromatic colors keep their lightness. Their
 baselines are `mode-fern`, `mode-sierpinski`, `mode-levy` and `mode-vicsek` in
 app.spec.mjs.
 

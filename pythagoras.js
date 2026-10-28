@@ -68,12 +68,13 @@ const TREE_GROUP = 32;           // squares per fill/stroke path (see render)
 // level. false: the old flat single color. render's opts.shaded overrides it.
 const TREE_SHADED = true;
 const TREE_LIGHT_UV = [-0.55, 0.835];  // toward the light, on screen (x right, y up); the light stays put as the view rotates
-const TREE_LEAN_MIN = 0.5;       // brightness of a face turned fully from the light (1 = fully lit)
+const TREE_LEAN_MIN = 0.62;      // brightness of a face turned fully from the light (1 = fully lit); lower sank shadowed Violet and Rose to about 1.3:1 against the backdrop
 const TREE_DEPTH_MIN = 0.72;     // brightness at the trunk; it rises to 1 by TREE_DEPTH_BANDS-1 bands out
 const TREE_DEPTH_BANDS = 6;      // trunk-to-twig brightness steps (two levels each)
-const TREE_ALT_HUE = -22;        // degrees the odd levels' hue is turned from the picked color's (-45 read as olive camouflage on Green)
-const TREE_WOOD_RGB = [158, 104, 62];  // the trunk and first two branches' wood, whatever color is picked (a blend of brown and green read as khaki)
+const TREE_ALT_HUE = -12;        // degrees (OKLCH, see hueTurned) the odd levels' hue is turned from the picked color's (-45 read as olive camouflage on Green, and so did -22 once the turn was in OKLCH, where Green sits close to yellow)
+const TREE_WOOD_RGB = [158, 104, 62];  // the trunk and first two branches' wood when the picked color is TREE_WOOD_COLOR (a blend of brown and green read as khaki)
 const TREE_WOOD_BANDS = 1;     // bands (two levels each) of wood from the trunk up; the picked color carries the canopy
+const TREE_WOOD_COLOR = "Green";  // the only picked color with a wooden trunk: a brown trunk under Violet or Rose reads as a different tree, not a trunk
 
 // The squares of the tree the viewport needs, in the order and with the
 // geometry of pythagorasTree(depth), written to buf as world-space base
@@ -144,13 +145,14 @@ function createPythagorasTreeView(canvas) {
   // CSS fill per style byte for the picked color. A square's lean sets how
   // much of the light from TREE_LIGHT_UV its top face catches; the band dims
   // the trunk and brightens toward the twigs; odd levels use the picked
-  // color turned TREE_ALT_HUE degrees around the hue wheel. The trunk and
-  // the first two branches are wood (TREE_WOOD_RGB) whatever the picked
-  // color; everything above them is the picked color.
+  // color turned TREE_ALT_HUE degrees around the hue wheel. When the picked
+  // color is Green the trunk and the first two branches are wood
+  // (TREE_WOOD_RGB); every other color shades its trunk like the rest.
   function styleTable(colorIndex, rotation) {
     const key = colorIndex + "|" + rotation;
     if (key === cssKey) return css;
     const base = SOLID_COLORS[colorIndex].rgb;
+    const wood = SOLID_COLORS[colorIndex].name === TREE_WOOD_COLOR;
     const alt = hueTurned(base, TREE_ALT_HUE);
     // The light in world coordinates (screenToWorld's rotation of a screen vector).
     const rc = Math.cos(rotation), rs = Math.sin(rotation);
@@ -160,7 +162,7 @@ function createPythagorasTreeView(canvas) {
     for (let band = 0; band < TREE_DEPTH_BANDS; band++) {
       const depthF = TREE_DEPTH_MIN + (1 - TREE_DEPTH_MIN) * band / (TREE_DEPTH_BANDS - 1);
       for (let parity = 0; parity < 2; parity++) {
-        const src = band < TREE_WOOD_BANDS ? TREE_WOOD_RGB : parity ? alt : base;
+        const src = wood && band < TREE_WOOD_BANDS ? TREE_WOOD_RGB : parity ? alt : base;
         for (let lean = 0; lean < 8; lean++) {
           const ang = lean * Math.PI / 4 + Math.PI / 2;     // the face's outward normal
           const lit = 0.5 + 0.5 * (Math.cos(ang) * lx + Math.sin(ang) * ly);

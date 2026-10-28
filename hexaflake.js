@@ -54,8 +54,8 @@ const HEX_CLIP_PX = 4000;        // hexagons with a larger radius (canvas px) ar
 // another color family, however deep a zoom goes) except that every other
 // level is dimmer, so a level is told from its parent at any depth. A thin
 // dark gutter outlines the hexagons big enough to carry one.
-const HEX_HUE_SPAN = -18;      // degrees the outermost level's hue is turned from the picked color's (the old -18 per level ran Green on through olive to salmon)
-const HEX_BRIGHT_MIN = 0.30;     // brightness of the outermost hexagon (1 = the picked color's own)
+const HEX_HUE_SPAN = -7;       // degrees (OKLCH, see hueTurned) the outermost level's hue is turned from the picked color's (the old -18 per level ran Green on through olive to salmon; -18 in OKLCH is still olive on Green)
+const HEX_BRIGHT_MIN = 0.40;    // brightness of the outermost hexagon (1 = the picked color's own)
 const HEX_BRIGHT_LEVELS = 4;
 const HEX_ALT_DIM = 0.82;        // brightness of every other level past HEX_BRIGHT_LEVELS
 const HEX_GUTTER_PX_MIN = 7;     // canvas px: hexagons with a smaller radius get no gutter

@@ -2,6 +2,11 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.50.1 — 2026-10-27
+- The curves and dot shapes turn the hue in even steps now, so Gold stays gold and Rose stays pink instead of drifting to salmon and lime, and White curves and dots shade from dim to bright instead of staying flat.
+- The Pythagoras tree keeps its brown trunk only in Green (the other colors shade it in their own color) and its shaded faces are easier to see; the Koch snowflake's middle triangle and the Hexaflake's big outer triangles are lighter, and the Hexaflake now starts in Gold.
+- The dark backdrop behind the fern, Sierpinski triangle, Lévy curve and Vicsek fractal no longer shows bands.
+
 ## 1.50.0 — 2026-10-27
 - Hilbert, Gosper and the Sierpinski arrowhead now add detail as you zoom in, like the dragon: no more one straight line up close, and the info card says how many levels the zoom added.
 - The curves' colors follow the position along the whole curve, so a zoomed view shows the colors of its own place in the picture; the frame at a gesture is lighter for these three curves too.

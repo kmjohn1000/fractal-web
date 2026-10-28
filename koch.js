@@ -45,12 +45,12 @@ const KOCH_MAX_LEVEL = 40;        // 3^-40 is already below double precision for
 // Where the triangles are big enough a thin dark gutter runs along each one's
 // base edge, between it and its parent. One fill per generation, never one per
 // triangle.
-const KOCH_HUE_SPAN = -10;         // degrees the level-0 triangle's hue is turned from the picked color's
-const KOCH_BRIGHT_MIN = 0.58;      // brightness of the level-0 triangle (1 = the picked color's own); it is most of the area, so not too deep
+const KOCH_HUE_SPAN = -6;          // degrees (OKLCH, see hueTurned) the level-0 triangle's hue is turned from the picked color's
+const KOCH_BRIGHT_MIN = 0.74;      // brightness of the level-0 triangle (1 = the picked color's own); it is most of the area, so not too deep
 const KOCH_BRIGHT_LEVELS = 4;
 const KOCH_ALT_DIM = 0.82;         // brightness of every other generation past KOCH_BRIGHT_LEVELS
-const KOCH_CORE_GAIN = 1.16;       // the level-0 gradient: this brightness at the center ...
-const KOCH_EDGE_GAIN = 0.8;        // ... and this at the corners
+const KOCH_CORE_GAIN = 1.10;      // the level-0 gradient: this brightness at the center ...
+const KOCH_EDGE_GAIN = 0.9;       // ... and this at the corners
 const KOCH_GRADIENT_MAX_K = 1e6;   // canvas px per world unit: past this zoom the level-0 gradient is a flat fill
 const KOCH_GUTTER_PX_MIN = 8;     // canvas px: triangles with a shorter edge get no gutter
 const KOCH_GUTTER_RGB = "rgba(4,7,14,0.6)";  // near-black navy, not pure black
@@ -381,9 +381,11 @@ function createKochView(canvas) {
     // The gradient shader over most of the screen costs a couple of ms, so a lite
     // frame (and a zoom so deep the gradient is flat and its numbers huge, which
     // some browsers refuse) fills the triangle flat, in the gradient's shade
-    // where the view is centered.
+    // where the view is centered, but never lighter than 1: the first
+    // generation's shade (0.74 + 0.065 = 0.8 of the picked color) must stay
+    // above the triangle it grows from, and the gradient's core alone is not.
     if (opts.lite || !(aff.k < KOCH_GRADIENT_MAX_K)) {
-      ctx.fillStyle = gain(KOCH_CORE_GAIN + (KOCH_EDGE_GAIN - KOCH_CORE_GAIN) * Math.min(1, Math.hypot(view.cx, view.cy)));
+      ctx.fillStyle = gain(Math.min(1, KOCH_CORE_GAIN + (KOCH_EDGE_GAIN - KOCH_CORE_GAIN) * Math.min(1, Math.hypot(view.cx, view.cy))));
     } else {
       const grad = ctx.createRadialGradient(sx(0, 0), sy(0, 0), 0, sx(0, 0), sy(0, 0), aff.k);
       grad.addColorStop(0, gain(KOCH_CORE_GAIN));

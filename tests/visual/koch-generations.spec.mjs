@@ -11,7 +11,7 @@ import { test, expect } from "@playwright/test";
 /* global setMode, kochView, kochState, vectorColors, SOLID_COLORS, buildShareHash, applyShareLink, els, mode,
    requestRender, renderAll, fittedVectorModes, fitVectorView, vectorFitHalfHeight, vectorViewIsFitted,
    captureShareBlob, depthPlayer, PLAY_SPEEDS, DEPTH_STEP_MS, KOCH_GROW_MS, KOCH_GROW_STEP_SHARE, KOCH_TRI_BUDGET,
-   KOCH_LITE_TRI_BUDGET, kochNav */
+   KOCH_LITE_TRI_BUDGET, kochNav, BACKDROP_CENTER_RGB */
 
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
 const COLORS = [0, 1, 2, 3, 4, 5, 6];   // Green, Autumn, Violet, Ice, Rose, Gold, White
@@ -169,9 +169,27 @@ test.describe("generations", () => {
       const cs = await chainCentroids(page, 4);
       const finest = await colorAt(page, cs[3][0], cs[3][1]);
       expect(near(finest, picked, 8), `finest ${finest} vs picked ${picked}`).toBe(true);
+      // The level-0 triangle's lightest point, its center, is 0.74 x 1.10 = 0.81 of the picked color (1.50.1; it was 0.58 x 1.16 = 0.67).
       const base = await colorAt(page, 0, 0);
-      expect(lum(base)).toBeLessThan(lum(picked) * 0.8);
+      expect(lum(base)).toBeLessThan(lum(picked) * 0.9);
       expect(lum(base), "but not black").toBeGreaterThan(lum(picked) * 0.3);
+    });
+  }
+
+  // 1.50.1: the level-0 triangle is most of the picture, and a deep shade of Violet or Rose sank to about 1.6:1
+  // against the backdrop at its corners. Its shade is now at least about 2.3:1 (WCAG luminance ratio against the
+  // backdrop's center color, a proxy) a little in from its top corner (world 0, 0.8), where the radial gradient is darkest.
+  for (const ci of COLORS) {
+    test(`color ${ci}: the level-0 triangle holds against the backdrop (contrast floor)`, async ({ page }) => {
+      await show(page, { depth: 4, color: ci });
+      const c = await colorAt(page, 0, 0.8);
+      const ratio = await page.evaluate((c) => {
+        const lin = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+        const L = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+        const a = L(c), b = L(BACKDROP_CENTER_RGB);
+        return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+      }, c);
+      expect(ratio, `level-0 shade ${c} against the backdrop`).toBeGreaterThan(2.2);
     });
   }
 
@@ -226,7 +244,7 @@ test.describe("generations", () => {
     const cs = await chainCentroids(page, 4);
     const finest = await colorAt(page, cs[3][0], cs[3][1]);
     expect(near(finest, picked, 8), `finest ${finest}`).toBe(true);
-    expect(lum(await colorAt(page, 0, 0))).toBeLessThan(lum(picked) * 0.8);
+    expect(lum(await colorAt(page, 0, 0))).toBeLessThan(lum(picked) * 0.9);
     const c1 = await colorAt(page, cs[0][0], cs[0][1]);
     expect(lum(c1), "generation 1 between them").toBeGreaterThan(lum(await colorAt(page, 0, 0)));
   });

@@ -1,13 +1,15 @@
-// The palettes of the Pythagoras tree and the Hexaflake (1.48.1), for each of the seven picker colors:
-// the tree has a wooden trunk and first two branches, the same whatever color is picked, with the picked
-// color (and a hue turned -22 degrees on every other level) carrying the canopy; the hexaflake's shade
-// climbs level by level from a dark shadow turned 18 degrees from the picked hue to the picked color
-// itself and stays there however deep a zoom goes, every other level past it dimmer, and the larger
-// hexagons carry a thin dark gutter. Baselines of both shapes are in app.spec.mjs and vector.spec.mjs.
+// The palettes of the Pythagoras tree and the Hexaflake (1.48.1, 1.50.1), for each of the seven picker colors:
+// the tree has a wooden trunk and first two branches when the picked color is Green (the other six shade the
+// trunk in their own color), with the picked color (and a hue turned 12 degrees in OKLCH on every other level)
+// carrying the canopy and the faces turned from the light still standing out from the backdrop; the hexaflake's
+// shade climbs level by level from a dark shadow turned 7 degrees (OKLCH) from the picked hue (its outermost level a
+// lighter 0.40 of the picked brightness since 1.50.1) to the picked color itself and stays there however deep a
+// zoom goes, every other level past it dimmer, and the larger hexagons carry a thin dark gutter. Baselines of
+// both shapes are in app.spec.mjs and vector.spec.mjs.
 import { test, expect } from "@playwright/test";
 
 /* global setMode, fernView, treeState, hexaflakeState, vectorColors, SOLID_COLORS, fittedVectorModes, fitVectorView,
-   requestRender, VECTOR_VIEWS, vectorFitHalfHeight, pythagorasTree */
+   requestRender, VECTOR_VIEWS, vectorFitHalfHeight, pythagorasTree, BACKDROP_CENTER_RGB */
 
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
 const COLORS = [0, 1, 2, 3, 4, 5, 6];   // Green, Autumn, Violet, Ice, Rose, Gold, White
@@ -100,39 +102,77 @@ function hueSpread(page, m, picked, region = null) {
   }, [m, picked, region]);
 }
 
+const GREEN = 0;
+
 test.describe("Pythagoras tree", () => {
-  test("every color: the trunk is the same wood, unlike the canopy, which carries the picked color", async ({ page }) => {
-    const trunks = [];
+  test("Green has a wooden trunk, unlike its canopy; the six other colors shade the trunk in their own color", async ({ page }) => {
     for (const ci of COLORS) {
       await show(page, "tree", 9, ci);
       // The middle of the trunk square (a unit square on [-0.5, 0.5] x [0, 1]).
       const trunk = await colorAt(page, "tree", 0, 0.5);
-      trunks.push(trunk);
-      // The canopy: every lit pixel above the first branches (world y 2.2 and up).
-      const canopy = await page.evaluate(() => {
-        const canvas = VECTOR_VIEWS.tree[1], view = VECTOR_VIEWS.tree[0];
-        const px = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
-        const yEnd = Math.floor(view.worldToScreen(0, 2.2)[1]);
-        const sum = [0, 0, 0];
-        let n = 0;
-        for (let y = 0; y < yEnd; y++) for (let x = 0; x < canvas.width; x++) {
-          const i = (y * canvas.width + x) * 4;
-          if (px[i] + px[i + 1] + px[i + 2] < 150) continue;   // the backdrop and the darkest faces
-          sum[0] += px[i]; sum[1] += px[i + 1]; sum[2] += px[i + 2]; n++;
-        }
-        return { n, mean: sum.map((v) => v / n) };
-      });
-      expect(canopy.n, `color ${ci}: the canopy is lit`).toBeGreaterThan(2000);
-      const dist = Math.hypot(trunk[0] - canopy.mean[0], trunk[1] - canopy.mean[1], trunk[2] - canopy.mean[2]);
-      expect(dist, `color ${ci}: trunk ${trunk.map(Math.round)} vs canopy mean ${canopy.mean.map(Math.round)}`).toBeGreaterThan(30);
-      // The trunk is brown: red over green over blue.
-      expect(trunk[0] > trunk[1] && trunk[1] > trunk[2], `color ${ci}: the trunk is brown ${trunk.map(Math.round)}`).toBe(true);
+      const picked = await pickedRgb(page, ci);
+      if (ci === GREEN) {
+        // The canopy: every lit pixel above the first branches (world y 2.2 and up).
+        const canopy = await page.evaluate(() => {
+          const canvas = VECTOR_VIEWS.tree[1], view = VECTOR_VIEWS.tree[0];
+          const px = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
+          const yEnd = Math.floor(view.worldToScreen(0, 2.2)[1]);
+          const sum = [0, 0, 0];
+          let n = 0;
+          for (let y = 0; y < yEnd; y++) for (let x = 0; x < canvas.width; x++) {
+            const i = (y * canvas.width + x) * 4;
+            if (px[i] + px[i + 1] + px[i + 2] < 150) continue;   // the backdrop and the darkest faces
+            sum[0] += px[i]; sum[1] += px[i + 1]; sum[2] += px[i + 2]; n++;
+          }
+          return { n, mean: sum.map((v) => v / n) };
+        });
+        expect(canopy.n, "the canopy is lit").toBeGreaterThan(2000);
+        const dist = Math.hypot(trunk[0] - canopy.mean[0], trunk[1] - canopy.mean[1], trunk[2] - canopy.mean[2]);
+        expect(dist, `trunk ${trunk.map(Math.round)} vs canopy mean ${canopy.mean.map(Math.round)}`).toBeGreaterThan(30);
+        // The trunk is brown: red over green over blue, and not a darker shade of the picked green.
+        expect(trunk[0] > trunk[1] && trunk[1] > trunk[2], `the trunk is brown ${trunk.map(Math.round)}`).toBe(true);
+        const ratios = trunk.map((v, q) => v / picked[q]);
+        expect(Math.max(...ratios) / Math.min(...ratios), `wood is not the picked color's shade: ${ratios.map((v) => v.toFixed(2))}`).toBeGreaterThan(1.5);
+      } else {
+        // The trunk is the picked color, only darker: its channels keep the picked color's proportions.
+        const ratios = trunk.map((v, q) => v / picked[q]);
+        expect(Math.max(...ratios) / Math.min(...ratios), `color ${ci}: trunk ${trunk.map(Math.round)} vs picked ${picked}: ratios ${ratios.map((v) => v.toFixed(2))}`).toBeLessThan(1.2);
+        expect(Math.max(...ratios), `color ${ci}: the trunk is darker than the picked color`).toBeLessThan(0.9);
+      }
     }
-    for (const t of trunks) for (let q = 0; q < 3; q++) expect(Math.abs(t[q] - trunks[0][q]), "the trunk does not depend on the picked color").toBeLessThanOrEqual(1);
+  });
+
+  test("every color: the darkest faces still stand out from the backdrop (lean shading's floor, 1.50.1)", async ({ page }) => {
+    // 1.50.0 sank the faces turned from the light to about 1.3:1 (WCAG luminance ratio) against the backdrop in Violet and
+    // Rose; the lean floor went from 0.5 to 0.62. The faces are flat fills, so pixels whose four neighbors have the same
+    // color are a face's interior; those clearly above the backdrop (not just its dither) are counted.
+    for (const ci of COLORS) {
+      await show(page, "tree", 9, ci);
+      const worst = await page.evaluate(() => {
+        const canvas = VECTOR_VIEWS.tree[1], w = canvas.width, h = canvas.height;
+        const px = canvas.getContext("2d").getImageData(0, 0, w, h).data;
+        const lin = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+        const lumAt = (i) => 0.2126 * lin(px[i]) + 0.7152 * lin(px[i + 1]) + 0.0722 * lin(px[i + 2]);
+        const bg = 0.2126 * lin(BACKDROP_CENTER_RGB[0]) + 0.7152 * lin(BACKDROP_CENTER_RGB[1]) + 0.0722 * lin(BACKDROP_CENTER_RGB[2]);
+        const same = (i, j) => px[i] === px[j] && px[i + 1] === px[j + 1] && px[i + 2] === px[j + 2];
+        let worst = Infinity, n = 0;
+        for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+          const i = (y * w + x) * 4;
+          if (!(same(i, i - 4) && same(i, i + 4) && same(i, i - 4 * w) && same(i, i + 4 * w))) continue;
+          const ratio = (lumAt(i) + 0.05) / (bg + 0.05);
+          if (ratio < 1.15) continue;   // the backdrop
+          n++;
+          if (ratio < worst) worst = ratio;
+        }
+        return { worst, n };
+      });
+      expect(worst.n, `color ${ci}: face pixels found`).toBeGreaterThan(1000);
+      expect(worst.worst, `color ${ci}: the darkest face is ${worst.worst.toFixed(2)}:1 against the backdrop's center`).toBeGreaterThan(1.4);
+    }
   });
 
   for (const ci of CHROMATIC) {
-    test(`color ${ci}: the canopy stays the picked hue (the alternate levels are turned 22 degrees, no more)`, async ({ page }) => {
+    test(`color ${ci}: the canopy stays the picked hue (the alternate levels are turned 12 degrees in OKLCH, no more)`, async ({ page }) => {
       for (const depth of [5, 9, 12]) {
         await show(page, "tree", depth, ci);
         const picked = hueOf(await pickedRgb(page, ci));
@@ -206,6 +246,15 @@ test.describe("Hexaflake", () => {
       }
       const L = fills.map(lum);
       const msg = fills.map((c) => c.map(Math.round).join("/")).join("  ");
+      // The big outer triangles are most of the picture's area; they held 1.17:1 (WCAG luminance ratio) against the
+      // backdrop in Violet before 1.50.1, now at least 1.35:1 in every color.
+      const outer = await page.evaluate((c) => {
+        const lin = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+        const Y = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+        const a = Y(c), b = Y(BACKDROP_CENTER_RGB);
+        return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+      }, fills[0]);
+      expect(outer, `level 0 ${fills[0]} against the backdrop`).toBeGreaterThan(1.35);
       for (let l = 1; l <= 4; l++) expect(L[l], `level ${l} is brighter than level ${l - 1}: ${msg}`).toBeGreaterThan(L[l - 1] * 1.1);
       for (let l = 5; l <= 8; l++) {
         if (l % 2 === 1) expect(L[l], `level ${l} is dimmer than level ${l - 1}: ${msg}`).toBeLessThan(L[l - 1] * 0.92);
@@ -216,7 +265,7 @@ test.describe("Hexaflake", () => {
       for (let q = 0; q < 3; q++) expect(Math.abs(fills[4][q] - picked[q]), `level 4 is the picked color: ${fills[4]} vs ${picked}`).toBeLessThanOrEqual(4);
       if (CHROMATIC.includes(ci)) {
         const ph = hueOf(picked);
-        for (let l = 0; l <= 8; l++) expect(hueGap(hueOf(fills[l]), ph), `level ${l} hue ${hueOf(fills[l]).toFixed(0)} vs picked ${ph.toFixed(0)}`).toBeLessThanOrEqual(l >= 4 ? 4 : 30);   // the dark shadows' 8-bit colors blur the 18 degrees a little
+        for (let l = 0; l <= 8; l++) expect(hueGap(hueOf(fills[l]), ph), `level ${l} hue ${hueOf(fills[l]).toFixed(0)} vs picked ${ph.toFixed(0)}`).toBeLessThanOrEqual(l >= 4 ? 4 : 30);   // the dark shadows' 8-bit colors blur the 7 OKLCH degrees a little (about 20 degrees of HSV hue on Green, where OKLCH hue is compressed)
       }
     });
   }
@@ -229,11 +278,16 @@ test.describe("Hexaflake", () => {
         const picked = hueOf(await pickedRgb(page, ci));
         const s = await hueSpread(page, "hexaflake", picked);
         expect(s.n, `depth ${depth} ${JSON.stringify(view)}: pixels`).toBeGreaterThan(5000);
-        // The shadows are turned 18 degrees at most; nothing wanders to olive, amber or salmon.
+        // The shadows are turned 7 degrees at most; nothing wanders to olive, amber or salmon.
         expect(s.p98, `depth ${depth} ${JSON.stringify(view)}: 98th percentile hue gap ${s.p98.toFixed(1)}`).toBeLessThan(24);
       }
     });
   }
+
+  test("the hexaflake starts in Gold, not the tree's Green (1.50.1: they were twins in the picker)", async ({ page }) => {
+    const names = await page.evaluate(() => ({ hexaflake: SOLID_COLORS[vectorColors.hexaflake].name, tree: SOLID_COLORS[vectorColors.tree].name }));
+    expect(names).toEqual({ hexaflake: "Gold", tree: "Green" });
+  });
 
   test("every color renders lit pixels at depths 2, 4 and 6, and a deeper depth changes the picture", async ({ page }) => {
     for (const ci of COLORS) {

@@ -133,17 +133,53 @@ function strokeWidthFor(segPx, dpr) {
   return Math.min(2.5 * dpr, Math.max(0.75 * dpr, 0.3 * segPx));
 }
 
-// rgb with its hue turned by deg degrees (the same matrix as CSS hue-rotate),
-// each channel clamped to 0-255 but not rounded. Used where a picked
-// SOLID_COLORS color is spread into a family of tints (fern.js's address
-// colors, dragon.js's color along a curve).
+// True for a color with next to no hue (White): turning its hue does nothing,
+// so the shapes that spread a picked color into a family of tints (the line
+// curves, the dot shapes) vary its brightness instead.
+const isGreyColor = ([r, g, b]) => Math.max(r, g, b) - Math.min(r, g, b) < 24;
+
+// rgb with its hue turned by deg degrees in OKLCH, so the turn keeps the
+// color's lightness and chroma and every degree reads as the same step
+// whatever the color (the RGB matrix behind CSS hue-rotate drifts both: Green
+// lost 40% of its chroma by +38 degrees). A turned color outside the sRGB
+// gamut gives up chroma, not lightness or hue, until it fits. Channels are
+// 0-255, not rounded. Used where a picked SOLID_COLORS color is spread into a
+// family of tints (fern.js's address colors, dragon.js's color along a curve,
+// the Koch snowflake, the tree and the hexaflake).
 function hueTurned([r, g, b], deg) {
-  const a = deg * Math.PI / 180, hc = Math.cos(a), hs = Math.sin(a);
-  return [
-    r * (0.213 + hc * 0.787 - hs * 0.213) + g * (0.715 - hc * 0.715 - hs * 0.715) + b * (0.072 - hc * 0.072 + hs * 0.928),
-    r * (0.213 - hc * 0.213 + hs * 0.143) + g * (0.715 + hc * 0.285 + hs * 0.140) + b * (0.072 - hc * 0.072 - hs * 0.283),
-    r * (0.213 - hc * 0.213 - hs * 0.787) + g * (0.715 - hc * 0.715 + hs * 0.715) + b * (0.072 + hc * 0.928 + hs * 0.072),
-  ].map((v) => Math.max(0, Math.min(255, v)));
+  const lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+  const R = lin(r), G = lin(g), B = lin(b);
+  const l_ = Math.cbrt(0.4122214708 * R + 0.5363325363 * G + 0.0514459929 * B);
+  const m_ = Math.cbrt(0.2119034982 * R + 0.6806995451 * G + 0.1073969566 * B);
+  const s_ = Math.cbrt(0.0883024619 * R + 0.2817188376 * G + 0.6299787005 * B);
+  const L = 0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_;
+  const a0 = 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_;
+  const b0 = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_;
+  const t = deg * Math.PI / 180, ca = Math.cos(t), sa = Math.sin(t);
+  const a1 = a0 * ca - b0 * sa, b1 = a0 * sa + b0 * ca;
+  // The linear rgb of the turned color with its chroma scaled by k.
+  const at = (k) => {
+    const a = a1 * k, b = b1 * k;
+    const l3 = Math.pow(L + 0.3963377774 * a + 0.2158037573 * b, 3);
+    const m3 = Math.pow(L - 0.1055613458 * a - 0.0638541728 * b, 3);
+    const s3 = Math.pow(L - 0.0894841775 * a - 1.2914855480 * b, 3);
+    return [
+      4.0767416621 * l3 - 3.3077115913 * m3 + 0.2309699292 * s3,
+      -1.2684380046 * l3 + 2.6097574011 * m3 - 0.3413193965 * s3,
+      -0.0041960863 * l3 - 0.7034186147 * m3 + 1.7076147010 * s3,
+    ];
+  };
+  const fits = (c) => c.every((v) => v >= -0.0005 && v <= 1.0005);
+  let c = at(1);
+  if (!fits(c)) {
+    let lo = 0, hi = 1;
+    for (let i = 0; i < 12; i++) { const mid = (lo + hi) / 2; if (fits(at(mid))) lo = mid; else hi = mid; }
+    c = at(lo);
+  }
+  return c.map((v) => {
+    v = Math.max(0, Math.min(1, v));
+    return 255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055);
+  });
 }
 
 function sampleColor(stops, t) {

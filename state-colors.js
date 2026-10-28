@@ -440,7 +440,7 @@ const fernState = { count: 1000000 };
 // transforms turn the hue of, so each starts in its own color.
 const solidIndex = (name) => SOLID_COLORS.findIndex((c) => c.name === name);
 const vectorColors = {
-  koch: solidIndex("Ice"), tree: solidIndex("Green"), hexaflake: solidIndex("Green"), dragon: solidIndex("Autumn"),
+  koch: solidIndex("Ice"), tree: solidIndex("Green"), hexaflake: solidIndex("Gold"), dragon: solidIndex("Autumn"),
   hilbert: solidIndex("Violet"), gosper: solidIndex("Rose"), arrowhead: solidIndex("Gold"),
   fern: solidIndex("Green"), sierpinski: solidIndex("Violet"), levy: solidIndex("Rose"), vicsek: solidIndex("Gold"),
 };

@@ -41,19 +41,30 @@ const VICSEK_TRANSFORMS = [
 // turns the picked color's hue, so every self-similar piece takes its own tint
 // (see "Coloring by address" below).
 const IFS_SYSTEMS = {
-  fern:       { transforms: FERN_TRANSFORMS, hueOffsets: [-30, 0, 38, 72] },
-  sierpinski: { transforms: SIERPINSKI_TRANSFORMS, hueOffsets: [-65, 0, 65] },
-  levy:       { transforms: LEVY_C_TRANSFORMS, hueOffsets: [-55, 55] },
-  vicsek:     { transforms: VICSEK_TRANSFORMS, hueOffsets: [0, -70, 70, -35, 35] },
+  fern:       { transforms: FERN_TRANSFORMS, hueOffsets: [-21, 0, 27, 50] },
+  sierpinski: { transforms: SIERPINSKI_TRANSFORMS, hueOffsets: [-45, 0, 45] },
+  levy:       { transforms: LEVY_C_TRANSFORMS, hueOffsets: [-33, 33] },
+  vicsek:     { transforms: VICSEK_TRANSFORMS, hueOffsets: [0, -49, 49, -25, 25] },
 };
+// White has no hue to turn, so its transforms differ in brightness instead:
+// the one with the lowest hue offset takes this share of the picked color,
+// the one with the highest the whole of it, the rest in between by offset.
+const IFS_GREY_DIM_MIN = 0.7;
 // Each transform knows its place in its table (.ci), for the color tables.
 for (const sys of Object.values(IFS_SYSTEMS)) sys.transforms.forEach((t, i) => { t.ci = i; });
 
 // One rgb per transform of a system: the picked SOLID_COLORS color, hue-turned
-// by that transform's offset (hueTurned, colormaps.js).
+// by that transform's offset (hueTurned, colormaps.js); for a color with no hue
+// the offset sets the brightness instead (IFS_GREY_DIM_MIN).
 function ifsTransformColors(key, colorIndex) {
   const base = SOLID_COLORS[colorIndex % SOLID_COLORS.length].rgb;
-  return IFS_SYSTEMS[key].hueOffsets.map((deg) => hueTurned(base, deg));
+  const offsets = IFS_SYSTEMS[key].hueOffsets;
+  if (!isGreyColor(base)) return offsets.map((deg) => hueTurned(base, deg));
+  const lo = Math.min(...offsets), span = Math.max(...offsets) - lo;
+  return offsets.map((deg) => {
+    const f = IFS_GREY_DIM_MIN + (1 - IFS_GREY_DIM_MIN) * (deg - lo) / span;
+    return base.map((v) => v * f);
+  });
 }
 
 function pickTransform(transforms) {

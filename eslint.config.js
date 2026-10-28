@@ -13,6 +13,7 @@ const sharedGlobals = {
   solidCss: "readonly",
   strokeWidthFor: "readonly",
   hueTurned: "readonly",
+  isGreyColor: "readonly",
   // shaders.js
   VERT_SRC: "readonly",
   FRAG_SRC: "readonly",

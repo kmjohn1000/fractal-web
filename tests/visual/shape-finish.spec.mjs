@@ -9,7 +9,7 @@ import { test, expect } from "@playwright/test";
 
 /* global setMode, fernView, dragonState, vectorColors, SOLID_COLORS, buildShareHash, applyShareLink, els, mode,
    requestRender, VECTOR_VIEWS, LINE_CURVES, captureShareBlob, BACKDROP_CENTER_RGB, BACKDROP_EDGE_RGB, fittedVectorModes, fitVectorView,
-   vectorFitHalfHeight */
+   vectorFitHalfHeight, curveRamp, hueTurned */
 
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
 const SHAPES = ["koch", "tree", "hexaflake", "dragon", "hilbert", "gosper", "arrowhead", "fern", "sierpinski", "levy", "vicsek"];
@@ -88,6 +88,41 @@ test.describe("the backdrop", () => {
       expect(lum(side), `left edge ${side} darker than the middle ${mid}`).toBeLessThan(lum(mid) - 10);
       expect(lum(corner), `corner ${corner} darker than the left edge ${side}`).toBeLessThan(lum(side));
       expect(lum(corner)).toBeGreaterThan(0);
+    });
+  }
+
+  // 1.50.1: the four chaos-game views fill a pixel buffer with the backdrop themselves (backdropPixels), which
+  // rounded every pixel to the nearest level and banded in steps about 40 px wide (25 distinct colors in the empty
+  // lower part of a phone canvas); the Canvas2D views' gradient was dithered by the browser. Now both are dithered.
+  for (const m of ["hilbert", ...IFS]) {
+    test(`${m}: the backdrop is dithered, not banded, and its center and edge colors are unchanged`, async ({ page }) => {
+      await show(page, m);
+      await page.evaluate((m) => {
+        Object.assign(VECTOR_VIEWS[m][0].view, { cx: 1e6, cy: 1e6, rotation: 0 });
+        requestRender();
+      }, m);
+      await frames(page);
+      await frames(page);
+      const r = await page.evaluate((m) => {
+        const canvas = VECTOR_VIEWS[m][1], w = canvas.width, h = canvas.height;
+        const px = canvas.getContext("2d").getImageData(0, 0, w, h).data;
+        // The empty strip between 80% and 95% of the height, where the gradient is gentle.
+        let pairs = 0, differ = 0;
+        for (let y = Math.floor(h * 0.8); y < Math.floor(h * 0.95); y++) {
+          for (let x = 1; x < w; x++) {
+            const i = (y * w + x) * 4;
+            pairs++;
+            if (px[i] !== px[i - 4] || px[i + 1] !== px[i - 3] || px[i + 2] !== px[i - 2]) differ++;
+          }
+        }
+        return { changeRate: differ / pairs };
+      }, m);
+      expect(r.changeRate, `share of horizontal neighbors that differ: ${r.changeRate.toFixed(2)} (banded: 0.02 to 0.06)`).toBeGreaterThan(0.4);
+      // The mean over a block is still the backdrop's color: the dither averages out (the corner and center tests above
+      // hold the same for all eleven shapes).
+      const mid = await block(page, m, 0.5, 0.46, 9, 9);
+      const center = await page.evaluate(() => BACKDROP_CENTER_RGB);
+      for (let q = 0; q < 3; q++) expect(Math.abs(mid[q] - center[q]), `middle channel ${q}: ${mid}`).toBeLessThanOrEqual(2);
     });
   }
 
@@ -193,7 +228,9 @@ test.describe("color along the curves", () => {
       expect(start.n, "start has line pixels").toBeGreaterThan(5);
       expect(end.n, "end has line pixels").toBeGreaterThan(5);
       const picked = await pickedHue(page, m);
-      expect(hueGap(start.hue, end.hue), `start hue ${start.hue.toFixed(0)}, end hue ${end.hue.toFixed(0)}`).toBeGreaterThan(40);
+      // 1.50.1 narrowed the sweep from 90 to 56 OKLCH degrees (Gold drifted to salmon and lime), which reads as
+      // about 40 degrees of HSV hue on the dragon's Autumn: still tens of degrees, so the bound is 30, not 40.
+      expect(hueGap(start.hue, end.hue), `start hue ${start.hue.toFixed(0)}, end hue ${end.hue.toFixed(0)}`).toBeGreaterThan(30);
       expect(hueGap(start.hue, picked), `start hue ${start.hue.toFixed(0)} vs picked ${picked.toFixed(0)}`).toBeLessThan(60);
       expect(hueGap(end.hue, picked), `end hue ${end.hue.toFixed(0)} vs picked ${picked.toFixed(0)}`).toBeLessThan(60);
       // The other way round: nearer the middle, the picked color's own hue.
@@ -203,6 +240,42 @@ test.describe("color along the curves", () => {
       }, [m, depth]);
       const mid = await windowHue(page, m, picks[0], picks[1]);
       expect(hueGap(mid.hue, picked), `mid hue ${mid.hue.toFixed(0)} vs picked ${picked.toFixed(0)}`).toBeLessThan(30);
+    });
+  }
+
+  // The brightness of the line pixels (the brightest quarter of the window's lit pixels, so the dark backdrop
+  // and antialiasing don't count) around a canvas point.
+  function windowBrightness(page, m, sx, sy, radius = 14) {
+    return page.evaluate(([m, sx, sy, radius]) => {
+      const canvas = VECTOR_VIEWS[m][1];
+      const x0 = Math.max(0, Math.round(sx - radius)), y0 = Math.max(0, Math.round(sy - radius));
+      const w = Math.min(canvas.width, Math.round(sx + radius)) - x0, h = Math.min(canvas.height, Math.round(sy + radius)) - y0;
+      const px = canvas.getContext("2d").getImageData(x0, y0, w, h).data;
+      const sums = [];
+      for (let i = 0; i < px.length; i += 4) sums.push(px[i] + px[i + 1] + px[i + 2]);
+      sums.sort((a, b) => b - a);
+      const top = sums.slice(0, Math.max(5, sums.length >> 2));
+      return top.reduce((a, b) => a + b, 0) / top.length;
+    }, [m, sx, sy, radius]);
+  }
+
+  for (const m of CURVES) {
+    test(`${m} in White: no hue to turn, so it runs from dim to bright along its length`, async ({ page }) => {
+      await page.evaluate((m) => { setMode(m); vectorColors[m] = SOLID_COLORS.findIndex((c) => c.name === "White"); }, m);
+      const depth = m === "dragon" ? 8 : 5;
+      await page.evaluate(([m, d]) => { dragonState.depth = d; fittedVectorModes.add(m); fitVectorView(m); requestRender(); }, [m, depth]);
+      await frames(page);
+      // The ramp itself: dim at the start, bright at the end, brightening all the way.
+      const ramp = await page.evaluate(() => curveRamp(SOLID_COLORS.findIndex((c) => c.name === "White")).map((c) => c.match(/\d+/g).map(Number)));
+      const sum = (c) => c[0] + c[1] + c[2];
+      expect(sum(ramp[0]), `start ${ramp[0]} vs end ${ramp[ramp.length - 1]}`).toBeLessThan(sum(ramp[ramp.length - 1]) * 0.72);
+      for (let i = 1; i < ramp.length; i++) expect(sum(ramp[i]), `step ${i}`).toBeGreaterThanOrEqual(sum(ramp[i - 1]));
+      // ... and the drawn line really is dimmer at the start of the curve than at its end.
+      const [a, b] = await curveEnds(page, m, depth);
+      const start = await windowBrightness(page, m, a[0], a[1]);
+      const end = await windowBrightness(page, m, b[0], b[1]);
+      expect(start, `line brightness at the start ${start.toFixed(0)} vs the end ${end.toFixed(0)}`).toBeLessThan(end * 0.85);
+      expect(start, "but the start is still clearly visible (the backdrop's sum is about 70)").toBeGreaterThan(150);
     });
   }
 
@@ -266,6 +339,45 @@ test.describe("no glow in lite mode", () => {
       expect(r.full.lit, `lit pixels, full ${r.full.lit} vs lite ${r.lite.lit}`).toBeGreaterThan(r.lite.lit * 1.15);
     });
   }
+});
+
+// hueTurned (colormaps.js) turns a color's hue in OKLCH since 1.50.1: lightness and chroma stay, the hue moves by the
+// angle asked, and a turned color outside sRGB loses chroma (never lightness or hue) until it fits.
+test.describe("hueTurned", () => {
+  test("keeps lightness and chroma and rotates the hue by the angle asked", async ({ page }) => {
+    const rows = await page.evaluate(() => {
+      const lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+      const lch = ([r, g, b]) => {
+        const R = lin(r), G = lin(g), B = lin(b);
+        const l = Math.cbrt(0.4122214708 * R + 0.5363325363 * G + 0.0514459929 * B);
+        const m = Math.cbrt(0.2119034982 * R + 0.6806995451 * G + 0.1073969566 * B);
+        const s = Math.cbrt(0.0883024619 * R + 0.2817188376 * G + 0.6299787005 * B);
+        const a = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s, bb = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s;
+        return { L: 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s, C: Math.hypot(a, bb), h: Math.atan2(bb, a) * 180 / Math.PI };
+      };
+      const out = [];
+      for (const { name, rgb } of SOLID_COLORS) {
+        if (rgb.every((v) => Math.abs(v - rgb[0]) < 8)) continue;   // White: no hue to turn
+        for (const deg of [-56, -28, -10, 10, 28, 56]) {
+          const turned = hueTurned(rgb, deg), a = lch(rgb), b = lch(turned);
+          out.push({ name, deg, dL: b.L - a.L, dh: ((b.h - a.h - deg + 540) % 360) - 180, cRatio: b.C / a.C, inRange: turned.every((v) => v >= 0 && v <= 255) });
+        }
+      }
+      return out;
+    });
+    expect(rows.length).toBe(36);
+    for (const r of rows) {
+      const msg = `${r.name} ${r.deg}: dL ${r.dL.toFixed(4)}, hue error ${r.dh.toFixed(2)}, chroma x${r.cRatio.toFixed(2)}`;
+      expect(Math.abs(r.dL), msg).toBeLessThan(0.005);
+      expect(Math.abs(r.dh), msg).toBeLessThan(0.5);
+      expect(r.cRatio, msg).toBeLessThan(1.01);
+      expect(r.cRatio, msg).toBeGreaterThan(Math.abs(r.deg) <= 10 ? 0.95 : Math.abs(r.deg) <= 28 ? 0.75 : 0.6);
+      expect(r.inRange, msg).toBe(true);
+    }
+    // And a turn of 0 gives the color back.
+    const same = await page.evaluate(() => SOLID_COLORS.map((c) => hueTurned(c.rgb, 0).map((v, q) => Math.abs(v - c.rgb[q]))));
+    for (const diffs of same) for (const d of diffs) expect(d).toBeLessThan(0.5);
+  });
 });
 
 test.describe("share links and the color picker", () => {
