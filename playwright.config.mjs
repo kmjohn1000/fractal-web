@@ -4,7 +4,8 @@
 // compared against golden baselines in tests/baselines/<project>/.
 import { defineConfig, devices } from "@playwright/test";
 
-const PORT = 8744;
+// PW_PORT lets several checkouts (git worktrees) run the suite at the same time.
+const PORT = Number(process.env.PW_PORT || 8744);
 // The "chromium" channel is Chrome's new headless mode, which renders WebGL
 // on the GPU (ANGLE on Metal); the default headless shell falls back to
 // SwiftShader, which takes over a minute per deep-zoom place.
