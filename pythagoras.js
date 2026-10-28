@@ -76,6 +76,17 @@ const TREE_WOOD_RGB = [158, 104, 62];  // the trunk and first two branches' wood
 const TREE_WOOD_BANDS = 1;     // bands (two levels each) of wood from the trunk up; the picked color carries the canopy
 const TREE_WOOD_COLOR = "Green";  // the only picked color with a wooden trunk: a brown trunk under Violet or Rose reads as a different tree, not a trunk
 
+// The color button's pill (colormap-picker.js) for the tree: the trunk to the
+// canopy. Under Green that is wood, then the picked color after a short blend
+// (a long one would pass through khaki); under every other color the picked
+// color shaded as the trunk is, up to itself. Returns [css color, position %] stops.
+function treeSwatchStops(colorIndex) {
+  const { rgb, name } = SOLID_COLORS[colorIndex];
+  const css = (c) => `rgb(${c.map((v) => Math.round(v)).join(",")})`;
+  if (name === TREE_WOOD_COLOR) return [[css(TREE_WOOD_RGB), 0], [css(TREE_WOOD_RGB), 30], [css(rgb), 52], [css(rgb), 100]];
+  return [[css(rgb.map((v) => v * TREE_DEPTH_MIN)), 0], [css(rgb), 100]];
+}
+
 // The squares of the tree the viewport needs, in the order and with the
 // geometry of pythagorasTree(depth), written to buf as world-space base
 // edges (ax, ay, bx, by; the square stands on the left of A->B). A square

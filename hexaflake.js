@@ -62,6 +62,16 @@ const HEX_GUTTER_PX_MIN = 7;     // canvas px: hexagons with a smaller radius ge
 const HEX_GUTTER_RGB = "rgba(4,7,14,0.6)";  // near-black navy, not pure black
 const HEX_GUTTER_LITE_PX_MIN = 40;  // the same limit while a drag or pinch is in progress (opts.lite)
 
+// The fill (an rgb array, bytes) of one level for the picked color's rgb.
+// (Also read by the color button's pill, colormap-picker.js.)
+function hexaflakeShade(base, level) {
+  const byte = (v) => Math.max(0, Math.min(255, Math.round(v)));
+  const t = Math.min(level, HEX_BRIGHT_LEVELS) / HEX_BRIGHT_LEVELS;
+  let f = HEX_BRIGHT_MIN + (1 - HEX_BRIGHT_MIN) * t;
+  if (level > HEX_BRIGHT_LEVELS && (level - HEX_BRIGHT_LEVELS) % 2) f *= HEX_ALT_DIM;
+  return hueTurned(base, HEX_HUE_SPAN * (1 - t)).map((v) => byte(v * f));
+}
+
 // The hexagons of the flake the viewport needs, in the order of
 // hexaflakeHexagons(depth) (the ones that are visible, only), written to buf
 // as x, y pairs with their levels in lvl. A hexagon whose whole subtree is
@@ -140,15 +150,8 @@ function createHexaflakeView(canvas) {
   function levelFills(colorIndex) {
     if (colorIndex === cssKey) return css;
     const base = SOLID_COLORS[colorIndex].rgb;
-    const byte = (v) => Math.max(0, Math.min(255, Math.round(v)));
     css = [];
-    for (let level = 0; level <= HEX_MAX_LEVEL; level++) {
-      const t = Math.min(level, HEX_BRIGHT_LEVELS) / HEX_BRIGHT_LEVELS;
-      let f = HEX_BRIGHT_MIN + (1 - HEX_BRIGHT_MIN) * t;
-      if (level > HEX_BRIGHT_LEVELS && (level - HEX_BRIGHT_LEVELS) % 2) f *= HEX_ALT_DIM;
-      const [r, g, b] = hueTurned(base, HEX_HUE_SPAN * (1 - t));
-      css.push(`rgb(${byte(r * f)},${byte(g * f)},${byte(b * f)})`);
-    }
+    for (let level = 0; level <= HEX_MAX_LEVEL; level++) css.push(`rgb(${hexaflakeShade(base, level).join(",")})`);
     cssKey = colorIndex;
     return css;
   }

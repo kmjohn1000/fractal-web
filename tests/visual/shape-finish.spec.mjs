@@ -365,13 +365,19 @@ test.describe("hueTurned", () => {
       }
       return out;
     });
-    expect(rows.length).toBe(36);
+    // Nine chromatic colors (all but White) x six turns; 1.52.0 added Blue, Teal and Coral to the six, so 36 became 54.
+    expect(await page.evaluate(() => SOLID_COLORS.length)).toBe(10);
+    expect(rows.length).toBe(9 * 6);
     for (const r of rows) {
       const msg = `${r.name} ${r.deg}: dL ${r.dL.toFixed(4)}, hue error ${r.dh.toFixed(2)}, chroma x${r.cRatio.toFixed(2)}`;
       expect(Math.abs(r.dL), msg).toBeLessThan(0.005);
       expect(Math.abs(r.dh), msg).toBeLessThan(0.5);
       expect(r.cRatio, msg).toBeLessThan(1.01);
-      expect(r.cRatio, msg).toBeGreaterThan(Math.abs(r.deg) <= 10 ? 0.95 : Math.abs(r.deg) <= 28 ? 0.75 : 0.6);
+      // Blue (1.52.0) sits at the sRGB edge: turned toward cyan (negative degrees) it keeps 91% of its chroma at -10 degrees,
+      // 75% at -21 and about 60% from -45 on, like Green turned toward yellow (69% at +45), so its floors are a little
+      // lower. Turned the other way (toward violet) it keeps all of it.
+      const floors = r.name === "Blue" && r.deg < 0 ? [0.88, 0.65, 0.55] : [0.95, 0.75, 0.6];
+      expect(r.cRatio, msg).toBeGreaterThan(Math.abs(r.deg) <= 10 ? floors[0] : Math.abs(r.deg) <= 28 ? floors[1] : floors[2]);
       expect(r.inRange, msg).toBe(true);
     }
     // And a turn of 0 gives the color back.

@@ -1,5 +1,6 @@
-// The palettes of the Pythagoras tree and the Hexaflake (1.48.1, 1.50.1), for each of the seven picker colors:
-// the tree has a wooden trunk and first two branches when the picked color is Green (the other six shade the
+// The palettes of the Pythagoras tree and the Hexaflake (1.48.1, 1.50.1), for each of the ten picker colors (the
+// last three, Blue, Teal and Coral, since 1.52.0):
+// the tree has a wooden trunk and first two branches when the picked color is Green (the other nine shade the
 // trunk in their own color), with the picked color (and a hue turned 12 degrees in OKLCH on every other level)
 // carrying the canopy and the faces turned from the light still standing out from the backdrop; the hexaflake's
 // shade climbs level by level from a dark shadow turned 7 degrees (OKLCH) from the picked hue (its outermost level a
@@ -12,8 +13,8 @@ import { test, expect } from "@playwright/test";
    requestRender, VECTOR_VIEWS, vectorFitHalfHeight, pythagorasTree, BACKDROP_CENTER_RGB */
 
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
-const COLORS = [0, 1, 2, 3, 4, 5, 6];   // Green, Autumn, Violet, Ice, Rose, Gold, White
-const CHROMATIC = [0, 1, 2, 3, 4, 5];   // White has no hue
+const COLORS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];   // Green, Autumn, Violet, Ice, Rose, Gold, White, Blue, Teal, Coral (7-9 added in 1.52.0)
+const CHROMATIC = [0, 1, 2, 3, 4, 5, 7, 8, 9];   // White (6) has no hue
 
 let pageErrors = [];
 
@@ -105,7 +106,7 @@ function hueSpread(page, m, picked, region = null) {
 const GREEN = 0;
 
 test.describe("Pythagoras tree", () => {
-  test("Green has a wooden trunk, unlike its canopy; the six other colors shade the trunk in their own color", async ({ page }) => {
+  test("Green has a wooden trunk, unlike its canopy; the nine other colors shade the trunk in their own color", async ({ page }) => {
     for (const ci of COLORS) {
       await show(page, "tree", 9, ci);
       // The middle of the trunk square (a unit square on [-0.5, 0.5] x [0, 1]).

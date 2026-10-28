@@ -26,28 +26,61 @@ function labelColorButton(btn, action, name) {
   btn.title = `${action} (${name})`;
 }
 
-// The pill on each solid-color button shows that mode's color; the curve
-// row's pill follows whichever curve is shown.
+// The pill on a solid-color button is a miniature of that shape's real ramp
+// for the picked color, left to right, as a few gradient stops (the same
+// functions the render uses, so the two can't drift apart):
+// - the line curves: the start, middle and end of their hue ramp (curveRamp);
+// - the dot shapes: the color of each of their transforms, by hue offset
+//   (ifsTransformColors), which is the tint of each self-similar piece;
+// - the hexaflake and Koch: the level / generation ladder from its darkest
+//   shade to the picked color (the shades beyond that only alternate dimmer);
+// - the tree: the trunk's shade up to the canopy's picked color.
+// White has no hue to turn, so its ramps are dim to bright.
+function pillGradient(key, colorIndex) {
+  const rgbCss = (c) => `rgb(${c.map((v) => Math.round(v)).join(",")})`;
+  const even = (colors) => colors.map((c, i) => [typeof c === "string" ? c : rgbCss(c), 100 * i / (colors.length - 1)]);
+  const base = SOLID_COLORS[colorIndex].rgb;
+  let stops;
+  if (key === "tree") stops = treeSwatchStops(colorIndex);
+  else if (key === "koch") stops = even([0, 1, 2, 3, 4].map((g) => kochShade(base, g, 4)));
+  else if (key === "hexaflake") stops = even([0, 1, 2, 3, 4].map((level) => hexaflakeShade(base, level)));
+  else if (IFS_SYSTEMS[key]) {
+    const colors = ifsTransformColors(key, colorIndex), offsets = IFS_SYSTEMS[key].hueOffsets;
+    stops = even(colors.map((c, i) => [offsets[i], c]).sort((a, b) => a[0] - b[0]).map(([, c]) => c));
+  } else {
+    const ramp = curveRamp(colorIndex);
+    stops = even([ramp[0], ramp[Math.floor(ramp.length / 2)], ramp[ramp.length - 1]]);
+  }
+  return `linear-gradient(to right, ${stops.map(([c, pos]) => `${c} ${pos}%`).join(", ")})`;
+}
+
+// The pill on each solid-color button shows that mode's ramp (pillGradient);
+// the curve row's pill follows whichever curve is shown, the dot row's
+// whichever dot shape. The label still names the picked color.
 function updateColorSwatches() {
   [
-    [els.fernColorBtn, els.fernColorSwatch, vectorColors[fernView.system]],
-    [els.kochColormapBtn, els.kochColorSwatch, vectorColors.koch],
-    [els.treeColormapBtn, els.treeColorSwatch, vectorColors.tree],
-    [els.hexaflakeColormapBtn, els.hexaflakeColorSwatch, vectorColors.hexaflake],
-    [els.dragonColormapBtn, els.dragonColorSwatch, vectorColors[dragonView.curve]],
-  ].forEach(([btn, pill, i]) => {
-    pill.style.background = solidCss(i);
+    [els.fernColorBtn, els.fernColorSwatch, fernView.system],
+    [els.kochColormapBtn, els.kochColorSwatch, "koch"],
+    [els.treeColormapBtn, els.treeColorSwatch, "tree"],
+    [els.hexaflakeColormapBtn, els.hexaflakeColorSwatch, "hexaflake"],
+    [els.dragonColormapBtn, els.dragonColorSwatch, dragonView.curve],
+  ].forEach(([btn, pill, key]) => {
+    const i = vectorColors[key];
+    pill.style.background = pillGradient(key, i);
     labelColorButton(btn, "Choose color", SOLID_COLORS[i].name);
   });
 }
 
 // solidKey: null for the escape-time colormap, or a vectorColors key.
 function openColormapMenu(solidKey) {
+  // Each item carries the index it sets: the solid colors are listed in hue
+  // order (SOLID_COLOR_ORDER), which is not their SOLID_COLORS index.
   const items = solidKey
-    ? SOLID_COLORS.map((c, i) => ({ name: c.name, bg: solidCss(i) }))
-    : COLORMAPS.map((c) => ({ name: c.name, bg: cmGradient(c.stops) }));
+    ? SOLID_COLOR_ORDER.map((i) => ({ index: i, name: SOLID_COLORS[i].name, bg: solidCss(i) }))
+    : COLORMAPS.map((c, i) => ({ index: i, name: c.name, bg: cmGradient(c.stops) }));
   const current = !solidKey ? colormapIndex : vectorColors[solidKey];
-  els.colormapMenu.replaceChildren(...items.map((item, i) => {
+  els.colormapMenu.replaceChildren(...items.map((item) => {
+    const i = item.index;
     const btn = document.createElement("button");
     btn.setAttribute("role", "menuitemradio");
     btn.setAttribute("aria-checked", String(i === current));
@@ -100,6 +133,21 @@ function openColormapMenu(solidKey) {
       [els.treeColormapBtn.id]: "tree", [els.hexaflakeColormapBtn.id]: "hexaflake", [els.dragonColormapBtn.id]: dragonView.curve,
     }[btn.id] || null);
   });
+});
+// Keyboard: the arrow keys (and Home/End) move the focus between the rows, which
+// wrap around. Without this the document's arrow-key handler panned the shape
+// behind the open menu instead; with ten rows, stepping beats Tab-ing the whole
+// list. Enter or Space picks the focused row, as for any button.
+els.colormapMenu.addEventListener("keydown", (e) => {
+  const step = { ArrowUp: -1, ArrowDown: 1, Home: -Infinity, End: Infinity }[e.key];
+  if (!step || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+  const rows = [...els.colormapMenu.querySelectorAll("button")];
+  const i = rows.indexOf(document.activeElement);
+  if (i < 0) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const next = Math.abs(step) === Infinity ? (step < 0 ? 0 : rows.length - 1) : (i + step + rows.length) % rows.length;
+  rows[next].focus();
 });
 document.addEventListener("pointerdown", (e) => {
   if (!els.colormapMenu.classList.contains("open")) return;

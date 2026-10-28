@@ -178,8 +178,11 @@ test.describe("a color per mode", () => {
       await show(page, m);
       const p = await pill();
       expect(p.label, m).toBe(`Choose color (${DEFAULT_COLORS[m]})`);
-      const expected = await page.evaluate((m) => `rgb(${SOLID_COLORS[vectorColors[m]].rgb.join(", ")})`, m);
-      expect(p.bg, m).toBe(expected);
+      // Since 1.52.0 the pill is a miniature of the shape's ramp, not the flat base color: one gradient stop per
+      // transform (the shape's address colors, by hue offset; solid-colors.spec.mjs checks the stops' values).
+      const transforms = await page.evaluate((m) => ifsTransformColors(m, vectorColors[m]).length, m);
+      expect(p.bg, m).toMatch(/^linear-gradient\(/);
+      expect(p.bg.match(/rgb\(/g), m).toHaveLength(transforms);
     }
   });
 });

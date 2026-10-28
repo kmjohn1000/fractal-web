@@ -111,9 +111,12 @@ const COLORMAPS = [
 // Flat colors for the modes that aren't depth-mapped escape-time images:
 // the fern/IFS point clouds and the Koch/tree/line-curve drawings. Those
 // used to sample COLORMAPS at depth/maxDepth, which puts low depths at the
-// colormap's dark end -- near-invisible on the black background. Index 0
-// (green) is the fern's default; each line mode has its own default in
-// state-colors.js (vectorColors).
+// colormap's dark end -- near-invisible on the black background. Each mode
+// has its own default in state-colors.js (vectorColors), picked by name.
+// The array order is the INDEX a share link carries (`c=`), so it is
+// append-only: never reorder or change entries 0-6 (1.52.0 added 7-9 after
+// a palette review found no true blue, no teal and no warm red-orange).
+// The menu lists them in hue order instead (SOLID_COLOR_ORDER).
 const SOLID_COLORS = [
   { name: "Green",  rgb: [70, 190, 90] },
   { name: "Autumn", rgb: [214, 122, 47] },
@@ -122,7 +125,15 @@ const SOLID_COLORS = [
   { name: "Rose",   rgb: [214, 92, 140] },
   { name: "Gold",   rgb: [226, 186, 64] },
   { name: "White",  rgb: [236, 236, 240] },
+  { name: "Blue",   rgb: [50, 135, 240] },
+  { name: "Teal",   rgb: [30, 160, 136] },
+  { name: "Coral",  rgb: [242, 140, 125] },
 ];
+// The order the color menu shows the swatches in, as SOLID_COLORS indices:
+// around the hue wheel from red, White last. Display only; the stored
+// index never changes with it.
+const SOLID_COLOR_ORDER = ["Rose", "Coral", "Autumn", "Gold", "Green", "Teal", "Ice", "Blue", "Violet", "White"]
+  .map((name) => SOLID_COLORS.findIndex((c) => c.name === name));
 const solidCss = (i) => `rgb(${SOLID_COLORS[i].rgb.join(", ")})`;
 
 // Line width (canvas px) for a line drawing whose segments are segPx long

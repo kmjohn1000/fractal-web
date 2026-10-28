@@ -64,6 +64,16 @@ const KOCH_CORE_MIN_PX = 1.3;     // css px: the outline's line is never thinner
 const KOCH_GROW_MS = 320;          // a new generation grows in over this long (the depth slider's step)
 const KOCH_GROW_STEP_SHARE = 0.6;  // ... and never over more than this share of a depth-play step
 
+// The shade of generation g for the picked color: brightness and hue climb
+// from the level-0 triangle to the picked color over `span` generations.
+// (Also read by the color button's pill, colormap-picker.js.)
+function kochShade(base, g, span) {
+  const t = span > 0 ? Math.min(g, KOCH_BRIGHT_LEVELS, span) / span : 1;
+  let f = KOCH_BRIGHT_MIN + (1 - KOCH_BRIGHT_MIN) * t;
+  if (g > KOCH_BRIGHT_LEVELS && (g - KOCH_BRIGHT_LEVELS) % 2) f *= KOCH_ALT_DIM;
+  return hueTurned(base, KOCH_HUE_SPAN * (1 - t)).map((v) => Math.max(0, Math.min(255, Math.round(v * f))));
+}
+
 // The buffers kochAdaptive collects triangles into (a bump is made of three
 // vertices of the walk, so the vertex budget bounds them).
 function makeKochTris(maxVerts) {
@@ -225,15 +235,6 @@ function createKochView(canvas) {
   }
   function cancelGrow() { growth = null; }
 
-  // The shade of generation g for the picked color: brightness and hue climb
-  // from the level-0 triangle to the picked color over `span` generations.
-  function shadeOf(base, g, span) {
-    const t = span > 0 ? Math.min(g, KOCH_BRIGHT_LEVELS, span) / span : 1;
-    let f = KOCH_BRIGHT_MIN + (1 - KOCH_BRIGHT_MIN) * t;
-    if (g > KOCH_BRIGHT_LEVELS && (g - KOCH_BRIGHT_LEVELS) % 2) f *= KOCH_ALT_DIM;
-    return hueTurned(base, KOCH_HUE_SPAN * (1 - t)).map((v) => Math.max(0, Math.min(255, Math.round(v * f))));
-  }
-
   function render(opts) {
     resize();
     paintBackdrop(ctx, canvas.width, canvas.height);
@@ -326,7 +327,7 @@ function createKochView(canvas) {
     // progress, so the colors slide rather than jump.
     const fin = r.maxLevel;
     const span = Math.min(KOCH_BRIGHT_LEVELS, growth ? growth.gen - 1 + growS : fin);
-    const css = (g) => `rgb(${shadeOf(base, g, span).join(",")})`;
+    const css = (g) => `rgb(${kochShade(base, g, span).join(",")})`;
     stats.finest = fin;
     stats.tris = tri.n;
 
@@ -373,7 +374,7 @@ function createKochView(canvas) {
     stats.fills++;
 
     // The level-0 triangle, a deep radial gradient.
-    const c0 = shadeOf(base, 0, span);
+    const c0 = kochShade(base, 0, span);
     const sx = (x, y) => aff.hw + aff.a * (x - aff.cx) + aff.b * (y - aff.cy);
     const sy = (x, y) => aff.hh + aff.c * (x - aff.cx) + aff.d * (y - aff.cy);
     const half = KOCH_EDGE / 2;

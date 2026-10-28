@@ -84,9 +84,10 @@ that the dragon stays colored when turned, when zoomed past the slider's depth
 deep zoom keeps the backdrop.
 
 `tree-hexaflake-palette.spec.mjs` covers the palettes of the Pythagoras tree and
-the Hexaflake across all seven picker colors (including White and Gold). Tree: the
+the Hexaflake across all ten picker colors (including White and Gold; Blue, Teal and
+Coral since 1.52.0). Tree: the
 trunk is brown wood and differs from the canopy by a visible distance only in Green
-(1.50.1); in the other six colors it keeps the picked color's proportions, only
+(1.50.1); in the other nine colors it keeps the picked color's proportions, only
 darker; the darkest face of every color (found as flat-fill pixels clearly above the
 backdrop) is over 1.4:1 against the backdrop's center, a WCAG luminance ratio used as a
 proxy for visibility; the canopy keeps the picked hue (the alternate levels are
@@ -118,7 +119,7 @@ there are) and the level-0 triangle is darker (its center under 0.9 of the picke
 brightness since 1.50.1, it was 0.8) and in the same hue family, and its shade near a
 corner is over 2.2:1 against the backdrop in every color; past the
 ramp (zoomed in at depth 8) generations 4, 5 and 6 alternate in brightness by more
-than 8% and keep the picked hue; all seven colors light over 50,000 pixels and have
+than 8% and keep the picked hue; all ten colors (seven until 1.52.0) light over 50,000 pixels and have
 the same ramp; the dark gutter between a big triangle and its parent is darker than
 both sides, and lite frames draw none; a full frame has a glow and a lite frame
 doesn't, draws fewer fills and strokes and lights fewer pixels, and the number of
@@ -210,12 +211,48 @@ asked for (link, wheel, box, keys) with the info card saying so; Back and Reset.
 triangle, Lévy C, Vicsek; 1.47.0): each picture spans several hues around its picked
 color, picking another color moves the whole picture to it, a deep zoom stays tinted
 (not gray or black), each mode has its own color (Green, Violet, Rose, Gold to start)
-and a pick changes only that mode, the toolbar pill and its name follow the mode, and
+and a pick changes only that mode, the toolbar pill (a gradient with one stop per
+transform since 1.52.0, not the flat base color) and its name follow the mode, and
 share links carry the mode's color (links from before 1.47.0 still open). In White
 (1.50.1) each transform takes its own brightness (dimmest 0.7 of the brightest) so the
-address cue survives, and the six chromatic colors keep their lightness. Their
+address cue survives, and the nine chromatic colors keep their lightness. Their
 baselines are `mode-fern`, `mode-sierpinski`, `mode-levy` and `mode-vicsek` in
 app.spec.mjs.
+
+`solid-colors.spec.mjs` covers the ten solid colors of the eleven pattern shapes
+(1.52.0). The table is append-only because share links carry the index: Green,
+Autumn, Violet, Ice, Rose, Gold and White are still 0-6 with the same rgb, Blue,
+Teal and Coral are 7-9, and the eleven shapes still start in their own colors. The
+color menu lists the swatches in hue order (Rose, Coral, Autumn, Gold, Green, Teal,
+Ice, Blue, Violet, White, `SOLID_COLOR_ORDER`; display only) for every shape's color
+button, with only the current row checked; clicking each swatch of a curve (dragon)
+and a dot shape (Lévy) sets that color's index (not its position), closes the menu,
+changes only that shape's color and updates the pill's label; opening focuses the
+checked row, the arrow keys (and Home and End) step the focus between the rows with
+wrap-around and no longer pan the shape behind the menu, Enter picks and Escape closes
+with the focus back on the button (Tab is not tested: where WebKit's Tab starts after
+a click on the opener differs). On 393x852 the ten rows fit without scrolling; on
+360x640 and the landscape 852x393 and 667x375, and at 1.5x and 2x text, the menu stays
+on screen with no sideways scroll, opens with the checked row (the last, White) in
+view and every row can be scrolled to (it scrolls on the landscape sizes). The pill
+for every shape and every one of the ten colors: its first, middle and last stops
+are the render's own (`curveRamp` at 0, 0.5 and 1 for the curves, one stop per
+`ifsTransformColors` transform by hue offset for the dots, `kochShade` and
+`hexaflakeShade` from the darkest level up to the picked color, the picked color
+shaded for the tree with the wood first only in Green), it is a CSS gradient (vector,
+so crisp at any pixel density) of 22x10 css px as before, and it follows a menu pick,
+the curve shown and the dot shape shown. Share links: c=0 to c=9 build and parse back
+to themselves for seven shapes, c=10, 11, 99, -1, 1.5 and x are rejected (the
+hexaflake's parser is lenient, so it falls back to its own color), and links
+with c=7, 8, 9 open on a curve and a dot shape. Every color lights over 500 pixels of
+every shape. The dimmest part of every ramp (analytic, a WCAG luminance ratio against
+the backdrop's center) holds floors for all ten colors: the curves 4.5:1 (Violet is
+the lowest old color at 4.77; Blue 5.5, Teal 5.8, Coral 7.8), the dot shapes 4.0 (Violet
+4.25; Blue 4.70, Teal 5.37, Coral 7.49), Koch's level-0 shade 2.5, the hexaflake's
+outer levels 1.35 and the tree's darkest face 1.45. The floors of the drawn pixels are
+in shape-finish, koch-generations and tree-hexaflake-palette, which iterate over all
+ten colors; `hueTurned`'s chroma floors there are a little lower for Blue turned
+toward cyan (it sits at the sRGB edge, like Green turned toward yellow).
 
 `places-sheet.spec.mjs` covers the Places sheet (1.46.0): every place has a unique
 id and an `icons/places/<id>.webp` thumbnail (`node scripts/render_place_thumbs.mjs

@@ -2,6 +2,10 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.52.0 — 2026-10-27
+- Three new colors for the shapes: Blue, Teal and Coral. The color menu lists them around the color wheel, from Rose to White, and the arrow keys step through its rows.
+- The color button now shows a small gradient of the shape's own colors (its curve's hue sweep, the dots' address colors, the snowflake's and hexaflake's shades, the tree's trunk to leaves) instead of one flat color.
+
 ## 1.51.0 — 2026-10-27
 - The info card of each of the eleven shapes now says in two short lines how it is built and its dimension, with the maker and year where they are known (Koch, Bosman, Hilbert, Barnsley, Sierpinski, Vicsek).
 - On a short screen, such as a phone held sideways, or with very large text, the description shortens or leaves out so the card never covers the middle of the shape.

@@ -14,7 +14,7 @@ import { test, expect } from "@playwright/test";
    KOCH_LITE_TRI_BUDGET, kochNav, BACKDROP_CENTER_RGB */
 
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
-const COLORS = [0, 1, 2, 3, 4, 5, 6];   // Green, Autumn, Violet, Ice, Rose, Gold, White
+const COLORS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];   // Green, Autumn, Violet, Ice, Rose, Gold, White, Blue, Teal, Coral (7-9 added in 1.52.0)
 const ICE = 3;
 
 let pageErrors = [];
