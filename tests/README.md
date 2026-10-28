@@ -31,16 +31,26 @@ default itself: only deep views are reduced, Save and Share still finish all
 16, `#passes=N` overrides it, and the reduced picture stays the same picture.
 The store screenshot, video, header and oracle scripts pin 16 as well.
 
-`vector.spec.mjs` covers the Koch, Pythagoras tree and dragon views, which
-are drawn from the viewport (`kochAdaptive`, `treeAdaptive`,
-`dragonAdaptive`): their geometry must equal the plain full-detail
-generators' (`kochSnowflake`, `pythagorasTree`, `dragonCurve`) at depths
-0-6 / 0-10 / 0-14; culling must not change a pixel of what's on screen (the
-same view on a canvas twice the size, compared in the middle); zooming
-in must add levels beyond the depth slider's and say so in the info card; a
-two-finger twist must still work at depth; a nonsense view from a
-hand-edited link must render quickly without errors; and three deep-zoom
-screenshots are compared with baselines.
+`vector.spec.mjs` covers the Koch, Pythagoras tree, hexaflake and the four line
+curves (dragon, Hilbert, Gosper, arrowhead), which are drawn from the viewport
+(`kochAdaptive`, `treeAdaptive`, `hexaflakeAdaptive`, `dragonAdaptive`, and
+`curveAdaptive` behind `hilbertAdaptive`/`gosperAdaptive`/`arrowheadAdaptive`,
+which walk the L-system itself): their geometry must equal the plain
+full-detail generators' (`kochSnowflake`, `pythagorasTree`, `dragonCurve`,
+`LINE_CURVES[curve].points`) at depths 0-6 / 0-10 / 0-14 and every depth of each
+of the three curves' sliders (Hilbert 1-8, Gosper 0-6, arrowhead 0-11), in order,
+with each point's place `t` along the curve (the colors follow it) equal to its
+index over the last; a finer level (Gosper, arrowhead) has every vertex of the
+coarser one; culling must not change a pixel of what's on screen (the same view
+on a canvas twice the size, compared in the middle); zooming in must add levels
+beyond the depth slider's and say so in the info card; a view 4 (Hilbert,
+arrowhead) or sqrt 7, turned (Gosper) per level or two closer to the curve's start
+looks like the original, up to 16,000 times; the color at a vertex is the same
+zoomed in 30-100 times as in the whole curve; a two-finger twist must still work
+at depth; a pinch during Play zooms and is full detail on release; a nonsense view
+from a hand-edited link (including ones on the curve, 1e-300 across) must render
+quickly without errors; and deep-zoom screenshots (Koch, tree, dragon, Hilbert,
+Gosper, arrowhead) are compared with baselines.
 
 `shape-finish.spec.mjs` covers the finish on the eleven pattern shapes (Koch,
 tree, hexaflake, the four line curves, the four dot shapes). Every shape's
@@ -57,8 +67,9 @@ picking another color moves the curve; a hairline core is never under 1.1 css px
 wide. In lite mode (a gesture in progress) the curve is stroked once, not
 twice, and fewer pixels are lit, so the glow is really skipped. Share links and
 the color picker still work for a curve and a dot shape. `vector.spec.mjs` adds
-that the dragon stays colored when turned, when zoomed past the slider's depth,
-and in a lite frame, and that a deep zoom keeps the backdrop.
+that the dragon stays colored when turned, when zoomed past the slider's depth
+(one slice of the ramp, the slice of its place), and in a lite frame, and that a
+deep zoom keeps the backdrop.
 
 `tree-hexaflake-palette.spec.mjs` covers the palettes of the Pythagoras tree and
 the Hexaflake across all seven picker colors (including White and Gold). Tree: the

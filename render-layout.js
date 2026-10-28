@@ -94,8 +94,7 @@ function renderAll() {
   } else if (isCurveMode(mode)) {
     dragonView.render({
       depth: dragonState.depth, colorIndex: vectorColors[dragonView.curve], lite: vectorLite,
-      // Only the dragon is drawn from the viewport; the other curves have a fixed depth.
-      fitHalfHeight: dragonView.curve === "dragon" ? vectorFitHalfHeight("dragon") : undefined,
+      fitHalfHeight: vectorFitHalfHeight(dragonView.curve),
     });
     updateDragonHud();
   } else {

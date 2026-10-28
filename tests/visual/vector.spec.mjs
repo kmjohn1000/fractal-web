@@ -13,7 +13,8 @@ import { test, expect } from "@playwright/test";
    fitVectorView, vectorAffine, kochAdaptive, kochSnowflake, treeAdaptive, pythagorasTree, hexaflakeAdaptive, hexaflakeHexagons,
    dragonAdaptive, dragonCurve, createKochView, createPythagorasTreeView, createHexaflakeView, createCurveView, startDepthPlay,
    stopDepthPlay, vectorLite, mode, buildShareHash, parseShareHash, applyShareLink, els, HEX_SCALE, HEXAFLAKE_DEFAULT_DEPTH,
-   vectorColors, hexaflakeView, activeVectorTarget, dragonView, LINE_CURVES, vectorFitHalfHeight */
+   vectorColors, hexaflakeView, activeVectorTarget, dragonView, LINE_CURVES, vectorFitHalfHeight,
+   hilbertAdaptive, gosperAdaptive, arrowheadAdaptive, curveAdaptive, lcurveSpec */
 
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
 
@@ -47,6 +48,11 @@ async function show(page, modeKey, depth, view) {
     else dragonState.depth = d;
     fittedVectorModes.add(m); // keep setMode's first-visit fit from replacing the view
     Object.assign(VECTOR_VIEWS[m][0].view, v);
+    if (v.cx === null) { // a vertex a third of the way along the curve at this depth
+      const pts = LINE_CURVES[m].points(d);
+      const p = pts[Math.floor(pts.length / 3)];
+      Object.assign(VECTOR_VIEWS[m][0].view, { cx: p[0], cy: p[1] });
+    }
     requestRender();
   }, [modeKey, depth, view]);
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
@@ -135,6 +141,92 @@ test.describe("matches the full-detail geometry", () => {
     expect(r.error).toBeUndefined();
     expect(r.worst).toBeLessThan(1e-9);
   });
+
+  // Hilbert, Gosper and the arrowhead are walked from their L-systems
+  // (curveAdaptive): every depth of every slider, the points are LINE_CURVES'
+  // normalized polyline's, in order, and each point's place t along the curve
+  // (what the colors follow) is its index over the last index.
+  for (const curve of ["hilbert", "gosper", "arrowhead"]) {
+    test(`${curve}, every depth of the slider`, async ({ page }) => {
+      const r = await page.evaluate((curve) => {
+        const walk = { hilbert: hilbertAdaptive, gosper: gosperAdaptive, arrowhead: arrowheadAdaptive }[curve];
+        const L = LINE_CURVES[curve];
+        const out = { worst: 0, worstT: 0, depths: 0 };
+        for (let depth = L.minDepth || 0; depth <= L.maxDepth; depth++) {
+          const aff = vectorAffine({ cx: 0, cy: 0, halfHeight: 2, rotation: 0 }, 4000, 4000);
+          const buf = new Float64Array(2 * 200000), tb = new Float64Array(200000);
+          const got = walk(aff, buf, depth, 0, Infinity, tb);
+          const ref = L.points(depth);
+          if (got.n !== ref.length) return { error: `depth ${depth}: ${got.n} points, expected ${ref.length}` };
+          if (got.level !== depth || got.overflow) return { error: `depth ${depth}: level ${got.level}, overflow ${got.overflow}` };
+          for (let i = 0; i < ref.length; i++) {
+            const x = (buf[2 * i] - 2000) / aff.k, y = (2000 - buf[2 * i + 1]) / aff.k;
+            out.worst = Math.max(out.worst, Math.hypot(x - ref[i][0], y - ref[i][1]));
+            out.worstT = Math.max(out.worstT, Math.abs(tb[i] - i / (ref.length - 1)));
+          }
+          out.depths++;
+        }
+        out.expectedDepths = L.maxDepth - (L.minDepth || 0) + 1;
+        return out;
+      }, curve);
+      expect(r.error).toBeUndefined();
+      expect(r.depths).toBe(r.expectedDepths);
+      expect(r.worst).toBeLessThan(1e-9);
+      expect(r.worstT).toBeLessThan(1e-12);
+    });
+  }
+
+  // The dragon's t is the same: its points are evenly spaced along the curve.
+  test("dragon: each point's place along the curve is its index over the last", async ({ page }) => {
+    const worst = await page.evaluate(() => {
+      let worst = 0;
+      for (let depth = 0; depth <= 14; depth++) {
+        const aff = vectorAffine({ cx: 0, cy: 0, halfHeight: 2, rotation: 0 }, 4000, 4000);
+        const buf = new Float64Array(2 * 20000), tb = new Float64Array(20000);
+        const got = dragonAdaptive(aff, buf, depth, 0, Infinity, tb);
+        for (let i = 0; i < got.n; i++) worst = Math.max(worst, Math.abs(tb[i] - i / (got.n - 1)));
+      }
+      return worst;
+    });
+    expect(worst).toBeLessThan(1e-12);
+  });
+
+  // Levels past the slider's depth draw the same curve finer, inside the same
+  // frame. Gosper's and the arrowhead's vertices at depth d are all vertices
+  // at d + 2 (the picture doesn't move when a level comes in); Hilbert's
+  // centers-of-cells polyline can't nest, so each of its vertices at depth d
+  // has one of the finer level within 0.36 of a step (a quarter of a cell's
+  // diagonal is 0.354).
+  test("a finer level is the same curve: Gosper and the arrowhead nest, Hilbert stays within 0.36 of a step", async ({ page }) => {
+    const r = await page.evaluate(() => {
+      const out = {};
+      for (const [curve, depth, extra] of [["gosper", 3, 2], ["arrowhead", 4, 2], ["arrowhead", 3, 3], ["hilbert", 4, 2], ["hilbert", 4, 1]]) {
+        const spec = lcurveSpec(curve);
+        const aff = vectorAffine({ cx: 0, cy: 0, halfHeight: 2, rotation: 0 }, 4000, 4000);
+        const buf = new Float64Array(2 * 200000);
+        // A pixel limit of 0 and a refPx that asks for exactly depth + extra levels.
+        const refPx = spec.stepLength(depth, depth + extra) * aff.k * 1.0001;
+        const got = curveAdaptive(curve, aff, buf, depth, 0, refPx);
+        const ref = LINE_CURVES[curve].points(depth);
+        const step = Math.hypot(ref[1][0] - ref[0][0], ref[1][1] - ref[0][1]);
+        let worst = 0;
+        for (const [x0, y0] of ref) {
+          let best = Infinity;
+          for (let i = 0; i < got.n; i++) best = Math.min(best, Math.hypot((buf[2 * i] - 2000) / aff.k - x0, (2000 - buf[2 * i + 1]) / aff.k - y0));
+          worst = Math.max(worst, best);
+        }
+        out[`${curve} ${depth}+${extra}`] = { level: got.level, worst: worst / step };
+      }
+      return out;
+    });
+    expect(r["gosper 3+2"]).toMatchObject({ level: 5 });
+    expect(r["arrowhead 4+2"]).toMatchObject({ level: 6 });
+    expect(r["arrowhead 3+3"]).toMatchObject({ level: 6 });
+    expect(r["hilbert 4+2"]).toMatchObject({ level: 6 });
+    expect(r["hilbert 4+1"]).toMatchObject({ level: 5 });
+    for (const k of ["gosper 3+2", "arrowhead 4+2", "arrowhead 3+3"]) expect(r[k].worst, `${k}: depth-d vertices missing from the finer level`).toBeLessThan(1e-9);
+    for (const k of ["hilbert 4+2", "hilbert 4+1"]) expect(r[k].worst, k).toBeLessThan(0.36);
+  });
 });
 
 // Culling must be invisible: the same view drawn on a canvas twice the size
@@ -154,22 +246,33 @@ test.describe("culling changes nothing on screen", () => {
     // cx, cy null: a point a third of the way along the curve.
     { kind: "dragon", depth: 12, view: { cx: null, cy: null, halfHeight: 0.12, rotation: 0 } },
     { kind: "dragon", depth: 12, view: { cx: null, cy: null, halfHeight: 0.05, rotation: 0.6 } },
+    // The other line curves, deep enough to have added levels (and, for Hilbert, to need two pixel limits' worth of nodes).
+    { kind: "hilbert", depth: 7, view: { cx: null, cy: null, halfHeight: 0.12, rotation: 0 } },
+    { kind: "hilbert", depth: 7, view: { cx: null, cy: null, halfHeight: 0.05, rotation: 0.6 } },
+    // Gosper at depth 3, not 5: at 5 its steps are so short (2 px on this small canvas) that the twice-as-big one
+    // hits the frame budget and draws coarser, which is the budget working, not culling.
+    { kind: "gosper", depth: 3, view: { cx: null, cy: null, halfHeight: 0.12, rotation: 0 } },
+    { kind: "gosper", depth: 3, view: { cx: null, cy: null, halfHeight: 0.05, rotation: 0.6 } },
+    { kind: "arrowhead", depth: 10, view: { cx: null, cy: null, halfHeight: 0.12, rotation: 0 } },
+    { kind: "arrowhead", depth: 10, view: { cx: null, cy: null, halfHeight: 0.05, rotation: 0.6 } },
   ];
   for (const c of CASES) {
     test(`${c.kind} depth ${c.depth}, zoomed to ${c.view.halfHeight}, rotation ${c.view.rotation}${c.fill === false ? ", outline" : ""}`, async ({ page }) => {
       const r = await page.evaluate((c) => {
-        const make = { koch: createKochView, tree: createPythagorasTreeView, hexaflake: createHexaflakeView, dragon: createCurveView }[c.kind];
+        const make = { koch: createKochView, tree: createPythagorasTreeView, hexaflake: createHexaflakeView }[c.kind] ?? createCurveView;
         const mount = (w, h) => {
           const el = document.createElement("canvas");
           el.style.cssText = `position:fixed;left:-20000px;top:0;width:${w}px;height:${h}px`;
           document.body.appendChild(el);
           return el;
         };
-        const fit = { koch: 1.08, tree: 2.125, hexaflake: 1.0 }[c.kind] ?? 0.6;
-        const centre = c.view.cx === null ? dragonCurve(c.depth)[Math.floor(2 ** c.depth / 3)] : [c.view.cx, c.view.cy];
+        const fit = { koch: 1.08, tree: 2.125, hexaflake: 1.0, dragon: 0.6 }[c.kind] ?? 1.1;
+        const along = LINE_CURVES[c.kind] ? LINE_CURVES[c.kind].points(c.depth) : null;
+        const centre = c.view.cx === null ? along[Math.floor(along.length / 3)] : [c.view.cx, c.view.cy];
         const draw = (w, h, scale) => {
           const el = mount(w, h);
           const v = make(el);
+          if (LINE_CURVES[c.kind]) v.setCurve(c.kind);
           Object.assign(v.view, c.view, { cx: centre[0], cy: centre[1], halfHeight: c.view.halfHeight * scale });
           v.render({ depth: c.depth, fill: c.fill !== false, colorIndex: 1, fitHalfHeight: fit * scale });
           const px = el.getContext("2d").getImageData(0, 0, el.width, el.height);
@@ -202,13 +305,17 @@ test.describe("zooming in adds detail", () => {
     { mode: "tree", depth: 9, point: { cx: -2.2, cy: 3.0 }, fit: 2.125, zoom: 300 },
     { mode: "hexaflake", depth: 4, point: { cx: 1, cy: 0 }, fit: 1.0, zoom: 300 },
     { mode: "dragon", depth: 13, point: { cx: -0.35, cy: -0.24 }, fit: 0.9, zoom: 400 },
+    // The other line curves: the view is centered on a vertex a third of the way along the curve at the slider's depth.
+    { mode: "hilbert", depth: 5, point: null, fit: 1.1, zoom: 60 },
+    { mode: "gosper", depth: 4, point: null, fit: 1.1, zoom: 100 },
+    { mode: "arrowhead", depth: 7, point: null, fit: 1.1, zoom: 300 },
   ];
   for (const c of CASES) {
     test(`${c.mode}: no extra levels at the Reset framing, some deep in`, async ({ page }) => {
       await page.evaluate((m) => { setMode(m); fitVectorView(m); requestRender(); }, c.mode);
       await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
       const fitted = await page.evaluate(([m, d]) => {
-        const state = { koch: kochState, tree: treeState, hexaflake: hexaflakeState, dragon: dragonState }[m];
+        const state = { koch: kochState, tree: treeState, hexaflake: hexaflakeState }[m] ?? dragonState;
         state.depth = d;
         fitVectorView(m);
         renderAll();
@@ -218,7 +325,7 @@ test.describe("zooming in adds detail", () => {
       expect(fitted).toBe(0);
 
       await page.evaluate(() => document.querySelector(".hudToggleBtn").click()); // info card on
-      await show(page, c.mode, c.depth, { ...c.point, halfHeight: 1 / c.zoom, rotation: 0 });
+      await show(page, c.mode, c.depth, { ...(c.point ?? { cx: null, cy: null }), halfHeight: 1 / c.zoom, rotation: 0 });
       const deep = await page.evaluate((m) => VECTOR_VIEWS[m][0].extraLevels, c.mode);
       expect(deep, "levels added beyond the slider's").toBeGreaterThan(2);
       // The info card says so, in its own words.
@@ -227,12 +334,115 @@ test.describe("zooming in adds detail", () => {
   }
 });
 
+// Each of the three L-system curves has a point whose neighborhood repeats at
+// a smaller scale, so a view closer by the right factor shows the same
+// picture, as long as the walk keeps adding levels:
+//   - the arrowhead's start: its first two nodes are again an A at the same
+//     heading, a quarter the size (zoom 4 per two levels, no turn);
+//   - Hilbert's start corner of the square of cells, likewise (zoom 4 per
+//     two levels);
+//   - Gosper's start: the first node is an A at the same heading, 1/sqrt 7 the
+//     size, and each level turns the curve's chord by a fixed angle (read here
+//     from points(), not from the walk), so the view turns with it.
+test.describe("zoom keeps showing the same detail", () => {
+  const CASES = [
+    { curve: "arrowhead", depth: 7, hh: 0.06, zoom: 4, levels: 2, steps: 6 },
+    { curve: "hilbert", depth: 5, hh: 0.1, zoom: 4, levels: 2, steps: 6 },
+    { curve: "gosper", depth: 4, hh: 0.06, zoom: Math.sqrt(7), levels: 1, steps: 10 },
+  ];
+  for (const c of CASES) {
+    test(`${c.curve}: its start ${c.zoom ** c.steps >= 1e3 ? Math.round(c.zoom ** c.steps) : c.zoom ** c.steps} times closer looks like its start`, async ({ page }) => {
+      const r = await page.evaluate(async (c) => {
+        setMode(c.curve);
+        fittedVectorModes.add(c.curve);
+        dragonState.depth = c.depth;
+        const pts = LINE_CURVES[c.curve].points(c.depth);
+        const angle = (p) => Math.atan2(p[p.length - 1][1] - p[0][1], p[p.length - 1][0] - p[0][0]);
+        const turnPerLevel = angle(LINE_CURVES[c.curve].points(c.depth + 1)) - angle(pts);
+        let [cx, cy] = pts[0];
+        if (c.curve === "hilbert") { // the corner of the square the centers of cells sit in
+          const side = 2 ** c.depth / (2 ** c.depth - 1);
+          cx = Math.sign(pts[0][0]) * side; cy = Math.sign(pts[0][1]) * side;
+        }
+        const canvas = VECTOR_VIEWS[c.curve][1];
+        const mask = (step) => {
+          Object.assign(dragonView.view, { cx, cy, halfHeight: c.hh / c.zoom ** step, rotation: c.curve === "gosper" ? -turnPerLevel * step : 0 });
+          renderAll();
+          const px = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
+          const lit = new Uint8Array(px.length / 4);
+          for (let i = 0; i < lit.length; i++) lit[i] = px[4 * i] + px[4 * i + 1] + px[4 * i + 2] > 60 ? 1 : 0;
+          return { lit, extra: dragonView.extraLevels };
+        };
+        const near = mask(0);
+        const far = mask(c.steps);
+        let differ = 0, on = 0;
+        for (let i = 0; i < near.lit.length; i++) { if (near.lit[i] !== far.lit[i]) differ++; on += near.lit[i]; }
+        return { differ, on, total: near.lit.length, added: far.extra - near.extra };
+      }, c);
+      expect(r.on, "the start's view isn't blank").toBeGreaterThan(r.total * 0.01);
+      expect(r.added, "levels from zoom").toBeGreaterThanOrEqual(c.levels * c.steps - 1);
+      expect(r.differ / r.total, `${r.differ} of ${r.total} pixels differ`).toBeLessThan(0.01);
+    });
+  }
+});
+
+// The color follows the position along the curve, not the order of the points
+// drawn, so a zoomed view shows the colors of its own place in the picture
+// the whole curve shows.
+test.describe("the color at a point is the same zoomed in as zoomed out", () => {
+  for (const [curve, depth, zoom] of [["dragon", 12, 40], ["hilbert", 6, 30], ["gosper", 4, 60], ["arrowhead", 8, 100]]) {
+    test(`${curve}`, async ({ page }) => {
+      await page.setViewportSize({ width: 393, height: 852 });
+      const r = await page.evaluate(([curve, depth, zoom]) => {
+        setMode(curve);
+        dragonView.resize();
+        dragonState.depth = depth;
+        fitVectorView(curve);
+        const canvas = VECTOR_VIEWS[curve][1], ctx = canvas.getContext("2d");
+        const pts = LINE_CURVES[curve].points(depth);
+        // The brightest pixel near (sx, sy): the line's own color, hue only (the glow and the density change the brightness).
+        const lineColor = (sx, sy, rad) => {
+          const x0 = Math.max(0, Math.round(sx - rad)), y0 = Math.max(0, Math.round(sy - rad));
+          const w = Math.min(canvas.width, Math.round(sx + rad)) - x0, h = Math.min(canvas.height, Math.round(sy + rad)) - y0;
+          const d = ctx.getImageData(x0, y0, w, h).data;
+          let best = -1, rgb = null;
+          for (let i = 0; i < d.length; i += 4) { const s = d[i] + d[i + 1] + d[i + 2]; if (s > best) { best = s; rgb = [d[i], d[i + 1], d[i + 2]]; } }
+          const m = Math.max(...rgb) || 1;
+          return rgb.map((v) => v / m);
+        };
+        const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+        const fit = { ...dragonView.view };
+        const out = [];
+        for (const f of [0.15, 0.5, 0.85]) {
+          const p = pts[Math.floor((pts.length - 1) * f)];
+          Object.assign(dragonView.view, fit);
+          renderAll();
+          const [sx, sy] = dragonView.worldToScreen(p[0], p[1]);
+          // The vertex is on the line, so a few pixels around it are enough (a space-filling curve's neighbors are other places along it).
+          const wide = lineColor(sx, sy, 2);
+          Object.assign(dragonView.view, { cx: p[0], cy: p[1], halfHeight: fit.halfHeight / zoom });
+          renderAll();
+          const deep = lineColor(canvas.width / 2, canvas.height / 2, 12);
+          out.push({ f, wide, deep, extra: dragonView.extraLevels });
+        }
+        return { out, d: out.map((o) => dist(o.wide, o.deep)), apart: dist(out[0].deep, out[2].deep) };
+      }, [curve, depth, zoom]);
+      for (const [i, d] of r.d.entries()) expect(d, `${curve} at ${r.out[i].f}: ${JSON.stringify(r.out[i])}`).toBeLessThan(0.12);
+      expect(r.apart, "the two ends of the curve are not the same color").toBeGreaterThan(0.12);
+      expect(Math.max(...r.out.map((o) => o.extra)), "the deep view added levels").toBeGreaterThan(0);
+    });
+  }
+});
+
 // Two fingers twisting at depth: the same synthetic pointer events the
 // gesture handler gets from a real touch. (setPointerCapture refuses
 // pointers the browser doesn't know, so it's stubbed.)
-for (const m of ["koch", "tree", "hexaflake", "dragon"]) {
+for (const m of ["koch", "tree", "hexaflake", "dragon", "hilbert", "gosper", "arrowhead"]) {
   test(`${m}: a two-finger twist at depth turns the view and keeps its detail`, async ({ page }) => {
     const depthView = {
+      hilbert: { depth: 5, view: { cx: null, cy: null, halfHeight: 1 / 60, rotation: 0 } },
+      gosper: { depth: 4, view: { cx: null, cy: null, halfHeight: 1 / 100, rotation: 0 } },
+      arrowhead: { depth: 7, view: { cx: null, cy: null, halfHeight: 1 / 300, rotation: 0 } },
       koch: { depth: 4, view: { cx: 0.2887, cy: 0.5, halfHeight: 1 / 500, rotation: 0 } },
       tree: { depth: 9, view: { cx: -2.2, cy: 3.0, halfHeight: 1 / 100, rotation: 0 } },
       hexaflake: { depth: 4, view: { cx: 1, cy: 0, halfHeight: 1 / 100, rotation: 0 } },
@@ -276,9 +486,12 @@ for (const m of ["koch", "tree", "hexaflake", "dragon"]) {
 // a move on a phone-speed CPU and looked frozen): the view still zooms, the
 // frame is drawn coarser while the fingers are down, and the frame at rest
 // is exactly the full-detail one.
-for (const m of ["koch", "tree", "hexaflake", "dragon"]) {
+for (const m of ["koch", "tree", "hexaflake", "dragon", "hilbert", "gosper", "arrowhead"]) {
   test(`${m}: pinching during Play zooms, draws coarser while held, and is full detail on release`, async ({ page }) => {
     const depthView = {
+      hilbert: { depth: 8, view: { cx: 0, cy: 0, halfHeight: 1.2, rotation: 0 } },
+      gosper: { depth: 6, view: { cx: 0, cy: 0, halfHeight: 1.2, rotation: 0 } },
+      arrowhead: { depth: 11, view: { cx: 0, cy: 0, halfHeight: 1.2, rotation: 0 } },
       koch: { depth: 7, view: { cx: 0, cy: 0, halfHeight: 1, rotation: 0 } },
       tree: { depth: 11, view: { cx: 0, cy: 2, halfHeight: 2.5, rotation: 0 } },
       hexaflake: { depth: 6, view: { cx: 0, cy: 0, halfHeight: 1.2, rotation: 0 } },
@@ -330,18 +543,24 @@ test("extreme or broken views render quickly without errors", async ({ page }) =
     const out = [];
     const halfHeights = [1e-300, 1e-40, 1e-12, 1e12, 1e300, 5e-324, Infinity, 0, -1, NaN];
     const rotations = [0, 1e10, NaN];
-    for (const m of ["koch", "tree", "hexaflake", "dragon"]) {
+    const depths = { koch: 8, tree: 12, hexaflake: 6, dragon: 16, hilbert: 8, gosper: 6, arrowhead: 11 };
+    for (const m of Object.keys(depths)) {
       setMode(m);
-      const state = { koch: kochState, tree: treeState, hexaflake: hexaflakeState, dragon: dragonState }[m];
-      state.depth = { koch: 8, tree: 12, hexaflake: 6, dragon: 16 }[m];
+      const state = { koch: kochState, tree: treeState, hexaflake: hexaflakeState }[m] ?? dragonState;
+      state.depth = depths[m];
       const v = VECTOR_VIEWS[m][0];
-      for (const hh of halfHeights) {
-        for (const rot of rotations) {
-          Object.assign(v.view, { cx: 0.2887, cy: 0.5, halfHeight: hh, rotation: rot });
-          const t0 = performance.now();
-          try { renderAll(); } catch (e) { out.push(`${m} hh=${hh} rot=${rot}: threw ${e.message}`); }
-          const ms = performance.now() - t0;
-          if (ms > 2500) out.push(`${m} hh=${hh} rot=${rot}: ${ms.toFixed(0)} ms`);
+      // Also, for the line curves, a vertex of the curve itself: the views that tiny can then be on the curve.
+      const centers = [[0.2887, 0.5]];
+      if (LINE_CURVES[m]) { const pts = LINE_CURVES[m].points(depths[m]); centers.push(pts[Math.floor(pts.length / 3)]); }
+      for (const [cx, cy] of centers) {
+        for (const hh of halfHeights) {
+          for (const rot of rotations) {
+            Object.assign(v.view, { cx, cy, halfHeight: hh, rotation: rot });
+            const t0 = performance.now();
+            try { renderAll(); } catch (e) { out.push(`${m} hh=${hh} rot=${rot}: threw ${e.message}`); }
+            const ms = performance.now() - t0;
+            if (ms > 2500) out.push(`${m} hh=${hh} rot=${rot}: ${ms.toFixed(0)} ms`);
+          }
         }
       }
     }
@@ -355,6 +574,9 @@ test.describe("deep zoom screenshots", () => {
     { name: "koch", mode: "koch", depth: 4, view: { cx: 0.2887, cy: 0.5, halfHeight: 1.08 / 1500, rotation: 0.4 } },
     { name: "tree", mode: "tree", depth: 9, view: { cx: -2.4, cy: 3.1, halfHeight: 0.02, rotation: 0 } },
     { name: "dragon", mode: "dragon", depth: 13, view: { cx: -0.35, cy: -0.24, halfHeight: 0.004, rotation: 0.3 } },
+    { name: "hilbert", mode: "hilbert", depth: 5, view: { cx: null, cy: null, halfHeight: 1 / 60, rotation: 0.3 } },
+    { name: "gosper", mode: "gosper", depth: 4, view: { cx: null, cy: null, halfHeight: 1 / 100, rotation: 0.3 } },
+    { name: "arrowhead", mode: "arrowhead", depth: 7, view: { cx: null, cy: null, halfHeight: 1 / 300, rotation: 0.3 } },
   ];
   for (const s of SHOTS) {
     test(s.name, async ({ page }) => {
@@ -695,12 +917,16 @@ test.describe("the finish holds when the view moves", () => {
     expect(r.wide, "hue bins holding 4% of the lit pixels").toBeGreaterThanOrEqual(3);
   });
 
-  test("a dragon zoomed past the slider's depth is still colored", async ({ page }) => {
+  // The colors follow the place along the whole curve (1.50.0), so a view this close
+  // shows one narrow slice of the ramp: one or two hue bins, and the same slice the
+  // whole curve shows there (vector.spec.mjs "the color at a point ...").
+  test("a dragon zoomed past the slider's depth is still colored, with the colors of its place", async ({ page }) => {
     await show(page, "dragon", 13, { cx: -0.35, cy: -0.24, halfHeight: 0.02, rotation: 0.3 });
     expect(await page.evaluate(() => VECTOR_VIEWS.dragon[0].extraLevels), "levels added by zoom").toBeGreaterThan(2);
     const r = await hueBins(page);
     expect(r.lit, "the curve is drawn").toBeGreaterThan(500);
-    expect(r.wide, "hue bins holding 4% of the lit pixels").toBeGreaterThanOrEqual(2);
+    expect(r.wide, "hue bins holding 4% of the lit pixels").toBeGreaterThanOrEqual(1);
+    expect(r.wide, "a slice of the ramp, not the whole of it").toBeLessThanOrEqual(3);
   });
 
   test("a deep zoom keeps the backdrop behind every pattern view", async ({ page }) => {

@@ -2,6 +2,10 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.50.0 — 2026-10-27
+- Hilbert, Gosper and the Sierpinski arrowhead now add detail as you zoom in, like the dragon: no more one straight line up close, and the info card says how many levels the zoom added.
+- The curves' colors follow the position along the whole curve, so a zoomed view shows the colors of its own place in the picture; the frame at a gesture is lighter for these three curves too.
+
 ## 1.49.0 — 2026-10-27
 - The Koch snowflake is shaded generation by generation: a deep triangle in the middle, each round of new triangles one step lighter up to the color you picked, thin dark lines between the big ones and a soft glow around it, and the outline is now a clear line. It sits a little further from the edges of the screen.
 - Moving the depth slider up one level makes the new generation of triangles grow out of the snowflake instead of snapping in (not with Reduce Motion on, and not for a saved picture).
