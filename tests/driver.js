@@ -77,6 +77,7 @@ window.__vt = {
     if (renderPending || isInteracting) return false;
     if (mode === "fractal") return refineDone;
     if (isIfsMode(mode)) return !fernView.refining;
+    if (mode === "koch") return !kochView.growing;  // a new generation is still growing in
     return true;
   },
 

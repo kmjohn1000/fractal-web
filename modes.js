@@ -173,6 +173,7 @@ function exitDual() {
 
 function setMode(next) {
   stopDepthPlay();
+  kochView.cancelGrow();
   mode = next;
   els.fractalTypeRow.classList.remove("open"); // collapse the picker on any mode switch
   els.shareMenu.classList.remove("open");

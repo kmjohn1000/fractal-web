@@ -255,7 +255,16 @@ els.resetBtn.addEventListener("click", () => selectFractal(currentName, { fresh:
 
 els.kochDepthSlider.addEventListener("input", () => {
   syncSliderFill(els.kochDepthSlider);
+  const before = kochState.depth;
   kochState.depth = parseInt(els.kochDepthSlider.value, 10);
+  // One level deeper: the new generation grows in. Any other change, and
+  // reduced motion, just redraws. During depth play the growth takes at most
+  // KOCH_GROW_STEP_SHARE of the step (which shortens as the speed goes up).
+  kochView.cancelGrow();
+  if (kochState.depth === before + 1 && !prefersReducedMotion()) {
+    const stepMs = depthPlayer.slider === els.kochDepthSlider ? DEPTH_STEP_MS / PLAY_SPEEDS[depthPlayer.speedIndex] : Infinity;
+    kochView.startGrow(kochState.depth, Math.min(KOCH_GROW_MS, stepMs * KOCH_GROW_STEP_SHARE));
+  }
   requestRender();
 });
 

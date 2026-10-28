@@ -2,6 +2,10 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.49.0 — 2026-10-27
+- The Koch snowflake is shaded generation by generation: a deep triangle in the middle, each round of new triangles one step lighter up to the color you picked, thin dark lines between the big ones and a soft glow around it, and the outline is now a clear line. It sits a little further from the edges of the screen.
+- Moving the depth slider up one level makes the new generation of triangles grow out of the snowflake instead of snapping in (not with Reduce Motion on, and not for a saved picture).
+
 ## 1.48.1 — 2026-10-27
 - The Pythagoras tree now has a brown wooden trunk and first two branches under a canopy in the color you picked, with no more olive camouflage, and fits a little more snugly on a phone.
 - The Hexaflake keeps the color you picked at every depth and zoom instead of drifting through olive and salmon: each level is brighter than its parent, the finest levels are the picked color itself, and the bigger hexagons get a thin dark outline.

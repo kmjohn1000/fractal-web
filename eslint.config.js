@@ -30,6 +30,8 @@ const sharedGlobals = {
   BACKDROP_EDGE_RGB: "readonly",
   // koch.js / pythagoras.js / hexaflake.js / dragon.js / fern.js
   createKochView: "readonly",
+  KOCH_GROW_MS: "readonly",
+  KOCH_GROW_STEP_SHARE: "readonly",
   createPythagorasTreeView: "readonly",
   createHexaflakeView: "readonly",
   createCurveView: "readonly",

@@ -317,6 +317,11 @@ async function captureShareBlob() {
     await waitUntil(() => refineDone && !isInteracting, 3000);
   }
   else if (isIfsMode(mode)) await waitUntil(() => !fernView.refining, 3000);
+  else if (mode === "koch" && kochView.growing) {
+    // A generation still growing in: the picture saved is the finished one.
+    kochView.cancelGrow();
+    renderAll();
+  }
   const canvas = watermarkedCopy(mode !== "fractal" ? VECTOR_VIEWS[mode][1] : dualActive ? compositeDualCanvas() : els.mainCanvas);
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("canvas.toBlob failed"))), "image/png");

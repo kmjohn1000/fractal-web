@@ -460,12 +460,13 @@ function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive = () =>
 // on Reset: the measured extent of its geometry plus a small margin, fitted
 // to the canvas aspect with the same viewFromBounds the WebGL fractals use
 // (a fixed zoom level cut the sides off wide shapes on portrait phones).
-// Koch spans x +-0.866, y +-1; the tree (depth 12) x +-2.95, y 0..3.95; the
+// Koch spans x +-0.866, y +-1 (its box leaves the tips about 8% of the width
+// from the sides of a phone); the tree (depth 12) x +-2.95, y 0..3.95; the
 // hexaflake x +-1, y +-0.866; the fern FERN_BOUNDS. The dragon rotates 45 degrees per depth level, so a
 // box covering every depth would open it badly zoomed out -- it's fitted
 // to the current depth instead.
 function vectorViewBox(modeKey) {
-  if (modeKey === "koch") return [-0.95, 0.95, -1.08, 1.08];
+  if (modeKey === "koch") return [-1.03, 1.03, -1.12, 1.12];
   if (modeKey === "tree") return [-3.0, 3.0, -0.1, 4.05];
   if (modeKey === "hexaflake") return [-1.08, 1.08, -0.96, 0.96];
   if (modeKey === "fern") return [-2.4, 2.9, -0.2, 10.25];

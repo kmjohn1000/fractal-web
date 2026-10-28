@@ -83,6 +83,8 @@ function renderAll() {
   } else if (mode === "koch") {
     kochView.render({ depth: kochState.depth, fill: kochState.fill, colorIndex: vectorColors.koch, fitHalfHeight: vectorFitHalfHeight("koch"), lite: vectorLite });
     updateKochHud();
+    // A new generation growing in needs a frame after this one.
+    if (kochView.growing) requestRender();
   } else if (mode === "tree") {
     treeView.render({ depth: treeState.depth, colorIndex: vectorColors.tree, fitHalfHeight: vectorFitHalfHeight("tree"), lite: vectorLite });
     updateTreeHud();

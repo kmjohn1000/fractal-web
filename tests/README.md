@@ -81,6 +81,33 @@ drawn, the edge pixel is darker than both sides) that small hexagons don't and a
 lite frame draws fewer of. The `mode-tree` and `mode-hexaflake` baselines are in
 `app.spec.mjs`.
 
+`koch-generations.spec.mjs` covers the Koch snowflake colored by generation and the
+growth of a new generation (1.49.0). Each generation of triangles (the level-0 one,
+then the bumps each split adds) is read at its own centroid, computed from the same
+geometry as `kochAdaptive`: it is brighter than its parent, the finest generation is
+the picked color itself at depths 1 to 4 (the ramp is spread over the generations
+there are) and the level-0 triangle is darker and in the same hue family; past the
+ramp (zoomed in at depth 8) generations 4, 5 and 6 alternate in brightness by more
+than 8% and keep the picked hue; all seven colors light over 50,000 pixels and have
+the same ramp; the dark gutter between a big triangle and its parent is darker than
+both sides, and lite frames draw none; a full frame has a glow and a lite frame
+doesn't, draws fewer fills and strokes and lights fewer pixels, and the number of
+triangles shaded never passes `KOCH_TRI_BUDGET` / `KOCH_LITE_TRI_BUDGET` with a
+handful of fills even on a wide canvas with thousands of triangles. Framing: on a
+phone all six tips are over 6% of the width from the sides (3% of the height from the
+top and bottom, also on a desktop), the lit pixels still span over 75% of the width,
+and Reset returns the same framing. The outline line is never under 1.1 css px at
+depth 1 and 8, and its measured thickness matches the stroke width. The growth:
+a slider step one level up starts a reveal that ends on exactly the picture a plain
+render draws; frames partway through light more and more pixels (the eased
+tips are not out yet); stepping down or two levels at once, and reduced motion, start
+none; a wheel gesture, another step, a mode switch and Save image
+(`captureShareBlob`, which finishes the reveal first) end it, and the saved file is
+the finished frame; during depth play the reveal is at most 60% of the step and
+shorter at 4x; a generation too small to see has nothing to grow; share links, Reset
+and Back keep working. The `mode-koch` baseline is in `app.spec.mjs` and the koch
+ones in `vector.spec.mjs`.
+
 `styles.spec.mjs` and `color-sheet.spec.mjs` cover the color styles (Smooth,
 Bands, Edge glow, Stripes, Orbs, Rays and Relief; the style ids are `smooth`,
 `bands`, `glow`, `stripes`, `point`, `cross` and `relief`, see `COLOR_STYLES` in
