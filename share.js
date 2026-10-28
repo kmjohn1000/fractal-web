@@ -316,7 +316,11 @@ async function captureShareBlob() {
     finishRefinement();
     await waitUntil(() => refineDone && !isInteracting, 3000);
   }
-  else if (isIfsMode(mode)) await waitUntil(() => !fernView.refining, 3000);
+  else if (isIfsMode(mode)) {
+    // A chaos-game replay under way (or paused): the picture saved is the finished normal frame.
+    if (fernView.replaying) { fernView.cancelReplay(); renderAll(); }
+    await waitUntil(() => !fernView.refining, 3000);
+  }
   else if (mode === "koch" && kochView.growing) {
     // A generation still growing in: the picture saved is the finished one.
     kochView.cancelGrow();

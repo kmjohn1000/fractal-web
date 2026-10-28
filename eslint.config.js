@@ -167,6 +167,7 @@ const sharedGlobals = {
   labelColormapButton: "readonly",
   layoutCanvasArea: "readonly",
   renderAll: "readonly",
+  fernRenderOpts: "readonly",
   refineDone: "writable",
   finishRefinement: "readonly",
   requestRender: "readonly",
@@ -214,6 +215,7 @@ const sharedGlobals = {
   coldOpen: "readonly",
   glideMainTo: "readonly",
   stopDepthPlay: "readonly",
+  stopDotReplay: "readonly",
   // colormap-picker.js
   cmGradient: "readonly",
   setFernColor: "readonly",

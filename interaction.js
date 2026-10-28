@@ -339,6 +339,7 @@ function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive = () =>
   canvas.addEventListener("pointerdown", (e) => {
     canvas.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    stopDotReplay(); // a touch on the picture ends a chaos-game replay (the dot shapes')
     if (isBoxZoomActive() && pointers.size === 1) {
       // Same viewport-coordinate bookkeeping as the WebGL panes' box zoom
       // (see attachFractalInteraction's pointerdown for why).
@@ -440,6 +441,7 @@ function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive = () =>
   canvas.addEventListener("wheel", (e) => {
     e.preventDefault();
     if (isBoxZoomActive()) return;
+    stopDotReplay();
     checkpoint();
     const rect = canvas.getBoundingClientRect();
     const sx = (e.clientX - rect.left) * vectorView.dpr;
