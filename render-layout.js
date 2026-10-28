@@ -235,18 +235,27 @@ const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 // Info overlay (see #hud in index.html): the title (a place name, or the
 // fractal or pattern), a plain-language line (how deep, rotation), a scale
 // bar for the pane's height in world units (unitsPerPx), and for the WebGL
-// fractals the center point and a quieter technical readout.
+// fractals the center point and a quieter technical readout. A pattern shape
+// also passes `about` ({ lines: [two short lines], credit } from SHAPE_INFO):
+// a short description between the title and the plain line, and a quiet
+// credit line when it has one. Left out, that block stays hidden.
 // Runs every render frame, so it does nothing while the overlay is hidden
 // (showing it re-renders, see applyHudVisibility) or when nothing changed.
 let lastHudKey = "";
-function setHud(name, plainParts, { unitsPerPx = 0, center = "", tech = "" } = {}) {
+function setHud(name, plainParts, { unitsPerPx = 0, center = "", tech = "", about = null } = {}) {
   if (!hudVisible) return;
   const parts = plainParts.filter(Boolean);
   const bar = unitsPerPx > 0 && Number.isFinite(unitsPerPx) ? scaleBar(unitsPerPx) : null;
-  const key = [name, ...parts, bar && bar.px.toFixed(1), bar && bar.label, center, tech].join("\n");
+  const key = [name, about && about.lines.join("\n"), about && about.credit, ...parts, bar && bar.px.toFixed(1), bar && bar.label, center, tech].join("\n");
   if (key === lastHudKey) return;
   lastHudKey = key;
   els.hudName.textContent = name;
+  els.hudAbout.classList.toggle("hidden", !about);
+  if (about) {
+    els.hudAboutLines.forEach((p, i) => { p.textContent = about.lines[i] || ""; });
+    els.hudCredit.textContent = about.credit || "";
+    els.hudCredit.classList.toggle("hidden", !about.credit);
+  }
   els.hudPlain.replaceChildren(...parts.map((t) => {
     const span = document.createElement("span");
     span.textContent = t;
@@ -261,6 +270,30 @@ function setHud(name, plainParts, { unitsPerPx = 0, center = "", tech = "" } = {
   els.hudCenter.classList.toggle("hidden", !center);
   els.hudStats.textContent = tech;
   els.hudStats.classList.toggle("hidden", !tech);
+  fitHudAbout(); // last: it measures the card as it now is
+}
+
+// A pattern's description must not cover the shape: the card may reach down
+// to the middle of the canvas area (where the shape sits) and no further. It
+// tries the full description (two lines and the credit), then the first line
+// alone, then none, whichever first leaves the card above that line (CSS:
+// #hud[data-about], index.html). So a landscape phone, where the base card
+// already reaches the middle, and very large text show the card as it was
+// before descriptions. Measured only when the card's content changes or the
+// canvas area is resized (refitHud), never per frame.
+const HUD_ABOUT_LEVELS = ["full", "first", "none"];
+function fitHudAbout() {
+  if (els.hudAbout.classList.contains("hidden")) { delete els.hud.dataset.about; return; }
+  const limit = els.canvasArea.clientHeight / 2;
+  let level = "";
+  for (level of HUD_ABOUT_LEVELS) {
+    els.hud.dataset.about = level;
+    if (els.hud.offsetTop + els.hud.offsetHeight <= limit) break;
+  }
+}
+// The next setHud re-renders the card and re-fits it (called when the canvas area changes size).
+function refitHud() {
+  lastHudKey = "";
 }
 
 // Dual view: a small label on the Julia pane, shown with the info card.
@@ -411,7 +444,8 @@ function modeLabel(key) {
 }
 
 // Scale bar for a pattern's view (Canvas2D views keep halfHeight).
-const patternBar = (view, canvas) => ({ unitsPerPx: unitsPerCssPx(view.halfHeight, canvas) });
+// and the shape's description from SHAPE_INFO (key: its EXTRA_MODES key).
+const patternBar = (view, canvas, key) => ({ unitsPerPx: unitsPerCssPx(view.halfHeight, canvas), about: SHAPE_INFO[key] });
 
 // "Depth 8" plus, once zooming in has added levels beyond the slider's, the
 // number added: "Depth 8 (+3 from zoom)".
@@ -419,29 +453,29 @@ const depthHudText = (depth, extraLevels) => `Depth ${depth}${extraLevels > 0 ? 
 
 function updateKochHud() {
   setHud(modeLabel("koch"), [`${depthHudText(kochState.depth, kochView.extraLevels)}, ${kochState.fill ? "filled" : "outline"}`, rotationHudText(kochView.view.rotation)],
-    patternBar(kochView.view, els.kochCanvas));
+    patternBar(kochView.view, els.kochCanvas, "koch"));
 }
 
 function updateTreeHud() {
   setHud(modeLabel("tree"), [depthHudText(treeState.depth, treeView.extraLevels), rotationHudText(treeView.view.rotation)],
-    patternBar(treeView.view, els.treeCanvas));
+    patternBar(treeView.view, els.treeCanvas, "tree"));
 }
 
 function updateHexaflakeHud() {
   setHud(modeLabel("hexaflake"), [depthHudText(hexaflakeState.depth, hexaflakeView.extraLevels), rotationHudText(hexaflakeView.view.rotation)],
-    patternBar(hexaflakeView.view, els.hexaflakeCanvas));
+    patternBar(hexaflakeView.view, els.hexaflakeCanvas, "hexaflake"));
 }
 
 function updateDragonHud() {
   setHud(modeLabel(dragonView.curve), [depthHudText(dragonState.depth, dragonView.extraLevels), rotationHudText(dragonView.view.rotation)],
-    patternBar(dragonView.view, els.dragonCanvas));
+    patternBar(dragonView.view, els.dragonCanvas, dragonView.curve));
 }
 
 function updateFernHud() {
   // accepted = points actually on screen so far; it climbs toward the
   // target as refinement runs, and resets on every pan/zoom.
   setHud(modeLabel(fernView.system), [`${fernView.accepted.toLocaleString()} of ${fernState.count.toLocaleString()} points`, rotationHudText(fernView.view.rotation)],
-    patternBar(fernView.view, els.fernCanvas));
+    patternBar(fernView.view, els.fernCanvas, fernView.system));
 }
 
 // Dual view's crosshair marks the main pane's center -- the Julia pane's c.

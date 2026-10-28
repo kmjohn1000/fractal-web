@@ -37,6 +37,64 @@ const EXTRA_MODES = [
   { key: "hexaflake", label: "Hexaflake", category: "pattern" },
 ];
 
+// What each pattern shape's info card says about it (see setHud's `about`):
+// two short lines, then a quiet credit for the shapes with a confirmed maker
+// and year (left out for the rest: no other maker or year goes here). Keyed by
+// EXTRA_MODES key. The wording is the user's; tests/visual/info-card.spec.mjs
+// holds its own copy, so a changed string fails there.
+const SHAPE_INFO = {
+  koch: {
+    lines: ["Each side is replaced by four sides, each a third as long, again and again.",
+      "The border of the flake grows but its area stays finite. Dimension 1.26."],
+    credit: "Koch curve, 1904",
+  },
+  tree: {
+    lines: ["Each square supports two smaller squares that meet at a right angle.",
+      "Together, the two small squares have exactly the area of the big one."],
+    credit: "Bosman, 1942",
+  },
+  hexaflake: {
+    lines: ["Every hexagon becomes seven new ones, each a third the size: one in the center with six around it.",
+      "Dimension 1.77."],
+  },
+  dragon: {
+    lines: ["Models folding a strip of paper in half again and again, then opening it with every fold at a right angle.",
+      "It never crosses itself, only touches at corners. It fills a patch of the plane: dimension 2."],
+  },
+  hilbert: {
+    lines: ["One unbroken line drawn into each cell of a grid, and each level splits every cell into four.",
+      "Taken to the limit, it fills the whole square. Dimension 2."],
+    credit: "Hilbert, 1891",
+  },
+  gosper: {
+    lines: ["Every segment becomes seven shorter ones, turned and flipped to snake through a hexagon.",
+      "The line fills a ragged, flower-like region. Dimension 2."],
+  },
+  arrowhead: {
+    lines: ["Every line becomes three lines half as long; the zigzag closes in on the Sierpinski triangle.",
+      "One unbroken line draws it all. Dimension 1.58."],
+  },
+  fern: {
+    lines: ["Four simple rules, chosen by chance, plot dot after dot until a fern appears.",
+      "Each leaflet is a smaller, slightly bent copy of the whole fern."],
+    credit: "Barnsley, 1988",
+  },
+  sierpinski: {
+    lines: ["Jump halfway to a corner chosen at random, over and over. A triangle with holes appears.",
+      "This is the “chaos game”. Dimension 1.58."],
+    credit: "Sierpinski, 1915",
+  },
+  levy: {
+    lines: ["Two rules, each shrinking and turning by 45 degrees, draw a C made of smaller Cs.",
+      "The curve fills an area. Dimension 2."],
+  },
+  vicsek: {
+    lines: ["A square becomes a cross of five squares, each a third the size, again and again.",
+      "Dimension 1.46."],
+    credit: "Vicsek, 1983",
+  },
+};
+
 // The chaos-game IFS modes (fern.js's IFS_SYSTEMS). They all share one
 // view, canvas and control row -- the fern's -- and differ only in which
 // transform table that view runs.

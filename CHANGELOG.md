@@ -2,6 +2,10 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.51.0 — 2026-10-27
+- The info card of each of the eleven shapes now says in two short lines how it is built and its dimension, with the maker and year where they are known (Koch, Bosman, Hilbert, Barnsley, Sierpinski, Vicsek).
+- On a short screen, such as a phone held sideways, or with very large text, the description shortens or leaves out so the card never covers the middle of the shape.
+
 ## 1.50.1 — 2026-10-27
 - The curves and dot shapes turn the hue in even steps now, so Gold stays gold and Rose stays pink instead of drifting to salmon and lime, and White curves and dots shade from dim to bright instead of staying flat.
 - The Pythagoras tree keeps its brown trunk only in Green (the other colors shade it in their own color) and its shaded faces are easier to see; the Koch snowflake's middle triangle and the Hexaflake's big outer triangles are lighter, and the Hexaflake now starts in Gold.

@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Fractal Atlas&trade;</title>
 
-<link rel="manifest" href="manifest.webmanifest?v=1.50.1">
+<link rel="manifest" href="manifest.webmanifest?v=1.51.0">
 <meta name="theme-color" content="#111111">
-<link rel="icon" href="icons/favicon-32.png?v=1.50.1" sizes="32x32" type="image/png">
+<link rel="icon" href="icons/favicon-32.png?v=1.51.0" sizes="32x32" type="image/png">
 
 <!-- iOS Safari ignores the manifest entirely for install/homescreen purposes
      and needs its own meta tags + a dedicated (non-transparent) icon. -->
@@ -15,7 +15,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fractal Atlas">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.50.1">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.51.0">
 
 <!-- Smart App Banner: Safari on iPhone/iPad offers the App Store app.
      Ignored everywhere else, including the app's own web view. -->
@@ -92,6 +92,29 @@
     font: italic 400 1.5rem/1.15 ui-serif, "New York", Georgia, serif;
     color: #fff; letter-spacing: 0.01em;
   }
+  /* A pattern shape's description (SHAPE_INFO), between the title and the
+     depth line: two short paragraphs in the card's secondary text size, then
+     the maker and year (only where confirmed) as a quiet line. The width cap
+     keeps the lines readable on a desktop, where the card could otherwise
+     stretch across the canvas. */
+  #hud .hudAbout { max-width: 21rem; margin-top: 5px; }
+  #hud .hudAboutLine, #hud .hudCredit { margin: 0; }
+  #hud .hudAboutLine {
+    font: 0.75rem/1.35 -apple-system, system-ui, sans-serif; color: rgba(255,255,255,0.82);
+    text-wrap: pretty; /* no lone last word ("Dimension / 2.") where supported */
+  }
+  #hud .hudAboutLine + .hudAboutLine { margin-top: 4px; }
+  /* How much of it fits (fitHudAbout in render-layout.js): the full text, the
+     first line alone, or nothing, so the card never reaches the shape's middle. */
+  #hud[data-about="first"] .hudAboutLine + .hudAboutLine, #hud[data-about="first"] .hudCredit,
+  #hud[data-about="none"] .hudAbout { display: none; }
+  #hud .hudCredit {
+    margin-top: 5px; font: italic 0.6875rem/1.3 -apple-system, system-ui, sans-serif;
+    color: rgba(255,255,255,0.55);
+  }
+  /* 1rem wide and invisible: its resize tells app.js the text size changed (a larger
+     text setting changes no other box's size), so the description is fitted again. */
+  #remProbe { position: absolute; width: 1rem; height: 0; visibility: hidden; pointer-events: none; }
   /* Plain-language line (depth, rotation): items wrap as whole units on
      narrow phones. */
   #hud .hudPlain {
@@ -732,7 +755,8 @@
   });
 </script>
 <div id="canvasArea">
-  <div id="hud" class="hidden"><div class="hudName"></div><div class="hudPlain"></div><div class="hudScale"><span class="hudBar"></span><span class="hudScaleText"></span></div><div class="hudCenter"></div><div class="hudStats"></div><button class="hudPlaces" type="button" aria-haspopup="true" data-opens-places>Browse places</button></div>
+  <div id="hud" class="hidden"><div class="hudName"></div><div class="hudAbout hidden"><p class="hudAboutLine"></p><p class="hudAboutLine"></p><p class="hudCredit hidden"></p></div><div class="hudPlain"></div><div class="hudScale"><span class="hudBar"></span><span class="hudScaleText"></span></div><div class="hudCenter"></div><div class="hudStats"></div><button class="hudPlaces" type="button" aria-haspopup="true" data-opens-places>Browse places</button></div>
+  <i id="remProbe" aria-hidden="true"></i>
   <div id="welcome" class="hidden" role="region" aria-label="About Fractal Atlas">
     <button id="welcomeClose" class="welcomeClose" aria-label="Close" title="Close">&#x2715;</button>
     <div class="welcomeTitle">Fractal Atlas</div>
@@ -1029,33 +1053,33 @@
   </div>
 </div>
 
-<script src="colormaps.js?v=1.50.1"></script>
-<script src="shaders.js?v=1.50.1"></script>
-<script src="lsystem.js?v=1.50.1"></script>
-<script src="vectorgeom.js?v=1.50.1"></script>
-<script src="koch.js?v=1.50.1"></script>
-<script src="pythagoras.js?v=1.50.1"></script>
-<script src="hexaflake.js?v=1.50.1"></script>
-<script src="dragon.js?v=1.50.1"></script>
-<script src="fern.js?v=1.50.1"></script>
-<script src="platform.js?v=1.50.1"></script>
-<script src="diag.js?v=1.50.1"></script>
-<script src="configs.js?v=1.50.1"></script>
-<script src="places.js?v=1.50.1"></script>
-<script src="fractal-defs.js?v=1.50.1"></script>
-<script src="deepzoom.js?v=1.50.1"></script>
-<script src="renderer.js?v=1.50.1"></script>
-<script src="state-colors.js?v=1.50.1"></script>
-<script src="render-layout.js?v=1.50.1"></script>
-<script src="modes.js?v=1.50.1"></script>
-<script src="interaction.js?v=1.50.1"></script>
-<script src="compass-ui.js?v=1.50.1"></script>
-<script src="teleport.js?v=1.50.1"></script>
-<script src="colormap-picker.js?v=1.50.1"></script>
-<script src="color-sheet.js?v=1.50.1"></script>
-<script src="places-sheet.js?v=1.50.1"></script>
-<script src="share.js?v=1.50.1"></script>
-<script src="app.js?v=1.50.1"></script>
+<script src="colormaps.js?v=1.51.0"></script>
+<script src="shaders.js?v=1.51.0"></script>
+<script src="lsystem.js?v=1.51.0"></script>
+<script src="vectorgeom.js?v=1.51.0"></script>
+<script src="koch.js?v=1.51.0"></script>
+<script src="pythagoras.js?v=1.51.0"></script>
+<script src="hexaflake.js?v=1.51.0"></script>
+<script src="dragon.js?v=1.51.0"></script>
+<script src="fern.js?v=1.51.0"></script>
+<script src="platform.js?v=1.51.0"></script>
+<script src="diag.js?v=1.51.0"></script>
+<script src="configs.js?v=1.51.0"></script>
+<script src="places.js?v=1.51.0"></script>
+<script src="fractal-defs.js?v=1.51.0"></script>
+<script src="deepzoom.js?v=1.51.0"></script>
+<script src="renderer.js?v=1.51.0"></script>
+<script src="state-colors.js?v=1.51.0"></script>
+<script src="render-layout.js?v=1.51.0"></script>
+<script src="modes.js?v=1.51.0"></script>
+<script src="interaction.js?v=1.51.0"></script>
+<script src="compass-ui.js?v=1.51.0"></script>
+<script src="teleport.js?v=1.51.0"></script>
+<script src="colormap-picker.js?v=1.51.0"></script>
+<script src="color-sheet.js?v=1.51.0"></script>
+<script src="places-sheet.js?v=1.51.0"></script>
+<script src="share.js?v=1.51.0"></script>
+<script src="app.js?v=1.51.0"></script>
 <script>
   // Service workers only register on secure origins or localhost, so this is
   // a silent no-op during phone-over-LAN dev testing (plain http://<lan-ip>)

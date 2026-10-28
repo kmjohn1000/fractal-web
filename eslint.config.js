@@ -68,6 +68,7 @@ const sharedGlobals = {
   // fractal-defs.js
   PICKER_LAYOUT: "readonly",
   EXTRA_MODES: "readonly",
+  SHAPE_INFO: "readonly",
   isIfsMode: "readonly",
   isCurveMode: "readonly",
   isDigitFractal: "readonly",
@@ -161,6 +162,7 @@ const sharedGlobals = {
   pushHistory: "readonly",
   popHistory: "readonly",
   // render-layout.js
+  refitHud: "readonly",
   updateLUT: "readonly",
   labelColormapButton: "readonly",
   layoutCanvasArea: "readonly",

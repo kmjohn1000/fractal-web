@@ -121,12 +121,15 @@ window.addEventListener("hashchange", applyShareHashFromUrl);
 applyHudVisibility();
 (window.requestIdleCallback || ((f) => setTimeout(f, 1000)))(prepareColorSheet, { timeout: 3000 });
 if (typeof ResizeObserver !== "undefined") new ResizeObserver(fitColorSegment).observe(els.colorSheet);
-window.addEventListener("resize", () => { layoutCanvasArea(); requestRender(); });
+window.addEventListener("resize", () => { layoutCanvasArea(); refitHud(); requestRender(); });
 // The toolbar is in flow under the canvas, so the canvas area also changes
 // size without a window resize (e.g. a mode's control row wrapping
-// differently); re-lay out and re-render then too.
+// differently, or the text size changing); re-lay out and re-render then too.
 if (typeof ResizeObserver !== "undefined") {
-  new ResizeObserver(() => { layoutCanvasArea(); requestRender(); }).observe(els.canvasArea);
+  new ResizeObserver(() => { layoutCanvasArea(); refitHud(); requestRender(); }).observe(els.canvasArea);
+  // A change of the text size (iOS Larger Text, --text-scale) moves the toolbar's rows but not
+  // always the canvas area's height; the 1rem probe's width follows it.
+  new ResizeObserver(() => { refitHud(); requestRender(); }).observe(els.remProbe);
 }
 
 updateLUT(); // first: Carpet/Gasket renders read the LUT on the CPU

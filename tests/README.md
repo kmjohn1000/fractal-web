@@ -138,6 +138,36 @@ shorter at 4x; a generation too small to see has nothing to grow; share links, R
 and Back keep working. The `mode-koch` baseline is in `app.spec.mjs` and the koch
 ones in `vector.spec.mjs`.
 
+`info-card.spec.mjs` covers the descriptions on the eleven shapes' info cards
+(1.51.0; `SHAPE_INFO` in `fractal-defs.js`, shown by `setHud`'s `about` option). The test
+holds its own copy of the approved wording and compares each shape's two lines
+character for character (and the app's table with the copy), and the credit line
+("Koch curve, 1904", "Bosman, 1942", "Hilbert, 1891", "Barnsley, 1988", "Sierpinski, 1915",
+"Vicsek, 1983") shows for exactly those six shapes and for none of the other five.
+The escape-time fractals' cards (Mandelbrot, Nova, a Julia set, Newton) and a dual view's
+have none of the new elements; switching shapes, or going to a fractal and back, updates
+the text; the description sits between the title and the depth line, which sits above
+the scale bar; it is plain text, not hidden from a screen reader (checked in the
+accessibility snapshot) and the card still has `pointer-events: none` except Browse
+places; and nothing in the card is touched (a `MutationObserver` sees no mutation) over
+20 idle frames. Layout is checked on 393x852, 360x640, 852x393, 667x375, 1280x800 and
+820x1180 with the compass showing (a rotation of 1 radian, which also adds the rotation
+text to the card): the card is at least 8 px inside the canvas area, doesn't overlap the
+compass, has no overflow and ends above the middle of the canvas area; on the four
+taller screens the full description is shown, and on the two landscape phones (a canvas
+about 280-300 px tall, where the card without a description already reaches the middle)
+none is, and the card is its old size. On 393x852 the card's bottom is above the middle
+of each shape's lit pixels in the default view. The depth line, the points line,
+"(+N from zoom)" and the scale bar are still on the card, and Browse places has the
+topmost element at its center, is 44 px tall, sits under the description and opens the
+Places sheet. At 1.5x and 2x text size (`--text-scale`) no piece of the card overflows it,
+it stays inside and clear of the compass, and it is above the middle unless the
+description is left out altogether (at 2x some shapes show only the first line and some
+none: `fitHudAbout` picks the longest of full, first line, none that fits), and
+shrinking the text again brings the full text back (a probe 1rem wide, `#remProbe`,
+tells `app.js` the text size changed). The shapes' own pictures, with the card hidden, are
+the `mode-*` baselines in `app.spec.mjs` and are unchanged.
+
 `styles.spec.mjs` and `color-sheet.spec.mjs` cover the color styles (Smooth,
 Bands, Edge glow, Stripes, Orbs, Rays and Relief; the style ids are `smooth`,
 `bands`, `glow`, `stripes`, `point`, `cross` and `relief`, see `COLOR_STYLES` in
