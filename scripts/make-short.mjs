@@ -9,6 +9,7 @@
 //   the-chaos-game.mjs    "The Chaos Game": the dot shapes' replay (renderer "capture")
 //   the-chaos-game-v2.mjs its second cut: all four rules explained, rings on the Vicsek, longer first jumps
 //                         (imports the first cut's scenes, grid, audio; output to the-chaos-game-v2/)
+//   the-endless-carpet.mjs, the-endless-gasket.mjs   seamless-loop dives (renderer "dive", built by loop-dive.mjs)
 //
 // To make a new Short: copy the recipe closest to it, change the fields below, and
 // run `build --recipe <name>`. Nothing in this file is specific to one Short.
@@ -25,6 +26,8 @@
 //   fadeOut, cardFade, cardHold   seconds: the pure cut fades to black over the last
 //             fadeOut; the end-card cut brings the card in over cardFade and holds it cardHold
 //   thumbAt   second of the frame the thumbnail is taken from
+//   loopAudio optional, a looping Short: fadeOut 0 (no fade to black) and the bed folded so its end runs into its start,
+//             crossfading this many seconds (the audio master must be at least seconds + loopAudio long)
 //   renderer  { type: "dive", ... } or { type: "capture", ... }  (below)
 //   audio     the sound bed: an object, or a function ({layout, meta, seconds}) => object (below)
 //   post      the post.md text: an object, or a function ({layout, meta, facts}) => object
@@ -33,9 +36,10 @@
 //
 // renderer "dive": the WebGL escape-time renderer, one deep-zoom path, frame by frame
 //   fractal   the app fractal ("Mandelbrot"), palette {name, stops} added to the app's list
-//   path(seconds)  -> (t) => { t, scale, cx, cy, offset, layers: [{style, density, weight?}, ...], ... }
+//   path(seconds)  -> (t) => { t, scale, cx, cy, offset, rotation (radians, default 0), layers: [{style, density, weight?}, ...], ... }
 //             layers[0] is the base picture; each later layer is shot too and blended
 //             over it at `weight` (skipped when weight <= 0.002)
+//   pageSetup optional JS string run in the page once after the palette (e.g. to override an app global)
 //   plan      { header, row(i, s) }: the columns the `plan` command prints
 //   facts(ctx) -> object: what the app says about the deepest frame (for the post)
 //
@@ -279,6 +283,7 @@ async function startPage(width, height, passCount) {
   await app.page.evaluate(`__vt.fractal(${JSON.stringify(R.fractal || "Mandelbrot")}); window.dispatchEvent(new Event('resize'))`);
   // The palette joins the page's list (the app is not changed), then is picked as a user pick.
   if (R.palette) await app.page.evaluate(`(() => { COLORMAPS.push(${JSON.stringify(R.palette)}); pickColormap(COLORMAPS.length - 1); })()`);
+  if (R.pageSetup) await app.page.evaluate(R.pageSetup);
   return app;
 }
 
@@ -289,7 +294,7 @@ async function setFrame(page, v, label) {
   await page.evaluate(`(() => {
     const v = ${JSON.stringify(v)};
     setColorStyle({ style: v.style, density: v.density, offset: v.offset });
-    Object.assign(mainState, { cx: v.cx, cy: v.cy, scale: v.scale, rotation: 0 });
+    Object.assign(mainState, { cx: v.cx, cy: v.cy, scale: v.scale, rotation: v.rotation || 0 });
     if (v.maxIter) { mainState.maxIter = v.maxIter; mainState.iterAutoLocked = true; } else { mainState.iterAutoLocked = false; applyAutoIter(); }
     requestRender();
   })()`);
@@ -315,7 +320,7 @@ if (command === "stills") {
       const t0 = Date.now();
       if (j.palette && j.palette !== R.palette?.name) await page.evaluate(`pickColormap(Math.max(0, COLORMAPS.findIndex((c) => c.name === ${JSON.stringify(j.palette)})))`);
       else if (R.palette) await page.evaluate(`pickColormap(COLORMAPS.findIndex((c) => c.name === ${JSON.stringify(R.palette.name)}))`);
-      await setFrame(page, { cx: Number(j.cx), cy: Number(j.cy), scale: j.scale, style: j.style || "relief", density: j.density ?? 1, offset: j.offset ?? 0, maxIter: j.maxIter }, j.name);
+      await setFrame(page, { cx: Number(j.cx), cy: Number(j.cy), scale: j.scale, style: j.style || "relief", density: j.density ?? 1, offset: j.offset ?? 0, maxIter: j.maxIter, rotation: j.rotation }, j.name);
       await page.screenshot({ path: join(stillsDir, `${j.name}.png`), type: "png" });
       console.log(`${j.name}  ${Date.now() - t0} ms  maxIter ${await page.evaluate("mainState.maxIter")}`);
     }
@@ -341,7 +346,7 @@ async function renderDiveFrames() {
       const file = join(framesDir, `${pad(i)}.jpg`);
       if (resume && existsSync(file)) continue;
       const s = path(i / FPS);
-      const base = { cx: s.cx, cy: s.cy, scale: s.scale, offset: s.offset };
+      const base = { cx: s.cx, cy: s.cy, scale: s.scale, offset: s.offset, rotation: s.rotation };
       const blended = s.layers.slice(1).filter((l) => l.weight > 0.002);
       // The base picture; while a further layer (the Bands look) is still dissolving, a
       // shot of it is blended in over the picture (ImageMagick).
@@ -736,9 +741,9 @@ function loudness(file, filter = "") {
 
 // The bed for one cut: trimmed to `length`, faded out over the last FADE_OUT s, and
 // gained to the target loudness integrated (measured on the faded bed itself).
-function bedFor(cfg, master, length, outM4a, outWav) {
+function bedFor(cfg, master, length, outM4a, outWav, fadeLen = FADE_OUT) {
   const target = cfg.targetLufs ?? -15, lim = cfg.limiter ?? 0.7;
-  const fade = `afade=t=out:st=${(length - FADE_OUT).toFixed(2)}:d=${FADE_OUT},atrim=0:${length.toFixed(2)}`;
+  const fade = `${fadeLen > 0 ? `afade=t=out:st=${(length - fadeLen).toFixed(2)}:d=${fadeLen},` : ""}atrim=0:${length.toFixed(2)}`;
   const first = loudness(master, `atrim=0:${length},${fade}`);
   const gain = target - first.I;
   const chain = `atrim=0:${length.toFixed(2)},volume=${gain.toFixed(2)}dB,alimiter=limit=${lim}:level=disabled,${fade}`;
@@ -764,9 +769,21 @@ function buildAudio() {
   if (r.status !== 0) throw new Error("ffmpeg (bed synthesis) failed");
   mkdirSync(outDir, { recursive: true });
   const pureLen = picSeconds, cardLen = picSeconds + CARD_HOLD;
-  const a = bedFor(cfg, master, pureLen, join(outDir, `${recipe.stem}-bed.m4a`), join(workDir, "bed-pure.wav"));
+  // A looping Short (recipe.loopAudio = crossfade seconds): the bed's last `x` seconds are the master's
+  // continuation past the end faded in over its first `x`, so the end runs straight into the start.
+  let pureMaster = master;
+  if (recipe.loopAudio) {
+    const x = recipe.loopAudio;
+    pureMaster = join(workDir, "bed-master-loop.wav");
+    const g = `[0:a]asplit=3[a][b][c];[a]atrim=0:${x},asetpts=PTS-STARTPTS,afade=t=in:d=${x}[h];` +
+      `[b]atrim=${pureLen}:${pureLen + x},asetpts=PTS-STARTPTS,afade=t=out:d=${x}[t];[h][t]amix=inputs=2:normalize=0:duration=longest[x1];` +
+      `[c]atrim=${x}:${pureLen},asetpts=PTS-STARTPTS[r];[x1][r]concat=n=2:v=0:a=1[o]`;
+    const lr = spawnSync("ffmpeg", ["-v", "error", "-y", "-i", master, "-filter_complex", g, "-map", "[o]", "-c:a", "pcm_f32le", pureMaster], { stdio: "inherit" });
+    if (lr.status !== 0) throw new Error("ffmpeg (loop fold) failed");
+  }
+  const a = bedFor(cfg, pureMaster, pureLen, join(outDir, `${recipe.stem}-bed.m4a`), join(workDir, "bed-pure.wav"), recipe.loopAudio ? 0 : FADE_OUT);
   console.log(`${recipe.stem}-bed.m4a  ${pureLen} s  integrated ${a.I} LUFS  true peak ${a.TP} dBTP`);
-  const b = bedFor(cfg, master, cardLen, join(workDir, "bed-endcard.m4a"), join(workDir, "bed-endcard.wav"));
+  const b = bedFor(cfg, master, cardLen, join(workDir, "bed-endcard.m4a"), join(workDir, "bed-endcard.wav"), recipe.loopAudio ? CARD_HOLD : FADE_OUT);
   console.log(`bed for the end-card cut  ${cardLen} s  integrated ${b.I} LUFS  true peak ${b.TP} dBTP`);
 }
 
@@ -857,7 +874,7 @@ async function buildCuts() {
   if (!existsSync(pureBed) || !existsSync(cardBed)) throw new Error("run `audio` first");
   const tail = ["-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart"];
   const pure = join(outDir, `${recipe.stem}-pure.mp4`);
-  ff([...input, "-i", pureBed, "-vf", `${TO_VIDEO},fade=t=out:st=${picSeconds - FADE_OUT}:d=${FADE_OUT}`, ...X264, ...tail, "-shortest", pure]);
+  ff([...input, "-i", pureBed, "-vf", `${TO_VIDEO}${FADE_OUT > 0 ? `,fade=t=out:st=${picSeconds - FADE_OUT}:d=${FADE_OUT}` : ""}`, ...X264, ...tail, "-shortest", pure]);
 
   const card = join(workDir, "card.png");
   await renderCard(card);
