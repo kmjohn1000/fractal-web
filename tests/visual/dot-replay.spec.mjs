@@ -322,15 +322,22 @@ test.describe("what the replay shows", () => {
       expect(start.s.n).toBe(0);
       const checkpoints = [0.05, 3.05, 8.05, 20.05, 60.05, 300.05, 2000.05, 20000.05, 100000.05];
       const counts = [await lit(page)];
-      expect(counts[0], "an empty backdrop with the dot and the start point").toBeLessThan(4500);
+      // The start is the backdrop with only the dot's glow, the start point and (Sierpinski) three rings:
+      // under 1% of the canvas at any pixel ratio, and a small part of the finished picture.
+      const area = await page.evaluate(() => els.fernCanvas.width * els.fernCanvas.height);
+      expect(counts[0], "an empty backdrop with the dot and the start point").toBeLessThan(area * 0.01);
       for (const n of checkpoints) {
         await stepTo(page, n);
         counts.push(await lit(page));
       }
+      expect(counts[0], `lit pixels (${counts.join(", ")}): the start is a small part of the picture`).toBeLessThan(counts[counts.length - 1] * 0.3);
+      // (the marks shrink to single pixels and the dot and trail fade out, so the count may dip a little)
       for (let i = 1; i < counts.length; i++) {
-        expect(counts[i], `lit pixels at step ${i} (${counts.join(", ")}): the picture never thins out`).toBeGreaterThanOrEqual(counts[i - 1] * 0.75 - 400);
+        expect(counts[i], `lit pixels at step ${i} (${counts.join(", ")}): the picture never thins out`).toBeGreaterThanOrEqual(counts[i - 1] * 0.7 - 0.0005 * area);
       }
-      expect(counts[counts.length - 1], "a good part of the picture is there at half the points").toBeGreaterThan(counts[2] * 3);
+      // with half the points down it has outgrown every earlier stage, marks and dot included
+      expect(counts[counts.length - 1], `lit pixels (${counts.join(", ")}): a good part of the picture is there at half the points`)
+        .toBeGreaterThan(1.15 * Math.max(...counts.slice(0, -1)));
       // the end: the replay hands over to the normal render, which has the same picture
       await finish(page);
       await settled(page, count);
@@ -506,7 +513,9 @@ test.describe("what the replay shows", () => {
       const d = await page.evaluate(([x, y, r]) => {
         const c = els.fernCanvas.getContext("2d"), bg = backdropPixels(els.fernCanvas.width, els.fernCanvas.height), W = els.fernCanvas.width;
         const diff = (px, py) => { const p = c.getImageData(px, py, 1, 1).data; return Math.max(...[0, 1, 2].map((q) => Math.abs(p[q] - bg[(py * W + px) * 3 + q]))); };
-        return { ring: diff(Math.round(x + r), Math.round(y)), centre: diff(Math.round(x), Math.round(y)) };
+        // the ring is a thin line, so look along a few pixels either side of its radius
+        const ring = Math.max(...[-2, -1, 0, 1, 2].map((o) => diff(Math.round(x + r + o), Math.round(y))));
+        return { ring, centre: diff(Math.round(x), Math.round(y)) };
       }, [x, y, 7 * u]);
       expect(d.ring, "the ring").toBeGreaterThan(12);
       expect(d.centre, "the corner itself is left clear").toBeLessThan(12);
@@ -545,7 +554,8 @@ test.describe("what ends a replay", () => {
   const finishedAs = async (page) => {
     await settled(page, 200000);
     await expect(page.locator("#fernReplayBtn")).toHaveAttribute("aria-label", "Play replay");
-    expect(await lit(page), "the normal picture is back, all of it").toBeGreaterThan(30000);
+    const area = await page.evaluate(() => els.fernCanvas.width * els.fernCanvas.height);
+    expect(await lit(page), "the normal picture is back, all of it").toBeGreaterThan(area * 0.015); // a view zoomed by the wheel fills less
   };
 
   test("a touch on the picture", async ({ page }) => {
