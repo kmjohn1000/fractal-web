@@ -306,7 +306,7 @@ function syncPlayButtons() {
     btn.title = playing ? "Pause depth" : "Play depth";
   }
   const text = speedText(PLAY_SPEEDS[depthPlayer.speedIndex]);
-  for (const btn of document.querySelectorAll(".depthSpeedBtn")) {
+  for (const btn of document.querySelectorAll(".depthSpeedBtn, .replaySpeedBtn")) {
     btn.textContent = text;
     btn.setAttribute("aria-label", `Play speed ${text}`);
   }
@@ -369,7 +369,7 @@ function setSpeedIndex(i) {
   syncPlayButtons();
 }
 
-for (const btn of document.querySelectorAll(".depthSpeedBtn")) {
+for (const btn of document.querySelectorAll(".depthSpeedBtn, .replaySpeedBtn")) {
   let drag = null;
   let slid = false; // the press that ends in this click was a slide, not a tap
   const hint = "◀ slower · faster ▶";
@@ -423,6 +423,46 @@ for (const btn of document.querySelectorAll(".depthSpeedBtn")) {
 }
 syncPlayButtons();
 
+// Replay of the chaos game (the dot shapes, fern.js): the Play button beside the speed button
+// runs it, and the speed above is its speed (1x is about 8 s from the first jump to the last of
+// the points slider's count). Tapping again pauses it, with the picture as far as it got, and
+// tapping once more carries on; after the end Play starts over. The view is framed first, as
+// Reset does (Back undoes that), since the points the game lands on would mostly miss a zoomed
+// view. Any gesture, another shape, a color or count change, Reset and Save end it: the dot
+// shapes' render takes over, see fernView.render.
+function syncReplayButtons() {
+  const running = fernView.replayRunning;
+  for (const btn of document.querySelectorAll(".replayPlayBtn")) {
+    btn.classList.toggle("playing", running);
+    btn.setAttribute("aria-label", running ? "Pause replay" : "Play replay");
+    btn.title = running ? "Pause replay" : "Play replay: watch the chaos game build the picture";
+  }
+}
+
+function stopDotReplay() {
+  if (fernView.cancelReplay()) requestRender();
+}
+
+function toggleDotReplay() {
+  if (fernView.replayRunning) { fernView.pauseReplay(); return; }
+  if (fernView.replaying) { fernView.resumeReplay(); return; }
+  cancelTeleport();
+  if (!vectorViewIsFitted(mode)) {
+    fernNav.checkpoint();
+    fitVectorView(mode);
+  }
+  fernView.startReplay({
+    ...fernRenderOpts(),
+    speed: () => PLAY_SPEEDS[depthPlayer.speedIndex],
+    onChange: syncReplayButtons,
+  });
+  requestRender(); // Back, the info card, the compass; the render leaves the replay's picture alone
+}
+
+for (const btn of document.querySelectorAll(".replayPlayBtn")) btn.addEventListener("click", toggleDotReplay);
+els.fernResetBtn.addEventListener("click", stopDotReplay);
+syncReplayButtons();
+
 els.kochResetBtn.addEventListener("click", () => {
   kochNav.clearHistory();
   fitVectorView("koch");
@@ -475,6 +515,7 @@ els.dragonResetBtn.addEventListener("click", () => {
 els.fernPointsSlider.addEventListener("input", () => {
   syncSliderFill(els.fernPointsSlider);
   fernState.count = parseInt(els.fernPointsSlider.value, 10);
+  fernView.cancelReplay(); // the slider is the points of the normal render (and the replay's length): back to it
   requestRender();
 });
 

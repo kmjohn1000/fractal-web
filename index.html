@@ -627,16 +627,20 @@
   }
 
   /* Depth play/pause (Koch, tree, line curves): one button, two glyphs. */
-  .depthPlayBtn .pauseIcon, .depthPlayBtn.playing .playIcon { display: none; }
-  .depthPlayBtn.playing .pauseIcon { display: block; }
+  /* The dot shapes' Play (replay of the chaos game) is the same button: .replayPlayBtn / .replaySpeedBtn. */
+  .depthPlayBtn .pauseIcon, .depthPlayBtn.playing .playIcon,
+  .replayPlayBtn .pauseIcon, .replayPlayBtn.playing .playIcon { display: none; }
+  .depthPlayBtn.playing .pauseIcon, .replayPlayBtn.playing .pauseIcon { display: block; }
+  /* The replay is all motion: with reduced motion there is nothing to play, so no buttons. */
+  @media (prefers-reduced-motion: reduce) { .replayPlayBtn, .replaySpeedBtn { display: none; } }
   /* Speed: pressed and slid sideways, so the drag mustn't scroll the page. */
   /* Capped: at the largest Larger Text sizes "1×" would outgrow the
      button, which can't get wider. */
-  .depthSpeedBtn {
+  .depthSpeedBtn, .replaySpeedBtn {
     font: 600 min(0.75rem, 15px) -apple-system, system-ui, sans-serif;
     font-variant-numeric: tabular-nums; touch-action: none;
   }
-  .depthSpeedBtn.dragging { background: rgba(255,255,255,0.18); }
+  .depthSpeedBtn.dragging, .replaySpeedBtn.dragging { background: rgba(255,255,255,0.18); }
   /* Readout above the speed button while it's held: teleport.js positions it. */
   #speedBubble {
     position: fixed; z-index: 40; pointer-events: none;
@@ -1028,6 +1032,11 @@
         <circle cx="12" cy="7.5" r="1.3" fill="currentColor" stroke="none"/>
       </svg>
     </button>
+    <button id="fernReplayBtn" class="iconBtn replayPlayBtn" aria-label="Play replay" title="Play replay: watch the chaos game build the picture">
+      <svg class="playIcon" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 5v14l12-7z"/></svg>
+      <svg class="pauseIcon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+    </button>
+    <button class="iconBtn replaySpeedBtn" aria-label="Play speed" title="Play speed: tap for the next speed, or hold and slide left or right">1×</button>
     <button id="fernBoxZoomBtn" class="iconBtn" aria-label="Box zoom" title="Box zoom">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="3.5" y="3.5" width="10" height="10" rx="2" stroke-linecap="butt" stroke-dasharray="3.4 2.7" stroke-dashoffset="0.23"/>

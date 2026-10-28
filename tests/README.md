@@ -217,7 +217,46 @@ share links carry the mode's color (links from before 1.47.0 still open). In Whi
 (1.50.1) each transform takes its own brightness (dimmest 0.7 of the brightest) so the
 address cue survives, and the nine chromatic colors keep their lightness. Their
 baselines are `mode-fern`, `mode-sierpinski`, `mode-levy` and `mode-vicsek` in
-app.spec.mjs.
+app.spec.mjs (their toolbar row has the replay's Play and speed buttons).
+
+`dot-replay.spec.mjs` covers the chaos-game replay of the four dot shapes (Play beside
+the speed button in `#fernControls`; `createIfsView`'s `startReplay` in fern.js,
+the button in teleport.js). Most checks run the replay on its manual clock
+(`startReplay({ manual: true })`, moved by `fernView.replayStep(seconds)`, read with
+`fernView.replayState`) with `ifsRandom` replaced by a seeded generator, so the same
+jumps come every time; a few press the real button. The schedule (`replayJumpsAt`,
+`replayTimeOf`) lasts 6 to 10 s at 1x (about 8.1 s), never runs backwards, has no lurch
+where the slow jumps end and the pace ramps up, and the cap is at most 10 s. The
+button is in all four rows with its labels (Play replay / Pause replay), toggles,
+pauses with nothing moving, resumes and, after the end, starts over; the shared speed
+button sets its speed, 4x taking about a quarter of the time; at 393 and 360 px the row
+stays on one line, the buttons are 44 px tall, at least 32 wide and clear of each other,
+in the order info, Play, speed, box zoom, Back; Enter and Space press it and Tab reaches
+it (not in WebKit, which does not Tab to buttons); with reduced motion the buttons are
+hidden; the depth rows' Play buttons are untouched. The picture starts as the empty
+backdrop (no points counted), grows without thinning (lit pixels at nine steps from 3 to
+100,000 jumps never fall more than a quarter) and ends as the normal picture: the same
+light, address hue and 8 x 8 block means as a fresh normal render of the same count
+(within 10% and 2.5 levels on the Sierpinski, Lévy and Vicsek; within 60% and 8 on the fern,
+which the normal render's 50,000 base points leave patchier at the top than the real chaos
+game does), and the hand-off to the normal render changes under 12 pixels and 0.1% of the
+light, with every point down so the normal render adds none. The first 60 jumps use the
+transform the seeded number picks and land on its image to 1e-9, from the origin; the
+default random is `Math.random` and two replays differ; the fern's four rules are used in
+the ratios 1 : 85 : 7 : 7 (within 5 standard deviations over 20,000 jumps) and the other
+shapes' by their weights; the dot is the chosen transform's color lightened a quarter
+(and the ring of glow around it has its hue), the marks of the first jumps are their
+transforms' colors, and the dot follows the picked color; the Sierpinski's three corners
+carry rings in the slow phase with their centers left clear. A zoomed and turned view is
+framed first as Reset does and Back returns to it. A touch, a pan, a wheel turn, a
+pinch and twist, an arrow key, another shape or mode, a new color, the points slider
+and Reset each end a replay (also a paused one, after which Play starts over) and the
+normal picture is back, all of it, with the button reading Play replay again; Save image
+(`captureShareBlob`) ends it and saves the whole frame, not the partial one; the share
+link does not change while it plays; and a device that falls behind the schedule ends at
+the 10 s cap with the normal render finishing the picture. The points slider is the
+replay's length (it plays `count` points, so its last frame is the normal frame); moving
+it ends the replay.
 
 `solid-colors.spec.mjs` covers the ten solid colors of the eleven pattern shapes
 (1.52.0). The table is append-only because share links carry the index: Green,

@@ -174,6 +174,7 @@ function exitDual() {
 function setMode(next) {
   stopDepthPlay();
   kochView.cancelGrow();
+  fernView.cancelReplay(); // any mode or shape switch ends a replay; the requestRender below draws normally
   mode = next;
   els.fractalTypeRow.classList.remove("open"); // collapse the picker on any mode switch
   els.shareMenu.classList.remove("open");

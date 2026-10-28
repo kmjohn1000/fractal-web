@@ -51,6 +51,17 @@ function deepZoomEligible(renderer, state) {
     || (renderer.phoenixDeepSupported && phoenixDeepEligible(state));
 }
 
+// What the dot shapes' view draws from: its point count and color, and what to
+// call as its points fill in; the chaos-game replay (teleport.js) starts from the same.
+function fernRenderOpts() {
+  return {
+    count: fernState.count,
+    colorIndex: vectorColors[fernView.system],
+    isActive: () => mode === fernView.system,
+    onProgress: updateFernHud,
+  };
+}
+
 function renderAll() {
   updateBackButtons();
   if (mode === "fractal") {
@@ -98,12 +109,7 @@ function renderAll() {
     });
     updateDragonHud();
   } else {
-    fernView.render({
-      count: fernState.count,
-      colorIndex: vectorColors[fernView.system],
-      isActive: () => mode === fernView.system,
-      onProgress: updateFernHud,
-    });
+    fernView.render(fernRenderOpts());
     updateFernHud();
   }
   updateCompasses();
