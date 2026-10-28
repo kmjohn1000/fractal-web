@@ -2,6 +2,10 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.53.0 — 2026-10-27
+- Added a Play button to the dot shapes (the Barnsley fern, Sierpinski triangle, Lévy C curve and Vicsek fractal) that replays the chaos game: a dot hops from point to point, each jump in the color of the rule it used, then faster and faster until the picture has built up.
+- The speed button beside it sets the replay's speed; tapping Play again pauses it, and touching the picture, changing the color or the point count, or switching shape ends it.
+
 ## 1.52.0 — 2026-10-27
 - Three new colors for the shapes: Blue, Teal and Coral. The color menu lists them around the color wheel, from Rose to White, and the arrow keys step through its rows.
 - The color button now shows a small gradient of the shape's own colors (its curve's hue sweep, the dots' address colors, the snowflake's and hexaflake's shades, the tree's trunk to leaves) instead of one flat color.
