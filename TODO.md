@@ -28,11 +28,12 @@ git-ignored file.
       1. Stabilize: no new fractal types for about a month, weekly
          batched releases, experiments behind flags rather than shipped
          and reverted; first the real-device checks above. (The iPhone
-         WebGL context loss: the user reports it fixed, 2026-10-24; a
-         read-only investigation that day found no loss recorded after
-         2026-10-16. Optional hardening it suggested, not approved: a
-         "Reload graphics" button after a timeout if `restored` never
-         fires, and an exact-step cap on Newton deep like Phoenix's.)
+         WebGL context loss: CLOSED by the user 2026-10-27; they reported
+         it fixed 2026-10-24, and a read-only investigation that day found
+         no loss recorded after 2026-10-16. The optional hardening it
+         suggested was not approved or built: a "Reload graphics" button
+         after a timeout if `restored` never fires, and an exact-step cap
+         on Newton deep like Phoenix's.)
       2. DONE 2026-10-23 (`b7fb4a4`, see Done): `app.js` split along its
          section headers into plain scripts as a pure move, including
          `places.js`. `deepzoom.js` was checked 2026-10-24 and is already
@@ -56,7 +57,13 @@ git-ignored file.
          remembered view); sections follow the picker's order
          (`PICKER_LAYOUT`, regrouped in 1.44.1); commit the ~98 pre-rendered
          160 px webp thumbnails (about 0.5 MB, `icons/places/<id>.webp`,
-         not in `APP_SHELL`) to the repo. Not started.
+         not in `APP_SHELL`) to the repo. DONE 2026-10-27 (`8f532b7`, 1.46.0,
+         approved by the user that day): `places-sheet.js`, the picker's
+         "Places" row and the info card's "Browse places" button, 98
+         thumbnails (about 1 MB; `node scripts/render_place_thumbs.mjs
+         --missing` renders new ones), `places-sheet.spec.mjs`. Nova has no
+         places yet, so it has no section; a new fractal's places appear in
+         the sheet by themselves once they are in `places.js`.
       4. The info card says "near X" between named places; the minimap
          (see Minimap); a one- or two-sentence caption per place, with
          established names kept apart from our own names. Later, name the
@@ -497,11 +504,9 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       place); the Default Look's tile swatch is the Inferno picture, so on
       the seven fractals with another default palette it shows Inferno while
       applying that fractal's own (a per-fractal swatch, or a neutral one);
-      phone check of the upright Ship: the user ran 1.44.0 on an iPhone 15
-      on 2026-10-24 and said it looks good (the opening view, Surprise me and
-      a recolored fractal were asked for; what exactly was tried isn't
-      recorded), so twist, pinch, the dual view tap and deep places are still
-      unconfirmed
+      phone check of the upright Ship: done. The user ran 1.44.0 on an
+      iPhone 15 on 2026-10-24 and said it looks good, and on 2026-10-27
+      confirmed the Burning Ship is fine after testing it
 - [ ] Minimap: small inset of the whole fractal with a marker for the
       current view, so deep zooms keep their bearings. Render the overview
       once per fractal/colormap into a small texture; at deep zoom the view
@@ -789,10 +794,43 @@ distance estimation → zoom-to-minibrot / AI discovery.
       doesn't apply (Julia, Ship, Tricorn, Multibrot³, Phoenix, minibrot
       interiors). Fast path only; eps must scale with zoom; GPU gain is capped
       by warp divergence, so benchmark on a phone before keeping it
+- [ ] 3D fractals as picker modes, from `../fractalweb-3d/` (a plan
+      written 2026-10-27 from a read-only evaluation; not approved, not
+      started; it conflicts with the "no new fractal types for about a
+      month" item under Now and with the "Deferred indefinitely" entry
+      below, so those two need a decision first; see STRATEGY.md).
+      `fractalweb-3d` is about 72 KB of WebGL1 ray-marching source with no
+      dependencies (Mandelbulb, Menger sponge, Sierpinski tetrahedron,
+      fractal tree), lighting, orbit/pinch/twist and share links.
+      Plan: (1) one-day phone spike first: serve its `?bench` mode over the
+      LAN to an iPhone; median ms/frame per type, lit and unlit, at full,
+      1/2 and 1/3 render scale, again after 60 s of orbiting (thermals);
+      shader compile time; whether any WebGL context loss shows up in the
+      app after switching to and from 2D modes (the context-loss handler
+      covers only the main and Julia canvases today). Pass/fail bars are
+      proposals until measured. (2) If it passes: Mandelbulb, Menger sponge
+      and Sierpinski tetrahedron as a third picker section, placed last;
+      leave the fractal tree out (it overlaps the Pythagoras tree). (3)
+      Integration points: namespaced, never-renamed `f=` ids (its
+      `sierpinski` and `tree` keys collide with existing mode keys); the
+      `.glsl` source becomes a JS string, since `scripts/build-www.mjs`
+      copies only root `.html`/`.js`/`.webmanifest`; save/share through
+      `Platform`; add the new files to `APP_SHELL`; a render-scale governor
+      (it has none and renders at 2x); fix the default framing, which crops
+      the bulb on a 390x780 portrait viewport; thumbnails via
+      `scripts/render_thumbs.mjs`; a `docs/learn-more-links.md` row each;
+      the twist gesture; specs for the new modes (software-GL ray marching
+      may be slow or flaky in the visual suite). Known limits to accept or
+      work around: zoom stops at about 3,000x on the bulb (float32); one
+      finger orbits instead of panning; no box zoom or named places.
+      Estimate: spike 0.5-1 day, integration 4-6 days, release 1 day. If the
+      spike fails, leave `fractalweb-3d` standalone (about half a day of
+      tidying).
 
 ## Deferred indefinitely
 - Menger Sponge / other 3D fractals (real 3D rendering project, not a
-  slot-in)
+  slot-in). Proposal and spike plan: see "3D fractals as picker modes"
+  under Later
 - Real-time collaborative exploration
 
 ## Explicitly rejected
