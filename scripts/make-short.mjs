@@ -38,7 +38,11 @@
 //   fractal   the app fractal ("Mandelbrot"), palette {name, stops} added to the app's list
 //   path(seconds)  -> (t) => { t, scale, cx, cy, offset, rotation (radians, default 0), layers: [{style, density, weight?}, ...], ... }
 //             layers[0] is the base picture; each later layer is shot too and blended
-//             over it at `weight` (skipped when weight <= 0.002)
+//             over it at `weight` (skipped when weight <= 0.002). A layer may name one of the app's palettes
+//             (`palette: "Classic"`; else the page's current one stays), so a tour can change color, and the
+//             frame may carry `dim` (0..1), a dip to black.
+//             Long-form (scripts/shorts/the-burning-ship.mjs): `fadeIn` (seconds, recipe field) fades the pure cut and
+//             its bed in; post may carry `chapters` (lines) and `linkNote`; PW_PORT (env) picks the static-server port.
 //   pageSetup optional JS string run in the page once after the palette (e.g. to override an app global)
 //   plan      { header, row(i, s) }: the columns the `plan` command prints
 //   facts(ctx) -> object: what the app says about the deepest frame (for the post)
@@ -127,7 +131,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 const root = new URL("..", import.meta.url).pathname;
-const PORT = 8751;
+const PORT = Number(process.env.PW_PORT || 8751); // PW_PORT: a different static-server port when another render is running
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---------------------------------------------------------------- command line
@@ -150,6 +154,7 @@ const recipeName = take("recipe", "the-infinite");
 const recipe = (await import(new URL(`./shorts/${recipeName}.mjs`, import.meta.url))).default;
 const R = recipe.renderer;
 const FPS = recipe.fps ?? 30;
+const FADE_IN = recipe.fadeIn ?? 0; // seconds: the pure cut and its bed fade in from black / silence (a long-form video)
 const FADE_OUT = recipe.fadeOut ?? 2.0, CARD_FADE = recipe.cardFade ?? 0.6, CARD_HOLD = recipe.cardHold ?? 1.5;
 
 const resume = flag("resume");
@@ -291,8 +296,14 @@ async function startPage(width, height, passCount) {
 // it has settled (every sharpening pass blended in). If one never does, nudge
 // the render and wait again, then shoot it anyway and say so.
 async function setFrame(page, v, label) {
+  // (a frame or layer may name one of the app's palettes (v.palette): a tour that changes color between chapters)
   await page.evaluate(`(() => {
     const v = ${JSON.stringify(v)};
+    if (v.palette) {
+      const k = COLORMAPS.findIndex((c) => c.name === v.palette);
+      if (k < 0) throw new Error("no palette " + v.palette);
+      if (k !== colormapIndex) pickColormap(k);
+    }
     setColorStyle({ style: v.style, density: v.density, offset: v.offset });
     Object.assign(mainState, { cx: v.cx, cy: v.cy, scale: v.scale, rotation: v.rotation || 0 });
     if (v.maxIter) { mainState.maxIter = v.maxIter; mainState.iterAutoLocked = true; } else { mainState.iterAutoLocked = false; applyAutoIter(); }
@@ -350,18 +361,22 @@ async function renderDiveFrames() {
       const blended = s.layers.slice(1).filter((l) => l.weight > 0.002);
       // The base picture; while a further layer (the Bands look) is still dissolving, a
       // shot of it is blended in over the picture (ImageMagick).
-      await setFrame(page, { ...base, style: s.layers[0].style, density: s.layers[0].density }, `frame ${i}`);
+      await setFrame(page, { ...base, style: s.layers[0].style, density: s.layers[0].density, palette: s.layers[0].palette ?? s.palette }, `frame ${i}`);
       await shot(blended.length ? join(tmpDir, "layer0.jpg") : file);
       const it = await page.evaluate("mainState.maxIter");
       if (blended.length) {
         let acc = join(tmpDir, "layer0.jpg");
         for (const [k, l] of blended.entries()) {
-          await setFrame(page, { ...base, style: l.style, density: l.density }, `frame ${i} ${l.style}`);
+          await setFrame(page, { ...base, style: l.style, density: l.density, palette: l.palette ?? s.palette }, `frame ${i} ${l.style}`);
           await shot(join(tmpDir, "layerN.jpg"));
           const r = spawnSync("magick", [acc, join(tmpDir, "layerN.jpg"), "-define", `compose:args=${(l.weight * 100).toFixed(2)}`, "-compose", "blend", "-composite", "-quality", "95", k === blended.length - 1 ? file : join(tmpDir, "acc.jpg")]);
           if (r.status !== 0) throw new Error(`magick failed: ${r.stderr}`);
           acc = join(tmpDir, "acc.jpg");
         }
+      }
+      if (s.dim > 0.002) { // a dip to black (a path's `dim`, 0..1): the finished frame darkened
+        const r = spawnSync("magick", [file, "-fill", "black", "-colorize", `${(Math.min(1, s.dim) * 100).toFixed(1)}%`, "-quality", "95", file]);
+        if (r.status !== 0) throw new Error(`magick failed: ${r.stderr}`);
       }
       csv.push([i, s.t.toFixed(3), (await page.evaluate("mainState.scale")).toExponential(6), it].join(","));
       done++;
@@ -743,7 +758,7 @@ function loudness(file, filter = "") {
 // gained to the target loudness integrated (measured on the faded bed itself).
 function bedFor(cfg, master, length, outM4a, outWav, fadeLen = FADE_OUT) {
   const target = cfg.targetLufs ?? -15, lim = cfg.limiter ?? 0.7;
-  const fade = `${fadeLen > 0 ? `afade=t=out:st=${(length - fadeLen).toFixed(2)}:d=${fadeLen},` : ""}atrim=0:${length.toFixed(2)}`;
+  const fade = `${FADE_IN > 0 ? `afade=t=in:d=${FADE_IN},` : ""}${fadeLen > 0 ? `afade=t=out:st=${(length - fadeLen).toFixed(2)}:d=${fadeLen},` : ""}atrim=0:${length.toFixed(2)}`;
   const first = loudness(master, `atrim=0:${length},${fade}`);
   const gain = target - first.I;
   const chain = `atrim=0:${length.toFixed(2)},volume=${gain.toFixed(2)}dB,alimiter=limit=${lim}:level=disabled,${fade}`;
@@ -874,7 +889,7 @@ async function buildCuts() {
   if (!existsSync(pureBed) || !existsSync(cardBed)) throw new Error("run `audio` first");
   const tail = ["-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart"];
   const pure = join(outDir, `${recipe.stem}-pure.mp4`);
-  ff([...input, "-i", pureBed, "-vf", `${TO_VIDEO}${FADE_OUT > 0 ? `,fade=t=out:st=${picSeconds - FADE_OUT}:d=${FADE_OUT}` : ""}`, ...X264, ...tail, "-shortest", pure]);
+  ff([...input, "-i", pureBed, "-vf", `${TO_VIDEO}${FADE_IN > 0 ? `,fade=t=in:st=0:d=${FADE_IN}` : ""}${FADE_OUT > 0 ? `,fade=t=out:st=${picSeconds - FADE_OUT}:d=${FADE_OUT}` : ""}`, ...X264, ...tail, "-shortest", pure]);
 
   const card = join(workDir, "card.png");
   await renderCard(card);
@@ -882,7 +897,7 @@ async function buildCuts() {
   const total = picSeconds + CARD_HOLD;
   ff([...input, "-loop", "1", "-framerate", String(FPS), "-t", String(total), "-i", card, "-i", cardBed,
     "-filter_complex",
-    `[0:v]${TO_VIDEO},tpad=stop_mode=clone:stop_duration=${CARD_HOLD}[p];` +
+    `[0:v]${TO_VIDEO}${FADE_IN > 0 ? `,fade=t=in:st=0:d=${FADE_IN}` : ""},tpad=stop_mode=clone:stop_duration=${CARD_HOLD}[p];` +
     `[1:v]scale=${OW}:${OH},format=yuva420p,fade=t=in:st=${picSeconds - CARD_FADE}:d=${CARD_FADE}:alpha=1[c];` +
     `[p][c]overlay=shortest=0:format=auto,format=yuv420p[v]`,
     "-map", "[v]", "-map", "2:a", ...X264, ...tail, "-t", String(total), endcard]);
@@ -928,8 +943,8 @@ ${p.description}
 
 ${p.hashtags}
 
-(Links are not clickable in Shorts descriptions, so there is none here: put the App Store link in the channel profile.)
-
+${p.linkNote ?? "(Links are not clickable in Shorts descriptions, so there is none here: put the App Store link in the channel profile.)"}
+${p.chapters ? `\n## YouTube chapters (paste at the end of the description; the first must be 0:00)\n\n${p.chapters.join("\n")}\n` : ""}
 ## Pinned comment
 
 ${p.pinned}
