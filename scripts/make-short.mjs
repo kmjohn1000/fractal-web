@@ -40,6 +40,8 @@
 //             layers[0] is the base picture; each later layer is shot too and blended
 //             over it at `weight` (skipped when weight <= 0.002)
 //   pageSetup optional JS string run in the page once after the palette (e.g. to override an app global)
+//   dsf       optional device scale factor (default 1): the page is laid out W/dsf x H/dsf css px, so the app's UI
+//             keeps its phone proportions and the shots are still W x H
 //   plan      { header, row(i, s) }: the columns the `plan` command prints
 //   facts(ctx) -> object: what the app says about the deepest frame (for the post)
 //
@@ -279,7 +281,8 @@ async function openApp({ width, height, dsf = 1, passCount = 16, url = "index.ht
 // ---------------------------------------------------------------- dive renderer
 
 async function startPage(width, height, passCount) {
-  const app = await openApp({ width, height, passCount });
+  const dsf = R.dsf ?? 1;
+  const app = await openApp({ width: width / dsf, height: height / dsf, dsf, passCount });
   await app.page.evaluate(`__vt.fractal(${JSON.stringify(R.fractal || "Mandelbrot")}); window.dispatchEvent(new Event('resize'))`);
   // The palette joins the page's list (the app is not changed), then is picked as a user pick.
   if (R.palette) await app.page.evaluate(`(() => { COLORMAPS.push(${JSON.stringify(R.palette)}); pickColormap(COLORMAPS.length - 1); })()`);
