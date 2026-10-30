@@ -255,7 +255,7 @@ What you see, in order:
 - Up to the mast at the top right, to a small copy of the whole ship (the app's place "Stingray"), in the Classic palette.
 - Back across the sky to the left, to the app's places "Armada" and "Burning Galleon": towers rising from the waterline, with smaller ships along it.
 - "Clipper" in the Glacier palette, then "Needle Forest" in the Twilight palette.
-- "Ghost Ship", then a steady dive through "Lightning" into "Twin Ships", in the Inferno palette. Twin Ships is about 83 thousand times deeper than the app's opening view.
+- "Ghost Ship", then a steady dive through "Lightning" into "Twin Ships", in the Inferno palette. The dive ends about 83 thousand times deeper than the app's opening view.
 - The last minute and a half is one long dive down to "Sunken Crown", the app's deepest place on the Burning Ship. The zoom rate is constant after a short ramp-up: 1.16 times closer every second. The last frame is about 1 trillion times deeper than the app's opening view; that depth needs perturbation theory (one reference orbit at high precision, every pixel a small offset from it).
 
 Chapters
