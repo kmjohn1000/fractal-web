@@ -81,6 +81,27 @@ git-ignored file.
 Help people find beautiful places, and give them more ways to see them.
 Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-minibrot.
 
+- [ ] Longer chaos-game demo in the app (user idea 2026-10-29; not approved,
+      not started). The dot shapes' Play replay (`fern.js`, the `REPLAY_*`
+      constants) shows 24 jumps one at a time with a 6-jump fading trail,
+      then a 4.5 s ramp to the full picture. Offer a longer, slower run that
+      shows hundreds of connected jumps (the dot's path behind it, each jump
+      starting where the last landed) before the build. The Shorts tooling
+      already renders this by rewriting those constants as the page loads
+      (`patchReplay` in `scripts/make-short.mjs`; "The Chaos Game:
+      Connected" uses 300 jumps and a 40-jump trail for the triangle,
+      140/110/110 for the fern, Levy C and Vicsek). What an in-app version
+      must handle, found doing that: `REPLAY_CAP_S` (10) hands the rest to
+      the normal render after 10 s of schedule time; `REPLAY_SEQ` (100)
+      keeps positions only for the first 100 jumps, so the trail freezes
+      after that and the arrays must grow with the slow phase; the slow
+      phase's last pace must match the ramp's first (last gap =
+      `REPLAY_RAMP_S / (0.25 * N * ln(total / N))`) or the pace steps; the
+      dot and trail fade over the 60 jumps after the slow ones. Open
+      design questions for the user: how it starts (a "Slow" option beside
+      Play, or a long-press), whether jumps per shape differ, and a speed
+      control (the replay already takes a `speed()`). Needs cases in
+      `tests/visual/dot-replay.spec.mjs`. See STRATEGY.md for the reason.
 - [ ] Picker cards: variant B, rows with a one-line descriptor (user choice
       2026-10-24, after the evaluation of three mockups; not started). One
       row per fractal (about 76 px, a 64 px thumbnail, a bold name and a
