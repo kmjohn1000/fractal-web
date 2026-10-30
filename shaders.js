@@ -95,7 +95,7 @@ void main() {
 }
 `;
 
-// Color styles (COLOR_STYLES in state-colors.js). Shared by FRAG_SRC and
+// Color styles (COLOR_STYLES in state.js). Shared by FRAG_SRC and
 // PHOENIX_DEEP_FRAG_SRC, which each define lutColor before including this. A
 // style picks the colormap coordinate t; bands and shift then treat every
 // style alike, lutColor(t * u_density + u_offset), which at 1 and 0 is
@@ -369,7 +369,7 @@ vec3 stripeColor(int iter, vec2 z, vec4 S) {
 // The first iterate sits at c, the pixel itself, so it's skipped. Every
 // pixel's orbit shares nearly the same shape in a deep view, so the distances
 // all land in a narrow band that a fixed range paints one color. The range is
-// set per view instead (trapRangeFor in state-colors.js): the 2nd-98th percentile of the
+// set per view instead (trapRangeFor in state.js): the 2nd-98th percentile of the
 // distance over a small probe of the same view, so [u_trapLo, u_trapHi] maps
 // to the whole colormap at any depth. Without a probe the app sends the old
 // fixed ranges (0..1 Point, 0..0.2 Cross).
@@ -1198,7 +1198,7 @@ const float ESCAPE_RADIUS_SQ = 65536.0;
 ${FIXED_POINT_GLSL}
 ${COLOR_STYLE_GLSL}
 // Must match escapeColor in FRAG_SRC (Phoenix is power 2: log base 2). Only
-// Smooth and Bands exist for Phoenix (styleDrawn in state-colors.js). Kept in this
+// Smooth and Bands exist for Phoenix (styleDrawn in state.js). Kept in this
 // exact shape: the version that called a shared helper changed the compiled
 // perturbation loop (see COLOR_STYLE_GLSL).
 vec3 escapeColor(int iter, vec2 z) {

@@ -1,5 +1,5 @@
 // Rendering and layout: updateLUT, layoutCanvasArea, renderAll, progressive refinement, requestRender,
-// the HUD text and screen/complex conversions. Needs the state (state-colors.js), deepzoom.js and
+// the HUD text and screen/complex conversions. Needs the state (state.js, state-colors.js), deepzoom.js and
 // fractal-defs.js; calls into modes, interaction and the later scripts only inside function bodies.
 "use strict";
 

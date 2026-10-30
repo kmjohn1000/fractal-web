@@ -172,7 +172,7 @@ the `mode-*` baselines in `app.spec.mjs` and are unchanged.
 `styles.spec.mjs` and `color-sheet.spec.mjs` cover the color styles (Smooth,
 Bands, Edge glow, Stripes, Orbs, Rays and Relief; the style ids are `smooth`,
 `bands`, `glow`, `stripes`, `point`, `cross` and `relief`, see `COLOR_STYLES` in
-`state-colors.js`). Relief shares Edge glow's compiled program; its specs check the
+`state.js`). Relief shares Edge glow's compiled program; its specs check the
 types it draws on, baselines on six fractals and two deep views, that the saved
 image is the frame on screen, and that the light stays at the upper left of the
 screen when the view is rotated (the Rabbit's Julia set is point symmetric, so

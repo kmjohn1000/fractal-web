@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.53.3 — 2026-10-30
+- Internal: the app's shared state moved into its own file. No visible change.
+
 ## 1.53.2 — 2026-10-30
 - The places sheet's code now loads as a JavaScript module. No visible change.
 

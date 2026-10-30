@@ -112,7 +112,7 @@ const COLORMAPS = [
 // the fern/IFS point clouds and the Koch/tree/line-curve drawings. Those
 // used to sample COLORMAPS at depth/maxDepth, which puts low depths at the
 // colormap's dark end -- near-invisible on the black background. Each mode
-// has its own default in state-colors.js (vectorColors), picked by name.
+// has its own default in state.js (vectorColors), picked by name.
 // The array order is the INDEX a share link carries (`c=`), so it is
 // append-only: never reorder or change entries 0-6 (1.52.0 added 7-9 after
 // a palette review found no true blue, no teal and no warm red-orange).

@@ -1,5 +1,5 @@
 // Color sheet: the Looks and Custom tabs (style, bands, shift, palette) and the shader-variant
-// warm-up. Needs the state, COLOR_STYLES (state-colors.js), compass-ui.js (syncSliderFill) and
+// warm-up. Needs the state, COLOR_STYLES (state.js), compass-ui.js (syncSliderFill) and
 // colormap-picker.js (cmGradient). app.js's init schedules prepareColorSheet and fitColorSegment.
 "use strict";
 

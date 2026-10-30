@@ -1,6 +1,6 @@
 // The WebGL renderer factory: createFractalRenderer(canvas) and everything it draws with.
 // Needs the shader sources (shaders.js), FTYPE (configs.js), the digit/Apollonian helpers
-// (fractal-defs.js), deepzoom.js and, inside its functions only, state-colors.js (colorStyle etc.).
+// (fractal-defs.js), deepzoom.js and, inside its functions only, state.js (colorStyle etc.).
 "use strict";
 
 // ---------------------------------------------------------------- WebGL renderer factory
@@ -225,7 +225,7 @@ function createFractalRenderer(canvas) {
   }
 
   // Live frames (a flight, a pinch above the deep-zoom threshold) draw one
-  // pass each. When they're running late, state-colors.js asks for a smaller one
+  // pass each. When they're running late, state.js asks for a smaller one
   // (setLiveDivisor): the fractal is drawn at 1/div of the canvas size into a
   // small texture, and that is painted over the canvas through the preview
   // program. Only while a gesture or flight is on (isInteracting); the full
