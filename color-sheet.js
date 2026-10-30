@@ -425,7 +425,7 @@ document.addEventListener("pointerup", (e) => {
 document.addEventListener("pointercancel", () => { sheetTap = null; }, true);
 
 els.fernBoxZoomBtn.addEventListener("click", () => {
-  fernBoxZoomActive = !fernBoxZoomActive;
+  setFernBoxZoomActive(!fernBoxZoomActive);
   els.fernBoxZoomBtn.classList.toggle("active", fernBoxZoomActive);
   if (!fernBoxZoomActive) els.boxRect.classList.add("hidden");
 });

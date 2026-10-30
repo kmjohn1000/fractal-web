@@ -21,17 +21,17 @@ function selectFractal(name, { fresh = false } = {}) {
   if (!fresh && name === currentName) { setMode("fractal"); return; }
   fractalMemory.set(currentName, { mainState, juliaState, mainHistory, juliaHistory });
   const remembered = fresh ? null : fractalMemory.get(name);
-  currentName = name;
+  setCurrentName(name);
   const config = FRACTAL_CONFIGS[name];
   applyDefaultColormap(); // its own palette, unless one has been picked
-  mainState = remembered ? remembered.mainState : freshState(config);
-  mainHistory = remembered ? remembered.mainHistory : [];
-  juliaHistory = [];
+  setMainState(remembered ? remembered.mainState : freshState(config));
+  setMainHistory(remembered ? remembered.mainHistory : []);
+  setJuliaHistory([]);
   // Same reasoning as exitDual(): if activePane was left on "julia" from
   // before this switch, Back would try to pop an empty array and silently
   // do nothing.
-  activePane = "main";
-  if (dualActive && !config.dual) dualActive = false;
+  setActivePane("main");
+  if (dualActive && !config.dual) setDualActive(false);
   // dualActive stays one app-wide toggle; a remembered Julia pane (its own
   // view and Back history) comes back with its fractal.
   if (dualActive) enterDual(remembered && remembered.juliaState ? remembered : null);
@@ -74,14 +74,14 @@ function selectFractal(name, { fresh = false } = {}) {
 function enterDual(from = null) {
   const config = FRACTAL_CONFIGS[currentName];
   if (!config.dual) return;
-  dualActive = true;
+  setDualActive(true);
   // The Julia pane opens on the whole Julia set: no more zoomed in than the
   // fractal's own opening view. (It used to copy the main pane's zoom, which
   // from any zoomed-in view -- every Surprise-me place -- was a magnified
   // patch around the origin, a flat color that still paid for a deep render.)
   const juliaScale = Math.max(mainState.scale, mainState.baseScale);
   const sameZoom = juliaScale === mainState.scale;
-  juliaState = from ? from.juliaState : {
+  setJuliaState(from ? from.juliaState : {
     cx: 0, cy: 0, scale: juliaScale, rotation: 0,
     ftype: mainState.ftype, power: mainState.power,
     isJulia: true, juliaC: [mainState.cx, mainState.cy],
@@ -92,11 +92,11 @@ function enterDual(from = null) {
     maxIter: sameZoom ? mainState.maxIter : suggestedMaxIter(juliaScale, juliaScale),
     baseScale: juliaScale,
     iterAutoLocked: sameZoom ? mainState.iterAutoLocked : false,
-  };
+  });
   // c is the main pane's center, whichever pane this is.
   juliaState.juliaC = [mainState.cx, mainState.cy];
   crosshairFlash.lastView = null; // flash the crosshair as dual view opens
-  juliaHistory = from ? from.juliaHistory : [];
+  setJuliaHistory(from ? from.juliaHistory : []);
   els.juliaCanvas.classList.remove("hidden");
   layoutCanvasArea();
   requestRender();
@@ -113,7 +113,7 @@ let dualPreset = null; // { name, c } of the last preset opened this way
 function openPresetInDual(name, juliaView = null) {
   const preset = FRACTAL_CONFIGS[name];
   const [cx, cy] = preset.juliaC;
-  dualActive = true;
+  setDualActive(true);
   selectFractal(preset.dualParent, { fresh: true });
   Object.assign(mainState, { cx, cy, scale: mainState.baseScale / PRESET_DUAL_ZOOM });
   const jc = els.juliaCanvas;
@@ -145,7 +145,7 @@ function closeDual() {
     cx: j.cx, cy: j.cy, scale: j.scale, rotation: j.rotation, baseScale: j.baseScale,
     maxIter: j.maxIter, iterAutoLocked: j.iterAutoLocked,
   });
-  mainHistory = history;
+  setMainHistory(history);
   dualPreset = null;
   applyAutoIter();
   requestRender();
@@ -159,12 +159,12 @@ function dualPresetName() {
 }
 
 function exitDual() {
-  dualActive = false;
+  setDualActive(false);
   // Without this, Back (popHistory(activePane)) silently pops the now-
   // hidden juliaState/juliaHistory if the julia pane was the last one
   // touched -- nothing visibly changes, so Back appears dead until the
   // main canvas is tapped again (which resets activePane itself).
-  activePane = "main";
+  setActivePane("main");
   els.juliaCanvas.classList.add("hidden");
   els.crosshair.classList.add("hidden");
   layoutCanvasArea();
@@ -175,7 +175,7 @@ function setMode(next) {
   stopDepthPlay();
   kochView.cancelGrow();
   fernView.cancelReplay(); // any mode or shape switch ends a replay; the requestRender below draws normally
-  mode = next;
+  setModeKey(next);
   els.fractalTypeRow.classList.remove("open"); // collapse the picker on any mode switch
   els.shareMenu.classList.remove("open");
   els.colormapMenu.classList.remove("open");

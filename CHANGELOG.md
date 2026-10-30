@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.53.4 — 2026-10-30
+- Internal: shared app state is now changed through setter functions. No visible change.
+
 ## 1.53.3 — 2026-10-30
 - Internal: the app's shared state moved into its own file. No visible change.
 

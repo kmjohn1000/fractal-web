@@ -158,7 +158,7 @@ function flyToPlaceFrom(i) {
     if (dualActive) exitDual();
     selectFractal(d.fractal, { fresh: true });
   }
-  hudVisible = true;
+  setHudVisible(true);
   applyHudVisibility();
   flyToPlace(i);
 }

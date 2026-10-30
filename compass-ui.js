@@ -110,7 +110,7 @@ function resetRotation(key) {
   if (p.fractalPane) {
     cancelTeleport();
     pushHistory(p.fractalPane);
-    activePane = p.fractalPane;
+    setActivePane(p.fractalPane);
   } else {
     p.nav.checkpoint();
   }
@@ -195,7 +195,7 @@ function applyHudVisibility() {
   requestRender(); // the canvas area just changed height
 }
 document.querySelectorAll(".hudToggleBtn").forEach((b) => b.addEventListener("click", () => {
-  hudVisible = !hudVisible;
+  setHudVisible(!hudVisible);
   applyHudVisibility();
 }));
 // (The first applyHudVisibility() call is at the start of init: it schedules a render.)
@@ -327,7 +327,7 @@ els.dualBtn.addEventListener("click", () => {
 });
 
 els.boxZoomBtn.addEventListener("click", () => {
-  boxZoomActive = !boxZoomActive;
+  setBoxZoomActive(!boxZoomActive);
   els.boxZoomBtn.classList.toggle("active", boxZoomActive);
   if (!boxZoomActive) els.boxRect.classList.add("hidden");
 });

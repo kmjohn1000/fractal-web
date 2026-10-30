@@ -44,7 +44,7 @@ function attachFractalInteraction(canvas, getState, paneName, renderer) {
     canvas.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pointers.size >= 2) multiTouch = true;
-    activePane = paneName;
+    setActivePane(paneName);
     downPos = { x: e.clientX, y: e.clientY };
 
     if (boxZoomActive) {
@@ -54,8 +54,8 @@ function attachFractalInteraction(canvas, getState, paneName, renderer) {
       // current state first, so the box is always drawn on top of exactly
       // the pixels commitBoxZoom's math will use.
       if (isInteracting) {
-        if (settleTimer) { clearTimeout(settleTimer); settleTimer = null; }
-        isInteracting = false;
+        if (settleTimer) { clearTimeout(settleTimer); setSettleTimer(null); }
+        setIsInteracting(false);
         renderAll();
       }
       // boxRect is position:fixed, so its geometry lives entirely in
@@ -192,7 +192,7 @@ function attachFractalInteraction(canvas, getState, paneName, renderer) {
     e.preventDefault();
     if (boxZoomActive) return;
     cancelTeleport();
-    activePane = paneName;
+    setActivePane(paneName);
     const now = performance.now();
     if (now - lastZoomPush > 400) { pushHistory(paneName); lastZoomPush = now; }
     const st = getState();

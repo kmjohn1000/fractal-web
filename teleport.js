@@ -131,7 +131,7 @@ function flyTo(st, d, target, landingIndex, spinSign) {
   // without one, goes to the fractal's default. A palette the user picked
   // stays (applyDefaultColormap).
   applyDefaultColormap(landingIndex >= 0 ? d : null);
-  activePane = "main";
+  setActivePane("main");
   const path = zoomPath([st.cx, st.cy, 2 * st.scale], [target.cx, target.cy, 2 * target.scale]);
   // A spiral adds whole turns to the landing turn, as many as its zoom
   // calls for: path.distance times sqrt(2) is the e-folds of zoom travelled
@@ -214,7 +214,7 @@ function coldOpen() {
       if (i < 0) throw new Error(`Cold open place "${label}" is not in TELEPORT_DESTINATIONS`);
       return i;
     });
-    hudVisible = true;
+    setHudVisible(true);
     applyHudVisibility();
     flyToPlace(places[Math.floor(Math.random() * places.length)]);
   }, 600)));
@@ -229,7 +229,7 @@ function glideMainTo(x, y) {
   const st = mainState;
   cancelTeleport();
   pushHistory("main");
-  activePane = "main";
+  setActivePane("main");
   const x0 = st.cx, y0 = st.cy;
   const durationMs = prefersReducedMotion() ? 0 : GLIDE_MS;
   const ease = (t) => 1 - Math.pow(1 - t, 3);

@@ -21,6 +21,9 @@ let colormapPicked = false;
 // The palette that is the default for what is on screen (the fractal's or
 // the landed place's): what the Default Look and Reset return to.
 let colormapDefaultIndex = 0;
+// For share.js, which sets the pick from a link; only this file assigns them.
+function setColormapIndex(v) { colormapIndex = v; }
+function setColormapPicked(v) { colormapPicked = v; }
 
 function colormapIndexNamed(name) {
   return Math.max(0, COLORMAPS.findIndex((c) => c.name === name));
@@ -83,14 +86,14 @@ function setColorStyle(next = {}) {
 
 // (isInteracting and settleTimer are declared in state.js, with the comment on what the delay costs.)
 function markInteracting() {
-  isInteracting = true;
+  setIsInteracting(true);
   if (settleTimer) clearTimeout(settleTimer);
-  settleTimer = setTimeout(() => {
-    isInteracting = false;
-    settleTimer = null;
+  setSettleTimer(setTimeout(() => {
+    setIsInteracting(false);
+    setSettleTimer(null);
     applyAutoIter();
     requestRender();
-  }, 200);
+  }, 200));
 }
 
 // The vector views' counterpart: while a drag, pinch or wheel zoom is in

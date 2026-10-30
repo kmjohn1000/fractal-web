@@ -157,8 +157,8 @@ function applyShareState(st) {
     // pick (so later fractals keep it) unless it is the fractal's own default,
     // where the next fractal still opens in its own. Set before selectFractal,
     // which applies the default when nothing is picked.
-    colormapIndex = st.cm;
-    colormapPicked = st.cm !== colormapIndexNamed(defaultColormapName(st.name));
+    setColormapIndex(st.cm);
+    setColormapPicked(st.cm !== colormapIndexNamed(defaultColormapName(st.name)));
     // The style travels with the colormap (both global); a link without one
     // means the default coloring.
     setColorStyle({ style: st.color.style, density: st.color.density, offset: st.color.offset });
@@ -185,7 +185,7 @@ function applyShareState(st) {
       els.fernPointsSlider.value = st.count;
       setFernColor(st.colorIndex);
     } else {
-      colormapIndex = st.cm;
+      setColormapIndex(st.cm);
       vectorColors[st.mode] = st.colorIndex;
       if (isCurveMode(st.mode) && dragonView.curve !== st.mode) {
         dragonView.setCurve(st.mode); // before depth/view are written
