@@ -270,8 +270,8 @@ export default [
     },
   },
   {
-    // The first ES module (see its header); the rest are still plain scripts.
-    files: ["app.js"],
+    // The ES modules (see their headers); the rest are still plain scripts.
+    files: ["app.js", "places-sheet.js"],
     languageOptions: { sourceType: "module" },
   },
   {

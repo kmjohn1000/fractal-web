@@ -4,13 +4,19 @@
 // picker. Needs the state, places.js, fractal-defs.js, render-layout.js, modes.js, teleport.js
 // (flyToPlace), compass-ui.js (prefersReducedMotion, applyHudVisibility) and color-sheet.js
 // (colorSheetEl); app.js lists the sheet with the popovers (Escape, aria-expanded).
-"use strict";
+//
+// An ES module (the second, after app.js; no "use strict", modules are strict). It reads the other
+// files' names as globals, which works because a module runs after every plain script, and it
+// runs before app.js because modules run in page order (app.js looks up the Places row it makes).
+// Only placeId is read from outside (the places spec and scripts/render_place_thumbs.mjs), so
+// that one name is put on window.
 
 // ---------------------------------------------------------------- places sheet
 
 // Thumbnails are icons/places/<id>.webp (scripts/render_place_thumbs.mjs). They are not in the
 // service worker's APP_SHELL: the sheet fetches them when it first scrolls them into view.
-const placeId = (d) => `${slugify(d.fractal)}-${slugify(d.label)}`;
+export const placeId = (d) => `${slugify(d.fractal)}-${slugify(d.label)}`;
+window.placeId = placeId;
 
 // The fractals that have places, in the picker's order, each with its TELEPORT_DESTINATIONS indexes.
 function placeGroups() {

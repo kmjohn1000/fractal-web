@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.53.2 — 2026-10-30
+- The places sheet's code now loads as a JavaScript module. No visible change.
+
 ## 1.53.1 — 2026-10-30
 - The app's startup code now loads as a JavaScript module. No visible change.
 
