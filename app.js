@@ -1,7 +1,10 @@
 // Entry point; must load last. Holds toolbar accessibility and init: the first render, the share-link
 // and welcome-card handling, and every load-time line that schedules a frame or a callback (they
 // run only after all scripts above have loaded). Needs all the other scripts.
-"use strict";
+//
+// The app's first ES module (a pilot, loaded as <script type="module">; modules are strict, so no
+// "use strict"). It still reads the other files' names as globals, which works because a module runs
+// after every plain script. Nothing reads this file's names, so it needs no export or bridge.
 
 // ---------------------------------------------------------------- toolbar accessibility
 

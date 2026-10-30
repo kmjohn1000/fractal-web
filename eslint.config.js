@@ -270,6 +270,11 @@ export default [
     },
   },
   {
+    // The first ES module (see its header); the rest are still plain scripts.
+    files: ["app.js"],
+    languageOptions: { sourceType: "module" },
+  },
+  {
     files: ["scripts/**/*.mjs", "tests/**/*.mjs", "playwright.config.mjs"],
     languageOptions: { globals: globals.node },
   },
