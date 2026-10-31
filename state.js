@@ -4,11 +4,14 @@
 // fractal-defs.js, colormaps.js (SOLID_COLORS), renderer.js and the views from koch.js and friends
 // (all load before it). Nothing here reaches into the later scripts, so they can depend on this
 // file and it on none of them; state-colors.js holds the functions that do call them.
-"use strict";
+// An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
+// It still reads the plain scripts' names as globals (configs.js, fractal-defs.js, colormaps.js and the
+// views from koch.js and friends), which works because a module runs after every plain script.
+import { createFractalRenderer } from "./renderer.js?v=1.53.8";
 
 // ---------------------------------------------------------------- app state
 
-const els = {
+export const els = {
   hud: document.getElementById("hud"),
   canvasArea: document.getElementById("canvasArea"),
   mainCanvas: document.getElementById("mainCanvas"),
@@ -87,7 +90,7 @@ const els = {
   shareNativeBtn: document.getElementById("shareNativeBtn"),
 };
 
-let mode = "fractal"; // "fractal" | "koch" | "tree" | "hexaflake" | a LINE_CURVES key ("dragon", ...) | an IFS_SYSTEMS key ("fern", ...)
+export let mode = "fractal"; // "fractal" | "koch" | "tree" | "hexaflake" | a LINE_CURVES key ("dragon", ...) | an IFS_SYSTEMS key ("fern", ...)
 
 // ---------------------------------------------------------------- color styles
 
@@ -100,8 +103,8 @@ let mode = "fractal"; // "fractal" | "koch" | "tree" | "hexaflake" | a LINE_CURV
 // which compiled version of the escape-time program draws it (COLOR_VARIANT
 // in FRAG_SRC: 0 needs no per-iteration work), `types` the fractal types it
 // works on (the escape-time types when left out).
-const ESCAPE_TIME_TYPES = [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC, FTYPE.PHOENIX];
-const COLOR_STYLES = [
+export const ESCAPE_TIME_TYPES = [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC, FTYPE.PHOENIX];
+export const COLOR_STYLES = [
   { id: "smooth", glsl: 0, variant: 0, label: "Smooth" },
   { id: "bands", glsl: 1, variant: 0, label: "Bands" },
   // Phoenix is left out of the styles that track state per iteration: its
@@ -125,15 +128,15 @@ const COLOR_STYLES = [
   // glow's compiled program (variant 1) and its limits.
   { id: "relief", glsl: 6, variant: 1, label: "Relief", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
 ];
-const COLOR_BANDS_RANGE = [0.25, 8];
+export const COLOR_BANDS_RANGE = [0.25, 8];
 // A style's id in share links (st=); "c" is taken by the vector modes' solid
 // color, so the three fields are st (style), cd (bands) and co (shift).
-const STYLE_LINK_CODES = new Map([["smooth", "sm"], ["bands", "bd"], ["glow", "de"], ["stripes", "sp"], ["point", "pt"], ["cross", "xt"], ["relief", "rl"]]);
+export const STYLE_LINK_CODES = new Map([["smooth", "sm"], ["bands", "bd"], ["glow", "de"], ["stripes", "sp"], ["point", "pt"], ["cross", "xt"], ["relief", "rl"]]);
 // trap: an [x, y] override of the orbit traps' center (the checks use it to
 // match the oracle); null for the per-fractal default, see trapCenterFor.
-const colorStyle = { style: "smooth", density: 1, offset: 0, trap: null };
-const TRAP_CENTERS = new Map([[FTYPE.ESCAPE, [-0.5, 0]], [FTYPE.SHIP, [-1.75, -0.03]], [FTYPE.TRICORN, [0, 0]], [FTYPE.CELTIC, [-0.5, 0]]]);
-function trapCenterFor(state) {
+export const colorStyle = { style: "smooth", density: 1, offset: 0, trap: null };
+export const TRAP_CENTERS = new Map([[FTYPE.ESCAPE, [-0.5, 0]], [FTYPE.SHIP, [-1.75, -0.03]], [FTYPE.TRICORN, [0, 0]], [FTYPE.CELTIC, [-0.5, 0]]]);
+export function trapCenterFor(state) {
   if (colorStyle.trap) return colorStyle.trap;
   if (state.isJulia || (state.ftype === FTYPE.ESCAPE && state.power > 2.5)) return [0, 0];
   return TRAP_CENTERS.get(state.ftype) || [0, 0];
@@ -145,8 +148,8 @@ function trapCenterFor(state) {
 // the escaped flag. The range is the 2nd-98th percentile of the escaped
 // pixels' distances, or of every pixel when almost none escaped (a view inside
 // the set, where the traps color the interior). null when it can't be told.
-const TRAP_LN_LO = -27.6310211, TRAP_LN_SPAN = 32.2361913;
-function decodeTrapRange(px) {
+export const TRAP_LN_LO = -27.6310211, TRAP_LN_SPAN = 32.2361913;
+export function decodeTrapRange(px) {
   const all = [], escaped = [];
   for (let i = 0; i + 3 < px.length; i += 4) {
     const d = Math.exp(TRAP_LN_LO + ((px[i] * 256 + px[i + 1]) / 65535) * TRAP_LN_SPAN);
@@ -170,7 +173,7 @@ function decodeTrapRange(px) {
 // probe's range narrows to half of it or less (a deep view, whose distances
 // sit in a narrow band) the colormap moves smoothly onto the probe's range,
 // so there's no jump while zooming. fixed = { lo, hi }.
-function trapRangeFor(px, fixed) {
+export function trapRangeFor(px, fixed) {
   const r = decodeTrapRange(px);
   if (!r) return fixed;
   if (r.lo >= fixed.hi) return r; // everything lies beyond the fixed range
@@ -183,7 +186,7 @@ function trapRangeFor(px, fixed) {
 // The style a view actually draws: the chosen one if its fractal can do it,
 // otherwise Smooth. Newton, Carpet, Gasket and Apollonian color by their own
 // schemes (the shaders never read the style).
-function styleDrawn(id, state) {
+export function styleDrawn(id, state) {
   const s = COLOR_STYLES.find((c) => c.id === id);
   return s && !styleBlocked(s, state) ? s.id : "smooth";
 }
@@ -191,14 +194,14 @@ function styleDrawn(id, state) {
 // Why a style can't be drawn for this view: "type" (its fractal can't do it)
 // or "depth" (too deep for the orbit traps), else null. The small allowance
 // keeps a view set to exactly maxZoom on the right side of rounding.
-function styleBlocked(style, state) {
+export function styleBlocked(style, state) {
   if (!(style.types || ESCAPE_TIME_TYPES).includes(state.ftype)) return "type";
   if (style.maxZoom && !(state.baseScale / state.scale <= style.maxZoom * 1.001)) return "depth";
   return null;
 }
 
 // What the renderer sends the shaders for one view.
-function colorStyleFor(state) {
+export function colorStyleFor(state) {
   const s = COLOR_STYLES.find((c) => c.id === styleDrawn(colorStyle.style, state));
   return { glsl: s.glsl, variant: s.variant, density: colorStyle.density, offset: colorStyle.offset,
     trap: s.variant === 3 ? trapCenterFor(state) : [0, 0] };
@@ -206,14 +209,14 @@ function colorStyleFor(state) {
 
 // ---------------------------------------------------------------- shared state
 
-let currentName = "Mandelbrot";
-let dualActive = false;
-let boxZoomActive = false;
-let fernBoxZoomActive = false; // separate toggle: the fern has its own control row
+export let currentName = "Mandelbrot";
+export let dualActive = false;
+export let boxZoomActive = false;
+export let fernBoxZoomActive = false; // separate toggle: the fern has its own control row
 // Info overlay (#hud): hidden by default, one app-wide toggle shared by every
 // mode's control row, so it persists across mode switches.
-let hudVisible = false;
-let activePane = "main"; // "main" | "julia" — which pane Back/box-zoom targets
+export let hudVisible = false;
+export let activePane = "main"; // "main" | "julia" — which pane Back/box-zoom targets
 
 // Perturbation rendering runs a CPU reference search (chooseReference) plus
 // a heavy full-frame GPU pass — slow on mobile, often 100s of ms at high
@@ -221,8 +224,8 @@ let activePane = "main"; // "main" | "julia" — which pane Back/box-zoom target
 // isInteracting is true, so this delay only affects how soon it snaps back
 // to an accurate render after you stop — no correctness risk either way,
 // just responsiveness.
-let isInteracting = false;
-let settleTimer = null;
+export let isInteracting = false;
+export let settleTimer = null;
 
 // Live frames at a frame-time-driven resolution. During a flight or a pinch
 // each frame is one full-size pass; on a phone a heavy view or style can take
@@ -232,9 +235,9 @@ let settleTimer = null;
 // time for a good while, a step bigger. The step is kept between gestures that
 // follow each other, and starts over at full size after a pause. The render
 // when the gesture or flight settles is always full size.
-const LIVE_STEPS = [1, 1.5, 2, 3, 4];
-const liveRes = { step: 0, last: 0, late: 0, onTime: 0 };
-function adaptLiveResolution(now = performance.now()) {
+export const LIVE_STEPS = [1, 1.5, 2, 3, 4];
+export const liveRes = { step: 0, last: 0, late: 0, onTime: 0 };
+export function adaptLiveResolution(now = performance.now()) {
   const dt = now - liveRes.last;
   liveRes.last = now;
   if (dt > 1500) { liveRes.step = 0; liveRes.late = 0; liveRes.onTime = 0; }
@@ -249,23 +252,23 @@ function adaptLiveResolution(now = performance.now()) {
   juliaRenderer.setLiveDivisor(LIVE_STEPS[step]);
 }
 
-const mainRenderer = createFractalRenderer(els.mainCanvas);
-const juliaRenderer = createFractalRenderer(els.juliaCanvas);
-const kochView = createKochView(els.kochCanvas);
-const treeView = createPythagorasTreeView(els.treeCanvas);
-const hexaflakeView = createHexaflakeView(els.hexaflakeCanvas);
-const dragonView = createCurveView(els.dragonCanvas);
-const fernView = createIfsView(els.fernCanvas);
+export const mainRenderer = createFractalRenderer(els.mainCanvas);
+export const juliaRenderer = createFractalRenderer(els.juliaCanvas);
+export const kochView = createKochView(els.kochCanvas);
+export const treeView = createPythagorasTreeView(els.treeCanvas);
+export const hexaflakeView = createHexaflakeView(els.hexaflakeCanvas);
+export const dragonView = createCurveView(els.dragonCanvas);
+export const fernView = createIfsView(els.fernCanvas);
 
 if (!mainRenderer) reportError("WebGL context creation failed on mainCanvas — this browser/device may not support WebGL.");
 if (!juliaRenderer) reportError("WebGL context creation failed on juliaCanvas.");
 
-function mainCanvasAspect() {
+export function mainCanvasAspect() {
   const c = els.mainCanvas;
   return c.clientWidth > 0 && c.clientHeight > 0 ? c.clientWidth / c.clientHeight : 1;
 }
 
-function freshState(config) {
+export function freshState(config) {
   const v = viewFromBounds(config.view, mainCanvasAspect());
   return {
     cx: v.cx, cy: v.cy, scale: v.scale, rotation: 0,
@@ -290,7 +293,7 @@ function freshState(config) {
 // pinch. The slider writes both panes and locks both (see its handler).
 // Carpet/Gasket and the Apollonian gasket ignore maxIter entirely
 // (ignoresMaxIter) and are skipped.
-function applyAutoIter() {
+export function applyAutoIter() {
   for (const st of [mainState, dualActive ? juliaState : null]) {
     if (!st || st.iterAutoLocked) continue;
     if (ignoresMaxIter(st.ftype)) continue;
@@ -300,38 +303,38 @@ function applyAutoIter() {
   els.iterSlider.value = shown.maxIter;
 }
 
-let mainState = freshState(FRACTAL_CONFIGS[currentName]);
-let juliaState = null; // populated when dual mode is entered
-let mainHistory = [];
-let juliaHistory = [];
+export let mainState = freshState(FRACTAL_CONFIGS[currentName]);
+export let juliaState = null; // populated when dual mode is entered
+export let mainHistory = [];
+export let juliaHistory = [];
 
-const curveBoxCache = new Map(); // vectorViewBox's boxes for the line curves, by curve and depth
-const kochState = { depth: 4, fill: true };
-const treeState = { depth: 9 };
-const HEXAFLAKE_DEFAULT_DEPTH = 4;
-const HEXAFLAKE_MAX_DEPTH = 6; // the depth slider's max in index.html: at the fitted view level 6 is already about a pixel across
-const hexaflakeState = { depth: HEXAFLAKE_DEFAULT_DEPTH };
+export const curveBoxCache = new Map(); // vectorViewBox's boxes for the line curves, by curve and depth
+export const kochState = { depth: 4, fill: true };
+export const treeState = { depth: 9 };
+export const HEXAFLAKE_DEFAULT_DEPTH = 4;
+export const HEXAFLAKE_MAX_DEPTH = 6; // the depth slider's max in index.html: at the fitted view level 6 is already about a pixel across
+export const hexaflakeState = { depth: HEXAFLAKE_DEFAULT_DEPTH };
 // Each line curve keeps its own depth; dragonState.depth reads/writes the
 // one currently shown, so code written for the dragon alone still works.
-const curveDepths = Object.fromEntries(Object.entries(LINE_CURVES).map(([k, c]) => [k, c.defaultDepth]));
-const dragonState = {
+export const curveDepths = Object.fromEntries(Object.entries(LINE_CURVES).map(([k, c]) => [k, c.defaultDepth]));
+export const dragonState = {
   get depth() { return curveDepths[dragonView.curve]; },
   set depth(v) { curveDepths[dragonView.curve] = v; },
 };
-const fernState = { count: 1000000 };
+export const fernState = { count: 1000000 };
 // Solid color (a SOLID_COLORS index) per line/shape mode. The escape-time
 // fractals keep the gradient colormapIndex; these used to sample it by
 // depth, which left low depths near-black and hard to see. The four chaos-game
 // modes (fern.js) each have one too: the picked color is the base that their
 // transforms turn the hue of, so each starts in its own color.
-const solidIndex = (name) => SOLID_COLORS.findIndex((c) => c.name === name);
-const vectorColors = {
+export const solidIndex = (name) => SOLID_COLORS.findIndex((c) => c.name === name);
+export const vectorColors = {
   koch: solidIndex("Ice"), tree: solidIndex("Green"), hexaflake: solidIndex("Gold"), dragon: solidIndex("Autumn"),
   hilbert: solidIndex("Violet"), gosper: solidIndex("Rose"), arrowhead: solidIndex("Gold"),
   fern: solidIndex("Green"), sierpinski: solidIndex("Violet"), levy: solidIndex("Rose"), vicsek: solidIndex("Gold"),
 };
 
-function pushHistory(pane) {
+export function pushHistory(pane) {
   const st = pane === "julia" ? juliaState : mainState;
   const hist = pane === "julia" ? juliaHistory : mainHistory;
   if (!st) return;
@@ -343,16 +346,16 @@ function pushHistory(pane) {
 
 // A file can read another file's top-level `let` but only the file that declares it can assign it
 // (an imported binding is read-only in an ES module), so every other file goes through these.
-function setModeKey(v) { mode = v; } // not setMode: modes.js has a function of that name, the mode switcher
-function setCurrentName(v) { currentName = v; }
-function setDualActive(v) { dualActive = v; }
-function setBoxZoomActive(v) { boxZoomActive = v; }
-function setFernBoxZoomActive(v) { fernBoxZoomActive = v; }
-function setHudVisible(v) { hudVisible = v; }
-function setActivePane(v) { activePane = v; }
-function setIsInteracting(v) { isInteracting = v; }
-function setSettleTimer(v) { settleTimer = v; }
-function setMainState(v) { mainState = v; }
-function setJuliaState(v) { juliaState = v; }
-function setMainHistory(v) { mainHistory = v; }
-function setJuliaHistory(v) { juliaHistory = v; }
+export function setModeKey(v) { mode = v; } // not setMode: modes.js has a function of that name, the mode switcher
+export function setCurrentName(v) { currentName = v; }
+export function setDualActive(v) { dualActive = v; }
+export function setBoxZoomActive(v) { boxZoomActive = v; }
+export function setFernBoxZoomActive(v) { fernBoxZoomActive = v; }
+export function setHudVisible(v) { hudVisible = v; }
+export function setActivePane(v) { activePane = v; }
+export function setIsInteracting(v) { isInteracting = v; }
+export function setSettleTimer(v) { settleTimer = v; }
+export function setMainState(v) { mainState = v; }
+export function setJuliaState(v) { juliaState = v; }
+export function setMainHistory(v) { mainHistory = v; }
+export function setJuliaHistory(v) { juliaHistory = v; }

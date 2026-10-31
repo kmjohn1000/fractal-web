@@ -3,11 +3,13 @@
 // calls teleport.js (cancelTeleport) only inside event handlers.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { markInteracting, popHistory } from "./state-colors.js?v=1.53.7";
-import { normalizeAngle, renderAll, requestRender, screenToComplex } from "./render-layout.js?v=1.53.7";
-import { closeDual, enterDual, openPresetInDual, selectFractal, setMode, updateMenuActiveState } from "./modes.js?v=1.53.7";
-import { KEY_PAN_FRACTION, activeVectorTarget, keyAction } from "./interaction.js?v=1.53.7";
-import { cancelTeleport } from "./teleport.js?v=1.53.7";
+import { Platform } from "./platform.js?v=1.53.8";
+import { activePane, boxZoomActive, currentName, dualActive, els, hudVisible, juliaRenderer, juliaState, mainRenderer, mainState, mode, pushHistory, setActivePane, setBoxZoomActive, setHudVisible } from "./state.js?v=1.53.8";
+import { markInteracting, popHistory } from "./state-colors.js?v=1.53.8";
+import { normalizeAngle, renderAll, requestRender, screenToComplex } from "./render-layout.js?v=1.53.8";
+import { closeDual, enterDual, openPresetInDual, selectFractal, setMode, updateMenuActiveState } from "./modes.js?v=1.53.8";
+import { KEY_PAN_FRACTION, activeVectorTarget, keyAction } from "./interaction.js?v=1.53.8";
+import { cancelTeleport } from "./teleport.js?v=1.53.8";
 
 // ---------------------------------------------------------------- compass
 

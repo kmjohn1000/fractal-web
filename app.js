@@ -8,27 +8,36 @@
 // listed in exposeForTests below, so tests can read their names (see test-hooks.js). Nothing reads
 // this file's own names, so it exports nothing. Every import specifier needs the ?v= query (npm run
 // stamp keeps it current): a module is keyed by its full URL, so a differing query loads it twice.
-import { exposeForTests } from "./test-hooks.js?v=1.53.7";
-import * as stateColors from "./state-colors.js?v=1.53.7";
-import * as renderLayout from "./render-layout.js?v=1.53.7";
-import { layoutCanvasArea, refitHud, requestRender, updateLUT } from "./render-layout.js?v=1.53.7";
-import * as modes from "./modes.js?v=1.53.7";
-import { selectFractal } from "./modes.js?v=1.53.7";
-import * as interaction from "./interaction.js?v=1.53.7";
-import { VECTOR_VIEWS } from "./interaction.js?v=1.53.7";
-import * as compassUi from "./compass-ui.js?v=1.53.7";
-import { applyHudVisibility, initWelcomeCard } from "./compass-ui.js?v=1.53.7";
-import * as teleport from "./teleport.js?v=1.53.7";
-import { coldOpen } from "./teleport.js?v=1.53.7";
-import * as colormapPicker from "./colormap-picker.js?v=1.53.7";
-import { updateColorSwatches } from "./colormap-picker.js?v=1.53.7";
-import * as colorSheet from "./color-sheet.js?v=1.53.7";
-import { fitColorSegment, prepareColorSheet } from "./color-sheet.js?v=1.53.7";
-import * as placesSheet from "./places-sheet.js?v=1.53.7";
-import * as share from "./share.js?v=1.53.7";
-import { applyShareHashFromUrl, applyShareLink, buildShareUrl, closeShareMenu, parseShareHash, pendingCapture, shareFileName } from "./share.js?v=1.53.7";
+import { exposeForTests } from "./test-hooks.js?v=1.53.8";
+// state.js before renderer.js: state.js imports renderer.js and calls its factory while loading, so
+// it has to be reached first (renderer.js is only ever imported by state.js and by this file).
+import * as state from "./state.js?v=1.53.8";
+import { currentName, els, mode } from "./state.js?v=1.53.8";
+import * as renderer from "./renderer.js?v=1.53.8";
+import * as platform from "./platform.js?v=1.53.8";
+import { Platform } from "./platform.js?v=1.53.8";
+import * as places from "./places.js?v=1.53.8";
+import * as stateColors from "./state-colors.js?v=1.53.8";
+import * as renderLayout from "./render-layout.js?v=1.53.8";
+import { layoutCanvasArea, refitHud, requestRender, updateLUT } from "./render-layout.js?v=1.53.8";
+import * as modes from "./modes.js?v=1.53.8";
+import { selectFractal } from "./modes.js?v=1.53.8";
+import * as interaction from "./interaction.js?v=1.53.8";
+import { VECTOR_VIEWS } from "./interaction.js?v=1.53.8";
+import * as compassUi from "./compass-ui.js?v=1.53.8";
+import { applyHudVisibility, initWelcomeCard } from "./compass-ui.js?v=1.53.8";
+import * as teleport from "./teleport.js?v=1.53.8";
+import { coldOpen } from "./teleport.js?v=1.53.8";
+import * as colormapPicker from "./colormap-picker.js?v=1.53.8";
+import { updateColorSwatches } from "./colormap-picker.js?v=1.53.8";
+import * as colorSheet from "./color-sheet.js?v=1.53.8";
+import { fitColorSegment, prepareColorSheet } from "./color-sheet.js?v=1.53.8";
+import * as placesSheet from "./places-sheet.js?v=1.53.8";
+import * as share from "./share.js?v=1.53.8";
+import { applyShareHashFromUrl, applyShareLink, buildShareUrl, closeShareMenu, parseShareHash, pendingCapture, shareFileName } from "./share.js?v=1.53.8";
 
 exposeForTests({
+  "platform.js": platform, "places.js": places, "renderer.js": renderer, "state.js": state,
   "state-colors.js": stateColors, "render-layout.js": renderLayout, "modes.js": modes, "interaction.js": interaction,
   "compass-ui.js": compassUi, "teleport.js": teleport, "colormap-picker.js": colormapPicker,
   "color-sheet.js": colorSheet, "places-sheet.js": placesSheet, "share.js": share,
@@ -191,3 +200,16 @@ requestAnimationFrame(() => requestAnimationFrame(() => {
     reportError(`Diagnostic: ${c.id} has collapsed to ${c.clientWidth}x${c.clientHeight} CSS px (canvasArea: ${els.canvasArea.clientWidth}x${els.canvasArea.clientHeight}). This is a layout bug, not a rendering bug.`);
   }
 }));
+
+// Service workers only register on secure origins or localhost, so this is
+// a silent no-op during phone-over-LAN dev testing (plain http://<lan-ip>)
+// and only takes effect once this is actually deployed behind HTTPS.
+// The iOS app bundles its files, so it has no use for one. (This was an inline
+// script after app.js; it moved here because it reads Platform, which is a module now.)
+if ("serviceWorker" in navigator && !Platform.isNative) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch((err) => {
+      reportError(`Service worker registration failed: ${err.message}`);
+    });
+  });
+}

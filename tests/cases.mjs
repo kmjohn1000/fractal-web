@@ -1,7 +1,7 @@
 // The lists the visual suite walks: every fractal/mode, every colormap and
 // every Surprise-me place. Read straight from the app's sources (configs.js,
-// fractal-defs.js, places.js and colormaps.js are classic browser scripts,
-// not modules), so a new fractal,
+// fractal-defs.js, places.js and colormaps.js: classic scripts or ES modules, so
+// a declaration may start with `export`), so a new fractal,
 // colormap or place gets a test without editing the suite. app.spec.mjs
 // also checks these against the live page, so a parse that silently drops
 // entries fails loudly.
@@ -14,13 +14,13 @@ const defs = readFileSync(root + "fractal-defs.js", "utf8");     // EXTRA_MODES
 const places = readFileSync(root + "places.js", "utf8");         // TELEPORT_DESTINATIONS
 const colormaps = readFileSync(root + "colormaps.js", "utf8");
 
-// A top-level `const NAME = ...;` declaration: on one line, or ending at
-// the first unindented closing bracket.
+// A top-level `const NAME = ...;` declaration (with or without `export`): on one line, or ending at
+// the first unindented closing bracket. Returned without the `export`, which vm can't run.
 function literal(src, name, close) {
-  const m = src.match(new RegExp(`^const ${name} = .*;$`, "m"))
-    || src.match(new RegExp(`^const ${name} = [\\s\\S]*?\\n\\${close};`, "m"));
+  const m = src.match(new RegExp(`^(?:export )?const ${name} = .*;$`, "m"))
+    || src.match(new RegExp(`^(?:export )?const ${name} = [\\s\\S]*?\\n\\${close};`, "m"));
   if (!m) throw new Error(`tests/cases.mjs: couldn't find ${name}`);
-  return m[0];
+  return m[0].replace(/^export /, "");
 }
 
 const ctx = vm.createContext({ Math });

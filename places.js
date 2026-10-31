@@ -1,6 +1,7 @@
 // The "Surprise me" places: only TELEPORT_DESTINATIONS (split from app.js, a pure move).
 // Plain data; needs nothing from earlier files (Math.PI only). Used by teleport.js and the mode code.
-"use strict";
+// An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it;
+// tests/cases.mjs reads this file's text and accepts the `export`).
 
 // "Surprise me" destinations (see teleport()). Keyed by FRACTAL_CONFIGS name,
 // not FTYPE: FTYPE.ESCAPE is shared by Mandelbrot, Multibrot³ and the Julia
@@ -19,7 +20,7 @@
 // Three-Way Branch is a Misiurewicz point where three arms meet; Antenna
 // Minibrot is the period-4 minibrot (nucleus -0.156520166834 +
 // 1.032247108923i), shifted onto its body's visual center.
-const TELEPORT_DESTINATIONS = [
+export const TELEPORT_DESTINATIONS = [
   { fractal: "Mandelbrot", label: "Seahorse Valley", re: "-0.743643887037151", im: "0.131825904205330", scale: 4e-10 },
   { fractal: "Mandelbrot", label: "Elephant Valley", re: "0.2825", im: "0.0105", scale: 1.2e-2, rotation: Math.PI },
   { fractal: "Mandelbrot", label: "Mini Mandelbrot", re: "-1.749003357223038", im: "0.0", scale: 1.5e-12 },

@@ -26,10 +26,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const VIEW = { cx: -0.743643887037151, cy: 0.131825904205330, scale: 6e-3, maxIter: 770 };
 
 const src = readFileSync(join(root, "color-sheet.js"), "utf8");
-const m = src.match(/^const COLOR_LOOKS = \[[\s\S]*?\n\];/m);
+const m = src.match(/^(?:export )?const COLOR_LOOKS = \[[\s\S]*?\n\];/m); // color-sheet.js is an ES module: `export` is optional here
 if (!m) throw new Error("render_look_thumbs: couldn't find COLOR_LOOKS in color-sheet.js");
 const ctx = vm.createContext({});
-vm.runInContext(`${m[0]}; globalThis.out = COLOR_LOOKS;`, ctx);
+vm.runInContext(`${m[0].replace(/^export /, "")}; globalThis.out = COLOR_LOOKS;`, ctx);
 const looks = ctx.out.map((l) => ({ density: 1, offset: 0, ...l }));
 
 const server = spawn("node", [join(root, "tests/serve.mjs"), String(PORT)], { stdio: "ignore" });

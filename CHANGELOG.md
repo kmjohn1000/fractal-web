@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.53.8 — 2026-10-30
+- Internal: four more code files (platform, places, renderer, state) load as JavaScript modules, and the service-worker registration moved into app.js. No visible change.
+
 ## 1.53.7 — 2026-10-30
 - Internal: nine more of the app's code files (share, interaction, teleport, modes, compass-ui, color-sheet, colormap-picker, render-layout, state-colors) load as JavaScript modules. No visible change.
 

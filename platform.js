@@ -1,11 +1,11 @@
-"use strict";
+// An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
 
 // Web vs. native (Capacitor iOS app) implementations of anything
 // platform-specific -- saving and sharing. The app's scripts call only these and
 // never checks the platform itself (see CLAUDE.md). The same files serve
 // GitHub Pages and the iOS app; inside the app, Capacitor's injected bridge
 // defines window.Capacitor before any page script runs.
-const Platform = (() => {
+export const Platform = (() => {
   const isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 
   // Where share links point: the page itself on the web, the public site in

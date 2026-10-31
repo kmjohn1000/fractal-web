@@ -3,12 +3,14 @@
 // applyShareHashFromUrl and applyShareLink are called from init in app.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { colormapIndex, colormapIndexNamed, defaultColormapName, setColorStyle, setColormapIndex, setColormapPicked } from "./state-colors.js?v=1.53.7";
-import { finishRefinement, modeLabel, normalizeAngle, refineDone, renderAll, requestRender, updateLUT } from "./render-layout.js?v=1.53.7";
-import { enterDual, exitDual, selectFractal, setMode } from "./modes.js?v=1.53.7";
-import { VECTOR_VIEWS, dragonNav, fernNav, fittedVectorModes } from "./interaction.js?v=1.53.7";
-import { cancelTeleport } from "./teleport.js?v=1.53.7";
-import { setFernColor, updateColorSwatches } from "./colormap-picker.js?v=1.53.7";
+import { Platform } from "./platform.js?v=1.53.8";
+import { COLOR_BANDS_RANGE, HEXAFLAKE_DEFAULT_DEPTH, HEXAFLAKE_MAX_DEPTH, STYLE_LINK_CODES, colorStyle, currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, isInteracting, juliaState, kochState, kochView, mainRenderer, mainState, mode, treeState, vectorColors } from "./state.js?v=1.53.8";
+import { colormapIndex, colormapIndexNamed, defaultColormapName, setColorStyle, setColormapIndex, setColormapPicked } from "./state-colors.js?v=1.53.8";
+import { finishRefinement, modeLabel, normalizeAngle, refineDone, renderAll, requestRender, updateLUT } from "./render-layout.js?v=1.53.8";
+import { enterDual, exitDual, selectFractal, setMode } from "./modes.js?v=1.53.8";
+import { VECTOR_VIEWS, dragonNav, fernNav, fittedVectorModes } from "./interaction.js?v=1.53.8";
+import { cancelTeleport } from "./teleport.js?v=1.53.8";
+import { setFernColor, updateColorSwatches } from "./colormap-picker.js?v=1.53.8";
 
 // ---------------------------------------------------------------- share: links
 

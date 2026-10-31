@@ -1,11 +1,14 @@
 // The WebGL renderer factory: createFractalRenderer(canvas) and everything it draws with.
 // Needs the shader sources (shaders.js), FTYPE (configs.js), the digit/Apollonian helpers
 // (fractal-defs.js), deepzoom.js and, inside its functions only, state.js (colorStyle etc.).
-"use strict";
+// An ES module: every top-level declaration is exported (test-hooks.js and state.js rely on it), and
+// the state names it reads are imported. state.js imports createFractalRenderer back; app.js lists
+// state.js before this file in its imports so state.js is reached first (it calls the factory at load).
+import { colorStyle, colorStyleFor, currentName, isInteracting, styleDrawn, trapRangeFor } from "./state.js?v=1.53.8";
 
 // ---------------------------------------------------------------- WebGL renderer factory
 
-function createFractalRenderer(canvas) {
+export function createFractalRenderer(canvas) {
   // preserveDrawingBuffer: supersampling blends each new sample into the
   // previous frame's canvas contents, which the browser would otherwise be
   // free to discard after compositing.

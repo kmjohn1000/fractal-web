@@ -54,8 +54,6 @@ const sharedGlobals = {
   hexaflakeShade: "readonly",
   treeSwatchStops: "readonly",
   ifsData: "readonly",
-  // platform.js
-  Platform: "readonly",
   // diag.js
   Diag: "readonly",
   // The pieces app.js was split into, in the order index.html loads them
@@ -69,8 +67,6 @@ const sharedGlobals = {
   FRACTAL_NAMES: "readonly",
   fractalLabel: "readonly",
   slugify: "readonly",
-  // places.js
-  TELEPORT_DESTINATIONS: "readonly",
   // fractal-defs.js
   PICKER_LAYOUT: "readonly",
   EXTRA_MODES: "readonly",
@@ -106,71 +102,11 @@ const sharedGlobals = {
   computeReferenceOrbit: "readonly",
   chooseReference: "readonly",
   SAMPLE_OFFSETS: "readonly",
-  // renderer.js
-  createFractalRenderer: "readonly",
-  // state.js. The shared `let`s are "readonly" here: another file reads them but assigns through
-  // the setters (an ES module import is read-only), so a stray assignment fails lint. Each is
-  // declared, and assigned, only in the file that owns it.
-  els: "readonly",
-  mode: "readonly",
-  setModeKey: "readonly",
-  ESCAPE_TIME_TYPES: "readonly",
-  COLOR_STYLES: "readonly",
-  COLOR_BANDS_RANGE: "readonly",
-  STYLE_LINK_CODES: "readonly",
-  colorStyle: "readonly",
-  trapRangeFor: "readonly",
-  styleDrawn: "readonly",
-  styleBlocked: "readonly",
-  colorStyleFor: "readonly",
-  currentName: "readonly",
-  setCurrentName: "readonly",
-  dualActive: "readonly",
-  setDualActive: "readonly",
-  boxZoomActive: "readonly",
-  setBoxZoomActive: "readonly",
-  fernBoxZoomActive: "readonly",
-  setFernBoxZoomActive: "readonly",
-  hudVisible: "readonly",
-  setHudVisible: "readonly",
-  activePane: "readonly",
-  setActivePane: "readonly",
-  isInteracting: "readonly",
-  setIsInteracting: "readonly",
-  settleTimer: "readonly",
-  setSettleTimer: "readonly",
-  adaptLiveResolution: "readonly",
-  mainRenderer: "readonly",
-  juliaRenderer: "readonly",
-  kochView: "readonly",
-  treeView: "readonly",
-  hexaflakeView: "readonly",
-  dragonView: "readonly",
-  fernView: "readonly",
-  mainCanvasAspect: "readonly",
-  freshState: "readonly",
-  applyAutoIter: "readonly",
-  mainState: "readonly",
-  setMainState: "readonly",
-  juliaState: "readonly",
-  setJuliaState: "readonly",
-  mainHistory: "readonly",
-  setMainHistory: "readonly",
-  juliaHistory: "readonly",
-  setJuliaHistory: "readonly",
-  curveBoxCache: "readonly",
-  kochState: "readonly",
-  treeState: "readonly",
-  HEXAFLAKE_DEFAULT_DEPTH: "readonly",
-  HEXAFLAKE_MAX_DEPTH: "readonly",
-  hexaflakeState: "readonly",
-  dragonState: "readonly",
-  fernState: "readonly",
-  vectorColors: "readonly",
-  pushHistory: "readonly",
-  // (render-layout.js, modes.js, interaction.js, compass-ui.js, teleport.js, colormap-picker.js,
-  // color-sheet.js, share.js, state-colors.js and places-sheet.js are ES modules now: their names
-  // are imported where they are used, so they are not globals and are not listed here.)
+  // (platform.js, places.js, renderer.js, state.js, render-layout.js, modes.js, interaction.js,
+  // compass-ui.js, teleport.js, colormap-picker.js, color-sheet.js, share.js, state-colors.js and
+  // places-sheet.js are ES modules now: their names are imported where they are used, so they are
+  // not globals and are not listed here. A shared `let` is assigned only in the file that declares
+  // it, through its setter; an import is read-only, which is what enforces that.)
 };
 
 export default [
@@ -192,24 +128,12 @@ export default [
     },
   },
   {
-    // The one file that owns each shared `let` may assign it; everywhere else it is "readonly"
-    // (sharedGlobals above) and goes through the setter.
-    files: ["state.js"],
-    languageOptions: {
-      globals: {
-        mode: "writable", currentName: "writable", dualActive: "writable", boxZoomActive: "writable",
-        fernBoxZoomActive: "writable", hudVisible: "writable", activePane: "writable",
-        isInteracting: "writable", settleTimer: "writable", mainState: "writable", juliaState: "writable",
-        mainHistory: "writable", juliaHistory: "writable",
-      },
-    },
-  },
-  {
     // The ES modules (see their headers); the rest are still plain scripts. In a module a `let`
     // is its own, so no owner override is needed for the variables declared in these files.
     files: [
       "app.js", "places-sheet.js", "test-hooks.js", "state-colors.js", "render-layout.js", "modes.js",
       "interaction.js", "compass-ui.js", "teleport.js", "colormap-picker.js", "color-sheet.js", "share.js",
+      "platform.js", "places.js", "renderer.js", "state.js",
     ],
     languageOptions: { sourceType: "module" },
   },
