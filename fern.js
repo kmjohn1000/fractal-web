@@ -71,6 +71,8 @@ function ifsTransformColors(key, colorIndex) {
 // seeded generator to get a repeatable sequence of transforms; the sampling
 // of the normal render (runSlice) stays on Math.random.
 let ifsRandom = Math.random;
+// The way tests and scripts install that generator (another file can't assign this variable).
+function setIfsRandom(v) { ifsRandom = v; }
 
 function pickTransform(transforms) {
   const r = ifsRandom();

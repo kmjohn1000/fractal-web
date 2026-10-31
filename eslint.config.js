@@ -232,7 +232,7 @@ const sharedGlobals = {
   initWelcomeCard: "readonly",
   syncSliderFill: "readonly",
   // teleport.js
-  teleportLandingIndex: "writable",
+  teleportLandingIndex: "readonly",
   cancelTeleport: "readonly",
   flyToPlace: "readonly",
   coldOpen: "readonly",
@@ -298,6 +298,10 @@ export default [
         mainHistory: "writable", juliaHistory: "writable",
       },
     },
+  },
+  {
+    files: ["teleport.js"],
+    languageOptions: { globals: { teleportLandingIndex: "writable" } },
   },
   {
     files: ["state-colors.js"],

@@ -89,8 +89,9 @@ async function renderCanvas(browser) {
       const i = TELEPORT_DESTINATIONS.findIndex((d) => d.fractal === ${JSON.stringify(fractal)} && d.label === ${JSON.stringify(label)});
       if (i < 0) throw new Error("no place ${label}");
       __vt.place(i); // resets the colormap to the first one, so pick ours after
-      colormapIndex = COLORMAPS.findIndex((c) => c.name === ${JSON.stringify(colormap)});
-      if (colormapIndex < 0) throw new Error("no colormap ${colormap}");
+      const cm = COLORMAPS.findIndex((c) => c.name === ${JSON.stringify(colormap)});
+      if (cm < 0) throw new Error("no colormap ${colormap}");
+      setColormapIndex(cm);
       updateLUT(); updateColorSwatches(); requestRender();
     })()`);
     await waitSettled(page);

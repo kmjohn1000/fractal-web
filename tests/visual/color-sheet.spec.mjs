@@ -5,7 +5,7 @@
 // both tabs. Run through `npm run test:visual`.
 import { test, expect } from "@playwright/test";
 
-/* global colorStyle, setColorStyle, COLORMAPS, colormapIndex:writable, updateLUT, applyShareLink, buildShareHash,
+/* global colorStyle, setColorStyle, COLORMAPS, colormapIndex, setColormapIndex, updateLUT, applyShareLink, buildShareHash,
    parseShareHash, mainState, enterDual, exitDual, dualActive, lookSpriteImage, styleBlocked, COLOR_STYLES, colorStyleFor, prepareColorSheet */
 
 const DRIVER = new URL("../driver.js", import.meta.url).pathname;
@@ -111,7 +111,7 @@ test.describe("the Color sheet", () => {
     await page.locator("#colormapBtn").click();
     await expect(page.locator('#colorSheet [role="tab"][aria-selected="true"]')).toHaveText("Custom");
     // Reset puts everything back (style, palette, repeat and shift) and the Default Look is checked again.
-    await page.evaluate(() => { setColorStyle({ style: "stripes", density: 2, offset: 0.5 }); colormapIndex = COLORMAPS.findIndex((c) => c.name === "Plasma"); updateLUT(); });
+    await page.evaluate(() => { setColorStyle({ style: "stripes", density: 2, offset: 0.5 }); setColormapIndex(COLORMAPS.findIndex((c) => c.name === "Plasma")); updateLUT(); });
     await page.locator('#colorSheet [role="tab"]', { hasText: "Looks" }).click();
     await page.locator('#colorSheet [role="tab"]', { hasText: "Custom" }).click();
     await page.locator("#colorSheet .reset").click();
@@ -654,11 +654,11 @@ test.describe("the info card", () => {
     const plain0 = await card(page);
     expect(plain0.plain).not.toMatch(/Custom|Edge glow/);
     expect(plain0.tech).not.toMatch(/style:|repeat:|shift:/);
-    await page.evaluate(() => { colormapIndex = COLORMAPS.findIndex((c) => c.name === "Inferno"); updateLUT(); setColorStyle({ style: "glow" }); });
+    await page.evaluate(() => { setColormapIndex(COLORMAPS.findIndex((c) => c.name === "Inferno")); updateLUT(); setColorStyle({ style: "glow" }); });
     await settle(page);
     expect((await page.locator("#hud .hudPlain").innerText())).toContain("Edge glow");
     expect((await page.locator("#hud .hudStats").innerText())).toContain("style: Edge glow");
-    await page.evaluate(() => { colormapIndex = COLORMAPS.findIndex((c) => c.name === "Plasma"); updateLUT(); setColorStyle({ style: "stripes", density: 2, offset: 0.25 }); });
+    await page.evaluate(() => { setColormapIndex(COLORMAPS.findIndex((c) => c.name === "Plasma")); updateLUT(); setColorStyle({ style: "stripes", density: 2, offset: 0.25 }); });
     await settle(page);
     expect((await page.locator("#hud .hudPlain").innerText())).toContain("Custom: Stripes, Plasma");
     const tech = await page.locator("#hud .hudStats").innerText();

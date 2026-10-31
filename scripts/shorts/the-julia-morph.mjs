@@ -63,7 +63,7 @@ const pageSetup = `(() => {
   document.head.appendChild(css);
   els.dualBtn.click();
   window.dispatchEvent(new Event("resize"));
-  hudVisible = true; // the Julia pane's label shows with the info card (the card itself is hidden above)
+  setHudVisible(true); // the Julia pane's label shows with the info card (the card itself is hidden above)
   Object.assign(juliaState, { cx: 0, cy: 0, scale: 1.6, baseScale: 1.6, rotation: 0, maxIter: 400, iterAutoLocked: true });
   const box = document.createElement("div");
   box.id = "cReadout";

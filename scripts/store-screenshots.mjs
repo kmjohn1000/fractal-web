@@ -60,7 +60,7 @@ window.__store = {
     const i = TELEPORT_DESTINATIONS.findIndex((d) => d.fractal === fractal && d.label === label);
     if (i < 0) throw new Error("no place " + fractal + ": " + label);
     __vt.place(i);
-    lastTeleportIndex = teleportLandingIndex = i;
+    setLastTeleportIndex(i); setTeleportLandingIndex(i);
     pushHistory("main");
     requestRender();
   },

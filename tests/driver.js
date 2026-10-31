@@ -1,7 +1,7 @@
 "use strict";
 /* global FRACTAL_CONFIGS, EXTRA_MODES, TELEPORT_DESTINATIONS, dualActive, exitDual, selectFractal,
    setMode, mainState, applyAutoIter, updateLUT, requestRender, renderPending, isInteracting,
-   refineDone, mode, isIfsMode, fernView, colormapIndex:writable, colormapPicked:writable, applyDefaultColormap,
+   refineDone, mode, isIfsMode, fernView, setColormapIndex, setColormapPicked, applyDefaultColormap,
    mainRenderer, juliaRenderer */
 
 // In-page helpers for the visual suite (tests/visual/app.spec.mjs). Added to
@@ -23,8 +23,8 @@ window.__vt = {
   // out, nothing is picked and the fractal opens in its own default palette.
   fractal(name, cm) {
     if (dualActive) exitDual();
-    colormapPicked = cm !== undefined;
-    if (cm !== undefined) colormapIndex = cm;
+    setColormapPicked(cm !== undefined);
+    if (cm !== undefined) setColormapIndex(cm);
     selectFractal(name, { fresh: true });
     updateLUT();
     requestRender();
@@ -37,7 +37,7 @@ window.__vt = {
   },
 
   mode(key) {
-    colormapIndex = 0;
+    setColormapIndex(0);
     updateLUT();
     setMode(key);
   },

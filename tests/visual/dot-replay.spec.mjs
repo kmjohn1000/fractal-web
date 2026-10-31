@@ -8,7 +8,7 @@
 import { test, expect } from "@playwright/test";
 
 /* global setMode, fernView, fernState, vectorColors, els, mode, fernRenderOpts, syncReplayButtons,
-   vectorViewIsFitted, fitVectorView, requestRender, renderAll, captureShareBlob, buildShareHash, ifsRandom:writable,
+   vectorViewIsFitted, fitVectorView, requestRender, renderAll, captureShareBlob, buildShareHash, ifsRandom, setIfsRandom,
    ifsTransformColors, IFS_SYSTEMS, backdropPixels, replayJumpsAt, replayTimeOf, REPLAY_SLOW_S, REPLAY_RAMP_S,
    REPLAY_CAP_S, depthPlayer, PLAY_SPEEDS, setFernColor, stopDepthPlay */
 
@@ -61,7 +61,7 @@ async function show(page, m) {
 async function startManual(page, m, { count = 200000, seed = 7, speed = 1 } = {}) {
   await show(page, m);
   await page.evaluate(([count, seed, speed]) => {
-    ifsRandom = window.__seeded(seed);
+    setIfsRandom(window.__seeded(seed));
     fernState.count = count;
     els.fernPointsSlider.value = count;
     if (!vectorViewIsFitted(mode)) fitVectorView(mode);
@@ -494,7 +494,7 @@ test.describe("what the replay shows", () => {
     await page.evaluate(() => { setFernColor(3); requestRender(); }); // Ice
     await settled(page, await page.evaluate(() => fernState.count));
     await page.evaluate(() => {
-      ifsRandom = window.__seeded(3);
+      setIfsRandom(window.__seeded(3));
       fernView.startReplay({ ...fernRenderOpts(), manual: true, speed: () => 1, onChange: syncReplayButtons });
     });
     await stepTo(page, 9.9);

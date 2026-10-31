@@ -67,7 +67,7 @@ window.__pv = {
     const i = TELEPORT_DESTINATIONS.findIndex((d) => d.fractal === fractal && d.label === label);
     const d = TELEPORT_DESTINATIONS[i];
     Object.assign(mainState, { cx: Number(d.re), cy: Number(d.im), scale: d.scale, rotation: d.rotation || 0 });
-    lastTeleportIndex = teleportLandingIndex = i;
+    setLastTeleportIndex(i); setTeleportLandingIndex(i);
     applyAutoIter();
     requestRender();
   },

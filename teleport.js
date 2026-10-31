@@ -65,6 +65,10 @@ function steadyEase(t, a = 0.12, b = 0.18) {
 let lastTeleportIndex = -1; // index into TELEPORT_DESTINATIONS; never picked twice in a row
 let teleportLandingIndex = -1; // TELEPORT_DESTINATIONS index of the last completed flight, for the info overlay
 let teleportGeneration = 0;
+// For the screenshot and preview scripts, which land the view on a place without flying there
+// (another file can't assign these variables).
+function setLastTeleportIndex(v) { lastTeleportIndex = v; }
+function setTeleportLandingIndex(v) { teleportLandingIndex = v; }
 
 // Any direct manipulation (pointer, wheel, Back, fractal switch) wins over
 // an in-flight flight: bumping the generation makes its next frame a no-op.

@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.53.5 — 2026-10-30
+- Internal: the test helpers change app state through setter functions. No visible change.
+
 ## 1.53.4 — 2026-10-30
 - Internal: shared app state is now changed through setter functions. No visible change.
 

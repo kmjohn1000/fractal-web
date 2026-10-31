@@ -200,12 +200,12 @@ test.describe("Relief", () => {
   }
 
   test("Seahorse Valley (deep, perturbation)", async ({ page }) => {
-    await page.evaluate(`${place("Seahorse Valley")}; colormapIndex = COLORMAPS.findIndex((c) => c.name === "Classic"); updateLUT(); setColorStyle({ style: "relief" })`);
+    await page.evaluate(`${place("Seahorse Valley")}; setColormapIndex(COLORMAPS.findIndex((c) => c.name === "Classic")); updateLUT(); setColorStyle({ style: "relief" })`);
     await checkStyled(page, "style-relief-seahorse");
   });
 
   test("Sunken Crown on Burning Ship (1.2e-12)", async ({ page }) => {
-    await page.evaluate(`${place("Sunken Crown")}; colormapIndex = COLORMAPS.findIndex((c) => c.name === "Classic"); updateLUT(); setColorStyle({ style: "relief" })`);
+    await page.evaluate(`${place("Sunken Crown")}; setColormapIndex(COLORMAPS.findIndex((c) => c.name === "Classic")); updateLUT(); setColorStyle({ style: "relief" })`);
     await checkStyled(page, "style-relief-sunken-crown");
   });
 
@@ -262,7 +262,7 @@ test.describe("Stripes", () => {
   }
 
   test("Seahorse Valley (deep, perturbation)", async ({ page }) => {
-    await page.evaluate(`${place("Seahorse Valley")}; colormapIndex = COLORMAPS.findIndex((c) => c.name === "Glacier"); updateLUT(); setColorStyle({ style: "stripes" })`);
+    await page.evaluate(`${place("Seahorse Valley")}; setColormapIndex(COLORMAPS.findIndex((c) => c.name === "Glacier")); updateLUT(); setColorStyle({ style: "stripes" })`);
     await checkStyled(page, "style-stripes-seahorse");
   });
 

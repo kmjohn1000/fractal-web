@@ -5,7 +5,7 @@
 import { test, expect } from "@playwright/test";
 
 /* global adaptLiveResolution, liveRes, LIVE_STEPS, mainRenderer, juliaRenderer, mainState, els, SAMPLE_OFFSETS,
-   flyToPlace, TELEPORT_DESTINATIONS, isInteracting:writable */
+   flyToPlace, TELEPORT_DESTINATIONS, isInteracting, setIsInteracting */
 
 const DRIVER = new URL("../driver.js", import.meta.url).pathname;
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
@@ -80,13 +80,13 @@ test("a live frame drawn small is a real picture of the view, and only while a g
     const full = grab();
     mainRenderer.setLiveDivisor(3);
     // Not interacting: the divisor is ignored, the frame is the full one.
-    isInteracting = false;
+    setIsInteracting(false);
     mainRenderer.render(mainState, 0);
     const ignored = grab();
-    isInteracting = true;
+    setIsInteracting(true);
     mainRenderer.render(mainState, 0);
     const small = grab();
-    isInteracting = false;
+    setIsInteracting(false);
     mainRenderer.setLiveDivisor(1);
     let ignoredDiffer = 0, sum = 0, n = 0; const colors = new Set();
     for (let i = 0; i < full.length; i += 4) {
