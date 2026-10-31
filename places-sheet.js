@@ -5,21 +5,20 @@
 // (flyToPlace), compass-ui.js (prefersReducedMotion, applyHudVisibility) and color-sheet.js
 // (colorSheetEl); app.js lists the sheet with the popovers (Escape, aria-expanded).
 //
-// An ES module (the second, after app.js; no "use strict", modules are strict). It reads the other
-// files' names as globals, which works because a module runs after every plain script, and it
-// runs before app.js because modules run in page order (app.js looks up the Places row it makes).
-// Only placeId is read from outside (the places spec and scripts/render_place_thumbs.mjs), so
-// that one name is put on window.
+// An ES module (no "use strict", modules are strict), imported by app.js, so it runs before app.js
+// does (app.js looks up the Places row it makes). It reads the other files' names as globals, which
+// works because a module runs after every plain script. Every top-level declaration is exported,
+// which is what lets test-hooks.js expose them (the places spec and scripts/render_place_thumbs.mjs
+// read placeId); see scripts/check-test-globals.mjs.
 
 // ---------------------------------------------------------------- places sheet
 
 // Thumbnails are icons/places/<id>.webp (scripts/render_place_thumbs.mjs). They are not in the
 // service worker's APP_SHELL: the sheet fetches them when it first scrolls them into view.
 export const placeId = (d) => `${slugify(d.fractal)}-${slugify(d.label)}`;
-window.placeId = placeId;
 
 // The fractals that have places, in the picker's order, each with its TELEPORT_DESTINATIONS indexes.
-function placeGroups() {
+export function placeGroups() {
   const keys = PICKER_LAYOUT.flatMap((section) => section.groups.flatMap((group) => group.keys));
   return keys
     .map((key) => ({ key, indexes: TELEPORT_DESTINATIONS.flatMap((d, i) => (d.fractal === key ? [i] : [])) }))
@@ -27,30 +26,30 @@ function placeGroups() {
 }
 
 // The chip strip's short name: "Julia: Rabbit" where the section title says "Julia set: Douady rabbit".
-function placeChipLabel(key) {
+export function placeChipLabel(key) {
   const c = FRACTAL_CONFIGS[key];
   return c.group === "julia" ? `Julia: ${c.label}` : c.label;
 }
 
 // How deep a place is, as the info card says it ("8.6 billion times deeper"): against the
 // fractal's opening view on the screen it would be flown to.
-function placeDepthText(d, aspect) {
+export function placeDepthText(d, aspect) {
   const base = viewFromBounds(FRACTAL_CONFIGS[d.fractal].view, aspect).scale;
   return capitalize(zoomPhrase(base, d.scale));
 }
 
 // The shape of the canvas a flown-to place gets: the fractal canvas itself, or the area it would
 // take when a pattern mode has it hidden.
-function placesAspect() {
+export function placesAspect() {
   if (mode === "fractal") return mainCanvasAspect();
   const area = document.getElementById("canvasArea");
   return area.clientWidth > 0 && area.clientHeight > 0 ? area.clientWidth / area.clientHeight : 1;
 }
 
-let placesSheetKey = "";
-let placesScrollSpy = null; // updates the active chip from the scroll position
+export let placesSheetKey = "";
+export let placesScrollSpy = null; // updates the active chip from the scroll position
 
-function placeRow(i, aspect) {
+export function placeRow(i, aspect) {
   const d = TELEPORT_DESTINATIONS[i];
   const depth = placeDepthText(d, aspect);
   const img = colorSheetEl("img", { src: `icons/places/${placeId(d)}.webp`, alt: "", width: 64, height: 64, loading: "lazy", decoding: "async" });
@@ -66,7 +65,7 @@ function placeRow(i, aspect) {
 
 // Builds the sheet's contents; it is rebuilt only when the depths in it would read differently (the
 // screen changed shape), since the places themselves never change.
-function renderPlacesSheet() {
+export function renderPlacesSheet() {
   const sheet = els.placesSheet;
   const aspect = placesAspect();
   const key = aspect.toFixed(2);
@@ -117,19 +116,19 @@ function renderPlacesSheet() {
 }
 
 // Scrolls a chip into the strip's view without moving the page.
-function keepChipVisible(chips, chip) {
+export function keepChipVisible(chips, chip) {
   const c = chips.getBoundingClientRect(), r = chip.getBoundingClientRect();
   if (r.left < c.left) chips.scrollLeft += r.left - c.left - 8;
   else if (r.right > c.right) chips.scrollLeft += r.right - c.right + 8;
 }
 
-function scrollPlacesTo(section, smooth = true) {
+export function scrollPlacesTo(section, smooth = true) {
   const scroller = els.placesSheet.querySelector(".placesScroll");
   const top = section.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
   scroller.scrollTo({ top, behavior: smooth && !prefersReducedMotion() ? "smooth" : "auto" });
 }
 
-function openPlacesSheet() {
+export function openPlacesSheet() {
   els.fractalTypeRow.classList.remove("open");
   els.colormapMenu.classList.remove("open");
   els.colorSheet.classList.remove("open");
@@ -144,13 +143,13 @@ function openPlacesSheet() {
   placesScrollSpy?.();
 }
 
-function closePlacesSheet() {
+export function closePlacesSheet() {
   els.placesSheet.classList.remove("open");
 }
 
 // Flies to place i. The info card turns on, so the name shows when the flight lands. A place on
 // another fractal starts from that fractal's whole-shape view, not the one it was left in.
-function flyToPlaceFrom(i) {
+export function flyToPlaceFrom(i) {
   const d = TELEPORT_DESTINATIONS[i];
   closePlacesSheet();
   if (mode !== "fractal" || currentName !== d.fractal) {
@@ -164,7 +163,7 @@ function flyToPlaceFrom(i) {
 }
 
 // The picker's first row, and the info card's button (index.html).
-const placesRow = colorSheetEl("button", { class: "placesRow", "aria-haspopup": "true", "data-opens-places": "" },
+export const placesRow = colorSheetEl("button", { class: "placesRow", "aria-haspopup": "true", "data-opens-places": "" },
   colorSheetEl("span", { class: "placesRowTitle" }, "Places"),
   colorSheetEl("span", { class: "placesRowSub" }, `${TELEPORT_DESTINATIONS.length} named places to fly to`),
   colorSheetEl("span", { class: "placesRowGo", "aria-hidden": "true" }, "›"));

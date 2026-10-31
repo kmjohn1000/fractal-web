@@ -311,7 +311,7 @@ export default [
   },
   {
     // The ES modules (see their headers); the rest are still plain scripts.
-    files: ["app.js", "places-sheet.js"],
+    files: ["app.js", "places-sheet.js", "test-hooks.js"],
     languageOptions: { sourceType: "module" },
   },
   {

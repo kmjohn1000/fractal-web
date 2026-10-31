@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.53.6 — 2026-10-30
+- Internal: a test hook exposes the module files' names to the tests, and the version stamp now covers module imports. No visible change.
+
 ## 1.53.5 — 2026-10-30
 - Internal: the test helpers change app state through setter functions. No visible change.
 

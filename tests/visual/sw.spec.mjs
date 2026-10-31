@@ -6,7 +6,7 @@
 import { test, expect } from "@playwright/test";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { appShellFiles, assetVersions, changelogVersion, currentCacheName, expectedCacheName, packageVersions } from "../../scripts/stamp.mjs";
+import { appShellFiles, assetVersions, changelogVersion, currentCacheName, expectedCacheName, importVersions, moduleFiles, packageVersions } from "../../scripts/stamp.mjs";
 
 const root = new URL("../..", import.meta.url).pathname;
 const STALE = "run `npm run stamp` and commit what it changes";
@@ -19,6 +19,15 @@ test("package.json and index.html carry the CHANGELOG version", () => {
   const v = changelogVersion();
   expect(packageVersions(), STALE).toEqual({ package: v, lock: v });
   expect(assetVersions().filter((a) => a.v !== v), `assets without ?v=${v}: ${STALE}`).toEqual([]);
+});
+
+test("every relative import in the module files carries the CHANGELOG version, and the files are in APP_SHELL", () => {
+  const v = changelogVersion();
+  const imports = importVersions();
+  expect(imports.length, "no imports found: is the module graph being followed?").toBeGreaterThan(0);
+  expect(imports.filter((i) => i.v !== v).map((i) => `${i.file}: ${i.spec}`), `imports without ?v=${v}: ${STALE}`).toEqual([]);
+  const shell = new Set(appShellFiles());
+  expect(moduleFiles().filter((f) => !shell.has(f))).toEqual([]);
 });
 
 test("every APP_SHELL file exists", () => {

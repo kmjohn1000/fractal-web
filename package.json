@@ -3,7 +3,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "lint": "eslint .",
+    "lint": "eslint . && node scripts/check-test-globals.mjs",
     "build:www": "node scripts/build-www.mjs",
     "ios:sync": "npm run build:www && cap sync ios",
     "ios:open": "cap open ios",
@@ -29,5 +29,5 @@
     "@capacitor/share": "^8.0.2",
     "@capacitor/splash-screen": "^8.0.2"
   },
-  "version": "1.53.5"
+  "version": "1.53.6"
 }

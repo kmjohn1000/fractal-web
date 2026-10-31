@@ -2,9 +2,16 @@
 // and welcome-card handling, and every load-time line that schedules a frame or a callback (they
 // run only after all scripts above have loaded). Needs all the other scripts.
 //
-// The app's first ES module (a pilot, loaded as <script type="module">; modules are strict, so no
-// "use strict"). It still reads the other files' names as globals, which works because a module runs
-// after every plain script. Nothing reads this file's names, so it needs no export or bridge.
+// The app's entry ES module (loaded as <script type="module">; modules are strict, so no "use
+// strict"). It still reads the plain scripts' names as globals, which works because a module runs
+// after every plain script, and it imports the files that have become modules. Each of those must be
+// listed in exposeForTests below, so tests can read their names (see test-hooks.js). Nothing reads
+// this file's own names, so it exports nothing. Every import specifier needs the ?v= query (npm run
+// stamp keeps it current): a module is keyed by its full URL, so a differing query loads it twice.
+import { exposeForTests } from "./test-hooks.js?v=1.53.6";
+import * as placesSheet from "./places-sheet.js?v=1.53.6";
+
+exposeForTests({ "places-sheet.js": placesSheet });
 
 // ---------------------------------------------------------------- toolbar accessibility
 
