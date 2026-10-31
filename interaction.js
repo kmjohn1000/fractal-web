@@ -1,11 +1,16 @@
 // Pointer, touch and keyboard interaction: the fractal canvases, the vector views (Koch, tree,
 // dragon, fern) and the keyboard actions. Needs the state (state.js, state-colors.js), render-layout.js and
 // fractal-defs.js; calls the later scripts (cancelTeleport, glideMainTo, ...) only inside function bodies.
-"use strict";
+// An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
+// the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
+import { endVectorInteracting, markInteracting, markVectorInteracting } from "./state-colors.js?v=1.53.7";
+import { centerForAnchor, normalizeAngle, renderAll, requestRender, screenToComplex } from "./render-layout.js?v=1.53.7";
+import { cancelTeleport, glideMainTo, stopDotReplay } from "./teleport.js?v=1.53.7";
+import { colorSheetTapJustClosed } from "./color-sheet.js?v=1.53.7";
 
 // ---------------------------------------------------------------- interaction: fractal canvases
 
-function attachFractalInteraction(canvas, getState, paneName, renderer) {
+export function attachFractalInteraction(canvas, getState, paneName, renderer) {
   const pointers = new Map();
   let panStart = null;
   let pinchStartDist = null;
@@ -207,7 +212,7 @@ function attachFractalInteraction(canvas, getState, paneName, renderer) {
   }, { passive: false });
 }
 
-function commitBoxZoom(paneName, state, renderer, canvas) {
+export function commitBoxZoom(paneName, state, renderer, canvas) {
   const rect = canvas.getBoundingClientRect();
   const left = parseFloat(els.boxRect.style.left) - rect.left;
   const top = parseFloat(els.boxRect.style.top) - rect.top;
@@ -262,7 +267,7 @@ attachFractalInteraction(els.juliaCanvas, () => juliaState, "julia", juliaRender
 // start, pinch start, wheel zoom throttled to one checkpoint per 400ms
 // burst, box-zoom commit). checkpoint() is that same throttled push, for
 // keyboard navigation.
-function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive = () => false) {
+export function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive = () => false) {
   const pointers = new Map();
   const history = [];
   let lastWheelPush = 0;
@@ -467,7 +472,7 @@ function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive = () =>
 // hexaflake x +-1, y +-0.866; the fern FERN_BOUNDS. The dragon rotates 45 degrees per depth level, so a
 // box covering every depth would open it badly zoomed out -- it's fitted
 // to the current depth instead.
-function vectorViewBox(modeKey) {
+export function vectorViewBox(modeKey) {
   if (modeKey === "koch") return [-1.03, 1.03, -1.12, 1.12];
   if (modeKey === "tree") return [-3.0, 3.0, -0.1, 4.05];
   if (modeKey === "hexaflake") return [-1.08, 1.08, -0.96, 0.96];
@@ -493,7 +498,7 @@ function vectorViewBox(modeKey) {
   return box;
 }
 
-const VECTOR_VIEWS = {
+export const VECTOR_VIEWS = {
   koch: [kochView, els.kochCanvas], tree: [treeView, els.treeCanvas],
   dragon: [dragonView, els.dragonCanvas], fern: [fernView, els.fernCanvas],
   sierpinski: [fernView, els.fernCanvas], levy: [fernView, els.fernCanvas],
@@ -501,21 +506,21 @@ const VECTOR_VIEWS = {
   hilbert: [dragonView, els.dragonCanvas], gosper: [dragonView, els.dragonCanvas],
   arrowhead: [dragonView, els.dragonCanvas],
 };
-const fittedVectorModes = new Set();
+export const fittedVectorModes = new Set();
 // The framing Reset gives a pattern mode on its canvas as it is now.
-function vectorFitView(modeKey) {
+export function vectorFitView(modeKey) {
   const canvas = VECTOR_VIEWS[modeKey][1];
   const aspect = canvas.clientWidth > 0 && canvas.clientHeight > 0 ? canvas.clientWidth / canvas.clientHeight : 1;
   return viewFromBounds(vectorViewBox(modeKey), aspect);
 }
-function fitVectorView(modeKey) {
+export function fitVectorView(modeKey) {
   const v = vectorFitView(modeKey);
   Object.assign(VECTOR_VIEWS[modeKey][0].view, { cx: v.cx, cy: v.cy, halfHeight: v.scale, rotation: 0 });
   fittedVectorModes.add(modeKey);
 }
 // True while a pattern view is still at the framing Reset would give it: not
 // panned, zoomed or turned since.
-function vectorViewIsFitted(modeKey) {
+export function vectorViewIsFitted(modeKey) {
   const fit = vectorFitView(modeKey);
   const v = VECTOR_VIEWS[modeKey][0].view;
   const same = (a, b) => Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(b));
@@ -523,13 +528,13 @@ function vectorViewIsFitted(modeKey) {
 }
 // Koch, tree and dragon add detail beyond the depth slider as you zoom in
 // past this framing's half-height, so the views are told what it is.
-const vectorFitHalfHeight = (modeKey) => vectorFitView(modeKey).scale;
+export const vectorFitHalfHeight = (modeKey) => vectorFitView(modeKey).scale;
 
-const kochNav = attachVectorViewInteraction(els.kochCanvas, kochView);
-const treeNav = attachVectorViewInteraction(els.treeCanvas, treeView);
-const hexaflakeNav = attachVectorViewInteraction(els.hexaflakeCanvas, hexaflakeView);
-const dragonNav = attachVectorViewInteraction(els.dragonCanvas, dragonView);
-const fernNav = attachVectorViewInteraction(els.fernCanvas, fernView, () => fernBoxZoomActive);
+export const kochNav = attachVectorViewInteraction(els.kochCanvas, kochView);
+export const treeNav = attachVectorViewInteraction(els.treeCanvas, treeView);
+export const hexaflakeNav = attachVectorViewInteraction(els.hexaflakeCanvas, hexaflakeView);
+export const dragonNav = attachVectorViewInteraction(els.dragonCanvas, dragonView);
+export const fernNav = attachVectorViewInteraction(els.fernCanvas, fernView, () => fernBoxZoomActive);
 els.kochBackBtn.addEventListener("click", () => kochNav.back());
 els.treeBackBtn.addEventListener("click", () => treeNav.back());
 els.hexaflakeBackBtn.addEventListener("click", () => hexaflakeNav.back());
@@ -545,11 +550,11 @@ els.fernBackBtn.addEventListener("click", () => fernNav.back());
 // "up" is always screen-up however the view is rotated. Held keys
 // auto-repeat; history is checkpointed once per 400ms burst, like the
 // wheel, so one Back undoes a whole held-key move.
-const KEY_PAN_FRACTION = 0.1;              // of the canvas's shorter side
-const KEY_ZOOM_FACTOR = 1.25;
-const KEY_ROTATE_STEP = 5 * Math.PI / 180; // + is clockwise, like the twist
+export const KEY_PAN_FRACTION = 0.1;              // of the canvas's shorter side
+export const KEY_ZOOM_FACTOR = 1.25;
+export const KEY_ROTATE_STEP = 5 * Math.PI / 180; // + is clockwise, like the twist
 
-function keyAction(e) {
+export function keyAction(e) {
   const k = e.key;
   if (e.shiftKey && (k === "ArrowLeft" || k === "ArrowRight")) {
     return { rotate: k === "ArrowRight" ? KEY_ROTATE_STEP : -KEY_ROTATE_STEP };
@@ -567,7 +572,7 @@ function keyAction(e) {
 
 // The vector view, its canvas, nav (history) and Reset button for the
 // active non-fractal mode.
-function activeVectorTarget() {
+export function activeVectorTarget() {
   if (mode === "koch") return { v: kochView, canvas: els.kochCanvas, nav: kochNav, resetBtn: els.kochResetBtn };
   if (mode === "tree") return { v: treeView, canvas: els.treeCanvas, nav: treeNav, resetBtn: els.treeResetBtn };
   if (mode === "hexaflake") return { v: hexaflakeView, canvas: els.hexaflakeCanvas, nav: hexaflakeNav, resetBtn: els.hexaflakeResetBtn };

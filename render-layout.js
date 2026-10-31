@@ -1,11 +1,19 @@
 // Rendering and layout: updateLUT, layoutCanvasArea, renderAll, progressive refinement, requestRender,
 // the HUD text and screen/complex conversions. Needs the state (state.js, state-colors.js), deepzoom.js and
 // fractal-defs.js; calls into modes, interaction and the later scripts only inside function bodies.
-"use strict";
+// An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
+// the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
+import { colormapIndex, vectorLite } from "./state-colors.js?v=1.53.7";
+import { dualPresetName } from "./modes.js?v=1.53.7";
+import { dragonNav, fernNav, hexaflakeNav, kochNav, treeNav, vectorFitHalfHeight } from "./interaction.js?v=1.53.7";
+import { flash, updateCompasses } from "./compass-ui.js?v=1.53.7";
+import { teleportLandingIndex } from "./teleport.js?v=1.53.7";
+import { cmGradient, labelColorButton } from "./colormap-picker.js?v=1.53.7";
+import { COLOR_LOOKS, bandsText, colorSheetStyles, currentLookId, lookPalette, shiftText } from "./color-sheet.js?v=1.53.7";
 
 // ---------------------------------------------------------------- rendering + layout
 
-function updateLUT() {
+export function updateLUT() {
   const bytes = buildLUTBytes(COLORMAPS[colormapIndex].stops);
   mainRenderer.setLUT(bytes);
   juliaRenderer.setLUT(bytes);
@@ -16,22 +24,22 @@ function updateLUT() {
 
 // The color button names the palette and the Look (or "Custom") too, so a screen reader hears what the screen is showing: the
 // pill can't change without touching the fixed toolbar.
-function labelColormapButton() {
+export function labelColormapButton() {
   const name = COLORMAPS[colormapIndex].name;
   if (!colorSheetStyles()) { labelColorButton(els.colormapBtn, "Choose colormap", name); return; }
   const look = COLOR_LOOKS.find((l) => l.id === currentLookId());
   labelColorButton(els.colormapBtn, "Choose colors", `${look ? look.label : "Custom"}, ${name}`);
 }
 
-function layoutCanvasArea() {
+export function layoutCanvasArea() {
   const stacked = els.canvasArea.clientWidth < els.canvasArea.clientHeight;
   els.canvasArea.classList.toggle("stacked", dualActive && stacked);
   els.canvasArea.classList.toggle("row", dualActive && !stacked);
 }
 
 // The main pane's last render() result: "perturbation", "fixed point" or null.
-let lastMainDeepPath = null;
-let lastJuliaDeepPath = null;
+export let lastMainDeepPath = null;
+export let lastJuliaDeepPath = null;
 
 // Below the deep-zoom threshold, a live float32 re-render during an active
 // gesture isn't a lower-quality version of the same view — the per-pixel
@@ -43,7 +51,7 @@ let lastJuliaDeepPath = null;
 // CSS-transform version of this preview was tried first and was jumpy; this
 // one draws the snapshot through the same float64 view math the renderer
 // uses, so it can't drift from where the real render will land.
-function deepZoomEligible(renderer, state) {
+export function deepZoomEligible(renderer, state) {
   return (renderer.perturbationSupported
     && perturbationEligibleType(state)
     && state.scale < DEEP_ZOOM_THRESHOLD)
@@ -53,7 +61,7 @@ function deepZoomEligible(renderer, state) {
 
 // What the dot shapes' view draws from: its point count and color, and what to
 // call as its points fill in; the chaos-game replay (teleport.js) starts from the same.
-function fernRenderOpts() {
+export function fernRenderOpts() {
   return {
     count: fernState.count,
     colorIndex: vectorColors[fernView.system],
@@ -62,7 +70,7 @@ function fernRenderOpts() {
   };
 }
 
-function renderAll() {
+export function renderAll() {
   updateBackButtons();
   if (mode === "fractal") {
     if (isInteracting) adaptLiveResolution();
@@ -123,12 +131,12 @@ function renderAll() {
 // by a fresh sample 0 for the new view. Skipped while interacting so
 // gestures stay at full frame rate; the settle timer's requestRender then
 // starts a fresh chain once the view stops moving.
-let refineGeneration = 0;
+export let refineGeneration = 0;
 // False from the moment a render starts a refinement chain until that chain
 // draws its last sample; share capture waits on it (captureShareBlob).
-let refineDone = true;
-let refineNext = 1; // the next sample this chain draws
-let refineTarget = SAMPLE_OFFSETS.length; // how many samples it draws in all
+export let refineDone = true;
+export let refineNext = 1; // the next sample this chain draws
+export let refineTarget = SAMPLE_OFFSETS.length; // how many samples it draws in all
 // Deep-zoom passes (perturbation and the exact paths) take 40-230 ms each on a
 // phone, so the 16 of a full refinement take seconds. Those views stop after
 // DEEP_PASSES: on an iPhone 15, 8 of 16 looked the same as 16 at Seahorse
@@ -137,20 +145,20 @@ let refineTarget = SAMPLE_OFFSETS.length; // how many samples it draws in all
 // all 16, and Save and Share finish the rest (finishRefinement). Diag.passesOverride
 // ("#passes=16" for full quality, "#passes=6" to try fewer) replaces it for tests
 // and tuning.
-const DEEP_PASSES = 8;
-function refinePassCount() {
+export const DEEP_PASSES = 8;
+export function refinePassCount() {
   const deep = lastMainDeepPath || (dualActive && lastJuliaDeepPath);
   const n = Diag.passesOverride ?? DEEP_PASSES;
   return deep ? Math.min(SAMPLE_OFFSETS.length, n) : SAMPLE_OFFSETS.length;
 }
-function refineStep(gen) {
+export function refineStep(gen) {
   if (gen !== refineGeneration || mode !== "fractal" || isInteracting) return;
   mainRenderer.render(mainState, refineNext);
   if (dualActive && juliaState) juliaRenderer.render(juliaState, refineNext);
   if (++refineNext < refineTarget) requestAnimationFrame(() => refineStep(gen));
   else refineDone = true;
 }
-function scheduleRefinement() {
+export function scheduleRefinement() {
   const gen = ++refineGeneration;
   refineDone = false;
   refineNext = 1;
@@ -160,7 +168,7 @@ function scheduleRefinement() {
 }
 // A saved or shared image gets all 16 samples even where the screen stopped
 // short: draw the rest now (a no-op for any view that already has them).
-function finishRefinement() {
+export function finishRefinement() {
   if (refineTarget >= SAMPLE_OFFSETS.length || mode !== "fractal" || isInteracting) return;
   refineTarget = SAMPLE_OFFSETS.length;
   if (refineDone) {
@@ -170,13 +178,13 @@ function finishRefinement() {
   }
 }
 
-let renderPending = false;
+export let renderPending = false;
 // Back is dimmed while there's nothing to go back to. Every history push,
 // pop or clear is followed by a render (gestures, Back, Reset, fractal and
 // mode switches), so renderAll refreshes it instead of each of those sites.
 // The vector navs are declared further down; renderAll first runs after
 // they exist.
-function updateBackButtons() {
+export function updateBackButtons() {
   const nav = mode === "koch" ? kochNav : mode === "tree" ? treeNav : mode === "hexaflake" ? hexaflakeNav
     : isCurveMode(mode) ? dragonNav : isIfsMode(mode) ? fernNav : null;
   const canGoBack = nav ? nav.canGoBack() : (activePane === "julia" ? juliaHistory : mainHistory).length > 0;
@@ -184,7 +192,7 @@ function updateBackButtons() {
   if (btn.disabled === canGoBack) btn.disabled = !canGoBack;
 }
 
-function requestRender() {
+export function requestRender() {
   if (renderPending) return;
   renderPending = true;
   requestAnimationFrame(() => { renderPending = false; renderAll(); });
@@ -192,15 +200,15 @@ function requestRender() {
 
 // Only shown when non-zero. Shared by every mode's HUD (WebGL fractal + all four Canvas2D vector
 // views) since they all support the same twist gesture.
-function rotationHudText(rotation) {
+export function rotationHudText(rotation) {
   const rotDeg = (rotation || 0) * 180 / Math.PI;
   return Math.abs(rotDeg) > 0.5 ? `Rotated ${rotDeg.toFixed(0)}°` : "";
 }
 
 // Magnification relative to the fractal's opening view, in words past a
 // thousand ("3.1 billion times"): what a person means by "how far in am I".
-const ZOOM_WORDS = [[1e15, "quadrillion"], [1e12, "trillion"], [1e9, "billion"], [1e6, "million"], [1e3, "thousand"]];
-function formatZoom(baseScale, scale) {
+export const ZOOM_WORDS = [[1e15, "quadrillion"], [1e12, "trillion"], [1e9, "billion"], [1e6, "million"], [1e3, "thousand"]];
+export function formatZoom(baseScale, scale) {
   const z = baseScale / scale;
   if (z < 9.95) return `${Number(z.toFixed(1))}×`;
   if (z < 1000) return `${Math.round(z)}×`;
@@ -210,7 +218,7 @@ function formatZoom(baseScale, scale) {
 
 // How deep the view is, for the info card: "415× deeper", "1.8 trillion
 // times deeper", "The whole shape", or "Zoomed out 2×".
-function zoomPhrase(baseScale, scale) {
+export function zoomPhrase(baseScale, scale) {
   const z = baseScale / scale;
   if (Math.abs(Math.log(z)) < 0.05) return "the whole shape";
   return z < 1 ? `zoomed out ${formatZoom(scale, baseScale)}` : `${formatZoom(baseScale, scale)} deeper`;
@@ -219,7 +227,7 @@ function zoomPhrase(baseScale, scale) {
 // Map-style scale bar for a view showing unitsPerPx world units per CSS
 // pixel: the 1, 2 or 5 x 10^n length whose bar comes closest to 64px (in
 // log terms, so bars stay roughly 40-100px wide), and its label.
-function scaleBar(unitsPerPx) {
+export function scaleBar(unitsPerPx) {
   const target = 64 * unitsPerPx;
   const e = Math.floor(Math.log10(target));
   let best = null;
@@ -236,7 +244,7 @@ function scaleBar(unitsPerPx) {
   return { px: best.v / unitsPerPx, label: `${label} across` };
 }
 
-const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+export const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
 // Info overlay (see #hud in index.html): the title (a place name, or the
 // fractal or pattern), a plain-language line (how deep, rotation), a scale
@@ -247,8 +255,8 @@ const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 // credit line when it has one. Left out, that block stays hidden.
 // Runs every render frame, so it does nothing while the overlay is hidden
 // (showing it re-renders, see applyHudVisibility) or when nothing changed.
-let lastHudKey = "";
-function setHud(name, plainParts, { unitsPerPx = 0, center = "", tech = "", about = null } = {}) {
+export let lastHudKey = "";
+export function setHud(name, plainParts, { unitsPerPx = 0, center = "", tech = "", about = null } = {}) {
   if (!hudVisible) return;
   const parts = plainParts.filter(Boolean);
   const bar = unitsPerPx > 0 && Number.isFinite(unitsPerPx) ? scaleBar(unitsPerPx) : null;
@@ -287,8 +295,8 @@ function setHud(name, plainParts, { unitsPerPx = 0, center = "", tech = "", abou
 // already reaches the middle, and very large text show the card as it was
 // before descriptions. Measured only when the card's content changes or the
 // canvas area is resized (refitHud), never per frame.
-const HUD_ABOUT_LEVELS = ["full", "first", "none"];
-function fitHudAbout() {
+export const HUD_ABOUT_LEVELS = ["full", "first", "none"];
+export function fitHudAbout() {
   if (els.hudAbout.classList.contains("hidden")) { delete els.hud.dataset.about; return; }
   const limit = els.canvasArea.clientHeight / 2;
   let level = "";
@@ -298,12 +306,12 @@ function fitHudAbout() {
   }
 }
 // The next setHud re-renders the card and re-fits it (called when the canvas area changes size).
-function refitHud() {
+export function refitHud() {
   lastHudKey = "";
 }
 
 // Dual view: a small label on the Julia pane, shown with the info card.
-function updateJuliaLabel() {
+export function updateJuliaLabel() {
   const show = hudVisible && mode === "fractal" && dualActive;
   els.juliaLabel.classList.toggle("hidden", !show);
   if (!show) return;
@@ -315,7 +323,7 @@ function updateJuliaLabel() {
 }
 
 // World units per CSS pixel for a pane whose view is 2 * halfHeight tall.
-function unitsPerCssPx(halfHeight, canvas) {
+export function unitsPerCssPx(halfHeight, canvas) {
   return canvas.clientHeight > 0 ? (2 * halfHeight) / canvas.clientHeight : 0;
 }
 
@@ -323,7 +331,7 @@ function unitsPerCssPx(halfHeight, canvas) {
 // "-0.75 + 0.00i / 1.25" reads better than exponents; full-precision
 // scientific notation once in deep-zoom territory, where the digits are
 // the point.
-function formatHudCoords(cx, cy, scale) {
+export function formatHudCoords(cx, cy, scale) {
   // Enough decimals to find the spot again from the card alone: the center
   // to within ~1/1000 of the view height (2 * scale), so one more decimal
   // per decade of zoom. Capped at 17, past which a float64 center holds no
@@ -347,8 +355,8 @@ function formatHudCoords(cx, cy, scale) {
 // a center on the gasket lands in circles far below a pixel. Remembered
 // for the last view: updateHud runs every frame, and near the gasket the
 // walk can take thousands of steps.
-let apolloCurvatureKey = "", apolloCurvatureLine = "";
-function apolloCurvatureText(cx, cy, scale) {
+export let apolloCurvatureKey = "", apolloCurvatureLine = "";
+export function apolloCurvatureText(cx, cy, scale) {
   const key = `${cx},${cy},${scale}`;
   if (key !== apolloCurvatureKey) {
     const k = apolloCenterCurvature(cx, cy);
@@ -361,7 +369,7 @@ function apolloCurvatureText(cx, cy, scale) {
   return apolloCurvatureLine;
 }
 
-function updateHud() {
+export function updateHud() {
   const s = mainState;
   const eligibleType = perturbationEligibleType(s);
   // Carpet/Gasket ignore the iter slider entirely (zoom-derived depth in
@@ -430,7 +438,7 @@ function updateHud() {
 // the default coloring (Smooth): "Edge glow" (a Look) or
 // "Custom: stripes, Plasma" on the plain line, and the technical line adds
 // style, bands and shift where they aren't the defaults.
-function colorStyleHud(s) {
+export function colorStyleHud(s) {
   const none = { plain: "", tech: "" };
   if (!ESCAPE_TIME_TYPES.includes(s.ftype)) return none;
   const id = styleDrawn(colorStyle.style, s);
@@ -445,39 +453,39 @@ function colorStyleHud(s) {
 }
 
 // Pattern modes are titled with their picker label (EXTRA_MODES).
-function modeLabel(key) {
+export function modeLabel(key) {
   return EXTRA_MODES.find((m) => m.key === key).label;
 }
 
 // Scale bar for a pattern's view (Canvas2D views keep halfHeight).
 // and the shape's description from SHAPE_INFO (key: its EXTRA_MODES key).
-const patternBar = (view, canvas, key) => ({ unitsPerPx: unitsPerCssPx(view.halfHeight, canvas), about: SHAPE_INFO[key] });
+export const patternBar = (view, canvas, key) => ({ unitsPerPx: unitsPerCssPx(view.halfHeight, canvas), about: SHAPE_INFO[key] });
 
 // "Depth 8" plus, once zooming in has added levels beyond the slider's, the
 // number added: "Depth 8 (+3 from zoom)".
-const depthHudText = (depth, extraLevels) => `Depth ${depth}${extraLevels > 0 ? ` (+${extraLevels} from zoom)` : ""}`;
+export const depthHudText = (depth, extraLevels) => `Depth ${depth}${extraLevels > 0 ? ` (+${extraLevels} from zoom)` : ""}`;
 
-function updateKochHud() {
+export function updateKochHud() {
   setHud(modeLabel("koch"), [`${depthHudText(kochState.depth, kochView.extraLevels)}, ${kochState.fill ? "filled" : "outline"}`, rotationHudText(kochView.view.rotation)],
     patternBar(kochView.view, els.kochCanvas, "koch"));
 }
 
-function updateTreeHud() {
+export function updateTreeHud() {
   setHud(modeLabel("tree"), [depthHudText(treeState.depth, treeView.extraLevels), rotationHudText(treeView.view.rotation)],
     patternBar(treeView.view, els.treeCanvas, "tree"));
 }
 
-function updateHexaflakeHud() {
+export function updateHexaflakeHud() {
   setHud(modeLabel("hexaflake"), [depthHudText(hexaflakeState.depth, hexaflakeView.extraLevels), rotationHudText(hexaflakeView.view.rotation)],
     patternBar(hexaflakeView.view, els.hexaflakeCanvas, "hexaflake"));
 }
 
-function updateDragonHud() {
+export function updateDragonHud() {
   setHud(modeLabel(dragonView.curve), [depthHudText(dragonState.depth, dragonView.extraLevels), rotationHudText(dragonView.view.rotation)],
     patternBar(dragonView.view, els.dragonCanvas, dragonView.curve));
 }
 
-function updateFernHud() {
+export function updateFernHud() {
   // accepted = points actually on screen so far; it climbs toward the
   // target as refinement runs, and resets on every pan/zoom.
   setHud(modeLabel(fernView.system), [`${fernView.accepted.toLocaleString()} of ${fernState.count.toLocaleString()} points`, rotationHudText(fernView.view.rotation)],
@@ -487,8 +495,8 @@ function updateFernHud() {
 // Dual view's crosshair marks the main pane's center -- the Julia pane's c.
 // Like the rotation compass, it shows while the main view moves (and once
 // when dual view opens) and fades once it's still.
-const crosshairFlash = { hideTimer: null, lastView: null };
-function positionCrosshair() {
+export const crosshairFlash = { hideTimer: null, lastView: null };
+export function positionCrosshair() {
   if (!dualActive) { els.crosshair.classList.add("hidden"); return; }
   const rect = els.mainCanvas.getBoundingClientRect();
   els.crosshair.classList.remove("hidden");
@@ -502,7 +510,7 @@ function positionCrosshair() {
   }
 }
 
-function screenToComplex(renderer, state, sx, sy) {
+export function screenToComplex(renderer, state, sx, sy) {
   const canvas = renderer.canvas;
   const dpr = renderer.dpr;
   const uvx = (sx * dpr - 0.5 * canvas.width) / canvas.height;
@@ -527,7 +535,7 @@ function screenToComplex(renderer, state, sx, sy) {
 // the rotation's cos/sin (computed on the CPU for the shader's
 // u_rotCos/u_rotSin) operating on a bounded input rather than one that
 // grows without limit over a long session.
-function normalizeAngle(a) {
+export function normalizeAngle(a) {
   return ((a + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
 }
 
@@ -536,7 +544,7 @@ function normalizeAngle(a) {
 // (targetX, targetY) at the view's current scale/rotation. This is the
 // "grab a point and drag it" primitive — pan uses it directly, and it's
 // what the pinch/wheel zoom's before/after-diff anchoring is equivalent to.
-function centerForAnchor(renderer, state, sx, sy, targetX, targetY) {
+export function centerForAnchor(renderer, state, sx, sy, targetX, targetY) {
   const canvas = renderer.canvas;
   const dpr = renderer.dpr;
   const uvx = (sx * dpr - 0.5 * canvas.width) / canvas.height;

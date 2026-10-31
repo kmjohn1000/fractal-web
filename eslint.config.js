@@ -108,22 +108,12 @@ const sharedGlobals = {
   SAMPLE_OFFSETS: "readonly",
   // renderer.js
   createFractalRenderer: "readonly",
-  // state.js and state-colors.js. The shared `let`s are "readonly" here: another file reads them
-  // but assigns through the setters (an ES module import is read-only), so a stray assignment
-  // fails lint. Each is declared, and assigned, only in the file that owns it.
+  // state.js. The shared `let`s are "readonly" here: another file reads them but assigns through
+  // the setters (an ES module import is read-only), so a stray assignment fails lint. Each is
+  // declared, and assigned, only in the file that owns it.
   els: "readonly",
   mode: "readonly",
   setModeKey: "readonly",
-  colormapIndex: "readonly",
-  colormapPicked: "readonly",
-  colormapDefaultIndex: "readonly",
-  setColormapIndex: "readonly",
-  setColormapPicked: "readonly",
-  colormapIndexNamed: "readonly",
-  defaultColormapName: "readonly",
-  pickColormap: "readonly",
-  applyDefaultColormap: "readonly",
-  releaseColormapPick: "readonly",
   ESCAPE_TIME_TYPES: "readonly",
   COLOR_STYLES: "readonly",
   COLOR_BANDS_RANGE: "readonly",
@@ -133,7 +123,6 @@ const sharedGlobals = {
   styleDrawn: "readonly",
   styleBlocked: "readonly",
   colorStyleFor: "readonly",
-  setColorStyle: "readonly",
   currentName: "readonly",
   setCurrentName: "readonly",
   dualActive: "readonly",
@@ -150,10 +139,6 @@ const sharedGlobals = {
   setIsInteracting: "readonly",
   settleTimer: "readonly",
   setSettleTimer: "readonly",
-  markInteracting: "readonly",
-  vectorLite: "readonly",
-  markVectorInteracting: "readonly",
-  endVectorInteracting: "readonly",
   adaptLiveResolution: "readonly",
   mainRenderer: "readonly",
   juliaRenderer: "readonly",
@@ -183,89 +168,9 @@ const sharedGlobals = {
   fernState: "readonly",
   vectorColors: "readonly",
   pushHistory: "readonly",
-  popHistory: "readonly",
-  // render-layout.js
-  refitHud: "readonly",
-  updateLUT: "readonly",
-  labelColormapButton: "readonly",
-  layoutCanvasArea: "readonly",
-  renderAll: "readonly",
-  fernRenderOpts: "readonly",
-  refineDone: "writable",
-  finishRefinement: "readonly",
-  requestRender: "readonly",
-  zoomPhrase: "readonly",
-  capitalize: "readonly",
-  modeLabel: "readonly",
-  crosshairFlash: "readonly",
-  screenToComplex: "readonly",
-  normalizeAngle: "readonly",
-  centerForAnchor: "readonly",
-  // modes.js
-  selectFractal: "readonly",
-  enterDual: "readonly",
-  openPresetInDual: "readonly",
-  closeDual: "readonly",
-  dualPresetName: "readonly",
-  exitDual: "readonly",
-  setMode: "readonly",
-  updateMenuActiveState: "readonly",
-  // interaction.js
-  VECTOR_VIEWS: "readonly",
-  fittedVectorModes: "readonly",
-  fitVectorView: "readonly",
-  vectorViewIsFitted: "readonly",
-  vectorFitHalfHeight: "readonly",
-  kochNav: "readonly",
-  treeNav: "readonly",
-  hexaflakeNav: "readonly",
-  dragonNav: "readonly",
-  fernNav: "readonly",
-  KEY_PAN_FRACTION: "readonly",
-  keyAction: "readonly",
-  activeVectorTarget: "readonly",
-  // compass-ui.js
-  flash: "readonly",
-  prefersReducedMotion: "readonly",
-  updateCompasses: "readonly",
-  applyHudVisibility: "readonly",
-  initWelcomeCard: "readonly",
-  syncSliderFill: "readonly",
-  // teleport.js
-  teleportLandingIndex: "readonly",
-  cancelTeleport: "readonly",
-  flyToPlace: "readonly",
-  coldOpen: "readonly",
-  glideMainTo: "readonly",
-  stopDepthPlay: "readonly",
-  stopDotReplay: "readonly",
-  // colormap-picker.js
-  cmGradient: "readonly",
-  setFernColor: "readonly",
-  labelColorButton: "readonly",
-  updateColorSwatches: "readonly",
-  // color-sheet.js
-  colorSheetEl: "readonly",
-  COLOR_LOOKS: "readonly",
-  lookPalette: "readonly",
-  colorSheetApplies: "readonly",
-  colorSheetStyles: "readonly",
-  currentLookId: "readonly",
-  prepareColorSheet: "readonly",
-  bandsText: "readonly",
-  shiftText: "readonly",
-  fitColorSegment: "readonly",
-  openColorSheet: "readonly",
-  colorSheetTapJustClosed: "readonly",
-  // share.js
-  buildShareHash: "readonly",
-  buildShareUrl: "readonly",
-  parseShareHash: "readonly",
-  applyShareHashFromUrl: "readonly",
-  applyShareLink: "readonly",
-  shareFileName: "readonly",
-  pendingCapture: "writable",
-  closeShareMenu: "readonly",
+  // (render-layout.js, modes.js, interaction.js, compass-ui.js, teleport.js, colormap-picker.js,
+  // color-sheet.js, share.js, state-colors.js and places-sheet.js are ES modules now: their names
+  // are imported where they are used, so they are not globals and are not listed here.)
 };
 
 export default [
@@ -300,18 +205,12 @@ export default [
     },
   },
   {
-    files: ["teleport.js"],
-    languageOptions: { globals: { teleportLandingIndex: "writable" } },
-  },
-  {
-    files: ["state-colors.js"],
-    languageOptions: {
-      globals: { colormapIndex: "writable", colormapPicked: "writable", colormapDefaultIndex: "writable", vectorLite: "writable" },
-    },
-  },
-  {
-    // The ES modules (see their headers); the rest are still plain scripts.
-    files: ["app.js", "places-sheet.js", "test-hooks.js"],
+    // The ES modules (see their headers); the rest are still plain scripts. In a module a `let`
+    // is its own, so no owner override is needed for the variables declared in these files.
+    files: [
+      "app.js", "places-sheet.js", "test-hooks.js", "state-colors.js", "render-layout.js", "modes.js",
+      "interaction.js", "compass-ui.js", "teleport.js", "colormap-picker.js", "color-sheet.js", "share.js",
+    ],
     languageOptions: { sourceType: "module" },
   },
   {

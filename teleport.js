@@ -1,7 +1,13 @@
 // Teleport ("Surprise me"): flights to places, the cold open, depth play and its speed bubble.
 // Needs the state, render-layout, modes, places.js and compass-ui.js (prefersReducedMotion,
 // applyHudVisibility, syncSliderFill); the scripts before and after it call cancelTeleport etc.
-"use strict";
+// An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
+// the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
+import { applyDefaultColormap, markInteracting } from "./state-colors.js?v=1.53.7";
+import { fernRenderOpts, normalizeAngle, renderAll, requestRender } from "./render-layout.js?v=1.53.7";
+import { selectFractal } from "./modes.js?v=1.53.7";
+import { dragonNav, fernNav, fitVectorView, hexaflakeNav, kochNav, treeNav, vectorViewIsFitted } from "./interaction.js?v=1.53.7";
+import { applyHudVisibility, prefersReducedMotion, syncSliderFill } from "./compass-ui.js?v=1.53.7";
 
 // ---------------------------------------------------------------- teleport ("Surprise me")
 
@@ -13,7 +19,7 @@
 // deep-zoom jumps are routinely that small in absolute terms. f.distance
 // is the path's length in d3's units (roughly zoom levels travelled),
 // used to size the flight's duration.
-function zoomPath(p0, p1) {
+export function zoomPath(p0, p1) {
   const rho = Math.SQRT2, rho2 = 2, rho4 = 4;
   const [ux0, uy0, w0] = p0, [ux1, uy1, w1] = p1;
   const dx = ux1 - ux0, dy = uy1 - uy0, d2 = dx * dx + dy * dy;
@@ -45,36 +51,36 @@ function zoomPath(p0, p1) {
 
 // Flight time grows with distance: ~1s for a short hop from the opening
 // view (distance ~4), up to 2.5s for the longest deep-to-deep dives (~34).
-function teleportDurationMs(distance) {
+export function teleportDurationMs(distance) {
   return Math.min(2500, Math.max(1000, 1000 + (distance - 4) * 50));
 }
 // Spiral dives (a destination's spiral flag) are slower, at a steady speed,
 // turning 90 degrees per 3x of zoom: five full turns on the way down from
 // the opening view.
-const SPIRAL_DIVE_MS = 7000;
-const SPIRAL_RAD_PER_ZOOM = (Math.PI / 2) / Math.log(3); // per e-fold
+export const SPIRAL_DIVE_MS = 7000;
+export const SPIRAL_RAD_PER_ZOOM = (Math.PI / 2) / Math.log(3); // per e-fold
 // Speed ramps up over the first 12% of the flight, cruises, and slows over
 // the last 18% (fractions of time); returns the distance covered, 0..1.
-function steadyEase(t, a = 0.12, b = 0.18) {
+export function steadyEase(t, a = 0.12, b = 0.18) {
   const vmax = 1 / (1 - a / 2 - b / 2);
   if (t < a) return vmax * t * t / (2 * a);
   if (t <= 1 - b) return vmax * (a / 2 + (t - a));
   const u = 1 - t;
   return 1 - vmax * u * u / (2 * b);
 }
-let lastTeleportIndex = -1; // index into TELEPORT_DESTINATIONS; never picked twice in a row
-let teleportLandingIndex = -1; // TELEPORT_DESTINATIONS index of the last completed flight, for the info overlay
-let teleportGeneration = 0;
+export let lastTeleportIndex = -1; // index into TELEPORT_DESTINATIONS; never picked twice in a row
+export let teleportLandingIndex = -1; // TELEPORT_DESTINATIONS index of the last completed flight, for the info overlay
+export let teleportGeneration = 0;
 // For the screenshot and preview scripts, which land the view on a place without flying there
 // (another file can't assign these variables).
-function setLastTeleportIndex(v) { lastTeleportIndex = v; }
-function setTeleportLandingIndex(v) { teleportLandingIndex = v; }
+export function setLastTeleportIndex(v) { lastTeleportIndex = v; }
+export function setTeleportLandingIndex(v) { teleportLandingIndex = v; }
 
 // Any direct manipulation (pointer, wheel, Back, fractal switch) wins over
 // an in-flight flight: bumping the generation makes its next frame a no-op.
-function cancelTeleport() { teleportGeneration++; }
+export function cancelTeleport() { teleportGeneration++; }
 
-function teleport() {
+export function teleport() {
   if (mode !== "fractal") return;
   const own = TELEPORT_DESTINATIONS
     .map((d, i) => ({ d, i }))
@@ -118,7 +124,7 @@ function teleport() {
 
 // The flight itself, shared by Surprise me and the web's first-visit cold
 // open (flyToPlace).
-function flyTo(st, d, target, landingIndex, spinSign) {
+export function flyTo(st, d, target, landingIndex, spinSign) {
   // A destination with a rotation lands turned to it (0 for the Burning
   // Ship's places, so they land upright whatever the view was turned to);
   // one without leaves the view's rotation alone, as before. The turn takes
@@ -196,7 +202,7 @@ function flyTo(st, d, target, landingIndex, spinSign) {
 }
 
 // Flies the main view to one named place, as Surprise me does.
-function flyToPlace(i) {
+export function flyToPlace(i) {
   const d = TELEPORT_DESTINATIONS[i];
   lastTeleportIndex = i;
   flyTo(mainState, d, { cx: Number(d.re), cy: Number(d.im), scale: d.scale }, i, 1);
@@ -208,8 +214,8 @@ function flyToPlace(i) {
 // whole set registers first; any touch (pointerdown bumps the generation)
 // before then, or during the flight, wins. A renamed label throws here
 // rather than silently skipping the flight.
-const COLD_OPEN_PLACES = ["Seahorse Valley", "Mini Mandelbrot", "Elephant Valley", "Double Spiral", "Sunburst Fan"];
-function coldOpen() {
+export const COLD_OPEN_PLACES = ["Seahorse Valley", "Mini Mandelbrot", "Elephant Valley", "Double Spiral", "Sunburst Fan"];
+export function coldOpen() {
   const gen = teleportGeneration;
   requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(() => {
     if (gen !== teleportGeneration || mode !== "fractal" || currentName !== "Mandelbrot") return;
@@ -228,8 +234,8 @@ function coldOpen() {
 // moves the Julia pane's c there (renderAll syncs c to the center). Shares
 // teleport's generation counter, so a new gesture/Back/teleport cancels it,
 // and its per-frame path (markInteracting + renderAll).
-const GLIDE_MS = 300;
-function glideMainTo(x, y) {
+export const GLIDE_MS = 300;
+export function glideMainTo(x, y) {
   const st = mainState;
   cancelTeleport();
   pushHistory("main");
@@ -285,12 +291,12 @@ els.kochFillBtn.addEventListener("click", () => {
 // does the redraw. The speed button beside it is pressed and slid: left
 // slower, right faster, one step per SPEED_DRAG_PX. Speed is shared by all
 // rows. Switching modes or touching the slider stops playback.
-const DEPTH_STEP_MS = 700; // at 1x, as Koch's old animate button
-const PLAY_SPEEDS = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4];
-const SPEED_DRAG_PX = 28;
-const depthPlayer = { slider: null, dir: 1, timer: 0, speedIndex: PLAY_SPEEDS.indexOf(1) };
+export const DEPTH_STEP_MS = 700; // at 1x, as Koch's old animate button
+export const PLAY_SPEEDS = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4];
+export const SPEED_DRAG_PX = 28;
+export const depthPlayer = { slider: null, dir: 1, timer: 0, speedIndex: PLAY_SPEEDS.indexOf(1) };
 
-function depthSliderForMode() {
+export function depthSliderForMode() {
   if (mode === "koch") return els.kochDepthSlider;
   if (mode === "tree") return els.treeDepthSlider;
   if (mode === "hexaflake") return els.hexaflakeDepthSlider;
@@ -298,11 +304,11 @@ function depthSliderForMode() {
   return null;
 }
 
-function speedText(speed) {
+export function speedText(speed) {
   return ({ 0.25: "¼", 0.5: "½", 0.75: "¾" }[speed] || String(speed)) + "×";
 }
 
-function syncPlayButtons() {
+export function syncPlayButtons() {
   const playing = depthPlayer.slider !== null;
   for (const btn of document.querySelectorAll(".depthPlayBtn")) {
     btn.classList.toggle("playing", playing);
@@ -316,14 +322,14 @@ function syncPlayButtons() {
   }
 }
 
-function stopDepthPlay() {
+export function stopDepthPlay() {
   if (!depthPlayer.slider) return;
   clearTimeout(depthPlayer.timer);
   depthPlayer.slider = null;
   syncPlayButtons();
 }
 
-function depthPlayStep() {
+export function depthPlayStep() {
   const s = depthPlayer.slider;
   const min = parseInt(s.min, 10), max = parseInt(s.max, 10);
   const v = parseInt(s.value, 10);
@@ -334,7 +340,7 @@ function depthPlayStep() {
   depthPlayer.timer = setTimeout(depthPlayStep, DEPTH_STEP_MS / PLAY_SPEEDS[depthPlayer.speedIndex]);
 }
 
-function startDepthPlay() {
+export function startDepthPlay() {
   const s = depthSliderForMode();
   if (!s) return;
   depthPlayer.slider = s;
@@ -352,8 +358,8 @@ for (const s of [els.kochDepthSlider, els.treeDepthSlider, els.hexaflakeDepthSli
 }
 
 // The readout above a held speed button: the speed, and which way is which.
-let speedBubbleTimer = 0;
-function showSpeedBubble(btn, hint) {
+export let speedBubbleTimer = 0;
+export function showSpeedBubble(btn, hint) {
   const b = document.getElementById("speedBubble");
   const r = btn.getBoundingClientRect();
   b.innerHTML = `<b>${speedText(PLAY_SPEEDS[depthPlayer.speedIndex])}</b><span>${hint}</span>`;
@@ -364,11 +370,11 @@ function showSpeedBubble(btn, hint) {
   b.style.top = `${r.top}px`;
   clearTimeout(speedBubbleTimer);
 }
-function hideSpeedBubble(delayMs) {
+export function hideSpeedBubble(delayMs) {
   clearTimeout(speedBubbleTimer);
   speedBubbleTimer = setTimeout(() => document.getElementById("speedBubble").classList.add("hidden"), delayMs);
 }
-function setSpeedIndex(i) {
+export function setSpeedIndex(i) {
   depthPlayer.speedIndex = Math.min(PLAY_SPEEDS.length - 1, Math.max(0, i));
   syncPlayButtons();
 }
@@ -434,7 +440,7 @@ syncPlayButtons();
 // Reset does (Back undoes that), since the points the game lands on would mostly miss a zoomed
 // view. Any gesture, another shape, a color or count change, Reset and Save end it: the dot
 // shapes' render takes over, see fernView.render.
-function syncReplayButtons() {
+export function syncReplayButtons() {
   const running = fernView.replayRunning;
   for (const btn of document.querySelectorAll(".replayPlayBtn")) {
     btn.classList.toggle("playing", running);
@@ -443,11 +449,11 @@ function syncReplayButtons() {
   }
 }
 
-function stopDotReplay() {
+export function stopDotReplay() {
   if (fernView.cancelReplay()) requestRender();
 }
 
-function toggleDotReplay() {
+export function toggleDotReplay() {
   if (fernView.replayRunning) { fernView.pauseReplay(); return; }
   if (fernView.replaying) { fernView.resumeReplay(); return; }
   cancelTeleport();

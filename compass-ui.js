@@ -1,15 +1,21 @@
 // Compass, keyboard actions, HUD toggle and welcome card, the fractal picker tiles and the slider
 // fill. Needs everything the earlier scripts define (state, render-layout, modes, interaction);
 // calls teleport.js (cancelTeleport) only inside event handlers.
-"use strict";
+// An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
+// the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
+import { markInteracting, popHistory } from "./state-colors.js?v=1.53.7";
+import { normalizeAngle, renderAll, requestRender, screenToComplex } from "./render-layout.js?v=1.53.7";
+import { closeDual, enterDual, openPresetInDual, selectFractal, setMode, updateMenuActiveState } from "./modes.js?v=1.53.7";
+import { KEY_PAN_FRACTION, activeVectorTarget, keyAction } from "./interaction.js?v=1.53.7";
+import { cancelTeleport } from "./teleport.js?v=1.53.7";
 
 // ---------------------------------------------------------------- compass
 
 // Shows el (class "shown") and hides it FLASH_HIDE_MS after the last call;
 // holder keeps the pending timer. Shared by the compass and the dual-view
 // crosshair.
-const FLASH_HIDE_MS = 1500;
-function flash(el, holder, onHide) {
+export const FLASH_HIDE_MS = 1500;
+export function flash(el, holder, onHide) {
   el.classList.add("shown");
   if (holder.hideTimer) clearTimeout(holder.hideTimer);
   holder.hideTimer = setTimeout(() => {
@@ -19,7 +25,7 @@ function flash(el, holder, onHide) {
   }, FLASH_HIDE_MS);
 }
 
-function prefersReducedMotion() {
+export function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
@@ -31,13 +37,13 @@ function prefersReducedMotion() {
 // shows it without hooking each one. Small twists are ignored: every pinch
 // changes the angle a little, so the compass only appears once the rotation
 // has moved COMPASS_SHOW_RAD from where it was when the compass last hid.
-const COMPASS_SHOW_RAD = 3 * Math.PI / 180;
-const COMPASS_RESET_MS = 350;
-const compasses = {}; // pane key -> { el, needle, anchor, context, hideTimer }
+export const COMPASS_SHOW_RAD = 3 * Math.PI / 180;
+export const COMPASS_RESET_MS = 350;
+export const compasses = {}; // pane key -> { el, needle, anchor, context, hideTimer }
 
 // The rotatable panes currently on screen: key, canvas, and get/set of the
 // view's rotation, plus a history checkpoint so Back undoes a reset.
-function rotatablePanes() {
+export function rotatablePanes() {
   if (mode === "fractal") {
     const panes = [{ key: "main", canvas: els.mainCanvas, st: mainState, fractalPane: "main" }];
     if (dualActive && juliaState) panes.push({ key: "julia", canvas: els.juliaCanvas, st: juliaState, fractalPane: "julia" });
@@ -47,7 +53,7 @@ function rotatablePanes() {
   return target ? [{ key: "vector", canvas: target.canvas, st: target.v.view, nav: target.nav }] : [];
 }
 
-function getCompass(key) {
+export function getCompass(key) {
   if (compasses[key]) return compasses[key];
   const el = document.createElement("button");
   el.className = "compass";
@@ -64,12 +70,12 @@ function getCompass(key) {
   return c;
 }
 
-function hideCompass(c) {
+export function hideCompass(c) {
   c.el.classList.remove("shown");
   if (c.hideTimer) { clearTimeout(c.hideTimer); c.hideTimer = null; }
 }
 
-function updateCompasses() {
+export function updateCompasses() {
   const panes = rotatablePanes();
   const context = `${mode}|${currentName}|${dualActive}`;
   for (const key of Object.keys(compasses)) {
@@ -101,7 +107,7 @@ function updateCompasses() {
   }
 }
 
-function resetRotation(key) {
+export function resetRotation(key) {
   const p = rotatablePanes().find((q) => q.key === key);
   if (!p) return;
   const st = p.st;
@@ -132,7 +138,7 @@ function resetRotation(key) {
   requestAnimationFrame(step);
 }
 
-let lastKeyHistoryPush = 0;
+export let lastKeyHistoryPush = 0;
 
 document.addEventListener("keydown", (e) => {
   // Leave browser/OS shortcuts (Cmd+arrows, Cmd +/-) alone, and let
@@ -189,7 +195,7 @@ document.addEventListener("keydown", (e) => {
   requestRender();
 });
 
-function applyHudVisibility() {
+export function applyHudVisibility() {
   els.hud.classList.toggle("hidden", !hudVisible);
   document.querySelectorAll(".hudToggleBtn").forEach((b) => b.classList.toggle("active", hudVisible));
   requestRender(); // the canvas area just changed height
@@ -202,7 +208,7 @@ document.querySelectorAll(".hudToggleBtn").forEach((b) => b.addEventListener("cl
 
 // Website welcome card (never shown in the app, see platform.js). The
 // fractal count comes from the picker's tiles so it can't go stale.
-function initWelcomeCard() {
+export function initWelcomeCard() {
   if (Platform.welcome.isDismissed()) return;
   const n = els.fractalTypeRow.querySelectorAll("button[data-name], button[data-mode]").length;
   els.welcomeText.textContent = `Zoom into ${n} fractals. Pinch, drag, or tap the die to fly somewhere new.`;
@@ -219,13 +225,13 @@ els.welcomeClose.addEventListener("click", () => {
 // (thumbnails come from scripts/render_thumbs.mjs; re-run it after adding a
 // fractal or changing a default view). Sections and groups come from
 // PICKER_LAYOUT in fractal-defs.js.
-function addPickerHeader(text, isSub = false) {
+export function addPickerHeader(text, isSub = false) {
   const header = document.createElement("div");
   header.className = isSub ? "menuSectionHeader sub" : "menuSectionHeader";
   header.textContent = text;
   els.fractalTypeRow.appendChild(header);
 }
-function addPickerTile(label, slug, onPick, data) {
+export function addPickerTile(label, slug, onPick, data) {
   const btn = document.createElement("button");
   btn.className = "pickTile";
   Object.assign(btn.dataset, data);
@@ -285,9 +291,9 @@ document.addEventListener("pointerdown", (e) => {
 // scripts set from code (URL restore, fractal switches, Koch's depth animation,
 // a curve's max depth changing) goes through the value/max setters, which
 // are wrapped here once per slider instead of patched at every call site.
-const SLIDERS = [els.iterSlider, els.kochDepthSlider, els.treeDepthSlider, els.hexaflakeDepthSlider, els.dragonDepthSlider, els.fernPointsSlider];
+export const SLIDERS = [els.iterSlider, els.kochDepthSlider, els.treeDepthSlider, els.hexaflakeDepthSlider, els.dragonDepthSlider, els.fernPointsSlider];
 
-function syncSliderFill(slider) {
+export function syncSliderFill(slider) {
   const min = parseFloat(slider.min), max = parseFloat(slider.max);
   const pct = max > min ? (parseFloat(slider.value) - min) / (max - min) * 100 : 0;
   slider.style.setProperty("--fill", String(Math.min(100, Math.max(0, pct)) / 100));

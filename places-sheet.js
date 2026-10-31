@@ -11,6 +11,12 @@
 // which is what lets test-hooks.js expose them (the places spec and scripts/render_place_thumbs.mjs
 // read placeId); see scripts/check-test-globals.mjs.
 
+import { capitalize, zoomPhrase } from "./render-layout.js?v=1.53.7";
+import { exitDual, selectFractal } from "./modes.js?v=1.53.7";
+import { applyHudVisibility, prefersReducedMotion } from "./compass-ui.js?v=1.53.7";
+import { flyToPlace } from "./teleport.js?v=1.53.7";
+import { colorSheetEl } from "./color-sheet.js?v=1.53.7";
+
 // ---------------------------------------------------------------- places sheet
 
 // Thumbnails are icons/places/<id>.webp (scripts/render_place_thumbs.mjs). They are not in the

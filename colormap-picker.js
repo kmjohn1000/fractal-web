@@ -1,7 +1,11 @@
 // Colormap picker: the gradient swatches and menu for the escape-time colormap and the solid colors
 // of the vector modes. Needs the state and compass-ui.js; calls color-sheet.js (openColorSheet,
 // colorSheetApplies) only inside event handlers.
-"use strict";
+// An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
+// the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
+import { colormapIndex, pickColormap } from "./state-colors.js?v=1.53.7";
+import { requestRender } from "./render-layout.js?v=1.53.7";
+import { colorSheetApplies, openColorSheet } from "./color-sheet.js?v=1.53.7";
 
 // ---------------------------------------------------------------- colormap picker
 
@@ -9,19 +13,19 @@
 // the share menu) instead of cycling blindly. The escape-time fractals pick
 // a gradient from COLORMAPS; the fern, Koch, tree and line curves each pick
 // one flat color from SOLID_COLORS.
-function cmGradient(stops) {
+export function cmGradient(stops) {
   return `linear-gradient(to right, ${stops.map(([t, r, g, b]) => `rgb(${r},${g},${b}) ${t * 100}%`).join(", ")})`;
 }
 
 // The chaos-game modes (fern, Sierpinski, ...) each keep their own color.
-function setFernColor(i) {
+export function setFernColor(i) {
   vectorColors[fernView.system] = i;
   updateColorSwatches();
 }
 
 // Color buttons name the current choice, so screen readers hear "Choose
 // colormap (Classic)" rather than an unlabeled color strip.
-function labelColorButton(btn, action, name) {
+export function labelColorButton(btn, action, name) {
   btn.setAttribute("aria-label", `${action} (${name})`);
   btn.title = `${action} (${name})`;
 }
@@ -36,7 +40,7 @@ function labelColorButton(btn, action, name) {
 //   shade to the picked color (the shades beyond that only alternate dimmer);
 // - the tree: the trunk's shade up to the canopy's picked color.
 // White has no hue to turn, so its ramps are dim to bright.
-function pillGradient(key, colorIndex) {
+export function pillGradient(key, colorIndex) {
   const rgbCss = (c) => `rgb(${c.map((v) => Math.round(v)).join(",")})`;
   const even = (colors) => colors.map((c, i) => [typeof c === "string" ? c : rgbCss(c), 100 * i / (colors.length - 1)]);
   const base = SOLID_COLORS[colorIndex].rgb;
@@ -57,7 +61,7 @@ function pillGradient(key, colorIndex) {
 // The pill on each solid-color button shows that mode's ramp (pillGradient);
 // the curve row's pill follows whichever curve is shown, the dot row's
 // whichever dot shape. The label still names the picked color.
-function updateColorSwatches() {
+export function updateColorSwatches() {
   [
     [els.fernColorBtn, els.fernColorSwatch, fernView.system],
     [els.kochColormapBtn, els.kochColorSwatch, "koch"],
@@ -72,7 +76,7 @@ function updateColorSwatches() {
 }
 
 // solidKey: null for the escape-time colormap, or a vectorColors key.
-function openColormapMenu(solidKey) {
+export function openColormapMenu(solidKey) {
   // Each item carries the index it sets: the solid colors are listed in hue
   // order (SOLID_COLOR_ORDER), which is not their SOLID_COLORS index.
   const items = solidKey

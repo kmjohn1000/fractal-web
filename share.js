@@ -1,7 +1,14 @@
 // Sharing: share-link encoding and parsing, applying a link, the share menu and the share image.
 // Needs the state, render-layout, modes, teleport.js (cancelTeleport) and colormap-picker.js;
 // applyShareHashFromUrl and applyShareLink are called from init in app.js.
-"use strict";
+// An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
+// the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
+import { colormapIndex, colormapIndexNamed, defaultColormapName, setColorStyle, setColormapIndex, setColormapPicked } from "./state-colors.js?v=1.53.7";
+import { finishRefinement, modeLabel, normalizeAngle, refineDone, renderAll, requestRender, updateLUT } from "./render-layout.js?v=1.53.7";
+import { enterDual, exitDual, selectFractal, setMode } from "./modes.js?v=1.53.7";
+import { VECTOR_VIEWS, dragonNav, fernNav, fittedVectorModes } from "./interaction.js?v=1.53.7";
+import { cancelTeleport } from "./teleport.js?v=1.53.7";
+import { setFernColor, updateColorSwatches } from "./colormap-picker.js?v=1.53.7";
 
 // ---------------------------------------------------------------- share: links
 
@@ -11,11 +18,11 @@
 // HUD's rounded display would move deep-zoom views. Julia c is encoded
 // explicitly: enterDual only seeds it from the main center; tapping the
 // main pane moves it independently afterward.
-function depthStateFor(m) {
+export function depthStateFor(m) {
   return isCurveMode(m) ? dragonState : { koch: kochState, tree: treeState, hexaflake: hexaflakeState }[m];
 }
 
-function buildShareHash() {
+export function buildShareHash() {
   const p = new URLSearchParams();
   p.set("v", "1");
   p.set("m", mode);
@@ -59,7 +66,7 @@ function buildShareHash() {
   return "#" + p.toString();
 }
 
-function buildShareUrl() {
+export function buildShareUrl() {
   return Platform.shareBaseUrl() + buildShareHash();
 }
 
@@ -69,7 +76,7 @@ function buildShareUrl() {
 // app's), a density outside 0.25-8 and a shift outside 0-1 all fall back;
 // the code is looked up in a Map, never an object, so "constructor" is just
 // an unknown code.
-function parseStyleFields(p) {
+export function parseStyleFields(p) {
   const code = p.get("st");
   const style = [...STYLE_LINK_CODES].find(([, c]) => c === code);
   const number = (k, lo, hi, fallback) => {
@@ -87,7 +94,7 @@ function parseStyleFields(p) {
 // Parses a share hash into a plain state object, or null if it isn't a
 // valid v1 link -- any missing/out-of-range field rejects the whole link,
 // so a malformed one falls back to the normal default view.
-function parseShareHash(hash) {
+export function parseShareHash(hash) {
   try {
     if (!hash || hash.length < 2) return null;
     const p = new URLSearchParams(hash.slice(1));
@@ -151,7 +158,7 @@ function parseShareHash(hash) {
   }
 }
 
-function applyShareState(st) {
+export function applyShareState(st) {
   if (st.mode === "fractal") {
     // A link names its palette and opens in exactly that one. It counts as a
     // pick (so later fractals keep it) unless it is the fractal's own default,
@@ -211,7 +218,7 @@ function applyShareState(st) {
 
 // Applies a share link from the URL, then strips the hash so a reload
 // returns to the app's normal start rather than re-pinning the link.
-function applyShareHashFromUrl() {
+export function applyShareHashFromUrl() {
   const st = parseShareHash(location.hash);
   if (location.hash) history.replaceState(null, "", location.pathname + location.search);
   if (st) applyShareState(st);
@@ -220,7 +227,7 @@ function applyShareHashFromUrl() {
 // A share link that opened the iOS app (universal link, see platform.js):
 // same parse/apply as a link loaded on the web. Anything that isn't a valid
 // share hash is ignored, leaving the current view alone.
-function applyShareLink(url) {
+export function applyShareLink(url) {
   Diag.fromLink(url);
   const i = url.indexOf("#");
   const st = i >= 0 ? parseShareHash(url.slice(i)) : null;
@@ -232,7 +239,7 @@ function applyShareLink(url) {
 
 // ---------------------------------------------------------------- share: image + menu
 
-function shareFileName() {
+export function shareFileName() {
   const label = mode === "fractal" ? fractalLabel(currentName) : modeLabel(mode);
   const slug = slugify(label);
   const d = new Date();
@@ -240,7 +247,7 @@ function shareFileName() {
   return `fractal-web-${slug}-${date}.png`;
 }
 
-function waitUntil(cond, timeoutMs) {
+export function waitUntil(cond, timeoutMs) {
   return new Promise((resolve) => {
     const t0 = performance.now();
     const tick = () => (cond() || performance.now() - t0 > timeoutMs ? resolve() : requestAnimationFrame(tick));
@@ -251,7 +258,7 @@ function waitUntil(cond, timeoutMs) {
 // Dual mode: both panes onto one canvas in the layout actually on screen
 // (layoutCanvasArea's "stacked" = main above Julia, otherwise side by side),
 // with #canvasArea's 2px black gap between them.
-function compositeDualCanvas() {
+export function compositeDualCanvas() {
   const a = els.mainCanvas, b = els.juliaCanvas;
   const stacked = els.canvasArea.classList.contains("stacked");
   const gap = Math.round(2 * mainRenderer.dpr);
@@ -271,7 +278,7 @@ function compositeDualCanvas() {
 // pill (not bare or shadowed text) keeps it legible on any colormap,
 // including flat light or flat dark regions. Sized off the image's short
 // side so it looks the same on a phone and an iPad export.
-function watermarkedCopy(src) {
+export function watermarkedCopy(src) {
   const out = document.createElement("canvas");
   out.width = src.width;
   out.height = src.height;
@@ -311,7 +318,7 @@ function watermarkedCopy(src) {
 // synchronously and are captured immediately. Every export path (Save
 // image, Save to Photos, Share…) goes through here, so all get the
 // watermark.
-async function captureShareBlob() {
+export async function captureShareBlob() {
   if (mode === "fractal") {
     finishRefinement();
     await waitUntil(() => refineDone && !isInteracting, 3000);
@@ -337,8 +344,8 @@ els.shareNativeBtn.classList.toggle("hidden", !Platform.canShare);
 // Capture starts when the menu opens, not when an option is tapped: iOS
 // Safari only allows navigator.share() close to the user's tap, so the PNG
 // should already be ready by then.
-let pendingCapture = null;
-function closeShareMenu() { els.shareMenu.classList.remove("open"); }
+export let pendingCapture = null;
+export function closeShareMenu() { els.shareMenu.classList.remove("open"); }
 document.querySelectorAll(".shareBtn").forEach((btn) => {
   btn.addEventListener("click", (e) => {
     e.stopPropagation(); // don't let the outside-click closer below fire on this same tap

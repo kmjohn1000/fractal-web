@@ -1,7 +1,13 @@
 // Fractal-type and mode switching: selectFractal, dual view, setMode and the menu's active state.
 // Needs the state (state.js, state-colors.js), render-layout.js, places.js and fractal-defs.js; calls into
 // interaction.js and the later scripts only inside function bodies.
-"use strict";
+// An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
+// the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
+import { applyDefaultColormap } from "./state-colors.js?v=1.53.7";
+import { crosshairFlash, labelColormapButton, layoutCanvasArea, requestRender } from "./render-layout.js?v=1.53.7";
+import { dragonNav, fernNav, fitVectorView, fittedVectorModes } from "./interaction.js?v=1.53.7";
+import { cancelTeleport, stopDepthPlay } from "./teleport.js?v=1.53.7";
+import { updateColorSwatches } from "./colormap-picker.js?v=1.53.7";
 
 // ---------------------------------------------------------------- fractal-type / mode switching
 
@@ -11,9 +17,9 @@
 // was picked: see applyDefaultColormap). In memory only: a fresh launch
 // starts from the default views.
 // Reset and share links want a clean slate and pass { fresh: true }.
-const fractalMemory = new Map();
+export const fractalMemory = new Map();
 
-function selectFractal(name, { fresh = false } = {}) {
+export function selectFractal(name, { fresh = false } = {}) {
   cancelTeleport();
   if (dualActive && FRACTAL_CONFIGS[name].dualParent) { openPresetInDual(name); return; }
   // Picking the fractal already showing keeps its view; it only leaves a
@@ -71,7 +77,7 @@ function selectFractal(name, { fresh = false } = {}) {
 
 // from: a remembered { juliaState, juliaHistory } (see selectFractal) to bring
 // back instead of opening a fresh Julia pane.
-function enterDual(from = null) {
+export function enterDual(from = null) {
   const config = FRACTAL_CONFIGS[currentName];
   if (!config.dual) return;
   setDualActive(true);
@@ -108,9 +114,9 @@ function enterDual(from = null) {
 // in the Julia pane -- at its opening framing, or at juliaView (the preset's
 // own view, when the dual button is pressed on it). Panning the main pane
 // moves c as usual; the Julia pane's label names the preset until it does.
-const PRESET_DUAL_ZOOM = 4;
-let dualPreset = null; // { name, c } of the last preset opened this way
-function openPresetInDual(name, juliaView = null) {
+export const PRESET_DUAL_ZOOM = 4;
+export let dualPreset = null; // { name, c } of the last preset opened this way
+export function openPresetInDual(name, juliaView = null) {
   const preset = FRACTAL_CONFIGS[name];
   const [cx, cy] = preset.juliaC;
   setDualActive(true);
@@ -134,7 +140,7 @@ function openPresetInDual(name, juliaView = null) {
 // that glides to a point) the Julia pane is no longer the preset, and a dual
 // view that came from the picker started in the parent set; both just close
 // the Julia pane (exitDual).
-function closeDual() {
+export function closeDual() {
   const name = dualPreset && dualPreset.fromButton ? dualPresetName() : null;
   if (!name) { exitDual(); return; }
   const j = { ...juliaState };
@@ -152,13 +158,13 @@ function closeDual() {
 }
 
 // The preset whose c the main pane is still centered on, if any.
-function dualPresetName() {
+export function dualPresetName() {
   if (!dualActive || !dualPreset) return null;
   const p = FRACTAL_CONFIGS[dualPreset.name];
   return currentName === p.dualParent && mainState.cx === dualPreset.c[0] && mainState.cy === dualPreset.c[1] ? dualPreset.name : null;
 }
 
-function exitDual() {
+export function exitDual() {
   setDualActive(false);
   // Without this, Back (popHistory(activePane)) silently pops the now-
   // hidden juliaState/juliaHistory if the julia pane was the last one
@@ -171,7 +177,7 @@ function exitDual() {
   requestRender();
 }
 
-function setMode(next) {
+export function setMode(next) {
   stopDepthPlay();
   kochView.cancelGrow();
   fernView.cancelReplay(); // any mode or shape switch ends a replay; the requestRender below draws normally
@@ -223,7 +229,7 @@ function setMode(next) {
 // Highlights whichever hamburger-menu entry matches the current mode/
 // selection — a FRACTAL_CONFIGS entry (dataset.name) only counts while in
 // fractal mode, an EXTRA_MODES entry (dataset.mode) whenever mode matches it.
-function updateMenuActiveState() {
+export function updateMenuActiveState() {
   els.fractalTypeRow.querySelectorAll("button").forEach((btn) => {
     const isActive = btn.dataset.mode
       ? btn.dataset.mode === mode

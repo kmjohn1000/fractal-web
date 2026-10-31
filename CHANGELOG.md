@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.53.7 — 2026-10-30
+- Internal: nine more of the app's code files (share, interaction, teleport, modes, compass-ui, color-sheet, colormap-picker, render-layout, state-colors) load as JavaScript modules. No visible change.
+
 ## 1.53.6 — 2026-10-30
 - Internal: a test hook exposes the module files' names to the tests, and the version stamp now covers module imports. No visible change.
 

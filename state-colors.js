@@ -2,11 +2,14 @@
 // the default-colormap bookkeeping (colormapIndex and friends), setColorStyle, the interaction
 // timers, Back (popHistory) and the WebGL context-loss handlers. Needs state.js, configs.js,
 // colormaps.js and, inside function bodies only, render-layout.js and share.js.
-"use strict";
+// An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
+// the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
+import { labelColormapButton, renderAll, requestRender, updateLUT } from "./render-layout.js?v=1.53.7";
+import { buildShareHash } from "./share.js?v=1.53.7";
 
 // ---------------------------------------------------------------- default colormaps
 
-let colormapIndex = 0;
+export let colormapIndex = 0;
 
 // Each fractal opens in its own palette (defaultColormap in FRACTAL_CONFIGS;
 // the first colormap, Inferno, when it names none), and a Surprise-me place
@@ -17,23 +20,23 @@ let colormapIndex = 0;
 // memory only, like fractalMemory: a new launch starts on the defaults.
 // fractalMemory keeps views, not palettes, so a remembered fractal comes back
 // in its default too unless something was picked.
-let colormapPicked = false;
+export let colormapPicked = false;
 // The palette that is the default for what is on screen (the fractal's or
 // the landed place's): what the Default Look and Reset return to.
-let colormapDefaultIndex = 0;
+export let colormapDefaultIndex = 0;
 // For share.js, which sets the pick from a link; only this file assigns them.
-function setColormapIndex(v) { colormapIndex = v; }
-function setColormapPicked(v) { colormapPicked = v; }
+export function setColormapIndex(v) { colormapIndex = v; }
+export function setColormapPicked(v) { colormapPicked = v; }
 
-function colormapIndexNamed(name) {
+export function colormapIndexNamed(name) {
   return Math.max(0, COLORMAPS.findIndex((c) => c.name === name));
 }
 // The default palette's name for a fractal, or for one of its places.
-function defaultColormapName(fractal, place = null) {
+export function defaultColormapName(fractal, place = null) {
   return (place && place.colormap) || FRACTAL_CONFIGS[fractal].defaultColormap || COLORMAPS[0].name;
 }
 // The user's own pick: it holds for every fractal and place from now on.
-function pickColormap(i) {
+export function pickColormap(i) {
   colormapPicked = true;
   colormapIndex = i;
   updateLUT();
@@ -41,14 +44,14 @@ function pickColormap(i) {
 // Called when the fractal changes (selectFractal) or a flight starts
 // (flyTo, with the place it lands on): moves to the default unless a palette
 // has been picked.
-function applyDefaultColormap(place = null) {
+export function applyDefaultColormap(place = null) {
   colormapDefaultIndex = colormapIndexNamed(defaultColormapName(currentName, place));
   if (colormapPicked || colormapDefaultIndex === colormapIndex) return;
   colormapIndex = colormapDefaultIndex;
   updateLUT();
 }
 // Back to the defaults: the Default Look and Reset in the Color sheet.
-function releaseColormapPick() {
+export function releaseColormapPick() {
   colormapPicked = false;
   if (colormapIndex !== colormapDefaultIndex) {
     colormapIndex = colormapDefaultIndex;
@@ -60,7 +63,7 @@ function releaseColormapPick() {
 
 // Strict: anything unknown or out of range falls back to today's coloring
 // (or keeps the current value for a field left out), never throws.
-function setColorStyle(next = {}) {
+export function setColorStyle(next = {}) {
   const prev = { ...colorStyle };
   if (next.style !== undefined) colorStyle.style = COLOR_STYLES.some((s) => s.id === next.style) ? next.style : "smooth";
   if (next.density !== undefined) {
@@ -85,7 +88,7 @@ function setColorStyle(next = {}) {
 // ---------------------------------------------------------------- interaction timers
 
 // (isInteracting and settleTimer are declared in state.js, with the comment on what the delay costs.)
-function markInteracting() {
+export function markInteracting() {
   setIsInteracting(true);
   if (settleTimer) clearTimeout(settleTimer);
   setSettleTimer(setTimeout(() => {
@@ -101,14 +104,14 @@ function markInteracting() {
 // frame of the dragon at depth 16 took 200-400 ms per move on a phone-speed
 // CPU and the pinch looked frozen. Full detail returns when the last finger
 // lifts, or 150 ms after the last wheel tick.
-let vectorLite = false;
-let vectorLiteTimer = null;
-function markVectorInteracting() {
+export let vectorLite = false;
+export let vectorLiteTimer = null;
+export function markVectorInteracting() {
   vectorLite = true;
   if (vectorLiteTimer) clearTimeout(vectorLiteTimer);
   vectorLiteTimer = setTimeout(endVectorInteracting, 150);
 }
-function endVectorInteracting() {
+export function endVectorInteracting() {
   if (vectorLiteTimer) clearTimeout(vectorLiteTimer);
   vectorLiteTimer = null;
   if (!vectorLite) return;
@@ -142,7 +145,7 @@ function endVectorInteracting() {
 
 // ---------------------------------------------------------------- Back
 
-function popHistory(pane) {
+export function popHistory(pane) {
   const hist = pane === "julia" ? juliaHistory : mainHistory;
   const snap = hist.pop();
   if (!snap) return;
