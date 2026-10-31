@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.53.10 — 2026-10-31
+- Internal: three more code files (configs, dragon, fern) load as JavaScript modules. No visible change.
+
 ## 1.53.9 — 2026-10-31
 - Internal: seven more code files (shaders, koch, pythagoras, hexaflake, diag, fractal-defs, deepzoom) load as JavaScript modules. No visible change.
 

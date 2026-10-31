@@ -3,13 +3,15 @@
 // colorSheetApplies) only inside event handlers.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { kochShade } from "./koch.js?v=1.53.9";
-import { treeSwatchStops } from "./pythagoras.js?v=1.53.9";
-import { hexaflakeShade } from "./hexaflake.js?v=1.53.9";
-import { dragonView, els, fernView, vectorColors } from "./state.js?v=1.53.9";
-import { colormapIndex, pickColormap } from "./state-colors.js?v=1.53.9";
-import { requestRender } from "./render-layout.js?v=1.53.9";
-import { colorSheetApplies, openColorSheet } from "./color-sheet.js?v=1.53.9";
+import { curveRamp } from "./dragon.js?v=1.53.10";
+import { IFS_SYSTEMS, ifsTransformColors } from "./fern.js?v=1.53.10";
+import { kochShade } from "./koch.js?v=1.53.10";
+import { treeSwatchStops } from "./pythagoras.js?v=1.53.10";
+import { hexaflakeShade } from "./hexaflake.js?v=1.53.10";
+import { dragonView, els, fernView, vectorColors } from "./state.js?v=1.53.10";
+import { colormapIndex, pickColormap } from "./state-colors.js?v=1.53.10";
+import { requestRender } from "./render-layout.js?v=1.53.10";
+import { colorSheetApplies, openColorSheet } from "./color-sheet.js?v=1.53.10";
 
 // ---------------------------------------------------------------- colormap picker
 

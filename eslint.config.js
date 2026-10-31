@@ -23,9 +23,6 @@ const sharedGlobals = {
   backdropPixels: "readonly",
   BACKDROP_CENTER_RGB: "readonly",
   BACKDROP_EDGE_RGB: "readonly",
-  // dragon.js / fern.js
-  createCurveView: "readonly",
-  LINE_CURVES: "readonly",
   // lsystem.js
   KOCH_SNOWFLAKE: "readonly",
   DRAGON_CURVE: "readonly",
@@ -34,26 +31,10 @@ const sharedGlobals = {
   SIERPINSKI_ARROWHEAD: "readonly",
   lsystemPolylines: "readonly",
   normalizePolylines: "readonly",
-  createIfsView: "readonly",
-  IFS_SYSTEMS: "readonly",
-  ifsTransformColors: "readonly",
-  curveRamp: "readonly",
-  ifsData: "readonly",
-  // The pieces app.js was split into, in the order index.html loads them
-  // (app.js itself is last and defines nothing the others use). Only names
-  // another piece uses are listed; "writable" marks the `let`s that get
-  // reassigned.
-  // configs.js
-  FTYPE: "readonly",
-  PHOENIX_P: "readonly",
-  FRACTAL_CONFIGS: "readonly",
-  FRACTAL_NAMES: "readonly",
-  fractalLabel: "readonly",
-  slugify: "readonly",
   // (platform.js, places.js, renderer.js, state.js, render-layout.js, modes.js, interaction.js,
   // compass-ui.js, teleport.js, colormap-picker.js, color-sheet.js, share.js, state-colors.js,
-  // places-sheet.js, shaders.js, koch.js, pythagoras.js, hexaflake.js, diag.js, fractal-defs.js and
-  // deepzoom.js are ES modules now: their names are imported where they are used, so they are
+  // places-sheet.js, shaders.js, koch.js, pythagoras.js, hexaflake.js, diag.js, fractal-defs.js,
+  // deepzoom.js, dragon.js, fern.js and configs.js are ES modules now: their names are imported where they are used, so they are
   // not globals and are not listed here. A shared `let` is assigned only in the file that declares
   // it, through its setter; an import is read-only, which is what enforces that.)
 };
@@ -84,6 +65,7 @@ export default [
       "interaction.js", "compass-ui.js", "teleport.js", "colormap-picker.js", "color-sheet.js", "share.js",
       "platform.js", "places.js", "renderer.js", "state.js",
       "shaders.js", "koch.js", "pythagoras.js", "hexaflake.js", "diag.js", "fractal-defs.js", "deepzoom.js",
+      "dragon.js", "fern.js", "configs.js",
     ],
     languageOptions: { sourceType: "module" },
   },

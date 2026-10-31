@@ -3,15 +3,16 @@
 // applyHudVisibility, syncSliderFill); the scripts before and after it call cancelTeleport etc.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { KOCH_GROW_MS, KOCH_GROW_STEP_SHARE } from "./koch.js?v=1.53.9";
-import { isCurveMode, viewFromBounds } from "./fractal-defs.js?v=1.53.9";
-import { TELEPORT_DESTINATIONS } from "./places.js?v=1.53.9";
-import { applyAutoIter, currentName, dragonState, dualActive, els, fernState, fernView, hexaflakeState, kochState, kochView, mainCanvasAspect, mainState, mode, pushHistory, setActivePane, setHudVisible, treeState } from "./state.js?v=1.53.9";
-import { applyDefaultColormap, markInteracting } from "./state-colors.js?v=1.53.9";
-import { fernRenderOpts, normalizeAngle, renderAll, requestRender } from "./render-layout.js?v=1.53.9";
-import { selectFractal } from "./modes.js?v=1.53.9";
-import { dragonNav, fernNav, fitVectorView, hexaflakeNav, kochNav, treeNav, vectorViewIsFitted } from "./interaction.js?v=1.53.9";
-import { applyHudVisibility, prefersReducedMotion, syncSliderFill } from "./compass-ui.js?v=1.53.9";
+import { FRACTAL_CONFIGS } from "./configs.js?v=1.53.10";
+import { KOCH_GROW_MS, KOCH_GROW_STEP_SHARE } from "./koch.js?v=1.53.10";
+import { isCurveMode, viewFromBounds } from "./fractal-defs.js?v=1.53.10";
+import { TELEPORT_DESTINATIONS } from "./places.js?v=1.53.10";
+import { applyAutoIter, currentName, dragonState, dualActive, els, fernState, fernView, hexaflakeState, kochState, kochView, mainCanvasAspect, mainState, mode, pushHistory, setActivePane, setHudVisible, treeState } from "./state.js?v=1.53.10";
+import { applyDefaultColormap, markInteracting } from "./state-colors.js?v=1.53.10";
+import { fernRenderOpts, normalizeAngle, renderAll, requestRender } from "./render-layout.js?v=1.53.10";
+import { selectFractal } from "./modes.js?v=1.53.10";
+import { dragonNav, fernNav, fitVectorView, hexaflakeNav, kochNav, treeNav, vectorViewIsFitted } from "./interaction.js?v=1.53.10";
+import { applyHudVisibility, prefersReducedMotion, syncSliderFill } from "./compass-ui.js?v=1.53.10";
 
 // ---------------------------------------------------------------- teleport ("Surprise me")
 

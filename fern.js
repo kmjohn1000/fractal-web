@@ -1,4 +1,4 @@
-"use strict";
+// An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
 
 // Chaos-game IFS fractals: a few affine transforms, picked at random each
 // step (weighted by p) and applied to build a point cloud -- a
@@ -7,7 +7,7 @@
 // same engine with nothing but a different transform table.
 
 // Classic Barnsley fern. Coefficients are Barnsley's own published values.
-const FERN_TRANSFORMS = [
+export const FERN_TRANSFORMS = [
   { p: 0.01, a: 0,     b: 0,     c: 0,    d: 0.16, e: 0, f: 0    },
   { p: 0.85, a: 0.85,  b: 0.04,  c: -0.04, d: 0.85, e: 0, f: 1.6  },
   { p: 0.07, a: 0.20,  b: -0.26, c: 0.23, d: 0.22, e: 0, f: 1.6  },
@@ -17,18 +17,18 @@ const FERN_TRANSFORMS = [
 // Equilateral triangle with vertices (0, 1), (-sqrt(3)/2, -1/2) and
 // (sqrt(3)/2, -1/2) (circumradius 1, centered on the origin). Each map
 // halves toward one vertex v: p -> p/2 + v/2, so e, f = v/2.
-const SIERPINSKI_TRANSFORMS = [
+export const SIERPINSKI_TRANSFORMS = [
   { a: 0.5, b: 0, c: 0, d: 0.5, e: 0,                f: 0.5,   p: 1 / 3 },
   { a: 0.5, b: 0, c: 0, d: 0.5, e: -Math.sqrt(3) / 4, f: -0.25, p: 1 / 3 },
   { a: 0.5, b: 0, c: 0, d: 0.5, e: Math.sqrt(3) / 4,  f: -0.25, p: 1 / 3 },
 ];
 
-const LEVY_C_TRANSFORMS = [
+export const LEVY_C_TRANSFORMS = [
   { a: 0.5, b: -0.5, c: 0.5,  d: 0.5, e: 0,   f: 0,   p: 0.5 },
   { a: 0.5, b: 0.5,  c: -0.5, d: 0.5, e: 0.5, f: 0.5, p: 0.5 },
 ];
 
-const VICSEK_TRANSFORMS = [
+export const VICSEK_TRANSFORMS = [
   { a: 1 / 3, b: 0, c: 0, d: 1 / 3, e: 1 / 3, f: 1 / 3, p: 0.2 }, // center
   { a: 1 / 3, b: 0, c: 0, d: 1 / 3, e: 1 / 3, f: 0,     p: 0.2 }, // bottom-mid
   { a: 1 / 3, b: 0, c: 0, d: 1 / 3, e: 1 / 3, f: 2 / 3, p: 0.2 }, // top-mid
@@ -40,7 +40,7 @@ const VICSEK_TRANSFORMS = [
 // lists the same keys for the picker). hueOffsets: the degrees each transform
 // turns the picked color's hue, so every self-similar piece takes its own tint
 // (see "Coloring by address" below).
-const IFS_SYSTEMS = {
+export const IFS_SYSTEMS = {
   fern:       { transforms: FERN_TRANSFORMS, hueOffsets: [-21, 0, 27, 50] },
   sierpinski: { transforms: SIERPINSKI_TRANSFORMS, hueOffsets: [-45, 0, 45] },
   levy:       { transforms: LEVY_C_TRANSFORMS, hueOffsets: [-33, 33] },
@@ -49,14 +49,14 @@ const IFS_SYSTEMS = {
 // White has no hue to turn, so its transforms differ in brightness instead:
 // the one with the lowest hue offset takes this share of the picked color,
 // the one with the highest the whole of it, the rest in between by offset.
-const IFS_GREY_DIM_MIN = 0.7;
+export const IFS_GREY_DIM_MIN = 0.7;
 // Each transform knows its place in its table (.ci), for the color tables.
 for (const sys of Object.values(IFS_SYSTEMS)) sys.transforms.forEach((t, i) => { t.ci = i; });
 
 // One rgb per transform of a system: the picked SOLID_COLORS color, hue-turned
 // by that transform's offset (hueTurned, colormaps.js); for a color with no hue
 // the offset sets the brightness instead (IFS_GREY_DIM_MIN).
-function ifsTransformColors(key, colorIndex) {
+export function ifsTransformColors(key, colorIndex) {
   const base = SOLID_COLORS[colorIndex % SOLID_COLORS.length].rgb;
   const offsets = IFS_SYSTEMS[key].hueOffsets;
   if (!isGreyColor(base)) return offsets.map((deg) => hueTurned(base, deg));
@@ -70,11 +70,11 @@ function ifsTransformColors(key, colorIndex) {
 // Where the chaos game's random numbers come from. Tests replace it with a
 // seeded generator to get a repeatable sequence of transforms; the sampling
 // of the normal render (runSlice) stays on Math.random.
-let ifsRandom = Math.random;
+export let ifsRandom = Math.random;
 // The way tests and scripts install that generator (another file can't assign this variable).
-function setIfsRandom(v) { ifsRandom = v; }
+export function setIfsRandom(v) { ifsRandom = v; }
 
-function pickTransform(transforms) {
+export function pickTransform(transforms) {
   const r = ifsRandom();
   let cum = 0;
   for (const tr of transforms) {
@@ -86,7 +86,7 @@ function pickTransform(transforms) {
 
 // Plain chaos game from the origin. Returns a flat [x0,y0,x1,y1,...] array
 // (not point pairs) so hot loops avoid allocating a sub-array per point.
-function ifsPoints(transforms, n) {
+export function ifsPoints(transforms, n) {
   let x = 0, y = 0;
   const pts = new Float64Array(n * 2);
   let len = 0;
@@ -112,7 +112,7 @@ function ifsPoints(transforms, n) {
 // weighs half, the one before a quarter, and so on, so the mix (summing to 1)
 // says which piece of the attractor the point is in, coarse to fine. Returns
 // { pts, mix } with mix holding transforms.length weights per point.
-function ifsAddressPoints(transforms, n) {
+export function ifsAddressPoints(transforms, n) {
   const T = transforms.length;
   const pts = new Float64Array(n * 2), mix = new Float32Array(n * T);
   const now = new Float32Array(T).fill(1 / T);
@@ -150,20 +150,20 @@ function ifsAddressPoints(transforms, n) {
 // exactly from mu restricted near the view -- at any zoom, with most
 // samples landing on screen. Any unexpanded node is still a valid cut
 // member, so the node cap only costs acceptance rate, never correctness.
-const IFS_LEAF_CAP = 20000;
+export const IFS_LEAF_CAP = 20000;
 // Chaos-game steps applied to each reused base point before mapping it
 // through a leaf: mu is invariant under a random f_i, so the result is still
 // mu-distributed, but no longer one of a fixed finite set of points.
-const IFS_FRESHEN_STEPS = 4;
-const IFS_SLICE_MS = 10;
+export const IFS_FRESHEN_STEPS = 4;
+export const IFS_SLICE_MS = 10;
 // Give up on a view once this many samples per target point have been tried
 // (e.g. zoomed into empty space) rather than spinning forever.
-const IFS_MAX_ATTEMPTS_PER_POINT = 40;
+export const IFS_MAX_ATTEMPTS_PER_POINT = 40;
 
 // Per-IFS sampling data, built on first use: the transforms, a base point
 // cloud on the attractor (reused by the sampler), and its padded bounds.
-const ifsDataCache = new Map();
-function ifsData(key) {
+export const ifsDataCache = new Map();
+export function ifsData(key) {
   let data = ifsDataCache.get(key);
   if (data) return data;
   const transforms = IFS_SYSTEMS[key].transforms;
@@ -184,7 +184,7 @@ function ifsData(key) {
 
 // Affine map as [a, b, c, d, e, f]: x' = a*x + b*y + e, y' = c*x + d*y + f.
 // Returns m after t (m(t(p))), i.e. extending an address by one transform.
-function composeAffine(m, t) {
+export function composeAffine(m, t) {
   return [
     m[0] * t.a + m[1] * t.c, m[0] * t.b + m[1] * t.d,
     m[2] * t.a + m[3] * t.c, m[2] * t.b + m[3] * t.d,
@@ -192,7 +192,7 @@ function composeAffine(m, t) {
   ];
 }
 
-function affineBoxImage(m, box) {
+export function affineBoxImage(m, box) {
   let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
   for (const x of [box[0], box[1]]) {
     for (const y of [box[2], box[3]]) {
@@ -214,7 +214,7 @@ function affineBoxImage(m, box) {
 // the share left for the finer digits of a point drawn through it (leafS,
 // 1/2^depth but never below a half: deep inside one piece the coarse digits
 // are all alike, so the point's own digits must still tint what is in view).
-function buildLeaves(ifs, viewBox, cols) {
+export function buildLeaves(ifs, viewBox, cols) {
   const viewDiag = Math.hypot(viewBox[1] - viewBox[0], viewBox[3] - viewBox[2]);
   const maps = [], weights = [], leafRGB = [], leafS = [];
   const stack = [{ m: [1, 0, 0, 1, 0, 0], w: 1, c: [0, 0, 0], s: 1 }];
@@ -252,28 +252,28 @@ function buildLeaves(ifs, viewBox, cols) {
 // the same hit counts the normal render fills, so the last frame is the normal
 // frame and the hand-off to render() needs nothing but a call. The schedule
 // below is pure (time <-> jumps done); createIfsView plays it.
-const REPLAY_SLOW_JUMPS = 24;    // jumps shown one at a time
-const REPLAY_GAP_FIRST_S = 0.30; // seconds per jump at 1x: the first ...
-const REPLAY_GAP_LAST_S = 0.06;  // ... down to the last of the slow ones
-const REPLAY_RAMP_S = 4.5;       // from there, seconds to put down all `count` points
-const REPLAY_CAP_S = 10;         // at 1x, however slow the device: the rest is the normal render's job
-const REPLAY_HOLD = 0.3;         // share of a jump the dot sits at its point before it flies
-const REPLAY_BURN_IN = 12;       // jumps whose points are only shown, not counted (still off the shape)
-const REPLAY_MARKS = 20000;      // points drawn as marks over the picture, big at first, shrinking into it
-const REPLAY_STAMP_RAD = 1.5;    // css px: marks smaller than this are written into the picture's pixels
-const REPLAY_SPARSE_GAIN = 1.2;  // extra brightness of single-pixel points when the marks have gone (n = REPLAY_MARKS), fading to none at the end
-const REPLAY_SEQ = 100;        // the first points in order (the trail, the tests), world coordinates
-const REPLAY_FRAME_MS = 8;       // per-frame budget for the jumps and the redraw
-const REPLAY_GAP_RATIO = Math.pow(REPLAY_GAP_LAST_S / REPLAY_GAP_FIRST_S, 1 / (REPLAY_SLOW_JUMPS - 1));
+export const REPLAY_SLOW_JUMPS = 24;    // jumps shown one at a time
+export const REPLAY_GAP_FIRST_S = 0.30; // seconds per jump at 1x: the first ...
+export const REPLAY_GAP_LAST_S = 0.06;  // ... down to the last of the slow ones
+export const REPLAY_RAMP_S = 4.5;       // from there, seconds to put down all `count` points
+export const REPLAY_CAP_S = 10;         // at 1x, however slow the device: the rest is the normal render's job
+export const REPLAY_HOLD = 0.3;         // share of a jump the dot sits at its point before it flies
+export const REPLAY_BURN_IN = 12;       // jumps whose points are only shown, not counted (still off the shape)
+export const REPLAY_MARKS = 20000;      // points drawn as marks over the picture, big at first, shrinking into it
+export const REPLAY_STAMP_RAD = 1.5;    // css px: marks smaller than this are written into the picture's pixels
+export const REPLAY_SPARSE_GAIN = 1.2;  // extra brightness of single-pixel points when the marks have gone (n = REPLAY_MARKS), fading to none at the end
+export const REPLAY_SEQ = 100;        // the first points in order (the trail, the tests), world coordinates
+export const REPLAY_FRAME_MS = 8;       // per-frame budget for the jumps and the redraw
+export const REPLAY_GAP_RATIO = Math.pow(REPLAY_GAP_LAST_S / REPLAY_GAP_FIRST_S, 1 / (REPLAY_SLOW_JUMPS - 1));
 // Seconds at 1x when the first n slow jumps are done (n <= REPLAY_SLOW_JUMPS).
-const replaySlowTime = (n) => REPLAY_GAP_FIRST_S * (1 - Math.pow(REPLAY_GAP_RATIO, n)) / (1 - REPLAY_GAP_RATIO);
-const REPLAY_SLOW_S = replaySlowTime(REPLAY_SLOW_JUMPS);
+export const replaySlowTime = (n) => REPLAY_GAP_FIRST_S * (1 - Math.pow(REPLAY_GAP_RATIO, n)) / (1 - REPLAY_GAP_RATIO);
+export const REPLAY_SLOW_S = replaySlowTime(REPLAY_SLOW_JUMPS);
 
 // How many jumps are done (a fraction: the one under way counts by how far it
 // has flown) after t seconds, for a replay of `total` points. The ramp grows
 // geometrically from the slow phase's last pace, eased in, so the rate carries on
 // from there; the first points are spread evenly in log(n).
-function replayJumpsAt(t, total) {
+export function replayJumpsAt(t, total) {
   if (t <= 0) return 0;
   if (t >= REPLAY_SLOW_S + REPLAY_RAMP_S) return total;
   if (t < REPLAY_SLOW_S) {
@@ -286,7 +286,7 @@ function replayJumpsAt(t, total) {
 }
 
 // The inverse: the time at which n jumps are done.
-function replayTimeOf(n, total) {
+export function replayTimeOf(n, total) {
   if (n <= 0) return 0;
   if (n < REPLAY_SLOW_JUMPS) {
     const k = Math.floor(n);
@@ -301,7 +301,7 @@ function replayTimeOf(n, total) {
 // attachVectorViewInteraction in interaction.js works on this unmodified. One view
 // (one canvas) serves every IFS in IFS_SYSTEMS; setSystem switches which
 // one it shows, keeping each system's pan/zoom separately.
-function createIfsView(canvas) {
+export function createIfsView(canvas) {
   const ctx = canvas.getContext("2d");
   const view = { cx: 0.24, cy: 5.0, halfHeight: 5.3, rotation: 0 };
   let system = "fern";

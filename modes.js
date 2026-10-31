@@ -3,14 +3,16 @@
 // interaction.js and the later scripts only inside function bodies.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { ignoresMaxIter, isCurveMode, isIfsMode, suggestedMaxIter, viewFromBounds } from "./fractal-defs.js?v=1.53.9";
-import { TELEPORT_DESTINATIONS } from "./places.js?v=1.53.9";
-import { applyAutoIter, currentName, dragonState, dragonView, dualActive, els, fernView, freshState, juliaHistory, juliaState, kochView, mainCanvasAspect, mainHistory, mainState, mode, setActivePane, setCurrentName, setDualActive, setJuliaHistory, setJuliaState, setMainHistory, setMainState, setModeKey } from "./state.js?v=1.53.9";
-import { applyDefaultColormap } from "./state-colors.js?v=1.53.9";
-import { crosshairFlash, labelColormapButton, layoutCanvasArea, requestRender } from "./render-layout.js?v=1.53.9";
-import { dragonNav, fernNav, fitVectorView, fittedVectorModes } from "./interaction.js?v=1.53.9";
-import { cancelTeleport, stopDepthPlay } from "./teleport.js?v=1.53.9";
-import { updateColorSwatches } from "./colormap-picker.js?v=1.53.9";
+import { FRACTAL_CONFIGS } from "./configs.js?v=1.53.10";
+import { LINE_CURVES } from "./dragon.js?v=1.53.10";
+import { ignoresMaxIter, isCurveMode, isIfsMode, suggestedMaxIter, viewFromBounds } from "./fractal-defs.js?v=1.53.10";
+import { TELEPORT_DESTINATIONS } from "./places.js?v=1.53.10";
+import { applyAutoIter, currentName, dragonState, dragonView, dualActive, els, fernView, freshState, juliaHistory, juliaState, kochView, mainCanvasAspect, mainHistory, mainState, mode, setActivePane, setCurrentName, setDualActive, setJuliaHistory, setJuliaState, setMainHistory, setMainState, setModeKey } from "./state.js?v=1.53.10";
+import { applyDefaultColormap } from "./state-colors.js?v=1.53.10";
+import { crosshairFlash, labelColormapButton, layoutCanvasArea, requestRender } from "./render-layout.js?v=1.53.10";
+import { dragonNav, fernNav, fitVectorView, fittedVectorModes } from "./interaction.js?v=1.53.10";
+import { cancelTeleport, stopDepthPlay } from "./teleport.js?v=1.53.10";
+import { updateColorSwatches } from "./colormap-picker.js?v=1.53.10";
 
 // ---------------------------------------------------------------- fractal-type / mode switching
 

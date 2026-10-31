@@ -7,11 +7,14 @@
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
 // It still reads the plain scripts' names as globals (configs.js, colormaps.js), which works because a
 // module runs after every plain script.
-import { createHexaflakeView } from "./hexaflake.js?v=1.53.9";
-import { createKochView } from "./koch.js?v=1.53.9";
-import { createPythagorasTreeView } from "./pythagoras.js?v=1.53.9";
-import { ignoresMaxIter, suggestedMaxIter, viewFromBounds } from "./fractal-defs.js?v=1.53.9";
-import { createFractalRenderer } from "./renderer.js?v=1.53.9";
+import { FRACTAL_CONFIGS, FTYPE } from "./configs.js?v=1.53.10";
+import { LINE_CURVES, createCurveView } from "./dragon.js?v=1.53.10";
+import { createIfsView } from "./fern.js?v=1.53.10";
+import { createHexaflakeView } from "./hexaflake.js?v=1.53.10";
+import { createKochView } from "./koch.js?v=1.53.10";
+import { createPythagorasTreeView } from "./pythagoras.js?v=1.53.10";
+import { ignoresMaxIter, suggestedMaxIter, viewFromBounds } from "./fractal-defs.js?v=1.53.10";
+import { createFractalRenderer } from "./renderer.js?v=1.53.10";
 
 // ---------------------------------------------------------------- app state
 

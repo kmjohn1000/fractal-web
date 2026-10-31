@@ -1,4 +1,4 @@
-"use strict";
+// An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
 
 // The line-turtle curves that share one Canvas2D view (and one control
 // row in the app): the Heighway dragon plus Hilbert, Gosper and the
@@ -14,23 +14,23 @@
 // at depth 16; with this scaling it converges to roughly
 // x:[-1.2,1.2] y:[-1.2,0.5] regardless of depth. (Checked point for point
 // against the pre-lsystem.js generator at depths 0-16: identical.)
-function dragonCurve(depth) {
+export function dragonCurve(depth) {
   return lsystemPolylines(DRAGON_CURVE, depth, { step: Math.pow(Math.SQRT1_2, depth) })[0];
 }
 
-const DRAGON_FIT_HH = 0.6;        // typical half-height of the Reset framing on a wide canvas; render's opts.fitHalfHeight overrides it
-const CURVE_FIT_HH = 1.1;         // the same for the Hilbert, Gosper and arrowhead curves (each fits [-1, 1] plus a margin)
+export const DRAGON_FIT_HH = 0.6;        // typical half-height of the Reset framing on a wide canvas; render's opts.fitHalfHeight overrides it
+export const CURVE_FIT_HH = 1.1;         // the same for the Hilbert, Gosper and arrowhead curves (each fits [-1, 1] plus a margin)
 // Canvas px, not CSS px: the dragon's lines overlap in its dense parts, so
 // dropping a level there dims it (a depth-16 frame on a 2x phone lost 17% of
 // its brightness when the limit was 1 CSS px).
-const DRAGON_PX_MIN = 1;          // canvas px: a chord whose halves would be shorter stays one straight line
-const DRAGON_LITE_PX_MIN = 3;     // canvas px: the pixel limit while a drag or pinch is in progress (opts.lite), about 9x fewer segments at depth 16
-const DRAGON_ZOOM_SLACK = 1.5;    // zoom headroom before a level beyond the slider's depth is added
-const DRAGON_BUDGET = 120000;     // vertices per frame; past it the pixel limit grows by half and the frame is redone
-const DRAGON_MAX_LEVEL = 80;
+export const DRAGON_PX_MIN = 1;          // canvas px: a chord whose halves would be shorter stays one straight line
+export const DRAGON_LITE_PX_MIN = 3;     // canvas px: the pixel limit while a drag or pinch is in progress (opts.lite), about 9x fewer segments at depth 16
+export const DRAGON_ZOOM_SLACK = 1.5;    // zoom headroom before a level beyond the slider's depth is added
+export const DRAGON_BUDGET = 120000;     // vertices per frame; past it the pixel limit grows by half and the frame is redone
+export const DRAGON_MAX_LEVEL = 80;
 // The whole dragon between two points lies within this many chord lengths
 // of the chord's midpoint (0.897 measured at order 20; rounded up).
-const DRAGON_REACH = 0.92;
+export const DRAGON_REACH = 0.92;
 
 // The Heighway dragon as the viewport needs it, from the two-map form of
 // the curve instead of the L-system string: the curve between A and B is
@@ -54,7 +54,7 @@ const DRAGON_REACH = 0.92;
 // slice of it still shows the right slice of the color ramp. Returns { n,
 // leaves, leafPx: summed on-screen leaf length, maxLevel, overflow: the budget
 // ran out and buf is incomplete }.
-function dragonAdaptive(aff, buf, depth, pxMin, refPx, tb) {
+export function dragonAdaptive(aff, buf, depth, pxMin, refPx, tb) {
   const { k, a, b, c, d, cx, cy, hw, hh, w, h } = aff;
   const cap = buf.length / 2 - 2;
   const half = Math.SQRT1_2;
@@ -143,11 +143,11 @@ function dragonAdaptive(aff, buf, depth, pxMin, refPx, tb) {
 // levels deep), the walk stops adding levels when one step would be shorter than
 // CURVE_ZMIN, 2^-40 of the curve (about 1e-12), and views zoomed in that far are
 // exact to a pixel; deeper zoom keeps drawing that level.
-const CURVE_ZMIN = Math.pow(2, -40);
-const CURVE_MAX_EXTRA = 60;
+export const CURVE_ZMIN = Math.pow(2, -40);
+export const CURVE_MAX_EXTRA = 60;
 
-const lcurveSpecs = new Map();
-function lcurveSpec(key) {
+export const lcurveSpecs = new Map();
+export function lcurveSpec(key) {
   let spec = lcurveSpecs.get(key);
   if (!spec) {
     spec = makeLCurveSpec(LINE_CURVES[key]);
@@ -158,7 +158,7 @@ function lcurveSpec(key) {
 
 // The smallest circle (about: a few rounds of nudging toward the farthest one)
 // holding the circles in c, flat x, y, radius triples.
-function enclosingCircle(c) {
+export function enclosingCircle(c) {
   let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
   for (let i = 0; i < c.length; i += 3) {
     x0 = Math.min(x0, c[i] - c[i + 2]); x1 = Math.max(x1, c[i] + c[i + 2]);
@@ -178,7 +178,7 @@ function enclosingCircle(c) {
   return best;
 }
 
-function makeLCurveSpec(curve) {
+export function makeLCurveSpec(curve) {
   const def = curve.def;
   const names = Object.keys(def.rules);
   const nv = names.length;
@@ -333,7 +333,7 @@ function makeLCurveSpec(curve) {
 // pxMin and refPx as for the dragon (refPx Infinity: exactly depth levels).
 // Returns { n, leaves, leafPx, maxLevel, overflow, level } like
 // dragonAdaptive, plus the level drawn.
-function curveAdaptive(key, aff, buf, depth, pxMin, refPx, tb) {
+export function curveAdaptive(key, aff, buf, depth, pxMin, refPx, tb) {
   const { k, a, b, c, d, cx, cy, hw, hh, w, h } = aff;
   const spec = lcurveSpec(key);
   const D = spec.level(depth, k, refPx);
@@ -410,9 +410,9 @@ function curveAdaptive(key, aff, buf, depth, pxMin, refPx, tb) {
   walk(spec.root, D, fr.p0x, fr.p0y, fr.h0);
   return { n, leaves, leafPx, maxLevel, overflow, level: D };
 }
-const hilbertAdaptive = (...args) => curveAdaptive("hilbert", ...args);
-const gosperAdaptive = (...args) => curveAdaptive("gosper", ...args);
-const arrowheadAdaptive = (...args) => curveAdaptive("arrowhead", ...args);
+export const hilbertAdaptive = (...args) => curveAdaptive("hilbert", ...args);
+export const gosperAdaptive = (...args) => curveAdaptive("gosper", ...args);
+export const arrowheadAdaptive = (...args) => curveAdaptive("arrowhead", ...args);
 
 // Strokes the polyline of n canvas-pixel x, y pairs in buf, with the pen
 // state (width, join) already set. Points closer than half a pixel
@@ -430,9 +430,9 @@ const arrowheadAdaptive = (...args) => curveAdaptive("arrowhead", ...args);
 // point's place is tb[i], 0 to 1 along the whole curve (a view that draws
 // only a slice of it shows that slice of the colors); without tb it is the
 // point's index over n.
-const CURVE_GROUP = 256;
-const CURVE_COLOR_STEPS = 96;
-function strokeScreenPolyline(ctx, buf, n, width, height, colors, tb) {
+export const CURVE_GROUP = 256;
+export const CURVE_COLOR_STEPS = 96;
+export function strokeScreenPolyline(ctx, buf, n, width, height, colors, tb) {
   const lo = -VECTOR_CULL_MARGIN, hiX = width + VECTOR_CULL_MARGIN, hiY = height + VECTOR_CULL_MARGIN;
   const group = colors ? Math.min(CURVE_GROUP, Math.max(1, Math.ceil(n / CURVE_COLOR_STEPS))) : CURVE_GROUP;
   let penDown = false, px = 0, py = 0, pcode = 0, inGroup = 0, groupStart = 0, groupEnd = 0;
@@ -476,7 +476,7 @@ function strokeScreenPolyline(ctx, buf, n, width, height, colors, tb) {
 
 // The newer curves don't need hand-tuned scaling: normalizePolylines fits
 // each depth into [-1, 1]. All three are single connected paths.
-function normalizedCurve(def, depth, turtleOpts) {
+export function normalizedCurve(def, depth, turtleOpts) {
   return normalizePolylines(lsystemPolylines(def, depth, turtleOpts))[0];
 }
 
@@ -496,7 +496,7 @@ function normalizedCurve(def, depth, turtleOpts) {
 // levels past the slider's depth sit in the depth's picture, see
 // makeLCurveSpec). points() stays the reference the walk is held to, and is
 // what the Reset framing measures.
-const LINE_CURVES = {
+export const LINE_CURVES = {
   dragon: { maxDepth: 16, defaultDepth: 13, points: dragonCurve },
   hilbert: {
     minDepth: 1, maxDepth: 8, defaultDepth: 5,
@@ -523,17 +523,17 @@ const LINE_CURVES = {
 // at the far end, so the path reads as a path and a dense curve shows where
 // its two ends are. White has no hue to turn, so it runs from dim to bright
 // instead. One css color per step, cached for the last picked color.
-const CURVE_HUE_SPAN = 56;
-const CURVE_LIFT_START = 0.04, CURVE_LIFT_END = 0.2; // share of the way to white
-const CURVE_GREY_DIM_START = 0.62;  // White: brightness at the start of the curve (1 at the end)
-const CURVE_RAMP_STEPS = 128;
-const CURVE_CORE_MIN_PX = 1.1;       // css px
-const CURVE_CORE_ALPHA = 0.95, CURVE_CORE_ALPHA_DENSE = 0.8;
-const CURVE_GLOW_WIDTH = 3.5;        // times the core's width
-const CURVE_GLOW_ALPHA = 0.1;
-const CURVE_GLOW_MIN_SEG = 2.5;      // css px: below this segment length the lines are a mesh the glow would only haze, and stroking it twice costs the most
-let curveRampKey = -1, curveRampColors = [];
-function curveRamp(colorIndex) {
+export const CURVE_HUE_SPAN = 56;
+export const CURVE_LIFT_START = 0.04, CURVE_LIFT_END = 0.2; // share of the way to white
+export const CURVE_GREY_DIM_START = 0.62;  // White: brightness at the start of the curve (1 at the end)
+export const CURVE_RAMP_STEPS = 128;
+export const CURVE_CORE_MIN_PX = 1.1;       // css px
+export const CURVE_CORE_ALPHA = 0.95, CURVE_CORE_ALPHA_DENSE = 0.8;
+export const CURVE_GLOW_WIDTH = 3.5;        // times the core's width
+export const CURVE_GLOW_ALPHA = 0.1;
+export const CURVE_GLOW_MIN_SEG = 2.5;      // css px: below this segment length the lines are a mesh the glow would only haze, and stroking it twice costs the most
+export let curveRampKey = -1, curveRampColors = [];
+export function curveRamp(colorIndex) {
   if (colorIndex === curveRampKey) return curveRampColors;
   const base = SOLID_COLORS[colorIndex].rgb, grey = isGreyColor(base);
   curveRampColors = [];
@@ -552,7 +552,7 @@ function curveRamp(colorIndex) {
 // attachVectorViewInteraction in interaction.js works on this unmodified. One view
 // serves every LINE_CURVES entry; setCurve switches which one it draws,
 // keeping each curve's pan/zoom separately.
-function createCurveView(canvas) {
+export function createCurveView(canvas) {
   const ctx = canvas.getContext("2d");
   const view = { cx: -0.35, cy: -0.24, halfHeight: 1.0, rotation: 0 };
   let dpr = Math.min(window.devicePixelRatio || 1, 2);

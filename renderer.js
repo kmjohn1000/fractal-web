@@ -4,11 +4,12 @@
 // An ES module: every top-level declaration is exported (test-hooks.js and state.js rely on it), and
 // the state names it reads are imported. state.js imports createFractalRenderer back; app.js lists
 // state.js before this file in its imports so state.js is reached first (it calls the factory at load).
-import { Diag } from "./diag.js?v=1.53.9";
-import { FRAG_SRC, NEWTON_DEEP_FRAG_SRC, PHOENIX_DEEP_FRAG_SRC, PREVIEW_FRAG_SRC, VERT_SRC, VERT_SRC_300 } from "./shaders.js?v=1.53.9";
-import { apolloCapColor, apolloFrame, digitCellFrame, digitColorCycle, digitFractalDepth, digitSubPixelColor, isDigitFractal } from "./fractal-defs.js?v=1.53.9";
-import { DEEP_ZOOM_THRESHOLD, FIXED_THIRD, PHOENIX_DEEP_SAMPLES, PHOENIX_EXACT_CAP, SAMPLE_OFFSETS, chooseReference, computeReferenceOrbit, fixedLimbs, newtonDeepEligible, newtonOrbitF64, perturbationEligibleType, phoenixDeepEligible, phoenixEscapeF64, phoenixReference } from "./deepzoom.js?v=1.53.9";
-import { colorStyle, colorStyleFor, currentName, isInteracting, styleDrawn, trapRangeFor } from "./state.js?v=1.53.9";
+import { FTYPE, PHOENIX_P } from "./configs.js?v=1.53.10";
+import { Diag } from "./diag.js?v=1.53.10";
+import { FRAG_SRC, NEWTON_DEEP_FRAG_SRC, PHOENIX_DEEP_FRAG_SRC, PREVIEW_FRAG_SRC, VERT_SRC, VERT_SRC_300 } from "./shaders.js?v=1.53.10";
+import { apolloCapColor, apolloFrame, digitCellFrame, digitColorCycle, digitFractalDepth, digitSubPixelColor, isDigitFractal } from "./fractal-defs.js?v=1.53.10";
+import { DEEP_ZOOM_THRESHOLD, FIXED_THIRD, PHOENIX_DEEP_SAMPLES, PHOENIX_EXACT_CAP, SAMPLE_OFFSETS, chooseReference, computeReferenceOrbit, fixedLimbs, newtonDeepEligible, newtonOrbitF64, perturbationEligibleType, phoenixDeepEligible, phoenixEscapeF64, phoenixReference } from "./deepzoom.js?v=1.53.10";
+import { colorStyle, colorStyleFor, currentName, isInteracting, styleDrawn, trapRangeFor } from "./state.js?v=1.53.10";
 
 // ---------------------------------------------------------------- WebGL renderer factory
 

@@ -3,6 +3,9 @@
 // lsystem.js/koch.js (IFS_SYSTEMS, LINE_CURVES), which only its function bodies use.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it;
 // tests/cases.mjs reads this file's text and accepts the `export`).
+import { FTYPE } from "./configs.js?v=1.53.10";
+import { LINE_CURVES } from "./dragon.js?v=1.53.10";
+import { IFS_SYSTEMS } from "./fern.js?v=1.53.10";
 
 // The fractal picker's layout, in display order: sections with a title, each
 // split into titled groups of tiles. Display only: a key is a FRACTAL_CONFIGS

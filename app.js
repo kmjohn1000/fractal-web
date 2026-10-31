@@ -8,46 +8,50 @@
 // listed in exposeForTests below, so tests can read their names (see test-hooks.js). Nothing reads
 // this file's own names, so it exports nothing. Every import specifier needs the ?v= query (npm run
 // stamp keeps it current): a module is keyed by its full URL, so a differing query loads it twice.
-import { exposeForTests } from "./test-hooks.js?v=1.53.9";
+import { exposeForTests } from "./test-hooks.js?v=1.53.10";
 // state.js before renderer.js: state.js imports renderer.js and calls its factory while loading, so
 // it has to be reached first (renderer.js is only ever imported by state.js and by this file).
-import * as state from "./state.js?v=1.53.9";
-import { currentName, els, mode } from "./state.js?v=1.53.9";
-import * as renderer from "./renderer.js?v=1.53.9";
-import * as platform from "./platform.js?v=1.53.9";
-import { Platform } from "./platform.js?v=1.53.9";
-import * as places from "./places.js?v=1.53.9";
-import * as shaders from "./shaders.js?v=1.53.9";
-import * as koch from "./koch.js?v=1.53.9";
-import * as pythagoras from "./pythagoras.js?v=1.53.9";
-import * as hexaflake from "./hexaflake.js?v=1.53.9";
-import * as diag from "./diag.js?v=1.53.9";
-import { Diag } from "./diag.js?v=1.53.9";
-import * as fractalDefs from "./fractal-defs.js?v=1.53.9";
-import * as deepzoom from "./deepzoom.js?v=1.53.9";
-import * as stateColors from "./state-colors.js?v=1.53.9";
-import * as renderLayout from "./render-layout.js?v=1.53.9";
-import { layoutCanvasArea, refitHud, requestRender, updateLUT } from "./render-layout.js?v=1.53.9";
-import * as modes from "./modes.js?v=1.53.9";
-import { selectFractal } from "./modes.js?v=1.53.9";
-import * as interaction from "./interaction.js?v=1.53.9";
-import { VECTOR_VIEWS } from "./interaction.js?v=1.53.9";
-import * as compassUi from "./compass-ui.js?v=1.53.9";
-import { applyHudVisibility, initWelcomeCard } from "./compass-ui.js?v=1.53.9";
-import * as teleport from "./teleport.js?v=1.53.9";
-import { coldOpen } from "./teleport.js?v=1.53.9";
-import * as colormapPicker from "./colormap-picker.js?v=1.53.9";
-import { updateColorSwatches } from "./colormap-picker.js?v=1.53.9";
-import * as colorSheet from "./color-sheet.js?v=1.53.9";
-import { fitColorSegment, prepareColorSheet } from "./color-sheet.js?v=1.53.9";
-import * as placesSheet from "./places-sheet.js?v=1.53.9";
-import * as share from "./share.js?v=1.53.9";
-import { applyShareHashFromUrl, applyShareLink, buildShareUrl, closeShareMenu, parseShareHash, pendingCapture, shareFileName } from "./share.js?v=1.53.9";
+import * as state from "./state.js?v=1.53.10";
+import { currentName, els, mode } from "./state.js?v=1.53.10";
+import * as renderer from "./renderer.js?v=1.53.10";
+import * as platform from "./platform.js?v=1.53.10";
+import { Platform } from "./platform.js?v=1.53.10";
+import * as places from "./places.js?v=1.53.10";
+import * as configs from "./configs.js?v=1.53.10";
+import * as dragon from "./dragon.js?v=1.53.10";
+import * as fern from "./fern.js?v=1.53.10";
+import * as shaders from "./shaders.js?v=1.53.10";
+import * as koch from "./koch.js?v=1.53.10";
+import * as pythagoras from "./pythagoras.js?v=1.53.10";
+import * as hexaflake from "./hexaflake.js?v=1.53.10";
+import * as diag from "./diag.js?v=1.53.10";
+import { Diag } from "./diag.js?v=1.53.10";
+import * as fractalDefs from "./fractal-defs.js?v=1.53.10";
+import * as deepzoom from "./deepzoom.js?v=1.53.10";
+import * as stateColors from "./state-colors.js?v=1.53.10";
+import * as renderLayout from "./render-layout.js?v=1.53.10";
+import { layoutCanvasArea, refitHud, requestRender, updateLUT } from "./render-layout.js?v=1.53.10";
+import * as modes from "./modes.js?v=1.53.10";
+import { selectFractal } from "./modes.js?v=1.53.10";
+import * as interaction from "./interaction.js?v=1.53.10";
+import { VECTOR_VIEWS } from "./interaction.js?v=1.53.10";
+import * as compassUi from "./compass-ui.js?v=1.53.10";
+import { applyHudVisibility, initWelcomeCard } from "./compass-ui.js?v=1.53.10";
+import * as teleport from "./teleport.js?v=1.53.10";
+import { coldOpen } from "./teleport.js?v=1.53.10";
+import * as colormapPicker from "./colormap-picker.js?v=1.53.10";
+import { updateColorSwatches } from "./colormap-picker.js?v=1.53.10";
+import * as colorSheet from "./color-sheet.js?v=1.53.10";
+import { fitColorSegment, prepareColorSheet } from "./color-sheet.js?v=1.53.10";
+import * as placesSheet from "./places-sheet.js?v=1.53.10";
+import * as share from "./share.js?v=1.53.10";
+import { applyShareHashFromUrl, applyShareLink, buildShareUrl, closeShareMenu, parseShareHash, pendingCapture, shareFileName } from "./share.js?v=1.53.10";
 
 exposeForTests({
   "platform.js": platform, "places.js": places, "renderer.js": renderer, "state.js": state,
   "shaders.js": shaders, "koch.js": koch, "pythagoras.js": pythagoras, "hexaflake.js": hexaflake,
   "diag.js": diag, "fractal-defs.js": fractalDefs, "deepzoom.js": deepzoom,
+  "configs.js": configs, "dragon.js": dragon, "fern.js": fern,
   "state-colors.js": stateColors, "render-layout.js": renderLayout, "modes.js": modes, "interaction.js": interaction,
   "compass-ui.js": compassUi, "teleport.js": teleport, "colormap-picker.js": colormapPicker,
   "color-sheet.js": colorSheet, "places-sheet.js": placesSheet, "share.js": share,
