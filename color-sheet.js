@@ -3,13 +3,14 @@
 // colormap-picker.js (cmGradient). app.js's init schedules prepareColorSheet and fitColorSegment.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { FRACTAL_CONFIGS, fractalLabel } from "./configs.js?v=1.53.10";
-import { COLOR_BANDS_RANGE, COLOR_STYLES, ESCAPE_TIME_TYPES, colorStyle, currentName, els, fernBoxZoomActive, isInteracting, juliaRenderer, mainRenderer, mainState, mode, setFernBoxZoomActive, styleBlocked, styleDrawn } from "./state.js?v=1.53.10";
-import { colormapDefaultIndex, colormapIndex, pickColormap, releaseColormapPick, setColorStyle } from "./state-colors.js?v=1.53.10";
-import { requestRender, zoomPhrase } from "./render-layout.js?v=1.53.10";
-import { fernNav, fitVectorView } from "./interaction.js?v=1.53.10";
-import { syncSliderFill } from "./compass-ui.js?v=1.53.10";
-import { cmGradient } from "./colormap-picker.js?v=1.53.10";
+import { COLORMAPS } from "./colormaps.js?v=1.53.11";
+import { FRACTAL_CONFIGS, fractalLabel } from "./configs.js?v=1.53.11";
+import { COLOR_BANDS_RANGE, COLOR_STYLES, ESCAPE_TIME_TYPES, colorStyle, currentName, els, fernBoxZoomActive, isInteracting, juliaRenderer, mainRenderer, mainState, mode, setFernBoxZoomActive, styleBlocked, styleDrawn } from "./state.js?v=1.53.11";
+import { colormapDefaultIndex, colormapIndex, pickColormap, releaseColormapPick, setColorStyle } from "./state-colors.js?v=1.53.11";
+import { requestRender, zoomPhrase } from "./render-layout.js?v=1.53.11";
+import { fernNav, fitVectorView } from "./interaction.js?v=1.53.11";
+import { syncSliderFill } from "./compass-ui.js?v=1.53.11";
+import { cmGradient } from "./colormap-picker.js?v=1.53.11";
 
 // ---------------------------------------------------------------- color sheet
 

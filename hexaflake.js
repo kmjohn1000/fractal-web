@@ -1,4 +1,6 @@
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
+import { SOLID_COLORS, hueTurned } from "./colormaps.js?v=1.53.11";
+import { VECTOR_CULL_MARGIN, paintBackdrop, vectorAffine } from "./vectorgeom.js?v=1.53.11";
 
 // The Hexaflake: a regular hexagon (circumradius 1, vertices at 0, 60, ...
 // degrees) is replaced by seven hexagons of 1/3 the size, one in the middle

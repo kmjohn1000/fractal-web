@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.53.11 — 2026-10-31
+- Internal: the last three code files (colormaps, lsystem, vectorgeom) load as JavaScript modules, so every app file is one now. No visible change.
+
 ## 1.53.10 — 2026-10-31
 - Internal: three more code files (configs, dragon, fern) load as JavaScript modules. No visible change.
 

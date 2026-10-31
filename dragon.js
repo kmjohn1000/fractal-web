@@ -1,4 +1,7 @@
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
+import { SOLID_COLORS, hueTurned, isGreyColor, strokeWidthFor } from "./colormaps.js?v=1.53.11";
+import { DRAGON_CURVE, GOSPER_CURVE, HILBERT_CURVE, SIERPINSKI_ARROWHEAD, lsystemPolylines, normalizePolylines } from "./lsystem.js?v=1.53.11";
+import { VECTOR_CULL_MARGIN, paintBackdrop, vectorAffine } from "./vectorgeom.js?v=1.53.11";
 
 // The line-turtle curves that share one Canvas2D view (and one control
 // row in the app): the Heighway dragon plus Hilbert, Gosper and the

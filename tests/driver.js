@@ -2,7 +2,7 @@
 /* global FRACTAL_CONFIGS, EXTRA_MODES, TELEPORT_DESTINATIONS, dualActive, exitDual, selectFractal,
    setMode, mainState, applyAutoIter, updateLUT, requestRender, renderPending, isInteracting,
    refineDone, mode, isIfsMode, fernView, setColormapIndex, setColormapPicked, applyDefaultColormap,
-   mainRenderer, juliaRenderer, kochView */
+   mainRenderer, juliaRenderer, kochView, COLORMAPS */
 
 // In-page helpers for the visual suite (tests/visual/app.spec.mjs). Added to
 // the page as a classic <script> after the app's scripts load, so it sees their

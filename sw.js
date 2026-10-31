@@ -10,7 +10,7 @@
 // when online (so "open the app" == "get the latest push"), and only falls
 // back to the cache when there's no network, which is still enough for
 // real offline support since every asset here is static.
-const CACHE_NAME = "fractal-atlas-7d3a42c3100a";
+const CACHE_NAME = "fractal-atlas-dd05426efee3";
 
 const APP_SHELL = [
   "./",

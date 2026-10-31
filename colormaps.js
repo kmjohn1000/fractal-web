@@ -1,4 +1,5 @@
-"use strict";
+// An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it;
+// tests/cases.mjs and scripts/oracle/oracle.py read this file's text and accept the `export`).
 
 // The escape-time colormaps, in picker order (the first is the default).
 // Inferno, Plasma, Viridis, Turbo and Twilight are matplotlib's own tables
@@ -8,7 +9,7 @@
 // Share links store a colormap's name (cm=Classic), so entries can be
 // reordered freely. Renaming or removing one makes old links using it open in
 // the default colormap (the first entry), so keep the names stable.
-const COLORMAPS = [
+export const COLORMAPS = [
   { name: "Inferno", stops: [
     [0.0000,   0,   0,   4], [0.0312,   4,   3,  18], [0.0625,  11,   7,  36],
     [0.0938,  21,  11,  55], [0.1250,  33,  12,  74], [0.1562,  47,  10,  91],
@@ -117,7 +118,7 @@ const COLORMAPS = [
 // append-only: never reorder or change entries 0-6 (1.52.0 added 7-9 after
 // a palette review found no true blue, no teal and no warm red-orange).
 // The menu lists them in hue order instead (SOLID_COLOR_ORDER).
-const SOLID_COLORS = [
+export const SOLID_COLORS = [
   { name: "Green",  rgb: [70, 190, 90] },
   { name: "Autumn", rgb: [214, 122, 47] },
   { name: "Violet", rgb: [148, 100, 214] },
@@ -132,22 +133,22 @@ const SOLID_COLORS = [
 // The order the color menu shows the swatches in, as SOLID_COLORS indices:
 // around the hue wheel from red, White last. Display only; the stored
 // index never changes with it.
-const SOLID_COLOR_ORDER = ["Rose", "Coral", "Autumn", "Gold", "Green", "Teal", "Ice", "Blue", "Violet", "White"]
+export const SOLID_COLOR_ORDER = ["Rose", "Coral", "Autumn", "Gold", "Green", "Teal", "Ice", "Blue", "Violet", "White"]
   .map((name) => SOLID_COLORS.findIndex((c) => c.name === name));
-const solidCss = (i) => `rgb(${SOLID_COLORS[i].rgb.join(", ")})`;
+export const solidCss = (i) => `rgb(${SOLID_COLORS[i].rgb.join(", ")})`;
 
 // Line width (canvas px) for a line drawing whose segments are segPx long
 // on screen: bold (2.5pt) while segments are long -- the early depths --
 // thinning to a 0.75pt hairline as they get dense, so deep levels don't
 // merge into a solid block. dpr converts points to canvas pixels.
-function strokeWidthFor(segPx, dpr) {
+export function strokeWidthFor(segPx, dpr) {
   return Math.min(2.5 * dpr, Math.max(0.75 * dpr, 0.3 * segPx));
 }
 
 // True for a color with next to no hue (White): turning its hue does nothing,
 // so the shapes that spread a picked color into a family of tints (the line
 // curves, the dot shapes) vary its brightness instead.
-const isGreyColor = ([r, g, b]) => Math.max(r, g, b) - Math.min(r, g, b) < 24;
+export const isGreyColor = ([r, g, b]) => Math.max(r, g, b) - Math.min(r, g, b) < 24;
 
 // rgb with its hue turned by deg degrees in OKLCH, so the turn keeps the
 // color's lightness and chroma and every degree reads as the same step
@@ -157,7 +158,7 @@ const isGreyColor = ([r, g, b]) => Math.max(r, g, b) - Math.min(r, g, b) < 24;
 // 0-255, not rounded. Used where a picked SOLID_COLORS color is spread into a
 // family of tints (fern.js's address colors, dragon.js's color along a curve,
 // the Koch snowflake, the tree and the hexaflake).
-function hueTurned([r, g, b], deg) {
+export function hueTurned([r, g, b], deg) {
   const lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
   const R = lin(r), G = lin(g), B = lin(b);
   const l_ = Math.cbrt(0.4122214708 * R + 0.5363325363 * G + 0.0514459929 * B);
@@ -193,7 +194,7 @@ function hueTurned([r, g, b], deg) {
   });
 }
 
-function sampleColor(stops, t) {
+export function sampleColor(stops, t) {
   // Wrap into [0, 1) -- except exactly 1.0, which is the colormap's end
   // color, not its start: plain % made every palette's final stop
   // unreachable (depth-max Koch/tree/dragon, and index 255 of the LUT
@@ -211,7 +212,7 @@ function sampleColor(stops, t) {
   return [last[1], last[2], last[3]];
 }
 
-function buildLUTBytes(stops, size = 256) {
+export function buildLUTBytes(stops, size = 256) {
   const data = new Uint8Array(size * 4);
   for (let i = 0; i < size; i++) {
     const [r, g, b] = sampleColor(stops, i / (size - 1));

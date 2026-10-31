@@ -1,4 +1,4 @@
-"use strict";
+// An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
 
 // Shared by the Canvas2D pattern views (koch.js, pythagoras.js, dragon.js):
 // the view's world-to-canvas map as plain numbers, so a render loop can
@@ -11,12 +11,12 @@
 // hole. Subtle on purpose: the shapes carry the color. The Canvas2D views
 // paint it with paintBackdrop; the chaos-game views, which draw straight into
 // a pixel buffer, take the same colors from backdropPixels.
-const BACKDROP_CENTER_RGB = [16, 23, 34];
-const BACKDROP_EDGE_RGB = [2, 3, 6];
-const BACKDROP_CENTER_Y = 0.46;  // where the light sits, as a share of the height from the top
-const BACKDROP_RADIUS = 0.55;    // of the canvas diagonal
+export const BACKDROP_CENTER_RGB = [16, 23, 34];
+export const BACKDROP_EDGE_RGB = [2, 3, 6];
+export const BACKDROP_CENTER_Y = 0.46;  // where the light sits, as a share of the height from the top
+export const BACKDROP_RADIUS = 0.55;    // of the canvas diagonal
 
-function paintBackdrop(ctx, w, h) {
+export function paintBackdrop(ctx, w, h) {
   const cy = h * BACKDROP_CENTER_Y;
   const g = ctx.createRadialGradient(w / 2, cy, 0, w / 2, cy, Math.hypot(w, h) * BACKDROP_RADIUS);
   g.addColorStop(0, `rgb(${BACKDROP_CENTER_RGB.join(",")})`);
@@ -26,7 +26,7 @@ function paintBackdrop(ctx, w, h) {
 }
 
 // The same backdrop as w * h * 3 bytes (r, g, b per pixel, row by row).
-function backdropPixels(w, h) {
+export function backdropPixels(w, h) {
   const out = new Uint8Array(w * h * 3);
   const cx = w / 2, cy = h * BACKDROP_CENTER_Y, radius = Math.hypot(w, h) * BACKDROP_RADIUS;
   for (let y = 0; y < h; y++) {
@@ -46,7 +46,7 @@ function backdropPixels(w, h) {
 
 // Extra room around the canvas (canvas px) inside which a piece still counts
 // as visible, so the stroke of a piece just past the edge isn't clipped short.
-const VECTOR_CULL_MARGIN = 8;
+export const VECTOR_CULL_MARGIN = 8;
 
 // The same map as each view's worldToScreen (rotation-aware, y up), written
 // as   sx = hw + a * (x - cx) + b * (y - cy)
@@ -55,7 +55,7 @@ const VECTOR_CULL_MARGIN = 8;
 // zoom, where x and cx agree to many digits. k is canvas px per world unit.
 // ok is false for a view the arithmetic can't handle (a non-finite or
 // zero halfHeight from a hand-edited link); callers then draw nothing.
-function vectorAffine(view, width, height) {
+export function vectorAffine(view, width, height) {
   const k = height / 2 / view.halfHeight;
   const rot = -(view.rotation || 0);
   const cs = Math.cos(rot), sn = Math.sin(rot);
@@ -68,7 +68,7 @@ function vectorAffine(view, width, height) {
 
 // True when a disc (center sx, sy; radius r; canvas px) lies wholly outside
 // the canvas plus the cull margin.
-function vectorDiscOffscreen(aff, sx, sy, r) {
+export function vectorDiscOffscreen(aff, sx, sy, r) {
   const m = r + VECTOR_CULL_MARGIN;
   return sx + m < 0 || sx - m > aff.w || sy + m < 0 || sy - m > aff.h;
 }

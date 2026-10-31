@@ -6,20 +6,19 @@
 // (colorSheetEl); app.js lists the sheet with the popovers (Escape, aria-expanded).
 //
 // An ES module (no "use strict", modules are strict), imported by app.js, so it runs before app.js
-// does (app.js looks up the Places row it makes). It reads the other files' names as globals, which
-// works because a module runs after every plain script. Every top-level declaration is exported,
+// does (app.js looks up the Places row it makes). Every top-level declaration is exported,
 // which is what lets test-hooks.js expose them (the places spec and scripts/render_place_thumbs.mjs
 // read placeId); see scripts/check-test-globals.mjs.
 
-import { FRACTAL_CONFIGS, fractalLabel, slugify } from "./configs.js?v=1.53.10";
-import { PICKER_LAYOUT, viewFromBounds } from "./fractal-defs.js?v=1.53.10";
-import { TELEPORT_DESTINATIONS } from "./places.js?v=1.53.10";
-import { currentName, dualActive, els, mainCanvasAspect, mode, setHudVisible } from "./state.js?v=1.53.10";
-import { capitalize, zoomPhrase } from "./render-layout.js?v=1.53.10";
-import { exitDual, selectFractal } from "./modes.js?v=1.53.10";
-import { applyHudVisibility, prefersReducedMotion } from "./compass-ui.js?v=1.53.10";
-import { flyToPlace } from "./teleport.js?v=1.53.10";
-import { colorSheetEl } from "./color-sheet.js?v=1.53.10";
+import { FRACTAL_CONFIGS, fractalLabel, slugify } from "./configs.js?v=1.53.11";
+import { PICKER_LAYOUT, viewFromBounds } from "./fractal-defs.js?v=1.53.11";
+import { TELEPORT_DESTINATIONS } from "./places.js?v=1.53.11";
+import { currentName, dualActive, els, mainCanvasAspect, mode, setHudVisible } from "./state.js?v=1.53.11";
+import { capitalize, zoomPhrase } from "./render-layout.js?v=1.53.11";
+import { exitDual, selectFractal } from "./modes.js?v=1.53.11";
+import { applyHudVisibility, prefersReducedMotion } from "./compass-ui.js?v=1.53.11";
+import { flyToPlace } from "./teleport.js?v=1.53.11";
+import { colorSheetEl } from "./color-sheet.js?v=1.53.11";
 
 // ---------------------------------------------------------------- places sheet
 

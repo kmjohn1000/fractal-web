@@ -1,4 +1,4 @@
-"use strict";
+// An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
 
 // Generic L-system + turtle engine shared by every line-turtle fractal
 // (Koch, Dragon, Hilbert, Gosper, Sierpinski Arrowhead). Each fractal is
@@ -6,35 +6,35 @@
 // draw. The Pythagoras tree is recursive square subdivision, not a
 // line turtle, and doesn't use this.
 
-const KOCH_SNOWFLAKE = {
+export const KOCH_SNOWFLAKE = {
   axiom: "F--F--F",
   rules: { F: "F+F--F+F" },
   angleDeg: 60,
   drawSymbols: ["F"],
 };
 
-const DRAGON_CURVE = {
+export const DRAGON_CURVE = {
   axiom: "FX",
   rules: { X: "X+YF+", Y: "-FX-Y" },
   angleDeg: 90,
   drawSymbols: ["F"],
 };
 
-const HILBERT_CURVE = {
+export const HILBERT_CURVE = {
   axiom: "A",
   rules: { A: "+BF-AFA-FB+", B: "-AF+BFB+FA-" },
   angleDeg: 90,
   drawSymbols: ["F"],
 };
 
-const GOSPER_CURVE = {
+export const GOSPER_CURVE = {
   axiom: "A",
   rules: { A: "A-B--B+A++AA+B-", B: "+A-BB--B-A++A+B" },
   angleDeg: 60,
   drawSymbols: ["A", "B"],
 };
 
-const SIERPINSKI_ARROWHEAD = {
+export const SIERPINSKI_ARROWHEAD = {
   axiom: "A",
   rules: { A: "B-A-B", B: "A+B+A" },
   angleDeg: 60,
@@ -46,7 +46,7 @@ const SIERPINSKI_ARROWHEAD = {
 // passes through unchanged. Built with an array join -- repeated string
 // += is quadratic-ish on some engines at the ~1M-character sizes the
 // deepest levels reach.
-function expandLSystem(axiom, rules, iterations) {
+export function expandLSystem(axiom, rules, iterations) {
   let s = axiom;
   for (let i = 0; i < iterations; i++) {
     const out = [];
@@ -70,7 +70,7 @@ function expandLSystem(axiom, rules, iterations) {
 // start (default [0, 0]), startHeadingDeg (default 0, i.e. +x), and step
 // (default 1) let Koch and Dragon reproduce their existing geometry
 // exactly; normalizePolylines fits anything else into [-1, 1].
-function turtleInterpret(str, { angleDeg, drawSymbols, start = [0, 0], startHeadingDeg = 0, step = 1 }) {
+export function turtleInterpret(str, { angleDeg, drawSymbols, start = [0, 0], startHeadingDeg = 0, step = 1 }) {
   const draws = new Set(drawSymbols);
   const turn = (angleDeg * Math.PI) / 180;
   let x = start[0], y = start[1], heading = (startHeadingDeg * Math.PI) / 180;
@@ -101,7 +101,7 @@ function turtleInterpret(str, { angleDeg, drawSymbols, start = [0, 0], startHead
 // Scales and centers polylines so their bounding box is centered on the
 // origin with its longer side spanning [-1, 1]. Keeps a curve the same
 // on-screen size at every depth, whatever its growth rate per iteration.
-function normalizePolylines(polylines) {
+export function normalizePolylines(polylines) {
   let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
   for (const line of polylines) {
     for (const [x, y] of line) {
@@ -115,7 +115,7 @@ function normalizePolylines(polylines) {
 }
 
 // Convenience: expand + interpret one definition at a depth.
-function lsystemPolylines(def, depth, turtleOpts = {}) {
+export function lsystemPolylines(def, depth, turtleOpts = {}) {
   return turtleInterpret(expandLSystem(def.axiom, def.rules, depth), {
     angleDeg: def.angleDeg, drawSymbols: def.drawSymbols, ...turtleOpts,
   });
