@@ -13,7 +13,8 @@
 //     ms from submit until a fence signals. The fence is polled with
 //     setTimeout, so it reads up to ~4 ms late, and a pass queued behind
 //     another includes the wait.
-const Diag = (() => {
+// An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
+export const Diag = (() => {
   const KEY = "fractalAtlas.diag";
   const SAMPLES = 80;
   const OF_INTEREST = ["EXT_color_buffer_float", "EXT_float_blend", "KHR_parallel_shader_compile",

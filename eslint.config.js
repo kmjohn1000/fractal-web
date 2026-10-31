@@ -15,13 +15,6 @@ const sharedGlobals = {
   strokeWidthFor: "readonly",
   hueTurned: "readonly",
   isGreyColor: "readonly",
-  // shaders.js
-  VERT_SRC: "readonly",
-  FRAG_SRC: "readonly",
-  PREVIEW_FRAG_SRC: "readonly",
-  VERT_SRC_300: "readonly",
-  NEWTON_DEEP_FRAG_SRC: "readonly",
-  PHOENIX_DEEP_FRAG_SRC: "readonly",
   // vectorgeom.js
   VECTOR_CULL_MARGIN: "readonly",
   vectorAffine: "readonly",
@@ -30,12 +23,7 @@ const sharedGlobals = {
   backdropPixels: "readonly",
   BACKDROP_CENTER_RGB: "readonly",
   BACKDROP_EDGE_RGB: "readonly",
-  // koch.js / pythagoras.js / hexaflake.js / dragon.js / fern.js
-  createKochView: "readonly",
-  KOCH_GROW_MS: "readonly",
-  KOCH_GROW_STEP_SHARE: "readonly",
-  createPythagorasTreeView: "readonly",
-  createHexaflakeView: "readonly",
+  // dragon.js / fern.js
   createCurveView: "readonly",
   LINE_CURVES: "readonly",
   // lsystem.js
@@ -50,12 +38,7 @@ const sharedGlobals = {
   IFS_SYSTEMS: "readonly",
   ifsTransformColors: "readonly",
   curveRamp: "readonly",
-  kochShade: "readonly",
-  hexaflakeShade: "readonly",
-  treeSwatchStops: "readonly",
   ifsData: "readonly",
-  // diag.js
-  Diag: "readonly",
   // The pieces app.js was split into, in the order index.html loads them
   // (app.js itself is last and defines nothing the others use). Only names
   // another piece uses are listed; "writable" marks the `let`s that get
@@ -67,44 +50,10 @@ const sharedGlobals = {
   FRACTAL_NAMES: "readonly",
   fractalLabel: "readonly",
   slugify: "readonly",
-  // fractal-defs.js
-  PICKER_LAYOUT: "readonly",
-  EXTRA_MODES: "readonly",
-  SHAPE_INFO: "readonly",
-  isIfsMode: "readonly",
-  isCurveMode: "readonly",
-  isDigitFractal: "readonly",
-  ignoresMaxIter: "readonly",
-  digitColorCycle: "readonly",
-  digitFractalDepth: "readonly",
-  digitCellFrame: "readonly",
-  digitSubPixelColor: "readonly",
-  apolloCenterCurvature: "readonly",
-  apolloFrame: "readonly",
-  apolloCapColor: "readonly",
-  suggestedMaxIter: "readonly",
-  viewFromBounds: "readonly",
-  // deepzoom.js
-  DEEP_ZOOM_THRESHOLD: "readonly",
-  perturbationEligibleType: "readonly",
-  newtonDeepEligible: "readonly",
-  NOVA_MIN_SCALE: "readonly",
-  limitScale: "readonly",
-  atZoomLimit: "readonly",
-  fixedLimbs: "readonly",
-  FIXED_THIRD: "readonly",
-  phoenixDeepEligible: "readonly",
-  PHOENIX_DEEP_SAMPLES: "readonly",
-  PHOENIX_EXACT_CAP: "readonly",
-  phoenixEscapeF64: "readonly",
-  phoenixReference: "readonly",
-  newtonOrbitF64: "readonly",
-  computeReferenceOrbit: "readonly",
-  chooseReference: "readonly",
-  SAMPLE_OFFSETS: "readonly",
   // (platform.js, places.js, renderer.js, state.js, render-layout.js, modes.js, interaction.js,
-  // compass-ui.js, teleport.js, colormap-picker.js, color-sheet.js, share.js, state-colors.js and
-  // places-sheet.js are ES modules now: their names are imported where they are used, so they are
+  // compass-ui.js, teleport.js, colormap-picker.js, color-sheet.js, share.js, state-colors.js,
+  // places-sheet.js, shaders.js, koch.js, pythagoras.js, hexaflake.js, diag.js, fractal-defs.js and
+  // deepzoom.js are ES modules now: their names are imported where they are used, so they are
   // not globals and are not listed here. A shared `let` is assigned only in the file that declares
   // it, through its setter; an import is read-only, which is what enforces that.)
 };
@@ -134,6 +83,7 @@ export default [
       "app.js", "places-sheet.js", "test-hooks.js", "state-colors.js", "render-layout.js", "modes.js",
       "interaction.js", "compass-ui.js", "teleport.js", "colormap-picker.js", "color-sheet.js", "share.js",
       "platform.js", "places.js", "renderer.js", "state.js",
+      "shaders.js", "koch.js", "pythagoras.js", "hexaflake.js", "diag.js", "fractal-defs.js", "deepzoom.js",
     ],
     languageOptions: { sourceType: "module" },
   },

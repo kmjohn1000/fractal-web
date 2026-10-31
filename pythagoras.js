@@ -1,4 +1,4 @@
-"use strict";
+// An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
 
 // Classic (symmetric, 45-degree) Pythagoras tree: each square's top edge is
 // split by a right-triangle apex into two child squares scaled by cos/sin of
@@ -8,7 +8,7 @@
 // [-0.5,0]-[0.5,0], exactly midpoint-plus-half-base-length, which is the
 // textbook symmetric-tree apex position.
 
-function rotateVec([x, y], angle) {
+export function rotateVec([x, y], angle) {
   const c = Math.cos(angle), s = Math.sin(angle);
   return [x * c - y * s, x * s + y * c];
 }
@@ -17,7 +17,7 @@ function rotateVec([x, y], angle) {
 // handedness at every recursion level is what keeps the tree growing
 // "outward" the same way at every branch instead of folding back on itself).
 // Returns [A, B, topRight, topLeft].
-function squareFromBase(A, B) {
+export function squareFromBase(A, B) {
   const d = [B[0] - A[0], B[1] - A[1]];
   const perp = [-d[1], d[0]];
   const topRight = [B[0] + perp[0], B[1] + perp[1]];
@@ -25,12 +25,12 @@ function squareFromBase(A, B) {
   return [A, B, topRight, topLeft];
 }
 
-const TREE_ANGLE = Math.PI / 4;
+export const TREE_ANGLE = Math.PI / 4;
 
 // The view no longer draws from this list (treeAdaptive below builds only
 // what's on screen, at any zoom); it stays as the plain full-detail
 // reference that tests/visual/vector.spec.mjs checks treeAdaptive against.
-function pythagorasTree(depth) {
+export function pythagorasTree(depth) {
   const squares = [];
   function recurse(A, B, depthLeft) {
     const sq = squareFromBase(A, B);
@@ -48,39 +48,39 @@ function pythagorasTree(depth) {
   return squares;
 }
 
-const TREE_FIT_HH = 2.125;       // half-height of the Reset framing on a wide canvas; render's opts.fitHalfHeight overrides it
+export const TREE_FIT_HH = 2.125;       // half-height of the Reset framing on a wide canvas; render's opts.fitHalfHeight overrides it
 // Canvas px, not CSS px: the smallest squares carry the canopy's brightness
 // (a depth-12 frame on a 2x phone lost 8% of it at 1 CSS px).
-const TREE_PX_MIN = 1;           // canvas px: squares whose children would be smaller aren't split
-const TREE_LITE_PX_MIN = 3;      // canvas px: the pixel limit while a drag or pinch is in progress (opts.lite)
-const TREE_ZOOM_SLACK = 1.5;     // zoom headroom before a level beyond the slider's depth is added
-const TREE_BUDGET = 40000;       // squares per frame; past it the pixel limit grows by half and the frame is redone
-const TREE_MAX_LEVEL = 60;
+export const TREE_PX_MIN = 1;           // canvas px: squares whose children would be smaller aren't split
+export const TREE_LITE_PX_MIN = 3;      // canvas px: the pixel limit while a drag or pinch is in progress (opts.lite)
+export const TREE_ZOOM_SLACK = 1.5;     // zoom headroom before a level beyond the slider's depth is added
+export const TREE_BUDGET = 40000;       // squares per frame; past it the pixel limit grows by half and the frame is redone
+export const TREE_MAX_LEVEL = 60;
 // The tree grown from a square of side s stays within this many s of the
 // square's center (measured 3.80 as depth goes to infinity; rounded up).
-const TREE_REACH = 3.85;
-const TREE_STROKE_MIN_PX = 3;    // squares smaller than this get no outline, or the fine canopy turns gray
-const TREE_GROUP = 32;           // squares per fill/stroke path (see render)
+export const TREE_REACH = 3.85;
+export const TREE_STROKE_MIN_PX = 3;    // squares smaller than this get no outline, or the fine canopy turns gray
+export const TREE_GROUP = 32;           // squares per fill/stroke path (see render)
 
 // The look. true: the picked color is shaded as if lit from the upper left
 // (a square's lean sets how much light its top face catches), brightens from
 // trunk to twigs, and alternates with a hue-shifted partner on every other
 // level. false: the old flat single color. render's opts.shaded overrides it.
-const TREE_SHADED = true;
-const TREE_LIGHT_UV = [-0.55, 0.835];  // toward the light, on screen (x right, y up); the light stays put as the view rotates
-const TREE_LEAN_MIN = 0.62;      // brightness of a face turned fully from the light (1 = fully lit); lower sank shadowed Violet and Rose to about 1.3:1 against the backdrop
-const TREE_DEPTH_MIN = 0.72;     // brightness at the trunk; it rises to 1 by TREE_DEPTH_BANDS-1 bands out
-const TREE_DEPTH_BANDS = 6;      // trunk-to-twig brightness steps (two levels each)
-const TREE_ALT_HUE = -12;        // degrees (OKLCH, see hueTurned) the odd levels' hue is turned from the picked color's (-45 read as olive camouflage on Green, and so did -22 once the turn was in OKLCH, where Green sits close to yellow)
-const TREE_WOOD_RGB = [158, 104, 62];  // the trunk and first two branches' wood when the picked color is TREE_WOOD_COLOR (a blend of brown and green read as khaki)
-const TREE_WOOD_BANDS = 1;     // bands (two levels each) of wood from the trunk up; the picked color carries the canopy
-const TREE_WOOD_COLOR = "Green";  // the only picked color with a wooden trunk: a brown trunk under Violet or Rose reads as a different tree, not a trunk
+export const TREE_SHADED = true;
+export const TREE_LIGHT_UV = [-0.55, 0.835];  // toward the light, on screen (x right, y up); the light stays put as the view rotates
+export const TREE_LEAN_MIN = 0.62;      // brightness of a face turned fully from the light (1 = fully lit); lower sank shadowed Violet and Rose to about 1.3:1 against the backdrop
+export const TREE_DEPTH_MIN = 0.72;     // brightness at the trunk; it rises to 1 by TREE_DEPTH_BANDS-1 bands out
+export const TREE_DEPTH_BANDS = 6;      // trunk-to-twig brightness steps (two levels each)
+export const TREE_ALT_HUE = -12;        // degrees (OKLCH, see hueTurned) the odd levels' hue is turned from the picked color's (-45 read as olive camouflage on Green, and so did -22 once the turn was in OKLCH, where Green sits close to yellow)
+export const TREE_WOOD_RGB = [158, 104, 62];  // the trunk and first two branches' wood when the picked color is TREE_WOOD_COLOR (a blend of brown and green read as khaki)
+export const TREE_WOOD_BANDS = 1;     // bands (two levels each) of wood from the trunk up; the picked color carries the canopy
+export const TREE_WOOD_COLOR = "Green";  // the only picked color with a wooden trunk: a brown trunk under Violet or Rose reads as a different tree, not a trunk
 
 // The color button's pill (colormap-picker.js) for the tree: the trunk to the
 // canopy. Under Green that is wood, then the picked color after a short blend
 // (a long one would pass through khaki); under every other color the picked
 // color shaded as the trunk is, up to itself. Returns [css color, position %] stops.
-function treeSwatchStops(colorIndex) {
+export function treeSwatchStops(colorIndex) {
   const { rgb, name } = SOLID_COLORS[colorIndex];
   const css = (c) => `rgb(${c.map((v) => Math.round(v)).join(",")})`;
   if (name === TREE_WOOD_COLOR) return [[css(TREE_WOOD_RGB), 0], [css(TREE_WOOD_RGB), 30], [css(rgb), 52], [css(rgb), 100]];
@@ -100,7 +100,7 @@ function treeSwatchStops(colorIndex) {
 // 45-degree steps mod 8) | level parity << 3 | trunk-to-twig band << 4. It
 // depends only on the square's place in the tree, never on the view.
 // Returns { n, maxLevel, overflow: the budget ran out and buf is incomplete }.
-function treeAdaptive(aff, buf, depth, pxMin, refPx, sty) {
+export function treeAdaptive(aff, buf, depth, pxMin, refPx, sty) {
   const { k, a, b, c, d, cx, cy, hw, hh, w, h } = aff;
   const cap = buf.length / 4 - 2;
   const half = Math.SQRT1_2;
@@ -142,7 +142,7 @@ function treeAdaptive(aff, buf, depth, pxMin, refPx, sty) {
 // Same Canvas2D view shape as createKochView (view/resize/render/
 // worldToScreen/screenToWorld/dpr) so attachVectorViewInteraction in interaction.js
 // works on this unmodified.
-function createPythagorasTreeView(canvas) {
+export function createPythagorasTreeView(canvas) {
   const ctx = canvas.getContext("2d");
   const view = { cx: 0, cy: 2.3, halfHeight: 2.9, rotation: 0 };
   let dpr = Math.min(window.devicePixelRatio || 1, 2);

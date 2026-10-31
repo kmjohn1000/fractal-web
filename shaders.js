@@ -1,6 +1,7 @@
-"use strict";
+// An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
+// Only the JS declarations are exported; the column-0 `const` lines inside the GLSL template strings are shader code.
 
-const VERT_SRC = `
+export const VERT_SRC = `
 attribute vec2 a_pos;
 void main() {
   gl_Position = vec4(a_pos, 0.0, 1.0);
@@ -76,7 +77,7 @@ void main() {
 // in float64 from the two views' relative offset, so they're O(1) numbers
 // and the preview is exact at any zoom depth. Anything the snapshot didn't
 // cover is filled with the page background.
-const PREVIEW_FRAG_SRC = `
+export const PREVIEW_FRAG_SRC = `
 precision highp float;
 uniform vec2  u_resolution;
 uniform sampler2D u_snap;
@@ -106,7 +107,7 @@ void main() {
 // FRAG_SRC. Shader compilers are touchy about float32 perturbation loops: a
 // reshaped escapeColor once changed 10% of a deep Phoenix frame, so any edit
 // here must pass scripts/default-identity.mjs (zero differing pixels).
-const COLOR_STYLE_GLSL = `
+export const COLOR_STYLE_GLSL = `
 const int STYLE_SMOOTH  = 0;
 const int STYLE_BANDS   = 1;
 const int STYLE_GLOW    = 2;
@@ -122,7 +123,7 @@ vec3 styleColor(float t) {
 }
 `;
 
-const FRAG_SRC = `
+export const FRAG_SRC = `
 precision highp float;
 
 uniform vec2  u_resolution;
@@ -903,7 +904,7 @@ void main() {
 // above FRAG_SRC). Resolution is 2^-48 (~3.6e-15), so views stay sharp to a
 // scale of ~1e-11. The integer part is 16 bits (|x| < 32768), so callers
 // keep values well inside that.
-const VERT_SRC_300 = `#version 300 es
+export const VERT_SRC_300 = `#version 300 es
 in vec2 a_pos;
 void main() {
   gl_Position = vec4(a_pos, 0.0, 1.0);
@@ -912,7 +913,7 @@ void main() {
 
 // Shared by NEWTON_DEEP_FRAG_SRC and PHOENIX_DEEP_FRAG_SRC, which declare
 // u_lut before including it.
-const FIXED_POINT_GLSL = `
+export const FIXED_POINT_GLSL = `
 const uint M = 0xFFFFu;
 
 uvec4 fxAdd(uvec4 a, uvec4 b) {
@@ -993,7 +994,7 @@ vec3 lutColor(float t) {
 // within ~1e-4 of 0 still finishes in float32: there u ~ 3|z|^2 is too
 // small for 48 fraction bits, and float32's relative precision is better.
 
-const NEWTON_DEEP_FRAG_SRC = `#version 300 es
+export const NEWTON_DEEP_FRAG_SRC = `#version 300 es
 precision highp float;
 precision highp int;
 
@@ -1169,7 +1170,7 @@ void main() {
 // u_exactCap bounds each pixel's exact steps so no draw runs long enough to
 // trip the GPU watchdog; a pixel past the cap finishes in float32.
 // Assumes PHOENIX_P = (-0.5, 0): p*z_prev is a halving and a negation.
-const PHOENIX_DEEP_FRAG_SRC = `#version 300 es
+export const PHOENIX_DEEP_FRAG_SRC = `#version 300 es
 precision highp float;
 precision highp int;
 

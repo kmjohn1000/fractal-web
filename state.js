@@ -5,9 +5,13 @@
 // (all load before it). Nothing here reaches into the later scripts, so they can depend on this
 // file and it on none of them; state-colors.js holds the functions that do call them.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-// It still reads the plain scripts' names as globals (configs.js, fractal-defs.js, colormaps.js and the
-// views from koch.js and friends), which works because a module runs after every plain script.
-import { createFractalRenderer } from "./renderer.js?v=1.53.8";
+// It still reads the plain scripts' names as globals (configs.js, colormaps.js), which works because a
+// module runs after every plain script.
+import { createHexaflakeView } from "./hexaflake.js?v=1.53.9";
+import { createKochView } from "./koch.js?v=1.53.9";
+import { createPythagorasTreeView } from "./pythagoras.js?v=1.53.9";
+import { ignoresMaxIter, suggestedMaxIter, viewFromBounds } from "./fractal-defs.js?v=1.53.9";
+import { createFractalRenderer } from "./renderer.js?v=1.53.9";
 
 // ---------------------------------------------------------------- app state
 

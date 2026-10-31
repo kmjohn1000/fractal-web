@@ -1,14 +1,15 @@
 // Picker categories, EXTRA_MODES, the Carpet/Gasket digit helpers, the Apollonian gasket's CPU math,
 // suggestedMaxIter and viewFromBounds. Pure definitions, no DOM. Needs configs.js (FTYPE) and
 // lsystem.js/koch.js (IFS_SYSTEMS, LINE_CURVES), which only its function bodies use.
-"use strict";
+// An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it;
+// tests/cases.mjs reads this file's text and accepts the `export`).
 
 // The fractal picker's layout, in display order: sections with a title, each
 // split into titled groups of tiles. Display only: a key is a FRACTAL_CONFIGS
 // name or an EXTRA_MODES key, and each must appear exactly once (app.spec.mjs
 // checks). `category` on the configs and modes is separate -- it decides what
 // the zoom-only buttons (box zoom, Surprise me) do, not where a tile sits.
-const PICKER_LAYOUT = [
+export const PICKER_LAYOUT = [
   { label: "Zoom forever", groups: [
     { label: "Mandelbrot family", keys: ["Mandelbrot", "Burn. Ship", "Tricorn", "Celtic", "Multibrot³", "Phoenix"] },
     { label: "Julia sets", keys: ["Julia:Spiral", "Julia:Rabbit", "Julia:Dragon", "Julia:Phoenix"] },
@@ -23,7 +24,7 @@ const PICKER_LAYOUT = [
 // Menu entries that switch the whole app mode (Canvas2D vector views, not a
 // WebGL shader ftype) rather than selecting a FRACTAL_CONFIGS entry. All are
 // in the "pattern" category.
-const EXTRA_MODES = [
+export const EXTRA_MODES = [
   { key: "koch", label: "Koch snowflake", category: "pattern" },
   { key: "tree", label: "Pythagoras tree", category: "pattern" },
   { key: "dragon", label: "Dragon curve", category: "pattern" },
@@ -42,7 +43,7 @@ const EXTRA_MODES = [
 // and year (left out for the rest: no other maker or year goes here). Keyed by
 // EXTRA_MODES key. The wording is the user's; tests/visual/info-card.spec.mjs
 // holds its own copy, so a changed string fails there.
-const SHAPE_INFO = {
+export const SHAPE_INFO = {
   koch: {
     lines: ["Each side is replaced by four sides, each a third as long, again and again.",
       "The border of the flake grows but its area stays finite. Dimension 1.26."],
@@ -98,32 +99,32 @@ const SHAPE_INFO = {
 // The chaos-game IFS modes (fern.js's IFS_SYSTEMS). They all share one
 // view, canvas and control row -- the fern's -- and differ only in which
 // transform table that view runs.
-const isIfsMode = (m) => Object.prototype.hasOwnProperty.call(IFS_SYSTEMS, m);
+export const isIfsMode = (m) => Object.prototype.hasOwnProperty.call(IFS_SYSTEMS, m);
 // Likewise the L-system line curves (dragon.js's LINE_CURVES) share the
 // dragon's view, canvas and control row.
-const isCurveMode = (m) => Object.prototype.hasOwnProperty.call(LINE_CURVES, m);
+export const isCurveMode = (m) => Object.prototype.hasOwnProperty.call(LINE_CURVES, m);
 
 // Carpet and Gasket: the digit-test fractals (renderDigitFractal in
 // shaders.js), which use a zoom-derived depth instead of maxIter and cell
 // rebasing instead of perturbation.
-const isDigitFractal = (ftype) => ftype === FTYPE.CARPET || ftype === FTYPE.GASKET;
-const digitBase = (ftype) => (ftype === FTYPE.CARPET ? 3 : 2);
+export const isDigitFractal = (ftype) => ftype === FTYPE.CARPET || ftype === FTYPE.GASKET;
+export const digitBase = (ftype) => (ftype === FTYPE.CARPET ? 3 : 2);
 // Fractals whose depth comes from the view rather than maxIter (the detail
 // slider): Carpet/Gasket's zoom-derived depth, the Apollonian gasket's
 // inversion count.
-const ignoresMaxIter = (ftype) => isDigitFractal(ftype) || ftype === FTYPE.APOLLONIAN;
+export const ignoresMaxIter = (ftype) => isDigitFractal(ftype) || ftype === FTYPE.APOLLONIAN;
 
 // Most levels float32 digit extraction stays accurate for, per base,
 // counted from the cell digitCellFrame rebased to -- see renderDigitFractal
 // in shaders.js for how these were measured.
-function digitMaxDepth(ftype) {
+export function digitMaxDepth(ftype) {
   return ftype === FTYPE.CARPET ? 16 : 22;
 }
 
 // Levels per pass through the colormap (u_digitCycle, see digitColor in
 // shaders.js): the old per-pixel caps minus one, so the opening views keep
 // the colors they always had.
-function digitColorCycle(ftype) {
+export function digitColorCycle(ftype) {
   return ftype === FTYPE.CARPET ? 15 : 21;
 }
 
@@ -131,7 +132,7 @@ function digitColorCycle(ftype) {
 // Deeper levels are sub-pixel and only produce aliasing speckle -- see
 // renderDigitFractal in shaders.js for how the shader colors what's below
 // this depth instead.
-function digitPixelDepth(ftype, scale, heightPx) {
+export function digitPixelDepth(ftype, scale, heightPx) {
   const pixelSize = (scale * 2) / heightPx;
   const d = Math.floor(Math.log(1 / pixelSize) / Math.log(digitBase(ftype)) + 1e-9);
   return Math.max(1, d);
@@ -140,13 +141,13 @@ function digitPixelDepth(ftype, scale, heightPx) {
 // Carpet/Gasket recursion depth for the current view: the pixel depth,
 // capped at what float32 resolves below the rebased cell level. The
 // renderer draws to this depth and the info card reports it.
-function digitFractalDepth(ftype, scale, heightPx, aspect) {
+export function digitFractalDepth(ftype, scale, heightPx, aspect) {
   return Math.min(digitPixelDepth(ftype, scale, heightPx), digitCellLevel(ftype, scale, aspect) + digitMaxDepth(ftype));
 }
 
 // base^k by repeated multiplication, exact while it stays under 2^53
 // (Math.pow isn't guaranteed exact).
-function intPow(base, k) {
+export function intPow(base, k) {
   let v = 1;
   for (let i = 0; i < k; i++) v *= base;
   return v;
@@ -155,7 +156,7 @@ function intPow(base, k) {
 // Deepest rebase level per base: 2^52 and 3^33 are the last powers under
 // 2^53, so cell addresses and their digits stay exact float64 integers.
 // About as deep as a float64 view center can address anyway (~1e15x).
-const DIGIT_MAX_CELL_LEVEL = { 2: 52, 3: 33 };
+export const DIGIT_MAX_CELL_LEVEL = { 2: 52, 3: 33 };
 
 // Cell rebasing for Carpet/Gasket deep zoom -- the digit-test counterpart
 // of the escape-time types' perturbation. Picks the deepest level k whose
@@ -167,7 +168,7 @@ const DIGIT_MAX_CELL_LEVEL = { 2: 52, 3: 33 };
 // Returns the view center in level-k cell units relative to the center
 // cell, the world-to-cell-units factor, and per cell (row-major from
 // dy = -1, dx = -1) the level it was cut out at, or -1 if it survives all k.
-function digitCellFrame(ftype, cx, cy, scale, aspect) {
+export function digitCellFrame(ftype, cx, cy, scale, aspect) {
   const base = digitBase(ftype);
   const k = digitCellLevel(ftype, scale, aspect);
   const cells = intPow(base, k);
@@ -186,7 +187,7 @@ function digitCellFrame(ftype, cx, cy, scale, aspect) {
 
 // The rebase level k for digitCellFrame: the deepest whose cells are at
 // least as wide as the view's half-diagonal.
-function digitCellLevel(ftype, scale, aspect) {
+export function digitCellLevel(ftype, scale, aspect) {
   const base = digitBase(ftype);
   const halfDiag = scale * Math.hypot(1, aspect);
   let k = Math.floor(Math.log(1 / halfDiag) / Math.log(base));
@@ -204,7 +205,7 @@ function digitCellLevel(ftype, scale, aspect) {
 // fractal itself has zero area, so the weights are renormalized over the
 // levels summed; 48 of them already account for over 99.6% of the area
 // (Carpet; far more for Gasket). Returns RGB in 0..1.
-function digitSubPixelColor(ftype, depth, lutBytes) {
+export function digitSubPixelColor(ftype, depth, lutBytes) {
   const base = digitBase(ftype), cycle = digitColorCycle(ftype);
   const hitFrac = 1 / (base * base);
   let surviving = 1;
@@ -220,7 +221,7 @@ function digitSubPixelColor(ftype, depth, lutBytes) {
 
 // CPU twin of lutColor in shaders.js: the same wrap, end-color special
 // case, and LINEAR filtering of the 256-texel LUT (CLAMP_TO_EDGE). RGB in 0..1.
-function lutColorCpu(bytes, t) {
+export function lutColorCpu(bytes, t) {
   const u = Math.abs(t - 1) < 1e-5 ? 255.5 / 256 : t - Math.floor(t);
   const x = u * 256 - 0.5;
   const i0 = Math.floor(x), f = x - i0;
@@ -233,7 +234,7 @@ function lutColorCpu(bytes, t) {
 // survives all k levels. The pattern tiles with period 1, so addresses wrap
 // mod base^k. Digits come off the bottom (% and an exact division), so the
 // last match is the topmost level.
-function digitHoleLevel(ix, iy, base, k, cells) {
+export function digitHoleLevel(ix, iy, base, k, cells) {
   let x = ((ix % cells) + cells) % cells, y = ((iy % cells) + cells) % cells;
   let hole = -1;
   for (let i = k - 1; i >= 0; i--) {
@@ -256,7 +257,7 @@ function digitHoleLevel(ix, iy, base, k, cells) {
 // below it: that step is a reflection. Each entry swaps one circle of
 // APOLLO_START for its mirror image and leaves the other three where they
 // are. renderApollonian hard-codes the same four.
-const APOLLO_DUAL = [
+export const APOLLO_DUAL = [
   { x: 0, y: 0, r: 0 },        // swaps the circle at 2i/3 for the one at -2i/3
   { x: 1, y: 1, r: 1 },        // swaps the circle at -1/2
   { x: -1, y: 1, r: 1 },       // swaps the circle at 1/2
@@ -264,10 +265,10 @@ const APOLLO_DUAL = [
 ];
 // Curvatures of the circles at 2i/3, -1/2, 1/2 and the unit circle
 // (negative: it encloses the others), in APOLLO_DUAL's order.
-const APOLLO_START = [3, 2, 2, -1];
+export const APOLLO_START = [3, 2, 2, -1];
 
 // The APOLLO_DUAL entry whose inside holds (x, y), or -1.
-function apolloDualAt(x, y) {
+export function apolloDualAt(x, y) {
   return APOLLO_DUAL.findIndex((c) => (c.r === 0 ? y < 0 : (x - c.x) ** 2 + (y - c.y) ** 2 < c.r * c.r));
 }
 
@@ -281,8 +282,8 @@ function apolloDualAt(x, y) {
 // as deep as a float64 center goes). The point ends up in the
 // curvilinear triangle of one starting circle, which says which entry is
 // the center's circle.
-const APOLLO_CENTER_STEPS = 100000;
-function apolloCenterCurvature(cx, cy) {
+export const APOLLO_CENTER_STEPS = 100000;
+export function apolloCenterCurvature(cx, cy) {
   const k = APOLLO_START.slice();
   let x = cx, y = cy;
   for (let n = 0; n < APOLLO_CENTER_STEPS; n++) {
@@ -323,8 +324,8 @@ function apolloCenterCurvature(cx, cy) {
 // two dual circles at any depth; counts there pass the shader's cap anyway.
 // Returns w0, K, L (complex, as [re, im]), flip (conjugate u first) and
 // steps, the inversion count the shader adds to its own.
-const APOLLO_VIEW_STEPS = 100000;
-function apolloFrame(cx, cy, scale, aspect) {
+export const APOLLO_VIEW_STEPS = 100000;
+export function apolloFrame(cx, cy, scale, aspect) {
   let w0r = cx, w0i = cy, kr = 1, ki = 0, lr = 0, li = 0;
   let flip = false, steps = 0;
   const R = scale * Math.hypot(1, aspect);
@@ -370,7 +371,7 @@ function apolloFrame(cx, cy, scale, aspect) {
 // average. Counts there change faster than pixels do, so supersampling
 // converges to the average of the colors they cycle through, which the
 // mirrored cycle visits evenly. RGB in 0..1.
-function apolloCapColor(lutBytes) {
+export function apolloCapColor(lutBytes) {
   const sum = [0, 0, 0];
   for (let i = 0; i < 256; i++) {
     for (let c = 0; c < 3; c++) sum[c] += lutBytes[i * 4 + c];
@@ -384,7 +385,7 @@ function apolloCapColor(lutBytes) {
 // when zoomed out past the opening view. Rounded to the iter slider's step
 // of 10 so the slider can show the exact value. Used while a pane's
 // iterAutoLocked is false -- see applyAutoIter.
-function suggestedMaxIter(baseScale, currentScale) {
+export function suggestedMaxIter(baseScale, currentScale) {
   const DEFAULT_ITER = 300; // matches iterSlider's default
   const K = 60;
   const extraLevels = Math.max(0, Math.log2(baseScale / currentScale));
@@ -396,7 +397,7 @@ function suggestedMaxIter(baseScale, currentScale) {
 // visible half-width is scale * aspect, so the box's half-width needs
 // scale >= halfW / aspect. Fitting the height alone (the old behavior) cut
 // off the sides of every wide box on a portrait phone.
-function viewFromBounds(b, aspect) {
+export function viewFromBounds(b, aspect) {
   const halfW = (b[1] - b[0]) / 2, halfH = (b[3] - b[2]) / 2;
   return { cx: (b[0] + b[1]) / 2, cy: (b[2] + b[3]) / 2, scale: Math.max(halfH, halfW / aspect) };
 }

@@ -3,11 +3,13 @@
 // fractal-defs.js; calls the later scripts (cancelTeleport, glideMainTo, ...) only inside function bodies.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { applyAutoIter, boxZoomActive, curveBoxCache, dragonState, dragonView, dualActive, els, fernBoxZoomActive, fernView, hexaflakeView, isInteracting, juliaRenderer, juliaState, kochView, mainRenderer, mainState, mode, pushHistory, setActivePane, setIsInteracting, setSettleTimer, settleTimer, treeView } from "./state.js?v=1.53.8";
-import { endVectorInteracting, markInteracting, markVectorInteracting } from "./state-colors.js?v=1.53.8";
-import { centerForAnchor, normalizeAngle, renderAll, requestRender, screenToComplex } from "./render-layout.js?v=1.53.8";
-import { cancelTeleport, glideMainTo, stopDotReplay } from "./teleport.js?v=1.53.8";
-import { colorSheetTapJustClosed } from "./color-sheet.js?v=1.53.8";
+import { applyAutoIter, boxZoomActive, curveBoxCache, dragonState, dragonView, dualActive, els, fernBoxZoomActive, fernView, hexaflakeView, isInteracting, juliaRenderer, juliaState, kochView, mainRenderer, mainState, mode, pushHistory, setActivePane, setIsInteracting, setSettleTimer, settleTimer, treeView } from "./state.js?v=1.53.9";
+import { isCurveMode, isIfsMode, viewFromBounds } from "./fractal-defs.js?v=1.53.9";
+import { limitScale } from "./deepzoom.js?v=1.53.9";
+import { endVectorInteracting, markInteracting, markVectorInteracting } from "./state-colors.js?v=1.53.9";
+import { centerForAnchor, normalizeAngle, renderAll, requestRender, screenToComplex } from "./render-layout.js?v=1.53.9";
+import { cancelTeleport, glideMainTo, stopDotReplay } from "./teleport.js?v=1.53.9";
+import { colorSheetTapJustClosed } from "./color-sheet.js?v=1.53.9";
 
 // ---------------------------------------------------------------- interaction: fractal canvases
 

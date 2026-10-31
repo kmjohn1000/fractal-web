@@ -1,21 +1,21 @@
 // Deep zoom (perturbation reference orbits, Newton and Phoenix deep paths) and the supersampling
 // offsets. No DOM references (no document, els, window or canvas): pure math on numbers and arrays.
 // Needs FTYPE and PHOENIX_P from configs.js.
-"use strict";
+// An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
 
 // ---------------------------------------------------------------- Phase 3: deep zoom
 // Below this scale, plain float32 starts losing pixels to precision collapse
 // (measured on-device at ~5.7e-6 in Phase 1) — switch to perturbation-based
 // rendering (see shaders.js) with margin to spare before that point.
-const DEEP_ZOOM_THRESHOLD = 1e-3;
+export const DEEP_ZOOM_THRESHOLD = 1e-3;
 // Squared escape radius (256), matching ESCAPE_RADIUS_SQ in shaders.js, so the
 // reference orbit runs as long as the pixels that are perturbed against it.
-const ESCAPE_RADIUS_SQ = 65536.0;
+export const ESCAPE_RADIUS_SQ = 65536.0;
 
 // Which fractal types have a perturbation (deep zoom) path -- see
 // perturbStep in shaders.js for the per-type delta formulas. Covers both
 // parameter-space and Julia mode.
-function perturbationEligibleType(state) {
+export function perturbationEligibleType(state) {
   return state.ftype === FTYPE.ESCAPE || state.ftype === FTYPE.TRICORN || state.ftype === FTYPE.SHIP ||
     state.ftype === FTYPE.CELTIC;
 }
@@ -31,8 +31,8 @@ function perturbationEligibleType(state) {
 // dive centered 1e-16 from 0 went blank at 2e-19 in fixed point).
 // The shader also needs |c| < 100 (its first 1/z keeps |z|^2 inside the
 // fixed-point range; far out, the basins are plain sectors anyway).
-const NEWTON_FLOAT32_REACH = 1000;
-function newtonDeepEligible(state) {
+export const NEWTON_FLOAT32_REACH = 1000;
+export function newtonDeepEligible(state) {
   const r = Math.hypot(state.cx, state.cy);
   return state.ftype === FTYPE.NEWTON && state.scale < DEEP_ZOOM_THRESHOLD
     && r > NEWTON_FLOAT32_REACH * state.scale && r * 2 ** -23 > 2 ** -48 && r < 100;
@@ -47,14 +47,14 @@ function newtonDeepEligible(state) {
 // wheel, box, keys, share links) goes through limitScale, which stops at
 // 4e-5, and the info card says so. About 37,000 times deeper than the opening
 // view on a phone.
-const NOVA_MIN_SCALE = 4e-5;
-function minScaleFor(state) {
+export const NOVA_MIN_SCALE = 4e-5;
+export function minScaleFor(state) {
   return state.ftype === FTYPE.NOVA ? NOVA_MIN_SCALE : 0;
 }
-function limitScale(state, scale) {
+export function limitScale(state, scale) {
   return Math.max(scale, minScaleFor(state));
 }
-function atZoomLimit(state) {
+export function atZoomLimit(state) {
   return minScaleFor(state) > 0 && state.scale <= minScaleFor(state) * 1.0001;
 }
 
@@ -62,13 +62,13 @@ function atZoomLimit(state) {
 // of the two's-complement integer round(x * 2^48), most significant first.
 // Exact for |x| < 2^15 (rounded to 2^-48); the eligibility checks keep every
 // value passed here inside FIXED_RANGE, so it never wraps or overflows.
-const FIXED_RANGE = 2 ** 14;
-function fixedLimbs(x) {
+export const FIXED_RANGE = 2 ** 14;
+export function fixedLimbs(x) {
   let b = BigInt(Math.round(x * 2 ** 48));
   if (b < 0n) b += 1n << 64n;
   return [48n, 32n, 16n, 0n].map((s) => Number((b >> s) & 0xFFFFn));
 }
-const FIXED_THIRD = (() => {
+export const FIXED_THIRD = (() => {
   const b = (1n << 48n) / 3n;
   return [48n, 32n, 16n, 0n].map((s) => Number((b >> s) & 0xFFFFn));
 })();
@@ -77,22 +77,22 @@ const FIXED_THIRD = (() => {
 // fixed point for glitched pixels), in both modes. Plain float32 stays sharp
 // down to ~1e-4, and it renders live during gestures with full refinement,
 // so Phoenix switches later than the perturbation types' 1e-3.
-const PHOENIX_DEEP_THRESHOLD = 1e-4;
-function phoenixDeepEligible(state) {
+export const PHOENIX_DEEP_THRESHOLD = 1e-4;
+export function phoenixDeepEligible(state) {
   const inRange = (v) => Math.abs(v) < FIXED_RANGE;
   return state.ftype === FTYPE.PHOENIX && state.scale < PHOENIX_DEEP_THRESHOLD
     && inRange(state.cx) && inRange(state.cy) && inRange(state.juliaC[0]) && inRange(state.juliaC[1]);
 }
 // Phoenix deep frames are ~10x a float32 frame, so refinement stops at this
 // many samples instead of SAMPLE_COUNT.
-const PHOENIX_DEEP_SAMPLES = 4;
+export const PHOENIX_DEEP_SAMPLES = 4;
 // Exact steps per pixel before it finishes in float32: bounds a draw's
 // worst case (all-exact Phoenix lost the WebGL context on an iPhone 15).
-const PHOENIX_EXACT_CAP = 600;
+export const PHOENIX_EXACT_CAP = 600;
 
 // One float64 Phoenix orbit from (zr, zi) with z_prev = 0: the escape
 // iteration (as the shaders count it), or Infinity if it never escapes.
-function phoenixEscapeF64(zr, zi, cr, ci, maxIter) {
+export function phoenixEscapeF64(zr, zi, cr, ci, maxIter) {
   const [pr0, pi0] = PHOENIX_P;
   let pr = 0, pi = 0;
   for (let n = 0; n < maxIter; n++) {
@@ -109,7 +109,7 @@ function phoenixEscapeF64(zr, zi, cr, ci, maxIter) {
 // offset from the center and its float64 orbit as a 3-row texture: row 0
 // Z as float32 (the delta step), rows 1-2 Z's x and y as fixed-point limbs
 // (the exact switch-over; 16-bit integers are exact in float32).
-function phoenixReference(state, widthPx, heightPx) {
+export function phoenixReference(state, widthPx, heightPx) {
   const cFor = (pr, pi) => (state.isJulia ? state.juliaC : [pr, pi]);
   const survive = (pr, pi) => {
     const [cr, ci] = cFor(pr, pi);
@@ -163,8 +163,8 @@ function phoenixReference(state, widthPx, heightPx) {
 
 // Newton's map in float64, as the self-test's reference: iterations used and
 // root index (-1 if none), same loop as renderNewton/NEWTON_DEEP_FRAG_SRC.
-const NEWTON_ROOTS = [[1, 0], [-0.5, Math.sqrt(3) / 2], [-0.5, -Math.sqrt(3) / 2]];
-function newtonOrbitF64(zr, zi, maxIter) {
+export const NEWTON_ROOTS = [[1, 0], [-0.5, Math.sqrt(3) / 2], [-0.5, -Math.sqrt(3) / 2]];
+export function newtonOrbitF64(zr, zi, maxIter) {
   let used = 0;
   for (let i = 0; i < maxIter; i++) {
     used = i;
@@ -185,7 +185,7 @@ function newtonOrbitF64(zr, zi, maxIter) {
 // One float64 step of the escape-family map, z <- f(z) + c, in place on the
 // 2-element array z (avoids allocating per step in chooseReference's hot
 // loop). Must match renderEscapeFast in shaders.js.
-function stepOrbit(ftype, power, z, cr, ci) {
+export function stepOrbit(ftype, power, z, cr, ci) {
   const zr = z[0], zi = z[1];
   if (ftype === FTYPE.SHIP) {
     // (|zr| + i|zi|)^2
@@ -220,7 +220,7 @@ function stepOrbit(ftype, power, z, cr, ci) {
 // afterward (the reference values once read back, and the per-pixel delta)
 // only ever needs float32. Returns a Float32Array laid out as RGBA texels
 // (re, im, 0, 1) so it can be uploaded directly as a texture.
-function computeReferenceOrbit(state, z0r, z0i, cr, ci) {
+export function computeReferenceOrbit(state, z0r, z0i, cr, ci) {
   const maxIter = state.maxIter;
   const cap = maxIter + 1;
   const data = new Float32Array(cap * 4);
@@ -248,8 +248,8 @@ function computeReferenceOrbit(state, z0r, z0i, cr, ci) {
 // this problem; ours does, so it's worth a few ms of float64 CPU iteration to
 // make "reference escapes first" as rare as possible. Returns the reference
 // point's offset from the view center (the shader's u_refOffset).
-const REFERENCE_GRID = 32;
-function chooseReference(state, widthPx, heightPx) {
+export const REFERENCE_GRID = 32;
+export function chooseReference(state, widthPx, heightPx) {
   // A candidate point is c in parameter mode, the starting z in Julia mode.
   const z = [0, 0];
   const escapeIter = (pr, pi) => {
@@ -299,7 +299,7 @@ function chooseReference(state, widthPx, heightPx) {
 // refinement can be abandoned the moment the view changes.
 // 16 samples cuts per-pixel noise ~4x; in Burning Ship's chaotic regions 8
 // still left visible grain.
-function halton(index, base) {
+export function halton(index, base) {
   let f = 1, r = 0;
   for (let i = index; i > 0; i = Math.floor(i / base)) {
     f /= base;
@@ -307,7 +307,7 @@ function halton(index, base) {
   }
   return r;
 }
-const SAMPLE_COUNT = 16;
-const SAMPLE_OFFSETS = Array.from({ length: SAMPLE_COUNT }, (_, i) =>
+export const SAMPLE_COUNT = 16;
+export const SAMPLE_OFFSETS = Array.from({ length: SAMPLE_COUNT }, (_, i) =>
   i === 0 ? [0, 0] : [halton(i, 2) - 0.5, halton(i, 3) - 0.5]);
 

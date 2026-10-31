@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.53.9 — 2026-10-31
+- Internal: seven more code files (shaders, koch, pythagoras, hexaflake, diag, fractal-defs, deepzoom) load as JavaScript modules. No visible change.
+
 ## 1.53.8 — 2026-10-30
 - Internal: four more code files (platform, places, renderer, state) load as JavaScript modules, and the service-worker registration moved into app.js. No visible change.
 

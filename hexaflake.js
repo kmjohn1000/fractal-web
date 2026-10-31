@@ -1,4 +1,4 @@
-"use strict";
+// An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
 
 // The Hexaflake: a regular hexagon (circumradius 1, vertices at 0, 60, ...
 // degrees) is replaced by seven hexagons of 1/3 the size, one in the middle
@@ -10,19 +10,19 @@
 // exactly, level by level, only what the viewport needs, with a shade per
 // level so the gaps show the parent.
 
-const HEX_SQ3_2 = Math.sqrt(3) / 2;
+export const HEX_SQ3_2 = Math.sqrt(3) / 2;
 // A hexagon's corner directions (unit vectors at 0, 60, ... degrees), which
 // are also the directions of its six outer children.
-const HEX_DIRS = [[1, 0], [0.5, HEX_SQ3_2], [-0.5, HEX_SQ3_2], [-1, 0], [-0.5, -HEX_SQ3_2], [0.5, -HEX_SQ3_2]];
+export const HEX_DIRS = [[1, 0], [0.5, HEX_SQ3_2], [-0.5, HEX_SQ3_2], [-1, 0], [-0.5, -HEX_SQ3_2], [0.5, -HEX_SQ3_2]];
 
-const HEX_MAX_LEVEL = 40;        // 3^-40 is 1e-19 of the whole; float64 positions give out long before
-const HEX_SCALE = Array.from({ length: HEX_MAX_LEVEL + 2 }, (_, level) => Math.pow(3, -level));  // circumradius by level
+export const HEX_MAX_LEVEL = 40;        // 3^-40 is 1e-19 of the whole; float64 positions give out long before
+export const HEX_SCALE = Array.from({ length: HEX_MAX_LEVEL + 2 }, (_, level) => Math.pow(3, -level));  // circumradius by level
 
 // The view draws from hexaflakeAdaptive below; this plain full-detail list
 // stays as the reference tests/visual/vector.spec.mjs checks it against:
 // [x, y, level] of every hexagon down to depth, parents before children,
 // the middle child first.
-function hexaflakeHexagons(depth) {
+export function hexaflakeHexagons(depth) {
   const out = [];
   (function recurse(x, y, level) {
     out.push([x, y, level]);
@@ -34,15 +34,15 @@ function hexaflakeHexagons(depth) {
   return out;
 }
 
-const HEX_FIT_HH = 1.0;          // half-height of the Reset framing; render's opts.fitHalfHeight overrides it
+export const HEX_FIT_HH = 1.0;          // half-height of the Reset framing; render's opts.fitHalfHeight overrides it
 // Canvas px (not CSS px), as in the tree: the smallest hexagons carry the
 // fine texture's brightness.
-const HEX_PX_MIN = 1;            // canvas px: hexagons whose children would have a smaller radius aren't split
-const HEX_LITE_PX_MIN = 3;       // the pixel limit while a drag or pinch is in progress (opts.lite)
-const HEX_ZOOM_SLACK = 1.5;      // zoom headroom before a level beyond the slider's depth is added
-const HEX_BUDGET = 40000;        // hexagons per frame; past it the pixel limit grows by half and the frame is redone
-const HEX_GROUP = 32;            // hexagons per fill path (see render)
-const HEX_CLIP_PX = 4000;        // hexagons with a larger radius (canvas px) are clipped to the canvas before drawing:
+export const HEX_PX_MIN = 1;            // canvas px: hexagons whose children would have a smaller radius aren't split
+export const HEX_LITE_PX_MIN = 3;       // the pixel limit while a drag or pinch is in progress (opts.lite)
+export const HEX_ZOOM_SLACK = 1.5;      // zoom headroom before a level beyond the slider's depth is added
+export const HEX_BUDGET = 40000;        // hexagons per frame; past it the pixel limit grows by half and the frame is redone
+export const HEX_GROUP = 32;            // hexagons per fill path (see render)
+export const HEX_CLIP_PX = 4000;        // hexagons with a larger radius (canvas px) are clipped to the canvas before drawing:
                                  // Canvas2D paths are float32 inside, and a corner 1e9 px away is off by tens of px
 
 // The look: a flat shade per level, drawn from the outermost level inward so
@@ -54,17 +54,17 @@ const HEX_CLIP_PX = 4000;        // hexagons with a larger radius (canvas px) ar
 // another color family, however deep a zoom goes) except that every other
 // level is dimmer, so a level is told from its parent at any depth. A thin
 // dark gutter outlines the hexagons big enough to carry one.
-const HEX_HUE_SPAN = -7;       // degrees (OKLCH, see hueTurned) the outermost level's hue is turned from the picked color's (the old -18 per level ran Green on through olive to salmon; -18 in OKLCH is still olive on Green)
-const HEX_BRIGHT_MIN = 0.40;    // brightness of the outermost hexagon (1 = the picked color's own)
-const HEX_BRIGHT_LEVELS = 4;
-const HEX_ALT_DIM = 0.82;        // brightness of every other level past HEX_BRIGHT_LEVELS
-const HEX_GUTTER_PX_MIN = 7;     // canvas px: hexagons with a smaller radius get no gutter
-const HEX_GUTTER_RGB = "rgba(4,7,14,0.6)";  // near-black navy, not pure black
-const HEX_GUTTER_LITE_PX_MIN = 40;  // the same limit while a drag or pinch is in progress (opts.lite)
+export const HEX_HUE_SPAN = -7;       // degrees (OKLCH, see hueTurned) the outermost level's hue is turned from the picked color's (the old -18 per level ran Green on through olive to salmon; -18 in OKLCH is still olive on Green)
+export const HEX_BRIGHT_MIN = 0.40;    // brightness of the outermost hexagon (1 = the picked color's own)
+export const HEX_BRIGHT_LEVELS = 4;
+export const HEX_ALT_DIM = 0.82;        // brightness of every other level past HEX_BRIGHT_LEVELS
+export const HEX_GUTTER_PX_MIN = 7;     // canvas px: hexagons with a smaller radius get no gutter
+export const HEX_GUTTER_RGB = "rgba(4,7,14,0.6)";  // near-black navy, not pure black
+export const HEX_GUTTER_LITE_PX_MIN = 40;  // the same limit while a drag or pinch is in progress (opts.lite)
 
 // The fill (an rgb array, bytes) of one level for the picked color's rgb.
 // (Also read by the color button's pill, colormap-picker.js.)
-function hexaflakeShade(base, level) {
+export function hexaflakeShade(base, level) {
   const byte = (v) => Math.max(0, Math.min(255, Math.round(v)));
   const t = Math.min(level, HEX_BRIGHT_LEVELS) / HEX_BRIGHT_LEVELS;
   let f = HEX_BRIGHT_MIN + (1 - HEX_BRIGHT_MIN) * t;
@@ -84,7 +84,7 @@ function hexaflakeShade(base, level) {
 // level with a hexagon that covers the whole canvas, which paints over
 // everything of the levels above it (those need not be drawn); overflow
 // means the budget ran out and buf is incomplete.
-function hexaflakeAdaptive(aff, buf, lvl, depth, pxMin, refPx) {
+export function hexaflakeAdaptive(aff, buf, lvl, depth, pxMin, refPx) {
   const { k, a, b, c, d, cx, cy, hw, hh, w, h } = aff;
   const cap = lvl.length - 2;
   const needR = Math.min(w, h) / 2 / HEX_SQ3_2;   // a hexagon smaller than this can't cover the canvas
@@ -133,7 +133,7 @@ function hexaflakeAdaptive(aff, buf, lvl, depth, pxMin, refPx) {
 // Same Canvas2D view shape as createPythagorasTreeView (view/resize/render/
 // worldToScreen/screenToWorld/dpr) so attachVectorViewInteraction in
 // interaction.js works on this unmodified.
-function createHexaflakeView(canvas) {
+export function createHexaflakeView(canvas) {
   const ctx = canvas.getContext("2d");
   const view = { cx: 0, cy: 0, halfHeight: 1.1, rotation: 0 };
   let dpr = Math.min(window.devicePixelRatio || 1, 2);

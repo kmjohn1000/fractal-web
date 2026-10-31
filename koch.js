@@ -1,4 +1,4 @@
-"use strict";
+// An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
 
 // Koch snowflake: a Canvas2D view with the same pan/zoom/animate/fill/
 // colormap feature set as the original koch.py port -- pure vector
@@ -18,20 +18,20 @@
 // The view no longer draws from this list (kochAdaptive below builds only
 // what's on screen, at any zoom); it stays as the plain full-detail
 // reference that tests/visual/vector.spec.mjs checks kochAdaptive against.
-function kochSnowflake(depth) {
+export function kochSnowflake(depth) {
   const [verts] = lsystemPolylines(KOCH_SNOWFLAKE, depth, {
     start: [0, 1], startHeadingDeg: -60, step: Math.sqrt(3) / Math.pow(3, depth),
   });
   return verts.reverse();
 }
 
-const KOCH_EDGE = Math.sqrt(3);   // world length of the depth-0 triangle's sides
-const KOCH_FIT_HH = 1.12;        // half-height of the Reset framing on a wide canvas; render's opts.fitHalfHeight overrides it
-const KOCH_PX_MIN = 1;            // CSS px: a piece whose thirds would be shorter stays one straight line
-const KOCH_LITE_PX_MIN = 3;       // CSS px: the pixel limit while a drag or pinch is in progress (opts.lite)
-const KOCH_ZOOM_SLACK = 1.5;      // zoom headroom before a level beyond the slider's depth is added
-const KOCH_BUDGET = 100000;       // vertices per frame; past it the pixel limit grows by half and the frame is redone
-const KOCH_MAX_LEVEL = 40;        // 3^-40 is already below double precision for any view
+export const KOCH_EDGE = Math.sqrt(3);   // world length of the depth-0 triangle's sides
+export const KOCH_FIT_HH = 1.12;        // half-height of the Reset framing on a wide canvas; render's opts.fitHalfHeight overrides it
+export const KOCH_PX_MIN = 1;            // CSS px: a piece whose thirds would be shorter stays one straight line
+export const KOCH_LITE_PX_MIN = 3;       // CSS px: the pixel limit while a drag or pinch is in progress (opts.lite)
+export const KOCH_ZOOM_SLACK = 1.5;      // zoom headroom before a level beyond the slider's depth is added
+export const KOCH_BUDGET = 100000;       // vertices per frame; past it the pixel limit grows by half and the frame is redone
+export const KOCH_MAX_LEVEL = 40;        // 3^-40 is already below double precision for any view
 
 // The look. Each generation of triangles (the level-0 triangle, then the bumps
 // each split adds, see kochAdaptive) has its own flat shade, brighter than its
@@ -45,29 +45,29 @@ const KOCH_MAX_LEVEL = 40;        // 3^-40 is already below double precision for
 // Where the triangles are big enough a thin dark gutter runs along each one's
 // base edge, between it and its parent. One fill per generation, never one per
 // triangle.
-const KOCH_HUE_SPAN = -6;          // degrees (OKLCH, see hueTurned) the level-0 triangle's hue is turned from the picked color's
-const KOCH_BRIGHT_MIN = 0.74;      // brightness of the level-0 triangle (1 = the picked color's own); it is most of the area, so not too deep
-const KOCH_BRIGHT_LEVELS = 4;
-const KOCH_ALT_DIM = 0.82;         // brightness of every other generation past KOCH_BRIGHT_LEVELS
-const KOCH_CORE_GAIN = 1.10;      // the level-0 gradient: this brightness at the center ...
-const KOCH_EDGE_GAIN = 0.9;       // ... and this at the corners
-const KOCH_GRADIENT_MAX_K = 1e6;   // canvas px per world unit: past this zoom the level-0 gradient is a flat fill
-const KOCH_GUTTER_PX_MIN = 8;     // canvas px: triangles with a shorter edge get no gutter
-const KOCH_GUTTER_RGB = "rgba(4,7,14,0.6)";  // near-black navy, not pure black
-const KOCH_TRI_BUDGET = 40000;     // triangles shaded per frame; the rest keep the underlay's flat color
-const KOCH_LITE_TRI_BUDGET = 1200; // the same while a drag or pinch is in progress (opts.lite)
-const KOCH_GLOW_MAX_VERTS = 20000; // no glow around a silhouette with more vertices than this
-const KOCH_GLOW_WIDTH = 7;         // css px, the wide soft pass
-const KOCH_GLOW_ALPHA = 0.07;
-const KOCH_LINE_LIGHTEN = 0.18;    // share of the way to white the outline's line is lightened
-const KOCH_CORE_MIN_PX = 1.3;     // css px: the outline's line is never thinner
-const KOCH_GROW_MS = 320;          // a new generation grows in over this long (the depth slider's step)
-const KOCH_GROW_STEP_SHARE = 0.6;  // ... and never over more than this share of a depth-play step
+export const KOCH_HUE_SPAN = -6;          // degrees (OKLCH, see hueTurned) the level-0 triangle's hue is turned from the picked color's
+export const KOCH_BRIGHT_MIN = 0.74;      // brightness of the level-0 triangle (1 = the picked color's own); it is most of the area, so not too deep
+export const KOCH_BRIGHT_LEVELS = 4;
+export const KOCH_ALT_DIM = 0.82;         // brightness of every other generation past KOCH_BRIGHT_LEVELS
+export const KOCH_CORE_GAIN = 1.10;      // the level-0 gradient: this brightness at the center ...
+export const KOCH_EDGE_GAIN = 0.9;       // ... and this at the corners
+export const KOCH_GRADIENT_MAX_K = 1e6;   // canvas px per world unit: past this zoom the level-0 gradient is a flat fill
+export const KOCH_GUTTER_PX_MIN = 8;     // canvas px: triangles with a shorter edge get no gutter
+export const KOCH_GUTTER_RGB = "rgba(4,7,14,0.6)";  // near-black navy, not pure black
+export const KOCH_TRI_BUDGET = 40000;     // triangles shaded per frame; the rest keep the underlay's flat color
+export const KOCH_LITE_TRI_BUDGET = 1200; // the same while a drag or pinch is in progress (opts.lite)
+export const KOCH_GLOW_MAX_VERTS = 20000; // no glow around a silhouette with more vertices than this
+export const KOCH_GLOW_WIDTH = 7;         // css px, the wide soft pass
+export const KOCH_GLOW_ALPHA = 0.07;
+export const KOCH_LINE_LIGHTEN = 0.18;    // share of the way to white the outline's line is lightened
+export const KOCH_CORE_MIN_PX = 1.3;     // css px: the outline's line is never thinner
+export const KOCH_GROW_MS = 320;          // a new generation grows in over this long (the depth slider's step)
+export const KOCH_GROW_STEP_SHARE = 0.6;  // ... and never over more than this share of a depth-play step
 
 // The shade of generation g for the picked color: brightness and hue climb
 // from the level-0 triangle to the picked color over `span` generations.
 // (Also read by the color button's pill, colormap-picker.js.)
-function kochShade(base, g, span) {
+export function kochShade(base, g, span) {
   const t = span > 0 ? Math.min(g, KOCH_BRIGHT_LEVELS, span) / span : 1;
   let f = KOCH_BRIGHT_MIN + (1 - KOCH_BRIGHT_MIN) * t;
   if (g > KOCH_BRIGHT_LEVELS && (g - KOCH_BRIGHT_LEVELS) % 2) f *= KOCH_ALT_DIM;
@@ -76,7 +76,7 @@ function kochShade(base, g, span) {
 
 // The buffers kochAdaptive collects triangles into (a bump is made of three
 // vertices of the walk, so the vertex budget bounds them).
-function makeKochTris(maxVerts) {
+export function makeKochTris(maxVerts) {
   const cap = Math.floor(maxVerts / 3) + 4;
   return {
     pts: new Float64Array(6 * cap), gen: new Uint8Array(cap), order: new Uint32Array(cap),
@@ -109,7 +109,7 @@ function makeKochTris(maxVerts) {
 // generation grows in (tri.growGen > 0 and tri.growS < 1) that generation's
 // tips are pulled back toward their base edges by growS, and no piece is split
 // to a level past it.
-function kochAdaptive(aff, buf, depth, pxMin, refPx, tri) {
+export function kochAdaptive(aff, buf, depth, pxMin, refPx, tri) {
   const { k, a, b, c, d, cx, cy, hw, hh, w, h } = aff;
   const cap = buf.length / 2 - 2;
   let n = 0, leaves = 0, leafPx = 0, maxLevel = 0, overflow = false;
@@ -176,7 +176,7 @@ function kochAdaptive(aff, buf, depth, pxMin, refPx, tri) {
   return { n, leaves, leafPx, maxLevel, overflow };
 }
 
-function createKochView(canvas) {
+export function createKochView(canvas) {
   const ctx = canvas.getContext("2d");
   const view = { cx: 0, cy: 0, halfHeight: 1.4, rotation: 0 };
   let dpr = Math.min(window.devicePixelRatio || 1, 2);
