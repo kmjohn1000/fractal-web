@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.53.13 — 2026-10-31
+- Internal: updated an out-of-date comment at the top of state.js. No visible change.
+
 ## 1.53.12 — 2026-10-31
 - The fractal picker's thumbnails now work offline in the installed web app (they were missing from the saved copy).
 

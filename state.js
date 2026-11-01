@@ -1,19 +1,20 @@
 // App state that calls nothing in render-layout.js or share.js: the DOM handles (els), the shared
 // `let`s with their setters, the color styles (COLOR_STYLES, trap ranges), the renderers and views,
-// the live-resolution adaptation and the per-pane states and histories. Needs configs.js,
-// fractal-defs.js, colormaps.js (SOLID_COLORS), renderer.js and the views from koch.js and friends
-// (all load before it). Nothing here reaches into the later scripts, so they can depend on this
-// file and it on none of them; state-colors.js holds the functions that do call them.
+// the live-resolution adaptation and the per-pane states and histories. Imports configs.js,
+// fractal-defs.js, colormaps.js (SOLID_COLORS), renderer.js and the views from koch.js and friends.
+// Nothing here imports the files that use it (renderer.js imports it back, but only reads it inside
+// functions), so they can depend on this file and it on none of them; state-colors.js holds the
+// functions that do call them.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { SOLID_COLORS } from "./colormaps.js?v=1.53.12";
-import { FRACTAL_CONFIGS, FTYPE } from "./configs.js?v=1.53.12";
-import { LINE_CURVES, createCurveView } from "./dragon.js?v=1.53.12";
-import { createIfsView } from "./fern.js?v=1.53.12";
-import { createHexaflakeView } from "./hexaflake.js?v=1.53.12";
-import { createKochView } from "./koch.js?v=1.53.12";
-import { createPythagorasTreeView } from "./pythagoras.js?v=1.53.12";
-import { ignoresMaxIter, suggestedMaxIter, viewFromBounds } from "./fractal-defs.js?v=1.53.12";
-import { createFractalRenderer } from "./renderer.js?v=1.53.12";
+import { SOLID_COLORS } from "./colormaps.js?v=1.53.13";
+import { FRACTAL_CONFIGS, FTYPE } from "./configs.js?v=1.53.13";
+import { LINE_CURVES, createCurveView } from "./dragon.js?v=1.53.13";
+import { createIfsView } from "./fern.js?v=1.53.13";
+import { createHexaflakeView } from "./hexaflake.js?v=1.53.13";
+import { createKochView } from "./koch.js?v=1.53.13";
+import { createPythagorasTreeView } from "./pythagoras.js?v=1.53.13";
+import { ignoresMaxIter, suggestedMaxIter, viewFromBounds } from "./fractal-defs.js?v=1.53.13";
+import { createFractalRenderer } from "./renderer.js?v=1.53.13";
 
 // ---------------------------------------------------------------- app state
 

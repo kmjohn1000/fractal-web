@@ -3,16 +3,16 @@
 // colorSheetApplies) only inside event handlers.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { COLORMAPS, SOLID_COLORS, SOLID_COLOR_ORDER, solidCss } from "./colormaps.js?v=1.53.12";
-import { curveRamp } from "./dragon.js?v=1.53.12";
-import { IFS_SYSTEMS, ifsTransformColors } from "./fern.js?v=1.53.12";
-import { kochShade } from "./koch.js?v=1.53.12";
-import { treeSwatchStops } from "./pythagoras.js?v=1.53.12";
-import { hexaflakeShade } from "./hexaflake.js?v=1.53.12";
-import { dragonView, els, fernView, vectorColors } from "./state.js?v=1.53.12";
-import { colormapIndex, pickColormap } from "./state-colors.js?v=1.53.12";
-import { requestRender } from "./render-layout.js?v=1.53.12";
-import { colorSheetApplies, openColorSheet } from "./color-sheet.js?v=1.53.12";
+import { COLORMAPS, SOLID_COLORS, SOLID_COLOR_ORDER, solidCss } from "./colormaps.js?v=1.53.13";
+import { curveRamp } from "./dragon.js?v=1.53.13";
+import { IFS_SYSTEMS, ifsTransformColors } from "./fern.js?v=1.53.13";
+import { kochShade } from "./koch.js?v=1.53.13";
+import { treeSwatchStops } from "./pythagoras.js?v=1.53.13";
+import { hexaflakeShade } from "./hexaflake.js?v=1.53.13";
+import { dragonView, els, fernView, vectorColors } from "./state.js?v=1.53.13";
+import { colormapIndex, pickColormap } from "./state-colors.js?v=1.53.13";
+import { requestRender } from "./render-layout.js?v=1.53.13";
+import { colorSheetApplies, openColorSheet } from "./color-sheet.js?v=1.53.13";
 
 // ---------------------------------------------------------------- colormap picker
 
