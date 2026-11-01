@@ -80,8 +80,10 @@ try {
   // A return visitor who closed the welcome card: no cold-open flight and no
   // card over the thumbnails.
   await send("Page.enable"); // without it the script below never ran (the card showed over the thumbs)
+  // fractalAtlas.test turns on test-hooks.js, which puts the app's names (isIfsMode, fernView, ...)
+  // on window for the evaluate() calls below; this Chrome is not driven by WebDriver.
   await send("Page.addScriptToEvaluateOnNewDocument", {
-    source: `try { localStorage.setItem("fractalAtlas.visited", "1"); localStorage.setItem("fractalAtlas.welcomeDismissed", "1"); } catch {}`,
+    source: `try { localStorage.setItem("fractalAtlas.visited", "1"); localStorage.setItem("fractalAtlas.welcomeDismissed", "1"); localStorage.setItem("fractalAtlas.test", "1"); } catch {}`,
   });
   await send("Page.navigate", { url: appUrl });
   // The app's ~25 script files and the software-GL start-up keep the page busy
