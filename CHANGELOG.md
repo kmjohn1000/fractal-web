@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.53.15 — 2026-10-31
+- Internal: the info card's text formatting (zoom words, scale bar, center coordinates, rotation, Apollonian curvature) moved out of render-layout.js into a new file, hud-format.js. No visible change.
+
 ## 1.53.14 — 2026-10-31
 - Internal: the screen/world coordinate math moved out of render-layout.js into a new file, view-math.js. No visible change.
 

@@ -3,17 +3,17 @@
 // calls teleport.js (cancelTeleport) only inside event handlers.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { Platform } from "./platform.js?v=1.53.14";
-import { FRACTAL_CONFIGS, slugify } from "./configs.js?v=1.53.14";
-import { EXTRA_MODES, PICKER_LAYOUT } from "./fractal-defs.js?v=1.53.14";
-import { limitScale } from "./deepzoom.js?v=1.53.14";
-import { activePane, boxZoomActive, currentName, dualActive, els, hudVisible, juliaRenderer, juliaState, mainRenderer, mainState, mode, pushHistory, setActivePane, setBoxZoomActive, setHudVisible } from "./state.js?v=1.53.14";
-import { markInteracting, popHistory } from "./state-colors.js?v=1.53.14";
-import { renderAll, requestRender } from "./render-layout.js?v=1.53.14";
-import { normalizeAngle, screenToComplex } from "./view-math.js?v=1.53.14";
-import { closeDual, enterDual, openPresetInDual, selectFractal, setMode, updateMenuActiveState } from "./modes.js?v=1.53.14";
-import { KEY_PAN_FRACTION, activeVectorTarget, keyAction } from "./interaction.js?v=1.53.14";
-import { cancelTeleport } from "./teleport.js?v=1.53.14";
+import { Platform } from "./platform.js?v=1.53.15";
+import { FRACTAL_CONFIGS, slugify } from "./configs.js?v=1.53.15";
+import { EXTRA_MODES, PICKER_LAYOUT } from "./fractal-defs.js?v=1.53.15";
+import { limitScale } from "./deepzoom.js?v=1.53.15";
+import { activePane, boxZoomActive, currentName, dualActive, els, hudVisible, juliaRenderer, juliaState, mainRenderer, mainState, mode, pushHistory, setActivePane, setBoxZoomActive, setHudVisible } from "./state.js?v=1.53.15";
+import { markInteracting, popHistory } from "./state-colors.js?v=1.53.15";
+import { renderAll, requestRender } from "./render-layout.js?v=1.53.15";
+import { normalizeAngle, screenToComplex } from "./view-math.js?v=1.53.15";
+import { closeDual, enterDual, openPresetInDual, selectFractal, setMode, updateMenuActiveState } from "./modes.js?v=1.53.15";
+import { KEY_PAN_FRACTION, activeVectorTarget, keyAction } from "./interaction.js?v=1.53.15";
+import { cancelTeleport } from "./teleport.js?v=1.53.15";
 
 // ---------------------------------------------------------------- compass
 
