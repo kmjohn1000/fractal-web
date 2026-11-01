@@ -10,7 +10,7 @@
 // when online (so "open the app" == "get the latest push"), and only falls
 // back to the cache when there's no network, which is still enough for
 // real offline support since every asset here is static.
-const CACHE_NAME = "fractal-atlas-dd05426efee3";
+const CACHE_NAME = "fractal-atlas-bfe2350db877";
 
 const APP_SHELL = [
   "./",
@@ -51,6 +51,32 @@ const APP_SHELL = [
   "./icons/icon-maskable-512.png",
   "./icons/apple-touch-icon.png",
   "./icons/favicon-32.png",
+  "./icons/thumbs/apollonian.webp",
+  "./icons/thumbs/arrowhead.webp",
+  "./icons/thumbs/burn-ship.webp",
+  "./icons/thumbs/carpet.webp",
+  "./icons/thumbs/celtic.webp",
+  "./icons/thumbs/dragon.webp",
+  "./icons/thumbs/fern.webp",
+  "./icons/thumbs/gasket.webp",
+  "./icons/thumbs/gosper.webp",
+  "./icons/thumbs/hexaflake.webp",
+  "./icons/thumbs/hilbert.webp",
+  "./icons/thumbs/julia-dragon.webp",
+  "./icons/thumbs/julia-phoenix.webp",
+  "./icons/thumbs/julia-rabbit.webp",
+  "./icons/thumbs/julia-spiral.webp",
+  "./icons/thumbs/koch.webp",
+  "./icons/thumbs/levy.webp",
+  "./icons/thumbs/mandelbrot.webp",
+  "./icons/thumbs/multibrot3.webp",
+  "./icons/thumbs/newton-z3.webp",
+  "./icons/thumbs/nova.webp",
+  "./icons/thumbs/phoenix.webp",
+  "./icons/thumbs/sierpinski.webp",
+  "./icons/thumbs/tree.webp",
+  "./icons/thumbs/tricorn.webp",
+  "./icons/thumbs/vicsek.webp",
 ];
 
 self.addEventListener("install", (event) => {

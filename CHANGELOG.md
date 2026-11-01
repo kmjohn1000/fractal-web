@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.53.12 — 2026-10-31
+- The fractal picker's thumbnails now work offline in the installed web app (they were missing from the saved copy).
+
 ## 1.53.11 — 2026-10-31
 - Internal: the last three code files (colormaps, lsystem, vectorgeom) load as JavaScript modules, so every app file is one now. No visible change.
 

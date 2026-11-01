@@ -4,7 +4,7 @@
 // file the page loads, or that file would neither be cached for offline
 // use nor counted in the stamp. Plain file checks: runs in one project only.
 import { test, expect } from "@playwright/test";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { appShellFiles, assetVersions, changelogVersion, currentCacheName, expectedCacheName, importVersions, moduleFiles, packageVersions } from "../../scripts/stamp.mjs";
 
@@ -38,6 +38,13 @@ test("every APP_SHELL file exists", () => {
 test("APP_SHELL lists every local file index.html loads", () => {
   const shell = new Set(appShellFiles());
   expect(assetVersions().map((a) => a.file.replace(/^\.\//, "")).filter((f) => !shell.has(f))).toEqual([]);
+});
+
+test("APP_SHELL lists every picker thumbnail, so the picker has its images offline", () => {
+  const shell = new Set(appShellFiles());
+  const thumbs = readdirSync(join(root, "icons/thumbs")).map((f) => `icons/thumbs/${f}`);
+  expect(thumbs.length).toBeGreaterThan(0);
+  expect(thumbs.filter((f) => !shell.has(f))).toEqual([]);
 });
 
 test.describe("offline", () => {
