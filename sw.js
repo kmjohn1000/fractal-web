@@ -10,7 +10,7 @@
 // when online (so "open the app" == "get the latest push"), and only falls
 // back to the cache when there's no network, which is still enough for
 // real offline support since every asset here is static.
-const CACHE_NAME = "fractal-atlas-4fe8a17189cb";
+const CACHE_NAME = "fractal-atlas-e2cd2676c992";
 
 const APP_SHELL = [
   "./",
@@ -42,6 +42,7 @@ const APP_SHELL = [
   "./dragon.js",
   "./fern.js",
   "./lsystem.js",
+  "./view-math.js",
   "./platform.js",
   "./diag.js",
   "./manifest.webmanifest",

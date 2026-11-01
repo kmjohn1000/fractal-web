@@ -1,6 +1,6 @@
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { SOLID_COLORS, hueTurned, isGreyColor } from "./colormaps.js?v=1.53.13";
-import { backdropPixels } from "./vectorgeom.js?v=1.53.13";
+import { SOLID_COLORS, hueTurned, isGreyColor } from "./colormaps.js?v=1.53.14";
+import { backdropPixels } from "./vectorgeom.js?v=1.53.14";
 
 // Chaos-game IFS fractals: a few affine transforms, picked at random each
 // step (weighted by p) and applied to build a point cloud -- a
@@ -333,7 +333,7 @@ export function createIfsView(canvas) {
     }
   }
 
-  // Rotation-aware; matches render-layout.js's screenToComplex/centerForAnchor
+  // Rotation-aware; matches view-math.js's screenToComplex/centerForAnchor
   // convention exactly, see koch.js's identical functions for the full
   // comment.
   function worldToScreen(x, y) {

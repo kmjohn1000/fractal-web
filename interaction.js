@@ -3,15 +3,16 @@
 // fractal-defs.js; calls the later scripts (cancelTeleport, glideMainTo, ...) only inside function bodies.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { applyAutoIter, boxZoomActive, curveBoxCache, dragonState, dragonView, dualActive, els, fernBoxZoomActive, fernView, hexaflakeView, isInteracting, juliaRenderer, juliaState, kochView, mainRenderer, mainState, mode, pushHistory, setActivePane, setIsInteracting, setSettleTimer, settleTimer, treeView } from "./state.js?v=1.53.13";
-import { LINE_CURVES } from "./dragon.js?v=1.53.13";
-import { ifsData } from "./fern.js?v=1.53.13";
-import { isCurveMode, isIfsMode, viewFromBounds } from "./fractal-defs.js?v=1.53.13";
-import { limitScale } from "./deepzoom.js?v=1.53.13";
-import { endVectorInteracting, markInteracting, markVectorInteracting } from "./state-colors.js?v=1.53.13";
-import { centerForAnchor, normalizeAngle, renderAll, requestRender, screenToComplex } from "./render-layout.js?v=1.53.13";
-import { cancelTeleport, glideMainTo, stopDotReplay } from "./teleport.js?v=1.53.13";
-import { colorSheetTapJustClosed } from "./color-sheet.js?v=1.53.13";
+import { applyAutoIter, boxZoomActive, curveBoxCache, dragonState, dragonView, dualActive, els, fernBoxZoomActive, fernView, hexaflakeView, isInteracting, juliaRenderer, juliaState, kochView, mainRenderer, mainState, mode, pushHistory, setActivePane, setIsInteracting, setSettleTimer, settleTimer, treeView } from "./state.js?v=1.53.14";
+import { LINE_CURVES } from "./dragon.js?v=1.53.14";
+import { ifsData } from "./fern.js?v=1.53.14";
+import { isCurveMode, isIfsMode, viewFromBounds } from "./fractal-defs.js?v=1.53.14";
+import { limitScale } from "./deepzoom.js?v=1.53.14";
+import { endVectorInteracting, markInteracting, markVectorInteracting } from "./state-colors.js?v=1.53.14";
+import { renderAll, requestRender } from "./render-layout.js?v=1.53.14";
+import { centerForAnchor, normalizeAngle, screenToComplex } from "./view-math.js?v=1.53.14";
+import { cancelTeleport, glideMainTo, stopDotReplay } from "./teleport.js?v=1.53.14";
+import { colorSheetTapJustClosed } from "./color-sheet.js?v=1.53.14";
 
 // ---------------------------------------------------------------- interaction: fractal canvases
 

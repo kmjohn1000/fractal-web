@@ -853,12 +853,12 @@ void main() {
   // Rotate the screen-space offset once, up front — every downstream use of
   // uv (Newton's p, the fast-path p, and the perturbation delta dc inside
   // renderEscapePerturbation) derives from it, so this single rotation
-  // covers all of them. Must match render-layout.js's screenToComplex/centerForAnchor
+  // covers all of them. Must match view-math.js's screenToComplex/centerForAnchor
   // rotation convention exactly, or the rendered fractal and the pointer/
   // gesture math (panning, box-zoom, the Julia-c crosshair) disagree about
   // which way is "up".
   uv = vec2(uv.x * u_rotCos - uv.y * u_rotSin, uv.x * u_rotSin + uv.y * u_rotCos);
-  uv.y *= u_flipY; // see u_flipY; render-layout.js's screenToComplex does the same
+  uv.y *= u_flipY; // see u_flipY; view-math.js's screenToComplex does the same
 
   if (u_ftype == FTYPE_NEWTON) {
     vec2 p = u_center + uv * u_scale * 2.0;

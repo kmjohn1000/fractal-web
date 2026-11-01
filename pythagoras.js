@@ -1,6 +1,6 @@
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { SOLID_COLORS, hueTurned, solidCss } from "./colormaps.js?v=1.53.13";
-import { VECTOR_CULL_MARGIN, paintBackdrop, vectorAffine } from "./vectorgeom.js?v=1.53.13";
+import { SOLID_COLORS, hueTurned, solidCss } from "./colormaps.js?v=1.53.14";
+import { VECTOR_CULL_MARGIN, paintBackdrop, vectorAffine } from "./vectorgeom.js?v=1.53.14";
 
 // Classic (symmetric, 45-degree) Pythagoras tree: each square's top edge is
 // split by a right-triangle apex into two child squares scaled by cos/sin of
@@ -198,7 +198,7 @@ export function createPythagorasTreeView(canvas) {
     }
   }
 
-  // Rotation-aware; matches render-layout.js's screenToComplex/centerForAnchor
+  // Rotation-aware; matches view-math.js's screenToComplex/centerForAnchor
   // convention exactly, see koch.js's identical functions for the full
   // comment.
   function worldToScreen(x, y) {

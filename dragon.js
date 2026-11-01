@@ -1,7 +1,7 @@
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { SOLID_COLORS, hueTurned, isGreyColor, strokeWidthFor } from "./colormaps.js?v=1.53.13";
-import { DRAGON_CURVE, GOSPER_CURVE, HILBERT_CURVE, SIERPINSKI_ARROWHEAD, lsystemPolylines, normalizePolylines } from "./lsystem.js?v=1.53.13";
-import { VECTOR_CULL_MARGIN, paintBackdrop, vectorAffine } from "./vectorgeom.js?v=1.53.13";
+import { SOLID_COLORS, hueTurned, isGreyColor, strokeWidthFor } from "./colormaps.js?v=1.53.14";
+import { DRAGON_CURVE, GOSPER_CURVE, HILBERT_CURVE, SIERPINSKI_ARROWHEAD, lsystemPolylines, normalizePolylines } from "./lsystem.js?v=1.53.14";
+import { VECTOR_CULL_MARGIN, paintBackdrop, vectorAffine } from "./vectorgeom.js?v=1.53.14";
 
 // The line-turtle curves that share one Canvas2D view (and one control
 // row in the app): the Heighway dragon plus Hilbert, Gosper and the
@@ -587,7 +587,7 @@ export function createCurveView(canvas) {
     }
   }
 
-  // Rotation-aware; matches render-layout.js's screenToComplex/centerForAnchor
+  // Rotation-aware; matches view-math.js's screenToComplex/centerForAnchor
   // convention exactly, see koch.js's identical functions for the full
   // comment.
   function worldToScreen(x, y) {

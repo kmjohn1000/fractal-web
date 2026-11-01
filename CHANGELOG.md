@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.53.14 — 2026-10-31
+- Internal: the screen/world coordinate math moved out of render-layout.js into a new file, view-math.js. No visible change.
+
 ## 1.53.13 — 2026-10-31
 - Internal: updated an out-of-date comment at the top of state.js. No visible change.
 
