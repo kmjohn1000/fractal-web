@@ -102,6 +102,15 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       Play, or a long-press), whether jumps per shape differ, and a speed
       control (the replay already takes a `speed()`). Needs cases in
       `tests/visual/dot-replay.spec.mjs`. See STRATEGY.md for the reason.
+      Spec drafted 2026-11-01 (local, `docs/chaos-game-longer-run-spec.md`;
+      still not approved to build): a per-run schedule (Quick / Long / Very
+      long / Endless) behind new `startReplay` options so Quick and the
+      Shorts renders stay unchanged; a visible, shareable run seed and a
+      random start ("start anywhere"); tap to place the start and tap to
+      pick the next corner; a points and coverage counter (a coarse
+      occupancy grid, no canvas readback); polygon variants later. Build
+      order: schedule refactor, then seed/start/counter, then taps, then
+      polygons.
 - [ ] Picker cards: variant B, rows with a one-line descriptor (user choice
       2026-10-24, after the evaluation of three mockups; not started). One
       row per fractal (about 76 px, a 64 px thumbnail, a bold name and a
