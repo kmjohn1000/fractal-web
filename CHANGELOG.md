@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.54.2 — 2026-11-01
+- Internal: the box-zoom toggles and the line curves' box cache now live in interaction.js, the only file that uses them (two fewer shared variables and setters). No visible change.
+
 ## 1.54.1 — 2026-11-01
 - Internal: the color styles and orbit-trap math moved out of state.js into a new file, color-styles.js, and the renderer no longer imports state.js (it is handed the two values it reads). No visible change.
 

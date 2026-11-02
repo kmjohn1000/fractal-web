@@ -1,6 +1,6 @@
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { SOLID_COLORS, hueTurned, isGreyColor } from "./colormaps.js?v=1.54.1";
-import { backdropPixels } from "./vectorgeom.js?v=1.54.1";
+import { SOLID_COLORS, hueTurned, isGreyColor } from "./colormaps.js?v=1.54.2";
+import { backdropPixels } from "./vectorgeom.js?v=1.54.2";
 
 // Chaos-game IFS fractals: a few affine transforms, picked at random each
 // step (weighted by p) and applied to build a point cloud -- a

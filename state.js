@@ -6,15 +6,15 @@
 // reads, see rendererHost), so they can depend on this file and it on none of them; state-colors.js
 // holds the functions that do call them.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { SOLID_COLORS } from "./colormaps.js?v=1.54.1";
-import { FRACTAL_CONFIGS } from "./configs.js?v=1.54.1";
-import { LINE_CURVES, createCurveView } from "./dragon.js?v=1.54.1";
-import { createIfsView } from "./fern.js?v=1.54.1";
-import { createHexaflakeView } from "./hexaflake.js?v=1.54.1";
-import { createKochView } from "./koch.js?v=1.54.1";
-import { createPythagorasTreeView } from "./pythagoras.js?v=1.54.1";
-import { ignoresMaxIter, suggestedMaxIter, viewFromBounds } from "./fractal-defs.js?v=1.54.1";
-import { createFractalRenderer } from "./renderer.js?v=1.54.1";
+import { SOLID_COLORS } from "./colormaps.js?v=1.54.2";
+import { FRACTAL_CONFIGS } from "./configs.js?v=1.54.2";
+import { LINE_CURVES, createCurveView } from "./dragon.js?v=1.54.2";
+import { createIfsView } from "./fern.js?v=1.54.2";
+import { createHexaflakeView } from "./hexaflake.js?v=1.54.2";
+import { createKochView } from "./koch.js?v=1.54.2";
+import { createPythagorasTreeView } from "./pythagoras.js?v=1.54.2";
+import { ignoresMaxIter, suggestedMaxIter, viewFromBounds } from "./fractal-defs.js?v=1.54.2";
+import { createFractalRenderer } from "./renderer.js?v=1.54.2";
 
 // ---------------------------------------------------------------- app state
 
@@ -103,8 +103,6 @@ export let mode = "fractal"; // "fractal" | "koch" | "tree" | "hexaflake" | a LI
 
 export let currentName = "Mandelbrot";
 export let dualActive = false;
-export let boxZoomActive = false;
-export let fernBoxZoomActive = false; // separate toggle: the fern has its own control row
 // Info overlay (#hud): hidden by default, one app-wide toggle shared by every
 // mode's control row, so it persists across mode switches.
 export let hudVisible = false;
@@ -203,7 +201,6 @@ export let juliaState = null; // populated when dual mode is entered
 export let mainHistory = [];
 export let juliaHistory = [];
 
-export const curveBoxCache = new Map(); // vectorViewBox's boxes for the line curves, by curve and depth
 export const kochState = { depth: 4, fill: true };
 export const treeState = { depth: 9 };
 export const HEXAFLAKE_DEFAULT_DEPTH = 4;
@@ -244,8 +241,6 @@ export function pushHistory(pane) {
 export function setModeKey(v) { mode = v; } // not setMode: modes.js has a function of that name, the mode switcher
 export function setCurrentName(v) { currentName = v; }
 export function setDualActive(v) { dualActive = v; }
-export function setBoxZoomActive(v) { boxZoomActive = v; }
-export function setFernBoxZoomActive(v) { fernBoxZoomActive = v; }
 export function setHudVisible(v) { hudVisible = v; }
 export function setActivePane(v) { activePane = v; }
 export function setIsInteracting(v) { isInteracting = v; }

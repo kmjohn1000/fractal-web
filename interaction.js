@@ -3,16 +3,36 @@
 // fractal-defs.js; calls the later scripts (cancelTeleport, glideMainTo, ...) only inside function bodies.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { applyAutoIter, boxZoomActive, curveBoxCache, dragonState, dragonView, dualActive, els, fernBoxZoomActive, fernView, hexaflakeView, isInteracting, juliaRenderer, juliaState, kochView, mainRenderer, mainState, mode, pushHistory, setActivePane, setIsInteracting, setSettleTimer, settleTimer, treeView } from "./state.js?v=1.54.1";
-import { LINE_CURVES } from "./dragon.js?v=1.54.1";
-import { ifsData } from "./fern.js?v=1.54.1";
-import { isCurveMode, isIfsMode, viewFromBounds } from "./fractal-defs.js?v=1.54.1";
-import { limitScale } from "./deepzoom.js?v=1.54.1";
-import { endVectorInteracting, markInteracting, markVectorInteracting } from "./state-colors.js?v=1.54.1";
-import { renderAll, requestRender } from "./render-layout.js?v=1.54.1";
-import { centerForAnchor, normalizeAngle, screenToComplex } from "./view-math.js?v=1.54.1";
-import { cancelTeleport, glideMainTo, stopDotReplay } from "./teleport.js?v=1.54.1";
-import { colorSheetTapJustClosed } from "./color-sheet.js?v=1.54.1";
+import { applyAutoIter, dragonState, dragonView, dualActive, els, fernView, hexaflakeView, isInteracting, juliaRenderer, juliaState, kochView, mainRenderer, mainState, mode, pushHistory, setActivePane, setIsInteracting, setSettleTimer, settleTimer, treeView } from "./state.js?v=1.54.2";
+import { LINE_CURVES } from "./dragon.js?v=1.54.2";
+import { ifsData } from "./fern.js?v=1.54.2";
+import { isCurveMode, isIfsMode, viewFromBounds } from "./fractal-defs.js?v=1.54.2";
+import { limitScale } from "./deepzoom.js?v=1.54.2";
+import { endVectorInteracting, markInteracting, markVectorInteracting } from "./state-colors.js?v=1.54.2";
+import { renderAll, requestRender } from "./render-layout.js?v=1.54.2";
+import { centerForAnchor, normalizeAngle, screenToComplex } from "./view-math.js?v=1.54.2";
+import { cancelTeleport, glideMainTo, stopDotReplay } from "./teleport.js?v=1.54.2";
+import { colorSheetTapJustClosed } from "./color-sheet.js?v=1.54.2";
+
+// ---------------------------------------------------------------- box zoom
+
+// The toolbar's box-zoom toggles: drag a box to zoom to it. The fern has its own toggle, as its
+// control row is separate. Only this file reads or assigns them.
+export let boxZoomActive = false;
+export let fernBoxZoomActive = false;
+els.boxZoomBtn.addEventListener("click", () => {
+  boxZoomActive = !boxZoomActive;
+  els.boxZoomBtn.classList.toggle("active", boxZoomActive);
+  if (!boxZoomActive) els.boxRect.classList.add("hidden");
+});
+els.fernBoxZoomBtn.addEventListener("click", () => {
+  fernBoxZoomActive = !fernBoxZoomActive;
+  els.fernBoxZoomBtn.classList.toggle("active", fernBoxZoomActive);
+  if (!fernBoxZoomActive) els.boxRect.classList.add("hidden");
+});
+
+// vectorViewBox's boxes for the line curves, by curve and depth.
+export const curveBoxCache = new Map();
 
 // ---------------------------------------------------------------- interaction: fractal canvases
 
