@@ -4,23 +4,23 @@
 // fractal-defs.js; calls into modes, interaction and the later scripts only inside function bodies.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { COLORMAPS, buildLUTBytes } from "./colormaps.js?v=1.54.5";
-import { FRACTAL_CONFIGS, FTYPE, fractalLabel } from "./configs.js?v=1.54.5";
-import { Diag } from "./diag.js?v=1.54.5";
-import { EXTRA_MODES, SHAPE_INFO, apolloFrame, digitFractalDepth, isCurveMode, isDigitFractal, isIfsMode } from "./fractal-defs.js?v=1.54.5";
-import { DEEP_ZOOM_THRESHOLD, SAMPLE_OFFSETS, atZoomLimit, newtonDeepEligible, perturbationEligibleType, phoenixDeepEligible } from "./deepzoom.js?v=1.54.5";
-import { TELEPORT_DESTINATIONS } from "./places.js?v=1.54.5";
-import { COLOR_STYLES, ESCAPE_TIME_TYPES, colorStyle, styleDrawn } from "./color-styles.js?v=1.54.5";
-import { activePane, adaptLiveResolution, currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, hexaflakeView, isInteracting, juliaRenderer, juliaState, kochState, kochView, mainRenderer, mainState, mode, paneHistory, treeState, treeView, vectorColors } from "./state.js?v=1.54.5";
-import { colormapIndex, vectorLite } from "./state-colors.js?v=1.54.5";
-import { dualPresetName } from "./modes.js?v=1.54.5";
-import { dragonNav, fernNav, hexaflakeNav, kochNav, treeNav, vectorFitHalfHeight } from "./interaction.js?v=1.54.5";
-import { flash, hudVisible, updateCompasses } from "./compass-ui.js?v=1.54.5";
-import { teleportLandingIndex } from "./teleport.js?v=1.54.5";
-import { cmGradient, labelColorButton } from "./colormap-picker.js?v=1.54.5";
-import { COLOR_LOOKS, bandsText, colorSheetStyles, currentLookId, lookPalette, shiftText } from "./color-sheet.js?v=1.54.5";
-import { apolloCurvatureText, capitalize, formatHudCoords, rotationHudText, scaleBar, unitsPerCssPx, zoomPhrase } from "./hud-format.js?v=1.54.5";
-import { normalizeAngle } from "./view-math.js?v=1.54.5";
+import { COLORMAPS, buildLUTBytes } from "./colormaps.js?v=1.54.6";
+import { FRACTAL_CONFIGS, FTYPE, fractalLabel } from "./configs.js?v=1.54.6";
+import { Diag } from "./diag.js?v=1.54.6";
+import { EXTRA_MODES, SHAPE_INFO, apolloFrame, digitFractalDepth, isCurveMode, isDigitFractal, isIfsMode } from "./fractal-defs.js?v=1.54.6";
+import { DEEP_ZOOM_THRESHOLD, SAMPLE_OFFSETS, atZoomLimit, newtonDeepEligible, perturbationEligibleType, phoenixDeepEligible } from "./deepzoom.js?v=1.54.6";
+import { TELEPORT_DESTINATIONS } from "./places.js?v=1.54.6";
+import { COLOR_STYLES, ESCAPE_TIME_TYPES, colorStyle, styleDrawn } from "./color-styles.js?v=1.54.6";
+import { activePane, adaptLiveResolution, currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, hexaflakeView, isInteracting, juliaRenderer, juliaState, kochState, kochView, mainRenderer, mainState, mode, paneHistory, treeState, treeView, vectorColors } from "./state.js?v=1.54.6";
+import { colormapIndex, vectorLite } from "./state-colors.js?v=1.54.6";
+import { dualPresetName } from "./modes.js?v=1.54.6";
+import { dragonNav, fernNav, hexaflakeNav, kochNav, treeNav, vectorFitHalfHeight } from "./interaction.js?v=1.54.6";
+import { flash, hudVisible, updateCompasses } from "./compass-ui.js?v=1.54.6";
+import { teleportLandingIndex } from "./teleport.js?v=1.54.6";
+import { cmGradient, labelColorButton } from "./colormap-picker.js?v=1.54.6";
+import { COLOR_LOOKS, bandsText, colorSheetStyles, currentLookId, lookPalette, shiftText } from "./color-sheet.js?v=1.54.6";
+import { apolloCurvatureText, capitalize, formatHudCoords, rotationHudText, scaleBar, unitsPerCssPx, zoomPhrase } from "./hud-format.js?v=1.54.6";
+import { normalizeAngle } from "./view-math.js?v=1.54.6";
 
 // ---------------------------------------------------------------- rendering + layout
 

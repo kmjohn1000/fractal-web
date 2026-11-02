@@ -7,48 +7,48 @@
 // listed in exposeForTests below, so tests can read their names (see test-hooks.js). Nothing reads
 // this file's own names, so it exports nothing. Every import specifier needs the ?v= query (npm run
 // stamp keeps it current): a module is keyed by its full URL, so a differing query loads it twice.
-import { exposeForTests } from "./test-hooks.js?v=1.54.5";
-import * as state from "./state.js?v=1.54.5";
-import { currentName, els, mode } from "./state.js?v=1.54.5";
-import * as renderer from "./renderer.js?v=1.54.5";
-import * as platform from "./platform.js?v=1.54.5";
-import { Platform } from "./platform.js?v=1.54.5";
-import * as places from "./places.js?v=1.54.5";
-import * as colormaps from "./colormaps.js?v=1.54.5";
-import * as lsystem from "./lsystem.js?v=1.54.5";
-import * as vectorgeom from "./vectorgeom.js?v=1.54.5";
-import * as viewMath from "./view-math.js?v=1.54.5";
-import * as colorStyles from "./color-styles.js?v=1.54.5";
-import * as hudFormat from "./hud-format.js?v=1.54.5";
-import * as configs from "./configs.js?v=1.54.5";
-import * as dragon from "./dragon.js?v=1.54.5";
-import * as fern from "./fern.js?v=1.54.5";
-import * as shaders from "./shaders.js?v=1.54.5";
-import * as koch from "./koch.js?v=1.54.5";
-import * as pythagoras from "./pythagoras.js?v=1.54.5";
-import * as hexaflake from "./hexaflake.js?v=1.54.5";
-import * as diag from "./diag.js?v=1.54.5";
-import { Diag } from "./diag.js?v=1.54.5";
-import * as fractalDefs from "./fractal-defs.js?v=1.54.5";
-import * as deepzoom from "./deepzoom.js?v=1.54.5";
-import * as stateColors from "./state-colors.js?v=1.54.5";
-import * as renderLayout from "./render-layout.js?v=1.54.5";
-import { layoutCanvasArea, refitHud, requestRender, updateLUT } from "./render-layout.js?v=1.54.5";
-import * as modes from "./modes.js?v=1.54.5";
-import { selectFractal } from "./modes.js?v=1.54.5";
-import * as interaction from "./interaction.js?v=1.54.5";
-import { VECTOR_VIEWS } from "./interaction.js?v=1.54.5";
-import * as compassUi from "./compass-ui.js?v=1.54.5";
-import { applyHudVisibility, initWelcomeCard } from "./compass-ui.js?v=1.54.5";
-import * as teleport from "./teleport.js?v=1.54.5";
-import { coldOpen } from "./teleport.js?v=1.54.5";
-import * as colormapPicker from "./colormap-picker.js?v=1.54.5";
-import { updateColorSwatches } from "./colormap-picker.js?v=1.54.5";
-import * as colorSheet from "./color-sheet.js?v=1.54.5";
-import { fitColorSegment, prepareColorSheet } from "./color-sheet.js?v=1.54.5";
-import * as placesSheet from "./places-sheet.js?v=1.54.5";
-import * as share from "./share.js?v=1.54.5";
-import { applyShareHashFromUrl, applyShareLink, buildShareUrl, closeShareMenu, parseShareHash, pendingCapture, shareFileName } from "./share.js?v=1.54.5";
+import { exposeForTests } from "./test-hooks.js?v=1.54.6";
+import * as state from "./state.js?v=1.54.6";
+import { currentName, els, mode } from "./state.js?v=1.54.6";
+import * as renderer from "./renderer.js?v=1.54.6";
+import * as platform from "./platform.js?v=1.54.6";
+import { Platform } from "./platform.js?v=1.54.6";
+import * as places from "./places.js?v=1.54.6";
+import * as colormaps from "./colormaps.js?v=1.54.6";
+import * as lsystem from "./lsystem.js?v=1.54.6";
+import * as vectorgeom from "./vectorgeom.js?v=1.54.6";
+import * as viewMath from "./view-math.js?v=1.54.6";
+import * as colorStyles from "./color-styles.js?v=1.54.6";
+import * as hudFormat from "./hud-format.js?v=1.54.6";
+import * as configs from "./configs.js?v=1.54.6";
+import * as dragon from "./dragon.js?v=1.54.6";
+import * as fern from "./fern.js?v=1.54.6";
+import * as shaders from "./shaders.js?v=1.54.6";
+import * as koch from "./koch.js?v=1.54.6";
+import * as pythagoras from "./pythagoras.js?v=1.54.6";
+import * as hexaflake from "./hexaflake.js?v=1.54.6";
+import * as diag from "./diag.js?v=1.54.6";
+import * as fractalDefs from "./fractal-defs.js?v=1.54.6";
+import * as deepzoom from "./deepzoom.js?v=1.54.6";
+import * as stateColors from "./state-colors.js?v=1.54.6";
+import * as renderLayout from "./render-layout.js?v=1.54.6";
+import { layoutCanvasArea, refitHud, requestRender, updateLUT } from "./render-layout.js?v=1.54.6";
+import * as modes from "./modes.js?v=1.54.6";
+import { selectFractal } from "./modes.js?v=1.54.6";
+import * as interaction from "./interaction.js?v=1.54.6";
+import { VECTOR_VIEWS } from "./interaction.js?v=1.54.6";
+import * as compassUi from "./compass-ui.js?v=1.54.6";
+import { applyHudVisibility, initWelcomeCard } from "./compass-ui.js?v=1.54.6";
+import * as teleport from "./teleport.js?v=1.54.6";
+import { coldOpen } from "./teleport.js?v=1.54.6";
+import * as colormapPicker from "./colormap-picker.js?v=1.54.6";
+import { updateColorSwatches } from "./colormap-picker.js?v=1.54.6";
+import * as colorSheet from "./color-sheet.js?v=1.54.6";
+import { fitColorSegment, prepareColorSheet } from "./color-sheet.js?v=1.54.6";
+import * as placesSheet from "./places-sheet.js?v=1.54.6";
+import * as share from "./share.js?v=1.54.6";
+import { applyShareHashFromUrl, applyShareLink, parseShareHash } from "./share.js?v=1.54.6";
+import * as shareMenu from "./share-menu.js?v=1.54.6";
 
 exposeForTests({
   "platform.js": platform, "places.js": places, "renderer.js": renderer, "state.js": state,
@@ -58,7 +58,7 @@ exposeForTests({
   "colormaps.js": colormaps, "lsystem.js": lsystem, "vectorgeom.js": vectorgeom, "view-math.js": viewMath, "color-styles.js": colorStyles, "hud-format.js": hudFormat,
   "state-colors.js": stateColors, "render-layout.js": renderLayout, "modes.js": modes, "interaction.js": interaction,
   "compass-ui.js": compassUi, "teleport.js": teleport, "colormap-picker.js": colormapPicker,
-  "color-sheet.js": colorSheet, "places-sheet.js": placesSheet, "share.js": share,
+  "color-sheet.js": colorSheet, "places-sheet.js": placesSheet, "share.js": share, "share-menu.js": shareMenu,
 });
 
 // ---------------------------------------------------------------- toolbar accessibility
@@ -112,60 +112,6 @@ document.addEventListener("keydown", (e) => {
   if (!open) return;
   e.preventDefault();
   open.menu.classList.remove("open");
-});
-
-function flashLabel(btn, text) {
-  const original = btn.textContent;
-  btn.textContent = text;
-  setTimeout(() => { btn.textContent = original; closeShareMenu(); }, 1500);
-}
-
-els.shareSaveBtn.textContent = Platform.saveImageLabel;
-els.shareSaveBtn.addEventListener("click", async () => {
-  try {
-    const saved = await Platform.saveImage(await pendingCapture, shareFileName());
-    if (saved) flashLabel(els.shareSaveBtn, "Saved!");
-    else closeShareMenu();
-  } catch (err) {
-    closeShareMenu();
-    reportError(`Save image failed: ${err && err.message ? err.message : err}`);
-  }
-});
-
-async function copyText(text) {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    // navigator.clipboard needs a secure context (not the LAN dev server).
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed";
-    ta.style.opacity = "0";
-    document.body.appendChild(ta);
-    ta.select();
-    const ok = document.execCommand("copy");
-    ta.remove();
-    return ok;
-  }
-}
-
-Diag.setCopy(copyText);
-if (Platform.canShare) Diag.setShare((text) => Platform.share({ title: "Fractal Atlas diagnostics", text }));
-
-els.shareCopyBtn.addEventListener("click", async () => {
-  const ok = await copyText(buildShareUrl());
-  flashLabel(els.shareCopyBtn, ok ? "Copied!" : "Copy failed");
-});
-
-els.shareNativeBtn.addEventListener("click", async () => {
-  const url = buildShareUrl();
-  closeShareMenu();
-  try {
-    await Platform.share({ blob: await pendingCapture, fileName: shareFileName(), url, title: "Fractal Atlas" });
-  } catch (err) {
-    reportError(`Share failed: ${err && err.message ? err.message : err}`);
-  }
 });
 
 // Pasting a different link into an open tab only changes the hash.

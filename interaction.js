@@ -3,16 +3,16 @@
 // fractal-defs.js; calls the later scripts (cancelTeleport, glideMainTo, ...) only inside function bodies.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { applyAutoIter, dragonState, dragonView, dualActive, els, fernView, hexaflakeView, isInteracting, juliaRenderer, juliaState, kochView, mainRenderer, mainState, mode, pushHistory, setActivePane, treeView } from "./state.js?v=1.54.5";
-import { LINE_CURVES } from "./dragon.js?v=1.54.5";
-import { ifsData } from "./fern.js?v=1.54.5";
-import { isCurveMode, isIfsMode, viewFromBounds } from "./fractal-defs.js?v=1.54.5";
-import { limitScale } from "./deepzoom.js?v=1.54.5";
-import { cancelSettle, endVectorInteracting, markInteracting, markVectorInteracting } from "./state-colors.js?v=1.54.5";
-import { renderAll, requestRender } from "./render-layout.js?v=1.54.5";
-import { centerForAnchor, normalizeAngle, screenToComplex } from "./view-math.js?v=1.54.5";
-import { cancelTeleport, glideMainTo, stopDotReplay } from "./teleport.js?v=1.54.5";
-import { colorSheetTapJustClosed } from "./color-sheet.js?v=1.54.5";
+import { applyAutoIter, dragonState, dragonView, dualActive, els, fernView, hexaflakeView, isInteracting, juliaRenderer, juliaState, kochView, mainRenderer, mainState, mode, pushHistory, setActivePane, treeView } from "./state.js?v=1.54.6";
+import { LINE_CURVES } from "./dragon.js?v=1.54.6";
+import { ifsData } from "./fern.js?v=1.54.6";
+import { isCurveMode, isIfsMode, viewFromBounds } from "./fractal-defs.js?v=1.54.6";
+import { limitScale } from "./deepzoom.js?v=1.54.6";
+import { cancelSettle, endVectorInteracting, markInteracting, markVectorInteracting } from "./state-colors.js?v=1.54.6";
+import { renderAll, requestRender } from "./render-layout.js?v=1.54.6";
+import { centerForAnchor, normalizeAngle, screenToComplex } from "./view-math.js?v=1.54.6";
+import { cancelTeleport, glideMainTo, stopDotReplay } from "./teleport.js?v=1.54.6";
+import { colorSheetTapJustClosed } from "./color-sheet.js?v=1.54.6";
 
 // ---------------------------------------------------------------- box zoom
 

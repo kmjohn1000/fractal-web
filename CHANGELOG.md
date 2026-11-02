@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.54.6 — 2026-11-01
+- Internal: the share menu, the share image and the Save, Copy link and Share… handlers moved out of share.js and app.js into a new file, share-menu.js. share.js now holds only the share-link encoding and decoding. No visible change.
+
 ## 1.54.5 — 2026-11-01
 - Internal: four small helpers in state.js (paneState, paneHistory, paneRenderer, shownPane) replace the repeated "main or Julia pane" choices in five places. No visible change.
 
