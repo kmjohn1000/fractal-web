@@ -104,17 +104,16 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       `tests/visual/dot-replay.spec.mjs`. See STRATEGY.md for the reason.
       Spec drafted 2026-11-01 (local, `docs/chaos-game-longer-run-spec.md`;
       still not approved to build; design choices made with the user the
-      same day): Play becomes a Long run (about 15 s, 100 slow jumps) with
-      Quick (today's) as the other level, behind new `startReplay` options
-      so the Shorts renders stay unchanged; each shape's default point
-      total is the count where more dots stop changing the picture
-      (measured per shape, not detected live); long-press on Play opens the
-      run options; a visible run seed that goes in the share link (the
-      link autoplays on open, not under reduced motion) and a random start
-      ("start anywhere"); a points and coverage counter (a coarse
-      occupancy grid, no canvas readback). Build order: schedule refactor,
-      then seed/start/counter, then step, tap-to-place and tap-to-pick the
-      next corner, then polygon variants (hexagon, carpet).
+      same day): no options panel; Play becomes a Long run (about 15 s,
+      100 slow jumps) and the existing speed control speeds it up, behind
+      new `startReplay` options so the Shorts renders stay unchanged; each
+      shape's default point total is the count where more dots stop
+      changing the picture (measured offline per shape, not detected
+      live); a seed that goes in the share link (the link autoplays on
+      open, not under reduced motion); a points and coverage counter (a
+      coarse occupancy grid, no canvas readback). Build order: schedule
+      refactor, then seed and counter, then polygon variants (hexagon,
+      carpet). Step and tap controls are dropped for now.
 - [ ] Picker cards: variant B, rows with a one-line descriptor (user choice
       2026-10-24, after the evaluation of three mockups; not started). One
       row per fractal (about 76 px, a 64 px thumbnail, a bold name and a
