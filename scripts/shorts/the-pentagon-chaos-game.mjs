@@ -51,8 +51,8 @@ const SCENES = {
     replay: replayFor(SLOW.clean, TRAIL.clean),
     speed: [[0, 0.75], [3.5, 0.95], [8, 1.5], [12, 1.9], [14.5, 1.9], [15.5, 1.2], [40, 1.0]] },
 };
-const SEQ = [["half", 1.0], ["clean", 1.2]]; // scene, seconds its finished picture is held
-const FINALE_HOLD = 4.0;
+const SEQ = [["half", 1.0], ["clean", 3.2]]; // scene, seconds its finished picture is held (the 62% pentagon, the last one drawn, 2 s longer than first made: 1.2 -> 3.2)
+const FINALE_HOLD = 5.0; // the side-by-side finale, held 1 s longer than first made (4.0 -> 5.0)
 
 // The pitch (D major pentatonic, rising left to right across the pentagon) and pan of each corner's rule, by its index in
 // fern.js's PENTAGON_TRANSFORMS (clockwise from the top: top, upper right, lower right, lower left, upper left).
@@ -81,7 +81,7 @@ function captions(P, meta) {
     { from: buildFrom("half"), to: P.done.half + 1.0, text: "Halfway to a corner each time:\nthe pieces overlap and fill in." },
     { from: P.starts.clean + 0.9, to: Math.min(P.starts.clean + 8.0, buildFrom("clean") - 0.3), text: "Change the jump from halfway\nto 62% of the way." },
     { from: P.starts.clean + 8.6, to: buildFrom("clean") + 0.2, text: "Each jump starts where\nthe last one landed." },
-    { from: buildFrom("clean") + 0.6, to: P.done.clean + 1.2, text: "Five pieces that just touch,\neach built from five more." },
+    { from: buildFrom("clean") + 0.6, to: P.done.clean + 3.0, text: "Five pieces that just touch,\neach built from five more." }, // (stays up through the hold on the finished pentagon)
     { from: P.finale + 0.9, to: P.seconds - 0.4, text: "Same random corners make\ntwo very different shapes." },
   ];
 }
@@ -232,7 +232,7 @@ export default {
   fps: 30,
   size: SIZE,
   fadeOut: 2.0, cardFade: 0.6, cardHold: 1.5,
-  thumbAt: 36.5, // the finale: both finished pictures, labelled, with its caption (the finale starts at 34.1 s)
+  thumbAt: 38.5, // the finale: both finished pictures, labelled, with its caption (the finale starts at 36.1 s since the 2 s longer hold)
   renderer: {
     type: "capture",
     scenes: SCENES,
