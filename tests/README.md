@@ -384,6 +384,12 @@ or need Python with numpy and Pillow:
 lists everything `index.html` loads and that the installed web app starts
 offline.
 
+`share-menu.spec.mjs` covers the share menu with plain behavior checks, no screenshots: opening it
+starts a capture (a PNG the size of the canvas, for a fractal and for a pattern mode), the Share
+button, Escape or a tap elsewhere closes it, Save image downloads a PNG named for the fractal, Copy
+link copies the current share link (the clipboard is stubbed) and restores its label, and Share…
+hands the image and link to a stubbed `navigator.share` and is hidden where there is none.
+
 `scripts/test-visual.mjs` kills leftover Playwright browsers and test
 servers before and after each run and runs with stdin closed. The git
 pre-push hook (`.githooks/pre-push`, turned on by `npm install`) runs lint on
