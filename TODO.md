@@ -6,15 +6,24 @@ git-ignored file.
 
 ## Now
 
-- [ ] Code structure after the ES-module conversion (2026-11-01; the split
-      plan comes from two read-only reviews; steps are approved one at a
-      time, none of the open ones is started). Every app file is a module;
-      the first splits and state clean-ups are in Done. Method per step: one
-      commit, a patch bump with an "Internal" CHANGELOG line, `npm run
-      stamp`, lint, and the specs that cover what moved (the full suite only
-      for a release). For a move, write the new file, delete the block with
-      one Edit, and diff it against `git show HEAD:<old file>`; add the file
-      to `app.js` (import and `exposeForTests`) and `sw.js` `APP_SHELL`.
+- [ ] Code structure after the ES-module conversion (2026-11-01, updated
+      2026-11-02; the split plan comes from two read-only reviews; steps are
+      approved one at a time, none of the open ones is started). Every app
+      file is a module; the first splits and state clean-ups are in Done.
+      Status 2026-11-02: a release is planned for 2026-11-03 (step 5 below);
+      steps 1 and 2 are ON HOLD until another session's "longer chaos-game
+      run" merge lands on `main` (it touches `share.js`, `teleport.js`,
+      `interaction.js`, `hud.js`, `app.js`, `index.html` and `fern.js`, and
+      adds `chaos-run.js`; it was built on `a070fbd`, so it already follows
+      the `share-menu.js` and `hud.js` moves; rebase onto the then-current
+      `main` before starting). Method per step: one commit, a patch bump
+      with an "Internal" CHANGELOG line, `npm run stamp`, lint, and the specs
+      that cover what moved, with `npm run test:quick` (webkit-iphone15 and
+      chromium-desktop, about half the time) between releases and all four
+      projects only for a release. For a move, write the new file, delete
+      the block with one Edit, and diff it against `git show HEAD:<old
+      file>`; add the file to `app.js` (import and `exposeForTests`) and
+      `sw.js` `APP_SHELL`.
       Open steps, in the order to take them:
       1. `pattern-controls.js` from `teleport.js` (about 270 lines): the
          Koch depth and fill handlers, depth play with its speed bubble and
@@ -38,15 +47,31 @@ git-ignored file.
          the dragon split into three files; `fractal-picker.js`,
          `toolbar-a11y.js`. Not worth splitting: `shaders.js`, `renderer.js`,
          the view factories, `configs.js`, `places.js`, `colormaps.js`.
-      4. Safety nets: a smoke check that runs each store, preview and
+      4. Safety nets: make `scripts/test-visual.mjs` (behind `npm run
+         test:visual` and `npm run test:quick`) kill only the processes it
+         started: its `killLeftovers()` runs `pkill -f` on every
+         `ms-playwright/`, `playwright test` and `tests/serve.mjs` process
+         on the machine, which killed another session's spec run partway on
+         2026-11-02 (until then, run `npx playwright test <spec>` directly
+         while another session may be testing; CLAUDE.md asks for the
+         cleanup, so ask first); a smoke check that runs each store, preview and
          thumbnail script against a scratch output folder (the conversion
          broke `render_thumbs.mjs` silently once); a lint check that two
          modules never export the same name (today that only throws under
          the test hook); add `espree` to `package.json` (lint relies on
          eslint pulling it in; a lockfile change, so ask first).
-      5. Before the next release: the full visual suite (the refactors since
-         1.53.11 were each checked with targeted specs only) and a Release
-         build tapped through on a real iPhone (simctl cannot tap).
+      5. Release planned for 2026-11-03 (last tag `v1.53.0`; 40 commits
+         since, 1.53.1 to 1.54.7 almost all internal; the user-visible parts
+         are the pentagon dot shape in 1.54.0 and the offline picker
+         thumbnails in 1.53.12). Decide first: whether the chaos-game-run
+         merge is in it (then it must land and be tried locally before the
+         release starts) and the version (1.55.0 proposed, folding the
+         "Internal" entries in). Then `/release`: the full four-project suite
+         (the refactors since 1.53.11 were each checked with targeted specs
+         only; `npm run test:visual` kills every Playwright process, so no
+         other session may be running specs then), a Release build tapped
+         through on a real iPhone (simctl cannot tap), simulator screenshots,
+         archive and IPA, tag and push.
       Not recommended: a bundler, one `session` or `panes` state object (about
       300 reference edits and it weakens the read-only guard on imports),
       regrouping `kochState`/`vectorColors` (tests mutate them in place).
