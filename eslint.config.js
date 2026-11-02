@@ -5,7 +5,8 @@ import globals from "globals";
 // from another file is imported where it is used, never a global. A shared `let` is assigned only in
 // the file that declares it, through its setter; an import is read-only, which is what enforces that.
 export default [
-  { ignores: ["node_modules/", "www/", "ios/", "store-assets/"] },
+  // .claude/ holds other checkouts (agent worktrees), which are not part of this tree.
+  { ignores: ["node_modules/", "www/", "ios/", "store-assets/", ".claude/"] },
   js.configs.recommended,
   {
     files: ["**/*.js"],
