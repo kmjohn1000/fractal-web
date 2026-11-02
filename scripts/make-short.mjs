@@ -260,12 +260,9 @@ function patchReplay(src, o) {
   if (o.gapFirst !== undefined) sub(/const REPLAY_GAP_FIRST_S = [\d.]+;/, `const REPLAY_GAP_FIRST_S = ${o.gapFirst};`);
   if (o.gapLast !== undefined) sub(/const REPLAY_GAP_LAST_S = [\d.]+;/, `const REPLAY_GAP_LAST_S = ${o.gapLast};`);
   if (o.seq !== undefined) sub(/const REPLAY_SEQ = \d+;/, `const REPLAY_SEQ = ${o.seq};`);
-  if (o.trail !== undefined) {
-    sub(/Math\.max\(1, n - 6\)/, `Math.max(1, n - ${o.trail})`);
-    sub(/\(n - j\) \/ 7,/, `(n - j) / ${o.trail + 1},`);
-  }
+  if (o.trail !== undefined) sub(/const REPLAY_TRAIL = \d+;/, `const REPLAY_TRAIL = ${o.trail};`);
   if (o.cap !== undefined) sub(/const REPLAY_CAP_S = \d+;/, `const REPLAY_CAP_S = ${o.cap};`);
-  if (o.liveFade !== undefined) sub(/\(n - REPLAY_SLOW_JUMPS\) \/ 60\)/, `(n - REPLAY_SLOW_JUMPS) / ${o.liveFade})`);
+  if (o.liveFade !== undefined) sub(/const REPLAY_LIVE_FADE = \d+;/, `const REPLAY_LIVE_FADE = ${o.liveFade};`);
   // pentagonRatio: the Sierpinski pentagon's jump size s (p' = s*p + (1 - s)*corner; the app's is 1/phi^2 = 0.382, so a
   // jump covers 61.8% of the way): 0.5 jumps halfway, as the triangle does, which makes the five copies overlap.
   if (o.pentagonRatio !== undefined) sub(/export const PENTAGON_RATIO = [^;]+;/, `export const PENTAGON_RATIO = ${o.pentagonRatio};`);

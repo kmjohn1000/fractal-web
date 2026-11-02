@@ -263,10 +263,14 @@ export function buildLeaves(ifs, viewBox, cols) {
 // backdrop a bright dot sits at a point, flies to its image under a randomly
 // chosen transform and leaves a point in that transform's address color; the
 // first REPLAY_SLOW_JUMPS jumps are slow and one by one, then the pace grows
-// until `count` points are down and the picture has emerged. The points go into
+// until the run's stop point (by default `count`; the app stops at the shape's own,
+// IFS_STOP_POINTS) is down and the picture has emerged. The points go into
 // the same hit counts the normal render fills, so the last frame is the normal
-// frame and the hand-off to render() needs nothing but a call. The schedule
-// below is pure (time <-> jumps done); createIfsView plays it.
+// frame and the hand-off to render() needs nothing but a call (it carries on to `count`).
+// The schedule below is pure (time <-> jumps done); createIfsView plays it. The constants
+// are the default run, which tests and the Shorts rely on (the Shorts rewrite the lines of
+// REPLAY_SLOW_JUMPS ... REPLAY_LIVE_FADE as they load this file: scripts/make-short.mjs patchReplay);
+// the app's Play changes only its own run, through startReplay's options (REPLAY_LONG).
 export const REPLAY_SLOW_JUMPS = 24;    // jumps shown one at a time
 export const REPLAY_GAP_FIRST_S = 0.30; // seconds per jump at 1x: the first ...
 export const REPLAY_GAP_LAST_S = 0.06;  // ... down to the last of the slow ones
@@ -278,39 +282,85 @@ export const REPLAY_MARKS = 20000;      // points drawn as marks over the pictur
 export const REPLAY_STAMP_RAD = 1.5;    // css px: marks smaller than this are written into the picture's pixels
 export const REPLAY_SPARSE_GAIN = 1.2;  // extra brightness of single-pixel points when the marks have gone (n = REPLAY_MARKS), fading to none at the end
 export const REPLAY_SEQ = 100;        // the first points in order (the trail, the tests), world coordinates
+export const REPLAY_TRAIL = 6;          // jumps of fading polyline behind the dot
+export const REPLAY_LIVE_FADE = 60;     // the dot, trail and corner rings fade out over this many jumps after the slow ones
 export const REPLAY_FRAME_MS = 8;       // per-frame budget for the jumps and the redraw
 export const REPLAY_GAP_RATIO = Math.pow(REPLAY_GAP_LAST_S / REPLAY_GAP_FIRST_S, 1 / (REPLAY_SLOW_JUMPS - 1));
 // Seconds at 1x when the first n slow jumps are done (n <= REPLAY_SLOW_JUMPS).
 export const replaySlowTime = (n) => REPLAY_GAP_FIRST_S * (1 - Math.pow(REPLAY_GAP_RATIO, n)) / (1 - REPLAY_GAP_RATIO);
 export const REPLAY_SLOW_S = replaySlowTime(REPLAY_SLOW_JUMPS);
 
-// How many jumps are done (a fraction: the one under way counts by how far it
-// has flown) after t seconds, for a replay of `total` points. The ramp grows
-// geometrically from the slow phase's last pace, eased in, so the rate carries on
-// from there; the first points are spread evenly in log(n).
-export function replayJumpsAt(t, total) {
-  if (t <= 0) return 0;
-  if (t >= REPLAY_SLOW_S + REPLAY_RAMP_S) return total;
-  if (t < REPLAY_SLOW_S) {
-    const k = Math.floor(Math.log(Math.max(1e-9, 1 - t * (1 - REPLAY_GAP_RATIO) / REPLAY_GAP_FIRST_S)) / Math.log(REPLAY_GAP_RATIO));
-    const k0 = Math.min(REPLAY_SLOW_JUMPS - 1, Math.max(0, k));
-    return k0 + (t - replaySlowTime(k0)) / (REPLAY_GAP_FIRST_S * Math.pow(REPLAY_GAP_RATIO, k0));
+// The schedule of one run, a pure function of time: slowJumps jumps one at a time, the gaps between
+// them shrinking geometrically from gapFirst to gapLast seconds at 1x, then rampS seconds in which the
+// pace grows until `total` points are down. jumpsAt(t, total) is how many jumps are done (a fraction:
+// the one under way counts by how far it has flown) after t seconds; the ramp grows geometrically from
+// the slow phase's last pace, eased in, so the rate carries on from there, and the first points are
+// spread evenly in log(n). timeOf(n, total) is the inverse: when n jumps are done.
+export function replaySchedule({ slowJumps, gapFirst, gapLast, rampS }) {
+  const ratio = Math.pow(gapLast / gapFirst, 1 / (slowJumps - 1));
+  const slowTime = (n) => gapFirst * (1 - Math.pow(ratio, n)) / (1 - ratio);
+  const slowS = slowTime(slowJumps);
+  function jumpsAt(t, total) {
+    if (t <= 0) return 0;
+    if (t >= slowS + rampS) return total;
+    if (t < slowS) {
+      const k = Math.floor(Math.log(Math.max(1e-9, 1 - t * (1 - ratio) / gapFirst)) / Math.log(ratio));
+      const k0 = Math.min(slowJumps - 1, Math.max(0, k));
+      return k0 + (t - slowTime(k0)) / (gapFirst * Math.pow(ratio, k0));
+    }
+    const s = (t - slowS) / rampS;
+    return slowJumps * Math.pow(total / slowJumps, 0.25 * s + 0.75 * s * s);
   }
-  const s = (t - REPLAY_SLOW_S) / REPLAY_RAMP_S;
-  return REPLAY_SLOW_JUMPS * Math.pow(total / REPLAY_SLOW_JUMPS, 0.25 * s + 0.75 * s * s);
+  function timeOf(n, total) {
+    if (n <= 0) return 0;
+    if (n < slowJumps) {
+      const k = Math.floor(n);
+      return slowTime(k) + (n - k) * gapFirst * Math.pow(ratio, k);
+    }
+    const u = Math.log(Math.min(n, total) / slowJumps) / Math.log(total / slowJumps);
+    const s = (-0.25 + Math.sqrt(0.0625 + 3 * u)) / 1.5;
+    return slowS + rampS * s;
+  }
+  return { slowJumps, gapFirst, gapLast, rampS, ratio, slowS, durationS: slowS + rampS, slowTime, jumpsAt, timeOf };
 }
 
-// The inverse: the time at which n jumps are done.
-export function replayTimeOf(n, total) {
-  if (n <= 0) return 0;
-  if (n < REPLAY_SLOW_JUMPS) {
-    const k = Math.floor(n);
-    return replaySlowTime(k) + (n - k) * REPLAY_GAP_FIRST_S * Math.pow(REPLAY_GAP_RATIO, k);
-  }
-  const u = Math.log(Math.min(n, total) / REPLAY_SLOW_JUMPS) / Math.log(total / REPLAY_SLOW_JUMPS);
-  const s = (-0.25 + Math.sqrt(0.0625 + 3 * u)) / 1.5;
-  return REPLAY_SLOW_S + REPLAY_RAMP_S * s;
+// The slow phase's last gap that lets the ramp carry on at the same pace (the ramp starts at about
+// slowJumps * ln(total / slowJumps) * 0.25 / rampS jumps per second at 1x), so there is no lurch.
+export const replayGapLast = (slowJumps, total, rampS) => rampS / (0.25 * slowJumps * Math.log(total / slowJumps));
+
+// The default schedule (the constants above), and the module-level wrappers the tests and the Shorts call.
+export const REPLAY_DEFAULT_SCHEDULE = replaySchedule({ slowJumps: REPLAY_SLOW_JUMPS, gapFirst: REPLAY_GAP_FIRST_S, gapLast: REPLAY_GAP_LAST_S, rampS: REPLAY_RAMP_S });
+export const replayJumpsAt = (t, total) => REPLAY_DEFAULT_SCHEDULE.jumpsAt(t, total);
+export const replayTimeOf = (n, total) => REPLAY_DEFAULT_SCHEDULE.timeOf(n, total);
+
+// The app's Play: a Long run, about 15 s at 1x (the speed button speeds it up). 100 jumps one at a time
+// with a longer trail, then the ramp; the last slow gap follows from where the run stops (replayGapLast).
+// startReplay with no options plays the default (the 24-jump "Quick" run of the constants above).
+export const REPLAY_LONG = { slowJumps: 100, gapFirst: 0.30, rampS: 4.5, trail: 20, liveFade: 60 };
+// The cap, as a share of a run's nominal length, after which a slow device leaves the rest to the normal render.
+export const REPLAY_CAP_RATIO = 1.25;
+
+// Where each shape's chaos-game replay stops and hands over to the normal render (which carries on to the
+// slider's count): the points (before the burn-in) after which more dots stop changing the structure,
+// measured offline per shape (coverage of 10 px cells, and by eye at 50k to 1M points).
+export const IFS_STOP_POINTS = { fern: 500000, sierpinski: 200000, pentagon: 300000, levy: 300000, vicsek: 200000 };
+// The stop point of a replay of `key` with the slider at `count` points.
+export const replayStopPoints = (key, count) => Math.min(IFS_STOP_POINTS[key] ?? count, count);
+
+// A seeded generator (mulberry32) to give a run its own repeatable numbers: seededRandom(seed)() is in [0, 1).
+export function seededRandom(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
+
+// The coverage counter's grid: cells of this many css px (times the pixel ratio) on a side.
+export const REPLAY_COVER_CELL = 12;
 
 // Same Canvas2D view shape as createKochView/createPythagorasTreeView, so
 // attachVectorViewInteraction in interaction.js works on this unmodified. One view
@@ -526,10 +576,11 @@ export function createIfsView(canvas) {
   // already chosen: x, y is the point it is at, nx, ny, nci where it flies next.
   function replayLand(target, deadline) {
     const r = replay, W = canvas.width, H = canvas.height;
-    const trs = ifs.transforms, last = trs.length - 1, cum = r.cum, rnd = ifsRandom;
+    const trs = ifs.transforms, last = trs.length - 1, cum = r.cum, rnd = r.rng || ifsRandom;
     const rot = -(view.rotation || 0), k = (H / 2) / view.halfHeight;
     const kc = Math.cos(rot) * k, ks = Math.sin(rot) * k; // worldToScreen, as in runSlice
-    let { x, y, nx, ny, nci, cr, cg, cb, n } = r;
+    const { cover, coverRef, cell, coverW, seqLen } = r; // the coverage counter: the cells lit, the cells the shape has, their size and row length
+    let { x, y, nx, ny, nci, cr, cg, cb, n, lit } = r;
     while (n < target) {
       const stop = Math.min(target, n + 2048);
       while (n < stop) {
@@ -542,7 +593,7 @@ export function createIfsView(canvas) {
         if (n <= REPLAY_MARKS) {
           const m = r.marks[nci];
           m[2 * r.markLen[nci]] = fx; m[2 * r.markLen[nci]++ + 1] = fy;
-          if (n <= REPLAY_SEQ) { r.seqX[n] = x; r.seqY[n] = y; r.seqC[n] = nci; }
+          if (n <= seqLen) { r.seqX[n] = x; r.seqY[n] = y; r.seqC[n] = nci; }
         }
         if (n > REPLAY_BURN_IN) {
           const px = Math.floor(fx), py = Math.floor(fy);
@@ -552,6 +603,8 @@ export function createIfsView(canvas) {
             if (counts[idx]++ === 0) nonzero++;
             sumR[idx] += cr; sumG[idx] += cg; sumB[idx] += cb;
             accepted++;
+            const c = ((py / cell) | 0) * coverW + ((px / cell) | 0); // the coarse cell: lit once, counted if the shape has it
+            if (cover[c] === 0) { cover[c] = 1; lit += coverRef[c]; }
           }
         }
         const u = rnd();
@@ -564,13 +617,13 @@ export function createIfsView(canvas) {
       }
       if (performance.now() > deadline) break;
     }
-    Object.assign(r, { x, y, nx, ny, nci, cr, cg, cb, n });
+    Object.assign(r, { x, y, nx, ny, nci, cr, cg, cb, n, lit });
   }
 
   // How big and how opaque the marks are after n jumps: 3.4 css px in radius in the slow phase,
   // shrinking with log(n) until REPLAY_MARKS, where they have faded into the picture's own pixels.
-  function replayMarkLook(n) {
-    const f = Math.min(1, Math.max(0, Math.log(Math.max(n, 1) / REPLAY_SLOW_JUMPS) / Math.log(REPLAY_MARKS / REPLAY_SLOW_JUMPS)));
+  function replayMarkLook(n, slowJumps) {
+    const f = Math.min(1, Math.max(0, Math.log(Math.max(n, 1) / slowJumps) / Math.log(REPLAY_MARKS / slowJumps)));
     const s = Math.min(1, Math.max(0, (f - 0.85) / 0.15));
     // down to one pixel across at the end, where a mark is the picture's own pixel and fades into it
     return { rad: dpr * (0.25 + 3.15 * Math.pow(1 - f, 1.8)), alpha: 1 - s * s * (3 - 2 * s) };
@@ -607,10 +660,10 @@ export function createIfsView(canvas) {
     const sy = (x, y) => H / 2 - ((x - view.cx) * ks + (y - view.cy) * kc);
     const rgb = cols.map((c) => `${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])}`);
     const clamp01 = (v) => Math.min(1, Math.max(0, v));
-    // The dot, trail and corners go over the 60 jumps after the slow ones.
-    const live = 1 - clamp01((n - REPLAY_SLOW_JUMPS) / 60);
+    // The dot, trail and corners go over the 60 jumps (r.liveFade) after the slow ones.
+    const live = 1 - clamp01((n - r.slowJumps) / r.liveFade);
     // Big marks are round discs; once they are down to a few pixels (see stampMarks) they are in the picture itself.
-    const look = replayMarkLook(n);
+    const look = replayMarkLook(n, r.slowJumps);
     if (look.rad >= REPLAY_STAMP_RAD * u && look.alpha > 0) {
       ctx.globalAlpha = look.alpha;
       for (let q = -1; q < rgb.length; q++) {
@@ -651,8 +704,8 @@ export function createIfsView(canvas) {
       });
     }
     // The last few jumps as a fading trail, and the flight so far.
-    for (let j = n; j >= Math.max(1, n - 6); j--) {
-      ctx.strokeStyle = `rgba(${rgb[r.seqC[j]]},${0.5 * Math.pow(1 - (n - j) / 7, 1.5) * live})`;
+    for (let j = n; j >= Math.max(1, n - r.trail); j--) {
+      ctx.strokeStyle = `rgba(${rgb[r.seqC[j]]},${0.5 * Math.pow(1 - (n - j) / (r.trail + 1), 1.5) * live})`;
       ctx.lineWidth = 2 * u;
       ctx.beginPath();
       ctx.moveTo(sx(r.seqX[j - 1], r.seqY[j - 1]), sy(r.seqX[j - 1], r.seqY[j - 1]));
@@ -668,7 +721,7 @@ export function createIfsView(canvas) {
       ctx.stroke();
     }
     // A ring spreads from the point each jump landed on.
-    const age = n >= 1 ? (r.t - replayTimeOf(n, r.total)) / 0.4 : 1;
+    const age = n >= 1 ? (r.t - r.sched.timeOf(n, r.total)) / 0.4 : 1;
     if (age >= 0 && age < 1) {
       ctx.strokeStyle = `rgba(${rgb[r.seqC[n]]},${0.7 * (1 - age) * (1 - age) * live})`;
       ctx.lineWidth = 1.6 * u;
@@ -701,11 +754,11 @@ export function createIfsView(canvas) {
     const r = replay, speed = r.speed();
     r.t += dt * speed;
     r.wall += dt * speed;
-    if (r.wall >= REPLAY_CAP_S) { replayHandOff(); return; }
-    const jumps = replayJumpsAt(r.t, r.total);
+    if (r.wall >= r.capS) { replayHandOff(); return; }
+    const jumps = r.sched.jumpsAt(r.t, r.total);
     const target = Math.min(r.total, Math.floor(jumps));
     replayLand(target, performance.now() + budgetMs);
-    if (r.n < target) r.t = replayTimeOf(r.n, r.total);
+    if (r.n < target) r.t = r.sched.timeOf(r.n, r.total);
     const t0 = performance.now();
     // The picture is shaded again only when points landed; the small marks are stamped into it
     // then, and putImageData also drops last frame's overlay.
@@ -713,7 +766,7 @@ export function createIfsView(canvas) {
       r.drawnN = r.n;
       drawGain = 1 + REPLAY_SPARSE_GAIN * (1 - Math.min(1, Math.max(0, Math.log(Math.max(r.n, 1) / REPLAY_MARKS) / Math.log(r.total / REPLAY_MARKS))));
       shade();
-      const look = replayMarkLook(r.n);
+      const look = replayMarkLook(r.n, r.slowJumps);
       if (look.rad < REPLAY_STAMP_RAD * dpr && look.alpha > 0) stampMarks(look);
     }
     ctx.putImageData(imageData, 0, 0);
@@ -722,13 +775,45 @@ export function createIfsView(canvas) {
     if (r.n >= r.total) replayHandOff();
   }
 
-  // The replay is over (all points down, or the cap): back to the normal render, which has
-  // the counts as they are and tops up whatever is missing.
+  // The replay is over (all points down up to its stop point, or the cap): back to the normal render,
+  // which has the counts as they are and tops up whatever is missing, on to the slider's count.
   function replayHandOff() {
-    const opts = lastOpts;
+    const opts = lastOpts, done = replay.onDone, stats = replayStats();
     endReplay();
     render(opts);
     opts.onProgress();
+    if (done) done(stats);
+  }
+
+  // The run's counter: the points counted (jumps after the burn-in) and the share of the coarse
+  // grid's reference cells (the cells the shape itself touches) that a counted jump has lit.
+  function replayStats() {
+    const r = replay;
+    return {
+      n: r.n, total: r.total, stop: r.stop, seed: r.seed, points: Math.max(0, r.n - REPLAY_BURN_IN),
+      lit: r.lit, refCells: r.refCells, coverage: r.refCells > 0 ? Math.min(1, r.lit / r.refCells) : 0,
+    };
+  }
+
+  // The coarse grid for the coverage counter, in canvas pixels: cells of REPLAY_COVER_CELL css px, and
+  // the reference, the cells the 50,000 precomputed points of the shape fall in under the view as it is.
+  function replayCoverage() {
+    const W = canvas.width, H = canvas.height;
+    const cell = Math.max(2, Math.round(REPLAY_COVER_CELL * dpr));
+    const coverW = Math.ceil(W / cell), coverH = Math.ceil(H / cell);
+    const coverRef = new Uint8Array(coverW * coverH);
+    const rot = -(view.rotation || 0), k = (H / 2) / view.halfHeight;
+    const kc = Math.cos(rot) * k, ks = Math.sin(rot) * k;
+    let refCells = 0;
+    const base = ifs.base;
+    for (let i = 0; i < base.length; i += 2) {
+      const wx = base[i] - view.cx, wy = base[i + 1] - view.cy;
+      const px = Math.floor(W / 2 + wx * kc - wy * ks), py = Math.floor(H / 2 - (wx * ks + wy * kc));
+      if (px < 0 || px >= W || py < 0 || py >= H) continue;
+      const c = ((py / cell) | 0) * coverW + ((px / cell) | 0);
+      if (coverRef[c] === 0) { coverRef[c] = 1; refCells++; }
+    }
+    return { cell, coverW, coverRef, refCells, cover: new Uint8Array(coverW * coverH), lit: 0 };
   }
 
   function replayLoop(now) {
@@ -746,8 +831,15 @@ export function createIfsView(canvas) {
   }
 
   // opts: render's (count, colorIndex, isActive, onProgress) plus speed() (the
-  // schedule's speed, 1 = REPLAY_SLOW_S + REPLAY_RAMP_S seconds), onChange() (started,
-  // paused, resumed or ended) and manual (tests: no animation frames, replayStep advances).
+  // schedule's speed, 1 = the run's own length), onChange() (started, paused, resumed or ended) and
+  // manual (tests: no animation frames, replayStep advances). With nothing else it is the default run
+  // (the constants above, which tests and the Shorts rely on); the options below change one run only:
+  //   stop      the points after which the replay hands over to the normal render, which carries on to
+  //             count (default: count; at most count)
+  //   slowJumps, gapFirst, gapLast, rampS, trail, liveFade   the schedule and the look (see REPLAY_LONG);
+  //             without gapLast the last slow gap follows from slowJumps and where the run stops
+  //   rng, seed the random numbers (default: ifsRandom, read as it is) and the seed to report for them
+  //   onDone(stats)   called when the run ends by itself (its stop point or the cap), not when cancelled
   function startReplay(opts) {
     endReplay();
     lastOpts = opts;
@@ -757,20 +849,36 @@ export function createIfsView(canvas) {
     resetForView();
     const T = ifs.transforms.length;
     let sum = 0;
+    const stop = Math.min(opts.stop ?? opts.count, opts.count), total = stop + REPLAY_BURN_IN;
+    const own = opts.slowJumps !== undefined || opts.gapFirst !== undefined || opts.gapLast !== undefined || opts.rampS !== undefined;
+    let sched = REPLAY_DEFAULT_SCHEDULE;
+    if (own) {
+      const slowJumps = opts.slowJumps ?? REPLAY_SLOW_JUMPS, rampS = opts.rampS ?? REPLAY_RAMP_S;
+      sched = replaySchedule({
+        slowJumps, gapFirst: opts.gapFirst ?? REPLAY_GAP_FIRST_S, rampS,
+        gapLast: opts.gapLast ?? (slowJumps === REPLAY_SLOW_JUMPS ? REPLAY_GAP_LAST_S : replayGapLast(slowJumps, total, rampS)),
+      });
+    }
+    const liveFade = opts.liveFade ?? REPLAY_LIVE_FADE;
+    const seqLen = own ? Math.max(REPLAY_SEQ, sched.slowJumps + liveFade + 4) : REPLAY_SEQ;
     replay = {
-      count: opts.count, total: opts.count + REPLAY_BURN_IN, speed: opts.speed || (() => 1),
-      onChange: opts.onChange || (() => {}), manual: !!opts.manual,
+      count: opts.count, stop, total, speed: opts.speed || (() => 1),
+      onChange: opts.onChange || (() => {}), onDone: opts.onDone || null, manual: !!opts.manual,
+      sched, slowJumps: sched.slowJumps, trail: opts.trail ?? REPLAY_TRAIL, liveFade, seqLen,
+      capS: own ? REPLAY_CAP_RATIO * sched.durationS : REPLAY_CAP_S,
+      rng: opts.rng || null, seed: opts.seed ?? null,
       cum: ifs.transforms.map((t) => (sum += t.p)),
       t: 0, wall: 0, n: 0, drawnN: -1, drawMs: 0, paused: false, raf: 0, last: 0, dot: null,
       x: 0, y: 0, nx: 0, ny: 0, nci: 0, // the point the dot is at, and the one it flies to next
       cr: cols.reduce((s, c) => s + c[0] / T, 0), cg: cols.reduce((s, c) => s + c[1] / T, 0), cb: cols.reduce((s, c) => s + c[2] / T, 0),
       // The landed points as marks, per transform (canvas px, x then y), and the first ones in order (world).
       marks: cols.map(() => new Float32Array(2 * REPLAY_MARKS)), markLen: new Int32Array(T),
-      seqX: new Float64Array(REPLAY_SEQ + 1), seqY: new Float64Array(REPLAY_SEQ + 1),
-      seqC: new Int8Array(REPLAY_SEQ + 1).fill(-1), // the start point, number 0, has no transform
+      seqX: new Float64Array(seqLen + 1), seqY: new Float64Array(seqLen + 1),
+      seqC: new Int8Array(seqLen + 1).fill(-1), // the start point, number 0, has no transform
+      ...replayCoverage(),
     };
     // The first jump's transform is chosen like all the others: land nothing, pick.
-    const r = replay, u = ifsRandom();
+    const r = replay, u = (opts.rng || ifsRandom)();
     let q = 0;
     while (q < T - 1 && u >= r.cum[q]) q++;
     const t = ifs.transforms[q];
@@ -854,12 +962,17 @@ export function createIfsView(canvas) {
     replayStep(dt, budgetMs = Infinity) { if (replay) replayFrame(dt, budgetMs); },
     get replayState() {
       if (!replay) return null;
-      const r = replay, top = Math.min(r.n, REPLAY_SEQ);
+      const r = replay, top = Math.min(r.n, r.seqLen);
       return {
         n: r.n, t: r.t, total: r.total, paused: r.paused, x: r.x, y: r.y, nx: r.nx, ny: r.ny, nci: r.nci,
         dot: r.dot, burnIn: REPLAY_BURN_IN, perTransform: Array.from(r.markLen), // jumps per transform, among the first REPLAY_MARKS
         seq: Array.from({ length: top + 1 }, (_, i) => ({ x: r.seqX[i], y: r.seqY[i], ci: r.seqC[i] })),
+        // this run's own length and look: stop (points before the burn-in), the schedule and its cap, the seed, the coverage grid
+        stop: r.stop, seed: r.seed, sched: r.sched, capS: r.capS, trail: r.trail, liveFade: r.liveFade, seqLen: r.seqLen,
+        cell: r.cell, coverW: r.coverW, refCells: r.refCells,
       };
     },
+    // The run's counter (points counted and coverage), cheap enough to read every frame; null when there is no replay.
+    get runStats() { return replay ? replayStats() : null; },
   };
 }

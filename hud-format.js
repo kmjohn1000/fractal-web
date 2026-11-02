@@ -23,6 +23,23 @@ export function formatZoom(baseScale, scale) {
   return z / n < 1000 ? `${Number((z / n).toPrecision(2))} ${word} times` : `${z.toExponential(1)}×`;
 }
 
+// A count of points, as the chaos-game run's counter shows it: exact with separators below 10,000
+// ("1,204"), then in words with one decimal below a hundred of a unit ("12.3 thousand", "1.2 million";
+// "1.0 million" is "1 million") and none above ("123 thousand"). A value that rounds up to a thousand
+// of its unit moves up to the next one ("999,600" is "1 million").
+export const POINT_UNITS = [[1e9, "billion"], [1e6, "million"], [1e3, "thousand"]];
+export function formatPointCount(n) {
+  const v = Math.max(0, Math.floor(n));
+  if (v < 10000) return v.toLocaleString("en-US");
+  let i = POINT_UNITS.findIndex(([unit]) => v >= unit);
+  const shown = (k) => {
+    const x = v / POINT_UNITS[k][0];
+    return x < 100 ? Number(x.toFixed(1)) : Math.round(x);
+  };
+  if (shown(i) >= 1000 && i > 0) i--;
+  return `${shown(i).toLocaleString("en-US")} ${POINT_UNITS[i][1]}`;
+}
+
 // How deep the view is, for the info card: "415× deeper", "1.8 trillion
 // times deeper", "The whole shape", or "Zoomed out 2×".
 export function zoomPhrase(baseScale, scale) {
