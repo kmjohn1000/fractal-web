@@ -25,7 +25,10 @@ git-ignored file.
       file>`; add the file to `app.js` (import and `exposeForTests`) and
       `sw.js` `APP_SHELL`.
       Open steps, in the order to take them:
-      1. `pattern-controls.js` from `teleport.js` (about 270 lines): the
+      1. DONE 2026-11-02 (`702f1b0`, 1.55.3; 534 tests passed on
+         webkit-iphone15 and chromium-desktop; the block diffed identical to
+         the old lines; `teleport.js` is now 270 lines, `pattern-controls.js`
+         313). Was: `pattern-controls.js` from `teleport.js` (about 270 lines): the
          Koch depth and fill handlers, depth play with its speed bubble and
          slide gestures, the dot-shape replay button, and the depth-slider
          and Reset handlers of the tree, hexaflake, dragon and fern. Leaves
