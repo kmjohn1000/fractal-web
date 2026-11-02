@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.55.4 — 2026-11-02
+- Internal: the vector views' pan, pinch and wheel gestures, their framing (Reset) and the nav objects moved out of interaction.js into a new file, vector-interaction.js. interaction.js now holds the two fractal canvases' gestures and the keyboard actions. No visible change.
+
 ## 1.55.3 — 2026-11-02
 - Internal: depth play, the chaos-game replay, and the depth sliders and Reset buttons of the pattern modes moved out of teleport.js into a new file, pattern-controls.js. teleport.js now holds only the flights and the cold open. No visible change.
 

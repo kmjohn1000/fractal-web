@@ -1,7 +1,7 @@
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { SOLID_COLORS, hueTurned, isGreyColor, strokeWidthFor } from "./colormaps.js?v=1.55.3";
-import { DRAGON_CURVE, GOSPER_CURVE, HILBERT_CURVE, SIERPINSKI_ARROWHEAD, lsystemPolylines, normalizePolylines } from "./lsystem.js?v=1.55.3";
-import { VECTOR_CULL_MARGIN, paintBackdrop, vectorAffine } from "./vectorgeom.js?v=1.55.3";
+import { SOLID_COLORS, hueTurned, isGreyColor, strokeWidthFor } from "./colormaps.js?v=1.55.4";
+import { DRAGON_CURVE, GOSPER_CURVE, HILBERT_CURVE, SIERPINSKI_ARROWHEAD, lsystemPolylines, normalizePolylines } from "./lsystem.js?v=1.55.4";
+import { VECTOR_CULL_MARGIN, paintBackdrop, vectorAffine } from "./vectorgeom.js?v=1.55.4";
 
 // The line-turtle curves that share one Canvas2D view (and one control
 // row in the app): the Heighway dragon plus Hilbert, Gosper and the
@@ -552,7 +552,7 @@ export function curveRamp(colorIndex) {
 }
 
 // Same Canvas2D view shape as createKochView/createPythagorasTreeView, so
-// attachVectorViewInteraction in interaction.js works on this unmodified. One view
+// attachVectorViewInteraction in vector-interaction.js works on this unmodified. One view
 // serves every LINE_CURVES entry; setCurve switches which one it draws,
 // keeping each curve's pan/zoom separately.
 export function createCurveView(canvas) {
@@ -622,7 +622,7 @@ export function createCurveView(canvas) {
     // Built from the viewport each frame, so there's no depth limit to zoom
     // into. refPx: how long a segment may stay at the slider's depth: the
     // length a depth-sized segment has when the curve is fitted to this
-    // canvas (the half-height interaction.js's Reset framing uses), with some
+    // canvas (the half-height vector-interaction.js's Reset framing uses), with some
     // headroom. It doesn't change as you zoom, so zooming in is what adds
     // levels.
     const fitPx = canvas.height / 2 / (opts.fitHalfHeight || (curve === "dragon" ? DRAGON_FIT_HH : CURVE_FIT_HH));

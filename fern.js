@@ -1,6 +1,6 @@
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { SOLID_COLORS, hueTurned, isGreyColor } from "./colormaps.js?v=1.55.3";
-import { backdropPixels } from "./vectorgeom.js?v=1.55.3";
+import { SOLID_COLORS, hueTurned, isGreyColor } from "./colormaps.js?v=1.55.4";
+import { backdropPixels } from "./vectorgeom.js?v=1.55.4";
 
 // Chaos-game IFS fractals: a few affine transforms, picked at random each
 // step (weighted by p) and applied to build a point cloud -- a
@@ -373,7 +373,7 @@ export const REPLAY_GESTURE_MS = 250;
 export const REPLAY_SETTLE_MS = 160;
 
 // Same Canvas2D view shape as createKochView/createPythagorasTreeView, so
-// attachVectorViewInteraction in interaction.js works on this unmodified. One view
+// attachVectorViewInteraction in vector-interaction.js works on this unmodified. One view
 // (one canvas) serves every IFS in IFS_SYSTEMS; setSystem switches which
 // one it shows, keeping each system's pan/zoom separately.
 export function createIfsView(canvas) {

@@ -1,19 +1,19 @@
 // The share menu and the share image: the PNG of the current view with its wordmark, the menu that opens
 // from every Share button (Save image, Copy link, Share…) and the handlers behind those three options.
-// Needs the state, render-layout.js (the capture waits on refinement), interaction.js (the vector canvases)
+// Needs the state, render-layout.js (the capture waits on refinement), vector-interaction.js (the vector canvases)
 // and share.js (buildShareUrl). Split from share.js (the menu and image, a pure move) and app.js (the
 // option handlers); nothing imports this file, app.js only lists it for the test hook.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { Platform } from "./platform.js?v=1.55.3";
-import { fractalLabel, slugify } from "./configs.js?v=1.55.3";
-import { Diag } from "./diag.js?v=1.55.3";
-import { isIfsMode } from "./fractal-defs.js?v=1.55.3";
-import { currentName, dualActive, els, fernView, isInteracting, kochView, mainRenderer, mode } from "./state.js?v=1.55.3";
-import { modeLabel } from "./hud.js?v=1.55.3";
-import { finishRefinement, refineDone, renderAll } from "./render-layout.js?v=1.55.3";
-import { VECTOR_VIEWS } from "./interaction.js?v=1.55.3";
-import { buildShareUrl } from "./share.js?v=1.55.3";
+import { Platform } from "./platform.js?v=1.55.4";
+import { fractalLabel, slugify } from "./configs.js?v=1.55.4";
+import { Diag } from "./diag.js?v=1.55.4";
+import { isIfsMode } from "./fractal-defs.js?v=1.55.4";
+import { currentName, dualActive, els, fernView, isInteracting, kochView, mainRenderer, mode } from "./state.js?v=1.55.4";
+import { modeLabel } from "./hud.js?v=1.55.4";
+import { finishRefinement, refineDone, renderAll } from "./render-layout.js?v=1.55.4";
+import { VECTOR_VIEWS } from "./vector-interaction.js?v=1.55.4";
+import { buildShareUrl } from "./share.js?v=1.55.4";
 
 // ---------------------------------------------------------------- share: image + menu
 

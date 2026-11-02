@@ -1,7 +1,7 @@
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { SOLID_COLORS, hueTurned, solidCss, strokeWidthFor } from "./colormaps.js?v=1.55.3";
-import { KOCH_SNOWFLAKE, lsystemPolylines } from "./lsystem.js?v=1.55.3";
-import { VECTOR_CULL_MARGIN, paintBackdrop, vectorAffine } from "./vectorgeom.js?v=1.55.3";
+import { SOLID_COLORS, hueTurned, solidCss, strokeWidthFor } from "./colormaps.js?v=1.55.4";
+import { KOCH_SNOWFLAKE, lsystemPolylines } from "./lsystem.js?v=1.55.4";
+import { VECTOR_CULL_MARGIN, paintBackdrop, vectorAffine } from "./vectorgeom.js?v=1.55.4";
 
 // Koch snowflake: a Canvas2D view with the same pan/zoom/animate/fill/
 // colormap feature set as the original koch.py port -- pure vector
@@ -11,7 +11,7 @@ import { VECTOR_CULL_MARGIN, paintBackdrop, vectorAffine } from "./vectorgeom.js
 // KOCH_SNOWFLAKE). The turtle is placed so the result is exactly the old
 // koch.py port's snowflake -- a triangle on the unit circle with vertices at
 // 90/210/330 degrees, spanning x +-0.866, y -0.5..1 at depth 0 -- which
-// interaction.js's vectorViewBox("koch") is fitted to: start at the top vertex
+// vector-interaction.js's vectorViewBox("koch") is fitted to: start at the top vertex
 // heading -60 degrees, one step = edge length sqrt(3) / 3^depth.
 // KOCH_SNOWFLAKE turns right at the corners (clockwise), so bumps go out
 // to the left; the old code walked the triangle counter-clockwise, so
@@ -259,7 +259,7 @@ export function createKochView(canvas) {
 
     // refPx: how long a piece may stay at the slider's depth: the length a
     // depth-sized piece has when the shape is fitted to this canvas (the
-    // half-height interaction.js's Reset framing uses), with some headroom. It
+    // half-height vector-interaction.js's Reset framing uses), with some headroom. It
     // doesn't change as you zoom, so zooming in is what adds levels.
     const refPx = KOCH_EDGE * Math.pow(1 / 3, opts.depth) * (canvas.height / 2 / (opts.fitHalfHeight || KOCH_FIT_HH)) * KOCH_ZOOM_SLACK;
     let pxMin = (opts.lite ? KOCH_LITE_PX_MIN : KOCH_PX_MIN) * dpr;

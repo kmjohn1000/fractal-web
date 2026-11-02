@@ -1,6 +1,6 @@
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { SOLID_COLORS, hueTurned } from "./colormaps.js?v=1.55.3";
-import { VECTOR_CULL_MARGIN, paintBackdrop, vectorAffine } from "./vectorgeom.js?v=1.55.3";
+import { SOLID_COLORS, hueTurned } from "./colormaps.js?v=1.55.4";
+import { VECTOR_CULL_MARGIN, paintBackdrop, vectorAffine } from "./vectorgeom.js?v=1.55.4";
 
 // The Hexaflake: a regular hexagon (circumradius 1, vertices at 0, 60, ...
 // degrees) is replaced by seven hexagons of 1/3 the size, one in the middle
@@ -134,7 +134,7 @@ export function hexaflakeAdaptive(aff, buf, lvl, depth, pxMin, refPx) {
 
 // Same Canvas2D view shape as createPythagorasTreeView (view/resize/render/
 // worldToScreen/screenToWorld/dpr) so attachVectorViewInteraction in
-// interaction.js works on this unmodified.
+// vector-interaction.js works on this unmodified.
 export function createHexaflakeView(canvas) {
   const ctx = canvas.getContext("2d");
   const view = { cx: 0, cy: 0, halfHeight: 1.1, rotation: 0 };
@@ -227,7 +227,7 @@ export function createHexaflakeView(canvas) {
 
     // refPx: how large a hexagon may stay at the slider's depth: the radius a
     // depth-level hexagon has when the flake is fitted to this canvas (the
-    // half-height interaction.js's Reset framing uses), with some headroom. It
+    // half-height vector-interaction.js's Reset framing uses), with some headroom. It
     // doesn't change as you zoom, so zooming in is what adds levels.
     const refPx = Math.pow(1 / 3, opts.depth) * (canvas.height / 2 / (opts.fitHalfHeight || HEX_FIT_HH)) * HEX_ZOOM_SLACK;
     let pxMin = opts.lite ? HEX_LITE_PX_MIN : HEX_PX_MIN;

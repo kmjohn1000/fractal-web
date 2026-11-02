@@ -1,6 +1,6 @@
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { SOLID_COLORS, hueTurned, solidCss } from "./colormaps.js?v=1.55.3";
-import { VECTOR_CULL_MARGIN, paintBackdrop, vectorAffine } from "./vectorgeom.js?v=1.55.3";
+import { SOLID_COLORS, hueTurned, solidCss } from "./colormaps.js?v=1.55.4";
+import { VECTOR_CULL_MARGIN, paintBackdrop, vectorAffine } from "./vectorgeom.js?v=1.55.4";
 
 // Classic (symmetric, 45-degree) Pythagoras tree: each square's top edge is
 // split by a right-triangle apex into two child squares scaled by cos/sin of
@@ -142,7 +142,7 @@ export function treeAdaptive(aff, buf, depth, pxMin, refPx, sty) {
 }
 
 // Same Canvas2D view shape as createKochView (view/resize/render/
-// worldToScreen/screenToWorld/dpr) so attachVectorViewInteraction in interaction.js
+// worldToScreen/screenToWorld/dpr) so attachVectorViewInteraction in vector-interaction.js
 // works on this unmodified.
 export function createPythagorasTreeView(canvas) {
   const ctx = canvas.getContext("2d");
@@ -232,7 +232,7 @@ export function createPythagorasTreeView(canvas) {
 
     // refPx: how large a square may stay at the slider's depth: the size a
     // depth-sized square has when the tree is fitted to this canvas (the
-    // half-height interaction.js's Reset framing uses), with some headroom. It
+    // half-height vector-interaction.js's Reset framing uses), with some headroom. It
     // doesn't change as you zoom, so zooming in is what adds levels.
     const refPx = Math.pow(Math.SQRT1_2, opts.depth) * (canvas.height / 2 / (opts.fitHalfHeight || TREE_FIT_HH)) * TREE_ZOOM_SLACK;
     let pxMin = opts.lite ? TREE_LITE_PX_MIN : TREE_PX_MIN;

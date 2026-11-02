@@ -3,16 +3,16 @@
 // colormap-picker.js (cmGradient). app.js's init schedules prepareColorSheet and fitColorSegment.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { COLORMAPS } from "./colormaps.js?v=1.55.3";
-import { FRACTAL_CONFIGS, fractalLabel } from "./configs.js?v=1.55.3";
-import { COLOR_BANDS_RANGE, COLOR_STYLES, ESCAPE_TIME_TYPES, colorStyle, styleBlocked, styleDrawn } from "./color-styles.js?v=1.55.3";
-import { currentName, els, isInteracting, juliaRenderer, mainRenderer, mainState, mode } from "./state.js?v=1.55.3";
-import { colormapDefaultIndex, colormapIndex, pickColormap, releaseColormapPick, setColorStyle } from "./state-colors.js?v=1.55.3";
-import { zoomPhrase } from "./hud-format.js?v=1.55.3";
-import { requestRender } from "./render-layout.js?v=1.55.3";
-import { fernNav, fitVectorView } from "./interaction.js?v=1.55.3";
-import { syncSliderFill } from "./compass-ui.js?v=1.55.3";
-import { cmGradient } from "./colormap-picker.js?v=1.55.3";
+import { COLORMAPS } from "./colormaps.js?v=1.55.4";
+import { FRACTAL_CONFIGS, fractalLabel } from "./configs.js?v=1.55.4";
+import { COLOR_BANDS_RANGE, COLOR_STYLES, ESCAPE_TIME_TYPES, colorStyle, styleBlocked, styleDrawn } from "./color-styles.js?v=1.55.4";
+import { currentName, els, isInteracting, juliaRenderer, mainRenderer, mainState, mode } from "./state.js?v=1.55.4";
+import { colormapDefaultIndex, colormapIndex, pickColormap, releaseColormapPick, setColorStyle } from "./state-colors.js?v=1.55.4";
+import { zoomPhrase } from "./hud-format.js?v=1.55.4";
+import { requestRender } from "./render-layout.js?v=1.55.4";
+import { fernNav, fitVectorView } from "./vector-interaction.js?v=1.55.4";
+import { syncSliderFill } from "./compass-ui.js?v=1.55.4";
+import { cmGradient } from "./colormap-picker.js?v=1.55.4";
 
 // ---------------------------------------------------------------- color sheet
 
