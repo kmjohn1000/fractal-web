@@ -5,7 +5,7 @@
 // string fails), the credit for exactly six shapes, nothing new on the escape-time fractals' cards,
 // the card staying inside the canvas area, clear of the rotation compass and above the middle of
 // the canvas on every screen size and at larger text sizes (the description shortens or goes away
-// where it would not fit: fitHudAbout in render-layout.js), the depth line, "(+N from zoom)", the
+// where it would not fit: fitHudAbout in hud.js), the depth line, "(+N from zoom)", the
 // scale bar and the Browse places button still working, and no DOM churn while nothing changes.
 // Baselines of the shapes themselves (the card hidden) are in app.spec.mjs.
 import { test, expect } from "@playwright/test";

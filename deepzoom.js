@@ -2,7 +2,7 @@
 // offsets. No DOM references (no document, els, window or canvas): pure math on numbers and arrays.
 // Needs FTYPE and PHOENIX_P from configs.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { FTYPE, PHOENIX_P } from "./configs.js?v=1.54.6";
+import { FTYPE, PHOENIX_P } from "./configs.js?v=1.54.7";
 
 // ---------------------------------------------------------------- Phase 3: deep zoom
 // Below this scale, plain float32 starts losing pixels to precision collapse
@@ -311,4 +311,22 @@ export function halton(index, base) {
 export const SAMPLE_COUNT = 16;
 export const SAMPLE_OFFSETS = Array.from({ length: SAMPLE_COUNT }, (_, i) =>
   i === 0 ? [0, 0] : [halton(i, 2) - 0.5, halton(i, 3) - 0.5]);
+
+// Below the deep-zoom threshold, a live float32 re-render during an active
+// gesture isn't a lower-quality version of the same view — the per-pixel
+// offset rounds away entirely against the view center at that scale, so it
+// shows what's effectively unrelated content — and a full perturbation
+// render per gesture frame is too slow. So while interacting at deep zoom,
+// each pane shows its last accurate frame moved with the gesture
+// (renderPreview), and renders for real once the gesture settles. A
+// CSS-transform version of this preview was tried first and was jumpy; this
+// one draws the snapshot through the same float64 view math the renderer
+// uses, so it can't drift from where the real render will land.
+export function deepZoomEligible(renderer, state) {
+  return (renderer.perturbationSupported
+    && perturbationEligibleType(state)
+    && state.scale < DEEP_ZOOM_THRESHOLD)
+    || (renderer.newtonDeepSupported && newtonDeepEligible(state))
+    || (renderer.phoenixDeepSupported && phoenixDeepEligible(state));
+}
 
