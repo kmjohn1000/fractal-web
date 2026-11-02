@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.54.1 — 2026-11-01
+- Internal: the color styles and orbit-trap math moved out of state.js into a new file, color-styles.js, and the renderer no longer imports state.js (it is handed the two values it reads). No visible change.
+
 ## 1.54.0 — 2026-11-01
 - Added the Sierpinski pentagon: a chaos game on the five corners of a pentagon, jumping about 62% of the way each time, with Play, corner rings, color, share links and the twist. It sits before the Sierpinski triangle in the picker.
 - The replay's corner rings now mark the pentagon's five corners as well as the triangle's three.

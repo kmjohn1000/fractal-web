@@ -1,19 +1,20 @@
 // The WebGL renderer factory: createFractalRenderer(canvas) and everything it draws with.
 // Needs the shader sources (shaders.js), FTYPE (configs.js), the digit/Apollonian helpers
-// (fractal-defs.js), deepzoom.js and, inside its functions only, state.js (colorStyle etc.).
-// An ES module: every top-level declaration is exported (test-hooks.js and state.js rely on it), and
-// the state names it reads are imported. state.js imports createFractalRenderer back; app.js lists
-// state.js before this file in its imports so state.js is reached first (it calls the factory at load).
-import { FTYPE, PHOENIX_P } from "./configs.js?v=1.54.0";
-import { Diag } from "./diag.js?v=1.54.0";
-import { FRAG_SRC, NEWTON_DEEP_FRAG_SRC, PHOENIX_DEEP_FRAG_SRC, PREVIEW_FRAG_SRC, VERT_SRC, VERT_SRC_300 } from "./shaders.js?v=1.54.0";
-import { apolloCapColor, apolloFrame, digitCellFrame, digitColorCycle, digitFractalDepth, digitSubPixelColor, isDigitFractal } from "./fractal-defs.js?v=1.54.0";
-import { DEEP_ZOOM_THRESHOLD, FIXED_THIRD, PHOENIX_DEEP_SAMPLES, PHOENIX_EXACT_CAP, SAMPLE_OFFSETS, chooseReference, computeReferenceOrbit, fixedLimbs, newtonDeepEligible, newtonOrbitF64, perturbationEligibleType, phoenixDeepEligible, phoenixEscapeF64, phoenixReference } from "./deepzoom.js?v=1.54.0";
-import { colorStyle, colorStyleFor, currentName, isInteracting, styleDrawn, trapRangeFor } from "./state.js?v=1.54.0";
+// (fractal-defs.js), deepzoom.js and color-styles.js. It imports nothing from state.js: state.js
+// calls createFractalRenderer(canvas, host) and passes the two live values a frame needs.
+// An ES module: every top-level declaration is exported (test-hooks.js and state.js rely on it).
+import { FTYPE, PHOENIX_P } from "./configs.js?v=1.54.1";
+import { Diag } from "./diag.js?v=1.54.1";
+import { FRAG_SRC, NEWTON_DEEP_FRAG_SRC, PHOENIX_DEEP_FRAG_SRC, PREVIEW_FRAG_SRC, VERT_SRC, VERT_SRC_300 } from "./shaders.js?v=1.54.1";
+import { apolloCapColor, apolloFrame, digitCellFrame, digitColorCycle, digitFractalDepth, digitSubPixelColor, isDigitFractal } from "./fractal-defs.js?v=1.54.1";
+import { DEEP_ZOOM_THRESHOLD, FIXED_THIRD, PHOENIX_DEEP_SAMPLES, PHOENIX_EXACT_CAP, SAMPLE_OFFSETS, chooseReference, computeReferenceOrbit, fixedLimbs, newtonDeepEligible, newtonOrbitF64, perturbationEligibleType, phoenixDeepEligible, phoenixEscapeF64, phoenixReference } from "./deepzoom.js?v=1.54.1";
+import { colorStyle, colorStyleFor, styleDrawn, trapRangeFor } from "./color-styles.js?v=1.54.1";
 
 // ---------------------------------------------------------------- WebGL renderer factory
 
-export function createFractalRenderer(canvas) {
+// host = { isInteracting(), currentName() }: the two bits of app state a frame depends on, read live
+// (state.js passes them in, so this file imports nothing from it).
+export function createFractalRenderer(canvas, host) {
   // preserveDrawingBuffer: supersampling blends each new sample into the
   // previous frame's canvas contents, which the browser would otherwise be
   // free to discard after compositing.
@@ -285,7 +286,7 @@ export function createFractalRenderer(canvas) {
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
   function drawFinal(sampleIndex, u) {
-    if (liveDiv > 1 && isInteracting && sampleIndex === 0) drawSmall(u);
+    if (liveDiv > 1 && host.isInteracting() && sampleIndex === 0) drawSmall(u);
     else drawToCanvas(sampleIndex);
   }
 
@@ -323,7 +324,7 @@ export function createFractalRenderer(canvas) {
   function updateTrapRange(u, state, cs, sampleIndex) {
     const key = [cs.glsl, cs.trap[0], cs.trap[1], state.ftype, state.cx, state.cy, state.scale, state.rotation || 0, !!state.flipY,
       state.power, state.maxIter, state.isJulia, state.juliaC[0], state.juliaC[1], canvas.width, canvas.height].join(",");
-    if (sampleIndex === 0 && (!trapRange || (trapRange.key !== key && !isInteracting))) {
+    if (sampleIndex === 0 && (!trapRange || (trapRange.key !== key && !host.isInteracting()))) {
       trapRange = { key, ...probeTrapRange(u, cs) };
     }
     const r = trapRange || trapFixedRange(cs);
@@ -533,8 +534,8 @@ export function createFractalRenderer(canvas) {
       // The fractal's name (the Julia pane of a dual view is its own row),
       // the path and style, and the kind of pass; a live frame also says if it
       // was drawn small (setLiveDivisor), since that changes what its time means.
-      const where = canvas.id === "mainCanvas" ? currentName : "Julia pane";
-      const kind = isInteracting ? (liveDiv > 1 ? `live at 1/${liveDiv} size` : "live") : sampleIndex === 0 ? "first pass" : "refine pass";
+      const where = canvas.id === "mainCanvas" ? host.currentName() : "Julia pane";
+      const kind = host.isInteracting() ? (liveDiv > 1 ? `live at 1/${liveDiv} size` : "live") : sampleIndex === 0 ? "first pass" : "refine pass";
       Diag.pass(gl, `${where} ${path || "float32"} ${styleDrawn(colorStyle.style, state)}, ${kind}`, performance.now() - t0);
     }
     return path;
@@ -549,12 +550,12 @@ export function createFractalRenderer(canvas) {
     }
     // Mid-gesture, deep views show the moving preview instead (renderAll);
     // this guard covers a pane renderAll still draws live.
-    if (!isInteracting && newtonDeepEligible(state) && newtonDeepProgram()) {
+    if (!host.isInteracting() && newtonDeepEligible(state) && newtonDeepProgram()) {
       setNewtonDeepUniforms(state, canvas.width, canvas.height, SAMPLE_OFFSETS[sampleIndex]);
       drawToCanvas(sampleIndex);
       return "fixed point";
     }
-    if (!isInteracting && phoenixDeepEligible(state) && phoenixDeepProgram()) {
+    if (!host.isInteracting() && phoenixDeepEligible(state) && phoenixDeepProgram()) {
       // Past PHOENIX_DEEP_SAMPLES the canvas keeps its average so far.
       if (sampleIndex < PHOENIX_DEEP_SAMPLES) {
         setPhoenixDeepUniforms(state, canvas.width, canvas.height, SAMPLE_OFFSETS[sampleIndex]);
@@ -618,7 +619,7 @@ export function createFractalRenderer(canvas) {
     // reference orbit every frame during a live pinch/wheel is expensive
     // enough to visibly jank.
     const usePerturbation = perturbationSupported
-      && !isInteracting
+      && !host.isInteracting()
       && perturbationEligibleType(state)
       && state.scale < DEEP_ZOOM_THRESHOLD;
     gl.uniform1i(u.usePerturbation, usePerturbation ? 1 : 0);
