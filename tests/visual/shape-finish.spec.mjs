@@ -1,4 +1,4 @@
-// The finish on the eleven pattern shapes (Koch, tree, hexaflake, the four line curves and the four
+// The finish on the twelve pattern shapes (Koch, tree, hexaflake, the four line curves and the five
 // chaos-game dot shapes): every one sits on the same very dark navy backdrop (paintBackdrop /
 // backdropPixels in vectorgeom.js) that is a little lighter in the middle than at the edges, the
 // Save image file keeps it, and the line curves (dragon, Hilbert, Gosper, arrowhead) are colored
@@ -12,9 +12,9 @@ import { test, expect } from "@playwright/test";
    vectorFitHalfHeight, curveRamp, hueTurned */
 
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
-const SHAPES = ["koch", "tree", "hexaflake", "dragon", "hilbert", "gosper", "arrowhead", "fern", "sierpinski", "levy", "vicsek"];
+const SHAPES = ["koch", "tree", "hexaflake", "dragon", "hilbert", "gosper", "arrowhead", "fern", "sierpinski", "pentagon", "levy", "vicsek"];
 const CURVES = ["dragon", "hilbert", "gosper", "arrowhead"];
-const IFS = ["fern", "sierpinski", "levy", "vicsek"];
+const IFS = ["fern", "sierpinski", "pentagon", "levy", "vicsek"];
 
 let pageErrors = [];
 
@@ -91,7 +91,7 @@ test.describe("the backdrop", () => {
     });
   }
 
-  // 1.50.1: the four chaos-game views fill a pixel buffer with the backdrop themselves (backdropPixels), which
+  // 1.50.1: the chaos-game views fill a pixel buffer with the backdrop themselves (backdropPixels), which
   // rounded every pixel to the nearest level and banded in steps about 40 px wide (25 distinct colors in the empty
   // lower part of a phone canvas); the Canvas2D views' gradient was dithered by the browser. Now both are dithered.
   for (const m of ["hilbert", ...IFS]) {
@@ -119,7 +119,7 @@ test.describe("the backdrop", () => {
       }, m);
       expect(r.changeRate, `share of horizontal neighbors that differ: ${r.changeRate.toFixed(2)} (banded: 0.02 to 0.06)`).toBeGreaterThan(0.4);
       // The mean over a block is still the backdrop's color: the dither averages out (the corner and center tests above
-      // hold the same for all eleven shapes).
+      // hold the same for all twelve shapes).
       const mid = await block(page, m, 0.5, 0.46, 9, 9);
       const center = await page.evaluate(() => BACKDROP_CENTER_RGB);
       for (let q = 0; q < 3; q++) expect(Math.abs(mid[q] - center[q]), `middle channel ${q}: ${mid}`).toBeLessThanOrEqual(2);

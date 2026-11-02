@@ -52,8 +52,8 @@ from a hand-edited link (including ones on the curve, 1e-300 across) must render
 quickly without errors; and deep-zoom screenshots (Koch, tree, dragon, Hilbert,
 Gosper, arrowhead) are compared with baselines.
 
-`shape-finish.spec.mjs` covers the finish on the eleven pattern shapes (Koch,
-tree, hexaflake, the four line curves, the four dot shapes). Every shape's
+`shape-finish.spec.mjs` covers the finish on the twelve pattern shapes (Koch,
+tree, hexaflake, the four line curves, the five dot shapes). Every shape's
 four corners are the backdrop's near-black navy, not pure black
 (`paintBackdrop` / `backdropPixels` in `vectorgeom.js`); with the shape moved
 out of the way the middle is the backdrop's center color and the sides and
@@ -70,7 +70,7 @@ by over 30 degrees of HSV hue, not 40). In White, which has no hue to turn
 the drawn line is dimmer at the start of each curve than at its end but still
 clearly visible. In lite mode (a gesture in progress) the curve is stroked once, not
 twice, and fewer pixels are lit, so the glow is really skipped. The backdrop of
-the four chaos-game shapes and of Hilbert is dithered, not banded (over 40% of
+the five chaos-game shapes and of Hilbert is dithered, not banded (over 40% of
 horizontal neighbors differ in the empty lower part of the canvas, against 2 to 6%
 before 1.50.1, when `backdropPixels` rounded to the nearest level), and its middle
 is still the center color. `hueTurned` (OKLCH since 1.50.1) keeps lightness
@@ -139,12 +139,13 @@ shorter at 4x; a generation too small to see has nothing to grow; share links, R
 and Back keep working. The `mode-koch` baseline is in `app.spec.mjs` and the koch
 ones in `vector.spec.mjs`.
 
-`info-card.spec.mjs` covers the descriptions on the eleven shapes' info cards
+`info-card.spec.mjs` covers the descriptions on the twelve shapes' info cards
 (1.51.0; `SHAPE_INFO` in `fractal-defs.js`, shown by `setHud`'s `about` option). The test
 holds its own copy of the approved wording and compares each shape's two lines
 character for character (and the app's table with the copy), and the credit line
 ("Koch curve, 1904", "Bosman, 1942", "Hilbert, 1891", "Barnsley, 1988", "Sierpinski, 1915",
-"Vicsek, 1983") shows for exactly those six shapes and for none of the other five.
+"Vicsek, 1983") shows for exactly those six shapes and for none of the other six
+(the Sierpinski pentagon's card has no credit: no maker and year is confirmed for it).
 The escape-time fractals' cards (Mandelbrot, Nova, a Julia set, Newton) and a dual view's
 have none of the new elements; switching shapes, or going to a fractal and back, updates
 the text; the description sits between the title and the depth line, which sits above
@@ -208,18 +209,19 @@ and deep near its limit), and the zoom stops at `NOVA_MIN_SCALE` however it is
 asked for (link, wheel, box, keys) with the info card saying so; Back and Reset.
 
 `dot-colors.spec.mjs` covers the coloring of the chaos-game modes (fern, Sierpinski
-triangle, Lévy C, Vicsek; 1.47.0): each picture spans several hues around its picked
+triangle, Sierpinski pentagon, Lévy C, Vicsek; 1.47.0): each picture spans several hues around its picked
 color, picking another color moves the whole picture to it, a deep zoom stays tinted
-(not gray or black), each mode has its own color (Green, Violet, Rose, Gold to start)
-and a pick changes only that mode, the toolbar pill (a gradient with one stop per
+(not gray or black), each mode has its own color (Green, Violet, Ice, Rose, Gold to start)
+and a pick (Coral, which no mode starts in) changes only that mode, the toolbar pill (a gradient with one stop per
 transform since 1.52.0, not the flat base color) and its name follow the mode, and
-share links carry the mode's color (links from before 1.47.0 still open). In White
+share links carry the mode's color (links from before 1.47.0 still open; the pentagon's link, m=pentagon,
+round-trips its view, points and color, and a two-finger twist turns its view like the other dot shapes'). In White
 (1.50.1) each transform takes its own brightness (dimmest 0.7 of the brightest) so the
 address cue survives, and the nine chromatic colors keep their lightness. Their
-baselines are `mode-fern`, `mode-sierpinski`, `mode-levy` and `mode-vicsek` in
+baselines are `mode-fern`, `mode-sierpinski`, `mode-pentagon`, `mode-levy` and `mode-vicsek` in
 app.spec.mjs (their toolbar row has the replay's Play and speed buttons).
 
-`dot-replay.spec.mjs` covers the chaos-game replay of the four dot shapes (Play beside
+`dot-replay.spec.mjs` covers the chaos-game replay of the five dot shapes (Play beside
 the speed button in `#fernControls`; `createIfsView`'s `startReplay` in fern.js,
 the button in teleport.js). Most checks run the replay on its manual clock
 (`startReplay({ manual: true })`, moved by `fernView.replayStep(seconds)`, read with
@@ -227,7 +229,7 @@ the button in teleport.js). Most checks run the replay on its manual clock
 jumps come every time; a few press the real button. The schedule (`replayJumpsAt`,
 `replayTimeOf`) lasts 6 to 10 s at 1x (about 8.1 s), never runs backwards, has no lurch
 where the slow jumps end and the pace ramps up, and the cap is at most 10 s. The
-button is in all four rows with its labels (Play replay / Pause replay), toggles,
+button is in all five rows with its labels (Play replay / Pause replay), toggles,
 pauses with nothing moving, resumes and, after the end, starts over; the shared speed
 button sets its speed, 4x taking about a quarter of the time; at 393 and 360 px the row
 stays on one line, the buttons are 44 px tall, at least 32 wide and clear of each other,
@@ -237,7 +239,7 @@ hidden; the depth rows' Play buttons are untouched. The picture starts as the em
 backdrop (no points counted), grows without thinning (lit pixels at nine steps from 3 to
 100,000 jumps never fall more than a quarter) and ends as the normal picture: the same
 light, address hue and 8 x 8 block means as a fresh normal render of the same count
-(within 10% and 2.5 levels on the Sierpinski, Lévy and Vicsek; within 60% and 8 on the fern,
+(within 10% and 2.5 levels on the Sierpinski, pentagon, Lévy and Vicsek; within 60% and 8 on the fern,
 which the normal render's 50,000 base points leave patchier at the top than the real chaos
 game does), and the hand-off to the normal render changes under 12 pixels and 0.1% of the
 light, with every point down so the normal render adds none. The first 60 jumps use the
@@ -247,7 +249,13 @@ the ratios 1 : 85 : 7 : 7 (within 5 standard deviations over 20,000 jumps) and t
 shapes' by their weights; the dot is the chosen transform's color lightened a quarter
 (and the ring of glow around it has its hue), the marks of the first jumps are their
 transforms' colors, and the dot follows the picked color; the Sierpinski's three corners
-carry rings in the slow phase with their centers left clear. A zoomed and turned view is
+carry rings in the slow phase with their centers left clear, and the Sierpinski pentagon's
+five corners carry them too (`IFS_SYSTEMS[...].corners`; no other shape has any). The
+pentagon's maps are checked directly: five maps of ratio 1/phi^2, no shear, the
+corners clockwise from the top on the unit circle, neighbouring copies sharing exactly
+one corner point and copies two apart clear of each other, and a seeded chaos game of
+200,000 points filling the pentagon's bounding box without leaving it and leaving the
+big hole in the middle (no point within 0.3 of the center). A zoomed and turned view is
 framed first as Reset does and Back returns to it. A touch, a pan, a wheel turn, a
 pinch and twist, an arrow key, another shape or mode, a new color, the points slider
 and Reset each end a replay (also a paused one, after which Play starts over) and the
@@ -258,10 +266,10 @@ the 10 s cap with the normal render finishing the picture. The points slider is 
 replay's length (it plays `count` points, so its last frame is the normal frame); moving
 it ends the replay.
 
-`solid-colors.spec.mjs` covers the ten solid colors of the eleven pattern shapes
+`solid-colors.spec.mjs` covers the ten solid colors of the twelve pattern shapes
 (1.52.0). The table is append-only because share links carry the index: Green,
 Autumn, Violet, Ice, Rose, Gold and White are still 0-6 with the same rgb, Blue,
-Teal and Coral are 7-9, and the eleven shapes still start in their own colors. The
+Teal and Coral are 7-9, and the twelve shapes still start in their own colors. The
 color menu lists the swatches in hue order (Rose, Coral, Autumn, Gold, Green, Teal,
 Ice, Blue, Violet, White, `SOLID_COLOR_ORDER`; display only) for every shape's color
 button, with only the current row checked; clicking each swatch of a curve (dragon)
