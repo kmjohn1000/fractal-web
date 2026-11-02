@@ -76,13 +76,13 @@ const CAPTION_SIZE = 66;
 function captions(P, meta) {
   const m = meta, buildFrom = (id) => P.starts[id] + m[id].marks[1000];
   return [
-    { from: P.starts.half + 0.9, to: P.starts.half + 5.6, text: "Same game as the triangle.\nFive corners." },
+    { from: P.starts.half + 0.7, to: P.starts.half + 5.7, text: "Same rules as the triangle game,\nbut with five corners\ninstead of three." }, // three lines: the second of two would be 39 characters, wider than the frame at 66 px
     { from: P.starts.half + 6.0, to: buildFrom("half") - 0.3, text: "Pick a corner at random.\nJump halfway there." },
     { from: buildFrom("half"), to: P.done.half + 1.0, text: "Halfway to a corner each time:\nthe pieces overlap and fill in." },
-    { from: P.starts.clean + 0.9, to: Math.min(P.starts.clean + 8.0, buildFrom("clean") - 0.3), text: "Now jump 62% of the way\ninstead." },
+    { from: P.starts.clean + 0.9, to: Math.min(P.starts.clean + 8.0, buildFrom("clean") - 0.3), text: "Change the jump from halfway\nto 62% of the way." },
     { from: P.starts.clean + 8.6, to: buildFrom("clean") + 0.2, text: "Each jump starts where\nthe last one landed." },
     { from: buildFrom("clean") + 0.6, to: P.done.clean + 1.2, text: "Five pieces that just touch,\neach built from five more." },
-    { from: P.finale + 0.9, to: P.seconds - 0.4, text: "Same random corners.\nA different jump." },
+    { from: P.finale + 0.9, to: P.seconds - 0.4, text: "Same random corners make\ntwo very different shapes." },
   ];
 }
 
@@ -218,7 +218,7 @@ Each picture is one million points, drawn live by Fractal Atlas, a free app for 
       "The halfway picture is not in the app as a shape: this video changes one constant (the pentagon's jump size, 0.5 instead of 0.382) in the app's own code as the page loads, and nothing else. The caption says only what is on screen (\"the pieces overlap and fill in\").",
       "The sound is self-made in ffmpeg (an open D drone, a soft pluck on each of the first jumps pitched by the corner it used, a rising shimmer as each picture builds, and bells as each completes), so it carries no third-party licensing. `the-pentagon-chaos-game-bed.m4a` is the bed alone.",
       "I could not listen to the audio or watch the video play when making this; audition it before posting. Loudness and pluck timing were measured, not heard, and the pictures were checked as still frames.",
-      "The captions are in the picture (top of the frame, clear of the Shorts buttons at the bottom): \"Same game as the triangle. Five corners.\", \"Pick a corner at random. Jump halfway there.\", \"Halfway to a corner each time: the pieces overlap and fill in.\", \"Now jump 62% of the way instead.\", \"Each jump starts where the last one landed.\", \"Five pieces that just touch, each built from five more.\" and \"Same random corners. A different jump.\"",
+      "The captions are in the picture (top of the frame, clear of the Shorts buttons at the bottom): \"Same rules as the triangle game, but with five corners instead of three.\", \"Pick a corner at random. Jump halfway there.\", \"Halfway to a corner each time: the pieces overlap and fill in.\", \"Change the jump from halfway to 62% of the way.\", \"Each jump starts where the last one landed.\", \"Five pieces that just touch, each built from five more.\" and \"Same random corners make two very different shapes.\"",
       "No claim is made about records or reach.",
     ],
   };
