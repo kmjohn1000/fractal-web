@@ -23,12 +23,14 @@
 // Deep views run the app's perturbation path against straight float64.
 import { chromium } from "@playwright/test";
 import { spawn, spawnSync } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { PNG } from "pngjs";
 
 const root = new URL("..", import.meta.url).pathname;
 const ORACLE = join(root, "scripts/oracle/oracle.py");
+// The oracle needs numpy and Pillow: the project's .venv (requirements.txt) when it exists, else the system python3.
+const PYTHON = existsSync(join(root, ".venv/bin/python")) ? join(root, ".venv/bin/python") : "python3";
 const DRIVER = join(root, "tests/driver.js");
 const PORT = 8749;
 const TILE = 360;
@@ -36,7 +38,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const args = process.argv.slice(2);
 const opt = (name, fallback) => { const i = args.indexOf(`--${name}`); return i < 0 ? fallback : args[i + 1]; };
-const oracleViews = JSON.parse(spawnSync("python3", ["-I", ORACLE, "views"], { encoding: "utf8" }).stdout);
+const oracleViews = JSON.parse(spawnSync(PYTHON, ["-I", ORACLE, "views"], { encoding: "utf8" }).stdout);
 const GATE_VIEWS = ["mandelbrot", "valley", "ship", "armada", "elephant", "rabbit", "tricorn", "celtic", "multibrot",
   "seahorse", "minibrot", "twinships"];
 const views = opt("views", GATE_VIEWS.join(",")).split(",");
@@ -122,7 +124,7 @@ async function renderApp(browser, v, style) {
 function oracleRender(view, style) {
   const out = join(outDir || "/tmp", `oracle-${view}-${style}.png`);
   const flipped = flip && oracleViews[view].ftype === "ship"; // the oracle's relief light follows the app's flipped view
-  const r = spawnSync("python3", ["-I", ORACLE, "render", view, style, cmap, out, "--density", String(density), "--shift", String(shift),
+  const r = spawnSync(PYTHON, ["-I", ORACLE, "render", view, style, cmap, out, "--density", String(density), "--shift", String(shift),
     "--size", String(TILE), ...(flipped ? ["--flip"] : [])], { encoding: "utf8", maxBuffer: 1 << 24 });
   if (r.status !== 0) throw new Error(`oracle failed: ${r.stderr}`);
   return {

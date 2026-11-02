@@ -403,7 +403,8 @@ or need Python with numpy and Pillow:
   Cross: all within the gates, Smooth 0.25 / 0.62 / 1.55 blurred, the same as the
   old orientation): renders a view
   in the app and in a float64 reference (`scripts/oracle/oracle.py`, which
-  reads the app's own palettes) and compares them. Gates, set from what
+  reads the app's own palettes; it needs numpy and Pillow from the project's `.venv`,
+  see `requirements.txt`, and the script uses it by itself) and compares them. Gates, set from what
   Smooth measures against the oracle (blurred difference 0.16-1.60 of 255
   over the twelve gate views, because float32 and float64 orbits drift
   apart in filament zones and the app takes 16 samples to the oracle's 4):

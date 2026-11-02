@@ -2,6 +2,9 @@
 *.log
 .vscode/
 node_modules/
+# The Python tools' environment (see requirements.txt): local only.
+.venv/
+__pycache__/
 www/
 CLAUDE.md
 listing/

@@ -1,0 +1,6 @@
+# Python tools only (scripts/oracle/oracle.py and scripts/render_icon.py). The app itself is plain JavaScript.
+# Setup (nothing goes into the system Python):  uv venv .venv && uv pip install --python .venv/bin/python -r requirements.txt
+# scripts/oracle-compare.mjs uses .venv/bin/python by itself when it exists; run render_icon.py as .venv/bin/python scripts/render_icon.py
+# (it also needs oxipng and pngquant: brew install oxipng pngquant).
+numpy==2.5.4
+pillow==13.0.0
