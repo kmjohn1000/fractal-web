@@ -8,6 +8,7 @@
     "ios:sync": "npm run build:www && cap sync ios",
     "ios:open": "cap open ios",
     "test:visual": "node scripts/test-visual.mjs",
+    "test:quick": "node scripts/test-visual.mjs --project=webkit-iphone15 --project=chromium-desktop",
     "prepare": "git config core.hooksPath .githooks",
     "stamp": "node scripts/stamp.mjs"
   },
