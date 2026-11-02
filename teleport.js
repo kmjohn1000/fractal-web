@@ -463,6 +463,12 @@ export function stopDotReplay() {
   if (fernView.cancelReplay()) requestRender();
 }
 
+// A touch, wheel tick, pan, zoom or twist on a vector view: ends a default replay (the Shorts', the
+// tests'), but not the app's own run, which follows the view (startDotRun) and draws itself again in it.
+export function touchDotReplay() {
+  if (!fernView.replayFollows) stopDotReplay();
+}
+
 export function toggleDotReplay() {
   if (fernView.replayRunning) { fernView.pauseReplay(); return; }
   if (fernView.replaying) { fernView.resumeReplay(); return; }
@@ -484,7 +490,7 @@ export function startDotRun(seed) {
   fernView.startReplay({
     ...opts, ...REPLAY_LONG,
     stop: replayStopPoints(fernView.system, opts.count),
-    rng: seededRandom(seed), seed,
+    rng: seededRandom(seed), seed, follow: true,
     speed: () => PLAY_SPEEDS[depthPlayer.speedIndex],
     onChange: syncReplayButtons,
     onDone: announceRunDone,

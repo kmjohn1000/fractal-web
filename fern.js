@@ -362,6 +362,14 @@ export function seededRandom(seed) {
 // The coverage counter's grid: cells of this many css px (times the pixel ratio) on a side.
 export const REPLAY_COVER_CELL = 12;
 
+// A run that follows the view (see replaySync) draws its landed points again after each move of the
+// view: all of them when it has at most REPLAY_REBUILD_MAX, and while the view keeps moving (a move
+// less than REPLAY_GESTURE_MS after the last) every stride-th one, with the exact picture
+// REPLAY_SETTLE_MS after the last move.
+export const REPLAY_REBUILD_MAX = 120000;
+export const REPLAY_GESTURE_MS = 250;
+export const REPLAY_SETTLE_MS = 160;
+
 // Same Canvas2D view shape as createKochView/createPythagorasTreeView, so
 // attachVectorViewInteraction in interaction.js works on this unmodified. One view
 // (one canvas) serves every IFS in IFS_SYSTEMS; setSystem switches which
@@ -445,7 +453,6 @@ export function createIfsView(canvas) {
   const keyNow = () => `${system},${view.cx},${view.cy},${view.halfHeight},${view.rotation},${canvas.width},${canvas.height},${colorIndex}`;
 
   function resetForView() {
-    const W = canvas.width, H = canvas.height;
     const key = keyNow();
     if (key === viewKey) return;
     viewKey = key;
@@ -458,7 +465,14 @@ export function createIfsView(canvas) {
         baseRGB[i * 3] += w * cols[q][0]; baseRGB[i * 3 + 1] += w * cols[q][1]; baseRGB[i * 3 + 2] += w * cols[q][2];
       }
     }
-    if (!counts || counts.length !== W * H) {
+    emptyBuffers();
+    leaves = viewLeaves();
+  }
+
+  // The hit counts and color sums for the canvas as it is, all zero (reallocated when its size changed).
+  function emptyBuffers() {
+    const W = canvas.width, H = canvas.height;
+    if (!counts || counts.length !== W * H || imageData.width !== W) {
       counts = new Uint32Array(W * H);
       sumR = new Float32Array(W * H); sumG = new Float32Array(W * H); sumB = new Float32Array(W * H);
       imageData = ctx.createImageData(W, H);
@@ -467,13 +481,18 @@ export function createIfsView(canvas) {
       counts.fill(0); sumR.fill(0); sumG.fill(0); sumB.fill(0);
     }
     nonzero = 0; accepted = 0; attempts = 0;
+  }
+
+  // The sampler's leaves for the view as it is (see buildLeaves).
+  function viewLeaves() {
+    const W = canvas.width, H = canvas.height;
     let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
     for (const [sx, sy] of [[0, 0], [W, 0], [0, H], [W, H]]) {
       const [x, y] = screenToWorld(sx, sy);
       x0 = Math.min(x0, x); x1 = Math.max(x1, x);
       y0 = Math.min(y0, y); y1 = Math.max(y1, y);
     }
-    leaves = buildLeaves(ifs, [x0, x1, y0, y1], cols);
+    return buildLeaves(ifs, [x0, x1, y0, y1], cols);
   }
 
   function isDone(target) {
@@ -579,7 +598,7 @@ export function createIfsView(canvas) {
     const trs = ifs.transforms, last = trs.length - 1, cum = r.cum, rnd = r.rng || ifsRandom;
     const rot = -(view.rotation || 0), k = (H / 2) / view.halfHeight;
     const kc = Math.cos(rot) * k, ks = Math.sin(rot) * k; // worldToScreen, as in runSlice
-    const { cover, coverRef, cell, coverW, seqLen } = r; // the coverage counter: the cells lit, the cells the shape has, their size and row length
+    const { cover, coverRef, cell, coverW, seqLen, pw, pc } = r; // the coverage counter: the cells lit, the cells the shape has, their size and row length; pw, pc: every landed point, if the run follows the view
     let { x, y, nx, ny, nci, cr, cg, cb, n, lit } = r;
     while (n < target) {
       const stop = Math.min(target, n + 2048);
@@ -588,6 +607,7 @@ export function createIfsView(canvas) {
         const col = cols[nci]; // a point's color mixes its transforms' colors, the newest weighing half, as ifsAddressPoints
         cr = 0.5 * cr + 0.5 * col[0]; cg = 0.5 * cg + 0.5 * col[1]; cb = 0.5 * cb + 0.5 * col[2];
         n++;
+        if (pw) { pw[2 * n] = x; pw[2 * n + 1] = y; pc[n] = nci; } // kept, to be drawn again in another view
         const wx = x - view.cx, wy = y - view.cy;
         const fx = W / 2 + wx * kc - wy * ks, fy = H / 2 - (wx * ks + wy * kc);
         if (n <= REPLAY_MARKS) {
@@ -752,6 +772,7 @@ export function createIfsView(canvas) {
   // what it did), then the picture and the overlay. At the cap the rest is left to render().
   function replayFrame(dt, budgetMs) {
     const r = replay, speed = r.speed();
+    if (r.pw) replaySync(); // a run that follows the view: if it moved, the landed points are drawn again first
     r.t += dt * speed;
     r.wall += dt * speed;
     if (r.wall >= r.capS) { replayHandOff(); return; }
@@ -759,9 +780,15 @@ export function createIfsView(canvas) {
     const target = Math.min(r.total, Math.floor(jumps));
     replayLand(target, performance.now() + budgetMs);
     if (r.n < target) r.t = r.sched.timeOf(r.n, r.total);
-    const t0 = performance.now();
-    // The picture is shaded again only when points landed; the small marks are stamped into it
-    // then, and putImageData also drops last frame's overlay.
+    replayPaint(target, jumps);
+    if (r.n >= r.total) replayHandOff();
+  }
+
+  // The picture and the overlay as the replay stands. The picture is shaded again only when points
+  // landed (or were drawn again for a new view); the small marks are stamped into it then, and
+  // putImageData also drops last frame's overlay.
+  function replayPaint(target, jumps) {
+    const r = replay, t0 = performance.now();
     if (r.n !== r.drawnN) {
       r.drawnN = r.n;
       drawGain = 1 + REPLAY_SPARSE_GAIN * (1 - Math.min(1, Math.max(0, Math.log(Math.max(r.n, 1) / REPLAY_MARKS) / Math.log(r.total / REPLAY_MARKS))));
@@ -772,12 +799,84 @@ export function createIfsView(canvas) {
     ctx.putImageData(imageData, 0, 0);
     replayOverlay(r.n < target ? r.n : jumps);
     r.drawMs = 0.7 * r.drawMs + 0.3 * (performance.now() - t0);
-    if (r.n >= r.total) replayHandOff();
+  }
+
+  // A run that follows the view (opts.follow) keeps every landed point in world coordinates, so a pan,
+  // zoom, twist, Back or a resize does not end it: the hit counts, color sums, marks and the coverage
+  // grid are built again from those points through the new view (replayRebuild), and the run goes on
+  // landing points in it. Called before each frame and from render(); true if it had to rebuild.
+  // While the view keeps moving (the previous rebuild is less than REPLAY_GESTURE_MS old) a run of more
+  // than REPLAY_REBUILD_MAX points draws only every stride-th one, each counting stride times, so a
+  // gesture stays smooth; REPLAY_SETTLE_MS after the last move the exact picture is rebuilt.
+  function replaySync() {
+    const r = replay;
+    resize();
+    if (keyNow() === viewKey) return false;
+    const now = performance.now(), gesturing = r.syncAt > 0 && now - r.syncAt < REPLAY_GESTURE_MS;
+    r.syncAt = now;
+    const stride = gesturing ? Math.max(1, Math.ceil(r.n / REPLAY_REBUILD_MAX)) : 1;
+    replayRebuild(stride);
+    clearTimeout(r.settle);
+    r.settle = stride > 1 ? setTimeout(replaySettle, REPLAY_SETTLE_MS) : 0;
+    return true;
+  }
+
+  // The exact picture, after a gesture drew only some of the points (also called by the timer).
+  function replaySettle() {
+    const r = replay;
+    if (!r) return;
+    clearTimeout(r.settle);
+    r.settle = 0;
+    if (!r.coarse) return;
+    replayRebuild(1);
+    if (r.paused || r.manual) replayPaint(r.n, r.sched.jumpsAt(r.t, r.total)); // (a running one paints on its next frame)
+  }
+
+  // Every landed point again, in order, through the view as it is: the same hit counts, color sums, marks
+  // and coverage the landing itself made (stride 1 gives them to the last bit when the view has not changed).
+  function replayRebuild(stride) {
+    const r = replay, W = canvas.width, H = canvas.height, n = r.n, { pw, pc } = r;
+    viewKey = keyNow();
+    emptyBuffers();
+    r.leavesStale = true; // the sampler's leaves for this view are made when the replay ends (endReplay)
+    Object.assign(r, replayCoverage());
+    const { cover, coverRef, cell, coverW } = r;
+    r.markLen.fill(0);
+    const rot = -(view.rotation || 0), k = (H / 2) / view.halfHeight;
+    const kc = Math.cos(rot) * k, ks = Math.sin(rot) * k;
+    let cr = r.cr0, cg = r.cg0, cb = r.cb0, lit = 0;
+    for (let i = 1; i <= n; i++) {
+      const q = pc[i], col = cols[q];
+      cr = 0.5 * cr + 0.5 * col[0]; cg = 0.5 * cg + 0.5 * col[1]; cb = 0.5 * cb + 0.5 * col[2];
+      const drawn = i > REPLAY_BURN_IN && (stride === 1 || i % stride === 0);
+      if (i > REPLAY_MARKS && !drawn) continue; // (only the colors, which follow from every transform in order, are needed)
+      const wx = pw[2 * i] - view.cx, wy = pw[2 * i + 1] - view.cy;
+      const fx = W / 2 + wx * kc - wy * ks, fy = H / 2 - (wx * ks + wy * kc);
+      if (i <= REPLAY_MARKS) {
+        const m = r.marks[q];
+        m[2 * r.markLen[q]] = fx; m[2 * r.markLen[q]++ + 1] = fy;
+      }
+      if (drawn) {
+        const px = Math.floor(fx), py = Math.floor(fy);
+        if (px >= 0 && px < W && py >= 0 && py < H) {
+          const idx = py * W + px;
+          if (counts[idx] === 0) nonzero++;
+          counts[idx] += stride;
+          sumR[idx] += stride * cr; sumG[idx] += stride * cg; sumB[idx] += stride * cb;
+          accepted += stride;
+          const c = ((py / cell) | 0) * coverW + ((px / cell) | 0);
+          if (cover[c] === 0) { cover[c] = 1; lit += coverRef[c]; }
+        }
+      }
+    }
+    attempts = Math.max(0, n - REPLAY_BURN_IN);
+    r.lit = lit; r.drawnN = -1; r.coarse = stride > 1;
   }
 
   // The replay is over (all points down up to its stop point, or the cap): back to the normal render,
   // which has the counts as they are and tops up whatever is missing, on to the slider's count.
   function replayHandOff() {
+    if (replay.coarse) replayRebuild(1); // the exact picture, not the gesture's
     const opts = lastOpts, done = replay.onDone, stats = replayStats();
     endReplay();
     render(opts);
@@ -871,12 +970,17 @@ export function createIfsView(canvas) {
       t: 0, wall: 0, n: 0, drawnN: -1, drawMs: 0, paused: false, raf: 0, last: 0, dot: null,
       x: 0, y: 0, nx: 0, ny: 0, nci: 0, // the point the dot is at, and the one it flies to next
       cr: cols.reduce((s, c) => s + c[0] / T, 0), cg: cols.reduce((s, c) => s + c[1] / T, 0), cb: cols.reduce((s, c) => s + c[2] / T, 0),
+      // A run that follows the view keeps every point (world x, y, and the transform that made it: its color
+      // follows from the transforms in order, from the start color below) to draw them again in another view.
+      colorIndex: opts.colorIndex, follow: !!opts.follow, syncAt: 0, settle: 0, coarse: false, leavesStale: false,
+      ...(opts.follow ? { pw: new Float64Array(2 * (total + 1)), pc: new Uint8Array(total + 1) } : {}),
       // The landed points as marks, per transform (canvas px, x then y), and the first ones in order (world).
       marks: cols.map(() => new Float32Array(2 * REPLAY_MARKS)), markLen: new Int32Array(T),
       seqX: new Float64Array(seqLen + 1), seqY: new Float64Array(seqLen + 1),
       seqC: new Int8Array(seqLen + 1).fill(-1), // the start point, number 0, has no transform
       ...replayCoverage(),
     };
+    replay.cr0 = replay.cr; replay.cg0 = replay.cg; replay.cb0 = replay.cb; // the start color
     // The first jump's transform is chosen like all the others: land nothing, pick.
     const r = replay, u = (opts.rng || ifsRandom)();
     let q = 0;
@@ -906,6 +1010,8 @@ export function createIfsView(canvas) {
   function endReplay() {
     if (!replay) return false;
     cancelAnimationFrame(replay.raf);
+    clearTimeout(replay.settle);
+    if (replay.leavesStale) leaves = viewLeaves(); // the view moved during the run: the sampler needs its leaves
     const { onChange } = replay;
     replay = null;
     drawGain = 1;
@@ -922,6 +1028,12 @@ export function createIfsView(canvas) {
     resize();
     colorIndex = opts.colorIndex;
     if (replay) {
+      // A run that follows the view carries on through a move of the view or a resize, drawing its points
+      // again (replaySync); a paused one paints at once, a running one on its next frame.
+      if (replay.pw && opts.count === replay.count && opts.colorIndex === replay.colorIndex) {
+        if (replaySync() && (replay.paused || replay.manual)) replayPaint(replay.n, replay.sched.jumpsAt(replay.t, replay.total));
+        return;
+      }
       // Nothing changed since the replay drew: it owns the canvas. Anything else
       // (view, size, color, count) ends it and gets the normal render.
       if (keyNow() === viewKey && opts.count === replay.count) return;
@@ -957,6 +1069,8 @@ export function createIfsView(canvas) {
     // True from startReplay until it ends (cancelled, or all points down), paused or not.
     get replaying() { return replay !== null; },
     get replayRunning() { return replay !== null && !replay.paused; },
+    // True while a replay that follows the view (opts.follow) is on: a touch, pan, zoom or twist does not end it.
+    get replayFollows() { return replay !== null && replay.follow; },
     // Test hooks: advance a manual replay by dt seconds (budgetMs of jumps, by default no limit),
     // and read where it is.
     replayStep(dt, budgetMs = Infinity) { if (replay) replayFrame(dt, budgetMs); },
@@ -970,8 +1084,14 @@ export function createIfsView(canvas) {
         // this run's own length and look: stop (points before the burn-in), the schedule and its cap, the seed, the coverage grid
         stop: r.stop, seed: r.seed, sched: r.sched, capS: r.capS, trail: r.trail, liveFade: r.liveFade, seqLen: r.seqLen,
         cell: r.cell, coverW: r.coverW, refCells: r.refCells,
+        // a run that follows the view: whether it does, whether the picture is the gesture's subsample, and the bytes its points take
+        follow: r.follow, coarse: r.coarse, pointBytes: r.pw ? r.pw.byteLength + r.pc.byteLength : 0,
       };
     },
+    // Test hooks: the exact picture at once instead of REPLAY_SETTLE_MS after a gesture, and the points drawn
+    // again through the view as it is (every stride-th one counting stride times), without painting.
+    replaySettle() { replaySettle(); },
+    replayRebuild(stride = 1) { if (replay && replay.pw) replayRebuild(stride); },
     // The run's counter (points counted and coverage), cheap enough to read every frame; null when there is no replay.
     get runStats() { return replay ? replayStats() : null; },
   };

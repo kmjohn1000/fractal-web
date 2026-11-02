@@ -11,7 +11,7 @@ import { limitScale } from "./deepzoom.js?v=1.54.0";
 import { endVectorInteracting, markInteracting, markVectorInteracting } from "./state-colors.js?v=1.54.0";
 import { renderAll, requestRender } from "./render-layout.js?v=1.54.0";
 import { centerForAnchor, normalizeAngle, screenToComplex } from "./view-math.js?v=1.54.0";
-import { cancelTeleport, glideMainTo, stopDotReplay } from "./teleport.js?v=1.54.0";
+import { cancelTeleport, glideMainTo, touchDotReplay } from "./teleport.js?v=1.54.0";
 import { colorSheetTapJustClosed } from "./color-sheet.js?v=1.54.0";
 
 // ---------------------------------------------------------------- interaction: fractal canvases
@@ -350,7 +350,7 @@ export function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive 
   canvas.addEventListener("pointerdown", (e) => {
     canvas.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    stopDotReplay(); // a touch on the picture ends a chaos-game replay (the dot shapes')
+    touchDotReplay(); // a touch on the picture ends a default chaos-game replay (the app's own run follows the view)
     if (isBoxZoomActive() && pointers.size === 1) {
       // Same viewport-coordinate bookkeeping as the WebGL panes' box zoom
       // (see attachFractalInteraction's pointerdown for why).
@@ -452,7 +452,7 @@ export function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive 
   canvas.addEventListener("wheel", (e) => {
     e.preventDefault();
     if (isBoxZoomActive()) return;
-    stopDotReplay();
+    touchDotReplay();
     checkpoint();
     const rect = canvas.getBoundingClientRect();
     const sx = (e.clientX - rect.left) * vectorView.dpr;

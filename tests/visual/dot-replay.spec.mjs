@@ -1140,25 +1140,48 @@ test.describe("the counter", () => {
   });
 
   for (const width of [360, 393]) {
-    test(`at ${width} px the chip is one line, inside the canvas, clear of the toolbar, in every shape`, async ({ page }) => {
+    test(`at ${width} px the chip is one line, at the top of the canvas, clear of the toolbar, the welcome card and the compass, in every shape`, async ({ page }) => {
       await page.setViewportSize({ width, height: 852 });
       for (const m of IFS_MODES) {
         await startLongManual(page, m, { seed: 9 });
-        await page.evaluate(() => { const s = fernView.replayState; fernView.replayStep(s.sched.timeOf(s.total - 1, s.total) - s.t); updateFernHud(); }); // one jump short of the end: the longest text, "500 thousand points · 100% filled"
-        const b = await page.evaluate(() => {
-          const r = document.getElementById("runChip").getBoundingClientRect(), c = els.fernCanvas.getBoundingClientRect(), tb = document.getElementById("fernControls").getBoundingClientRect();
-          return { x: r.x, y: r.y, w: r.width, h: r.height, right: r.right, bottom: r.bottom, cx: c.x, cr: c.right, cb: c.bottom, ctop: c.top, tbTop: tb.top, text: document.getElementById("runChip").textContent, lh: parseFloat(getComputedStyle(document.getElementById("runChip")).lineHeight) };
+        await page.evaluate(() => {
+          document.getElementById("welcome").classList.remove("hidden"); // the first web visit's card, at the bottom
+          document.querySelectorAll(".compass").forEach((c) => c.classList.add("shown")); // and the rotation compasses, top right
+          const s = fernView.replayState; fernView.replayStep(s.sched.timeOf(s.total - 1, s.total) - s.t); updateFernHud(); // one jump short of the end: the longest text, "500 thousand points · 100% filled"
         });
-        expect(b.h, `${m}: one line (${b.text})`).toBeLessThan(b.lh + 14);
-        expect(b.x, `${m}: inside on the left`).toBeGreaterThanOrEqual(b.cx + 8);
-        expect(b.right, `${m}: inside on the right`).toBeLessThanOrEqual(b.cr - 8);
-        expect(b.bottom, `${m}: inside the canvas`).toBeLessThanOrEqual(b.cb);
-        expect(b.bottom, `${m}: clear of the toolbar`).toBeLessThanOrEqual(b.tbTop);
-        expect(b.y).toBeGreaterThan(b.ctop);
-        await page.evaluate(() => fernView.cancelReplay());
+        const b = await page.evaluate(() => {
+          const rect = (e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, w: r.width, h: r.height }; };
+          const chip = document.getElementById("runChip");
+          const compasses = [...document.querySelectorAll(".compass")].map(rect).filter((r) => r.w > 0);
+          return { chip: rect(chip), canvas: rect(els.fernCanvas), tb: rect(document.getElementById("fernControls")), welcome: rect(document.getElementById("welcome")), compasses, text: chip.textContent, lh: parseFloat(getComputedStyle(chip).lineHeight), z: [getComputedStyle(chip).zIndex, getComputedStyle(document.getElementById("welcome")).zIndex] };
+        });
+        const hit = (a, c) => a.x < c.right && c.x < a.right && a.y < c.bottom && c.y < a.bottom;
+        expect(b.chip.h, `${m}: one line (${b.text})`).toBeLessThan(b.lh + 14);
+        expect(b.chip.x, `${m}: inside on the left`).toBeGreaterThanOrEqual(b.canvas.x + 8);
+        expect(b.chip.right, `${m}: inside on the right`).toBeLessThanOrEqual(b.canvas.right - 8);
+        expect(b.chip.bottom, `${m}: clear of the toolbar`).toBeLessThanOrEqual(b.tb.y);
+        expect(b.chip.y, `${m}: at the top of the canvas`).toBeLessThan(b.canvas.y + 24);
+        expect(b.chip.y).toBeGreaterThanOrEqual(b.canvas.y);
+        expect(hit(b.chip, b.welcome), `${m}: the welcome card (${JSON.stringify(b.welcome)}) does not cover the chip (${JSON.stringify(b.chip)})`).toBe(false);
+        expect(b.compasses.length, "the compasses are laid out").toBeGreaterThan(0);
+        for (const c of b.compasses) expect(hit(b.chip, c), `${m}: a compass does not cover the chip`).toBe(false);
+        await page.evaluate(() => { document.getElementById("welcome").classList.add("hidden"); document.querySelectorAll(".compass").forEach((c) => c.classList.remove("shown")); fernView.cancelReplay(); });
       }
     });
   }
+
+  test("the open info card, top left, takes the chip's place: the chip is not drawn under it", async ({ page }) => {
+    await startLongManual(page, "fern", { seed: 9 });
+    await stepRunTo(page, 3000);
+    await expect(page.locator("#runChip")).toBeVisible();
+    if (!(await page.evaluate(() => hudVisible))) await page.locator(".hudToggleBtn:visible").first().click();
+    await expect(page.locator("#hud")).toBeVisible();
+    await expect(page.locator("#runChip"), "the card says the same numbers").toBeHidden();
+    await expect(page.locator("#hud .hudPlain span").nth(0)).toHaveText(/^2,988 points · \d+% filled$/);
+    await page.locator(".hudToggleBtn:visible").first().click(); // the card closed again: the chip is back
+    await expect(page.locator("#runChip")).toBeVisible();
+    await page.evaluate(() => fernView.cancelReplay());
+  });
 
   test("the info card shows the same numbers and the run's seed while a run is on, and its usual line after", async ({ page }) => {
     await startLongManual(page, "pentagon", { seed: 482913 });
@@ -1354,4 +1377,286 @@ test.describe("Play: a Long run with a seed of its own, and the seed in the link
     await page.waitForFunction(() => mode === "sierpinski" && fernView.replaying && fernView.replayState.seed === 777, null, { timeout: 20_000 });
     await page.evaluate(() => fernView.cancelReplay());
   });
+});
+
+// ---------------------------------------------------------------------------------------------------
+// The app's run follows the view: a pan, zoom, twist, Back or resize does not end it (fern.js replaySync).
+
+// Plays a following Long run on the manual clock to n jumps, applies a change of the view (the way the
+// interaction code does: halfHeight, cx, cy, rotation, then the render), and reports what the run is
+// and what it drew; then starts a fresh run of the same seed in that view (no change to make) and plays
+// it to the same n, so the two can be compared pixel for pixel. `change` is in shares of the view's
+// halfHeight: { zoom (factor), dx, dy, rot }; `twice` makes a second change at once (a gesture: the
+// picture is the subsample until it settles); `settle` ends it; `pause` pauses the run before the change.
+async function followProbe(page, { m, n, count = 200000, seed = 5, change, twice = false, settle = false, pause = false }) {
+  await show(page, m);
+  return page.evaluate(([m, n, count, seed, change, twice, settle, pause]) => {
+    fernState.count = count; els.fernPointsSlider.value = count;
+    if (!vectorViewIsFitted(mode)) fitVectorView(mode);
+    const sys = IFS_SYSTEMS[m].transforms;
+    const stepTo = (k) => { const s = fernView.replayState; fernView.replayStep(Math.max(0, s.sched.timeOf(k + 1e-6, s.total) - s.t)); };
+    const start = () => fernView.startReplay({ ...fernRenderOpts(), ...REPLAY_LONG, stop: replayStopPoints(m, count), rng: seededRandom(seed), seed, follow: true, manual: true, speed: () => 1, onChange: syncReplayButtons });
+    const grab = () => { const c = els.fernCanvas; return c.getContext("2d").getImageData(0, 0, c.width, c.height).data; };
+    const apply = (c) => {
+      const v = fernView.view, h = v.halfHeight;
+      v.halfHeight *= c.zoom ?? 1; v.cx += (c.dx ?? 0) * h; v.cy += (c.dy ?? 0) * h; v.rotation = (v.rotation || 0) + (c.rot ?? 0);
+    };
+    const report = () => {
+      const st = fernView.replayState, rs = fernView.runStats;
+      return { replaying: fernView.replaying, running: fernView.replayRunning, n: st.n, t: st.t, points: rs.points, lit: rs.lit, refCells: rs.refCells, coverage: rs.coverage, accepted: fernView.accepted, per: st.perTransform, coarse: st.coarse, follow: st.follow, bytes: st.pointBytes };
+    };
+    start(); stepTo(n);
+    const before = report();
+    if (pause) fernView.pauseReplay();
+    apply(change);
+    fernView.render(fernRenderOpts());
+    if (twice) { apply({ zoom: 0.97, dx: 0.01, dy: 0, rot: 0.01 }); fernView.render(fernRenderOpts()); } // (a second move at once: a gesture)
+    updateFernHud();
+    const duringGesture = report();
+    if (settle) fernView.replaySettle();
+    const a = report(), A = grab(), chip = document.getElementById("runChip").textContent;
+    fernView.cancelReplay();
+    // the same run begun in that view
+    start(); stepTo(n);
+    const b = report(), B = grab();
+    fernView.cancelReplay();
+    let diff = 0;
+    for (let i = 0; i < A.length; i++) if (A[i] !== B[i]) diff++;
+    // an independent recomputation of the points through the view: the transforms in order from the seed
+    const rnd = seededRandom(seed);
+    const pick = (u) => { let cum = 0; for (const t of sys) { cum += t.p; if (u < cum) return t; } return sys[sys.length - 1]; };
+    const W = els.fernCanvas.width, H = els.fernCanvas.height, cell = Math.max(2, Math.round(12 * fernView.dpr)), gw = Math.ceil(W / cell);
+    const cellOf = (x, y) => { const [sx, sy] = fernView.worldToScreen(x, y), px = Math.floor(sx), py = Math.floor(sy); return px < 0 || px >= W || py < 0 || py >= H ? -1 : Math.floor(py / cell) * gw + Math.floor(px / cell); };
+    const ref = new Set(), base = ifsData(m).base;
+    for (let i = 0; i < base.length; i += 2) { const c = cellOf(base[i], base[i + 1]); if (c >= 0) ref.add(c); }
+    let t = pick(rnd()), x = 0, y = 0, inView = 0, litRef = 0;
+    const lit = new Set();
+    for (let k = 1; k <= a.n; k++) {
+      [x, y] = [t.a * x + t.b * y + t.e, t.c * x + t.d * y + t.f];
+      if (k > 12) { const c = cellOf(x, y); if (c >= 0) { inView++; if (!lit.has(c)) { lit.add(c); if (ref.has(c)) litRef++; } } }
+      t = pick(rnd());
+    }
+    return { before, duringGesture, a, b, diff, chip, indep: { inView, litRef, refCells: ref.size }, view: { ...fernView.view } };
+  }, [m, n, count, seed, change, twice, settle, pause]);
+}
+
+test.describe("a run follows the view", () => {
+  const CHANGES = {
+    zoom: { zoom: 0.4, dx: 0.12, dy: 0.15, rot: 0 },
+    pan: { zoom: 1, dx: 0.35, dy: -0.3, rot: 0 },
+    twist: { zoom: 1, dx: 0, dy: 0, rot: 0.6 },
+  };
+  for (const m of IFS_MODES) {
+    for (const [name, change] of Object.entries(CHANGES)) {
+      test(`${m}, ${name}: the run is not ended, keeps its points, and shows what a run begun in that view shows`, async ({ page }) => {
+        const r = await followProbe(page, { m, n: 3000, change });
+        expect(r.a.replaying, "not ended").toBe(true);
+        expect(r.a.follow).toBe(true);
+        expect(r.a.running, "still running").toBe(true);
+        expect(r.a.n, "no jump landed or lost").toBe(r.before.n);
+        expect(r.a.t, "the schedule's clock did not move").toBe(r.before.t);
+        expect(r.a.points, "the counted points are the same").toBe(r.before.points);
+        expect(r.a.per, "so are the first points' transforms").toEqual(r.before.per);
+        expect(r.diff, `pixels that differ from a run begun in that view (${JSON.stringify(r.view)})`).toBe(0);
+        expect(r.a.accepted, "the points on screen: an independent recomputation").toBe(r.indep.inView);
+        expect(r.a.lit).toBe(r.indep.litRef);
+        expect(r.a.refCells, "the reference cells of the new view").toBe(r.indep.refCells);
+        expect(r.a.coverage).toBe(r.b.coverage);
+        expect(r.chip, "the chip says the new view's coverage").toBe(`2,988 points · ${Math.floor(r.a.coverage * 100 + 1e-9)}% filled`);
+        expect(r.a.bytes, "17 bytes a point").toBe(17 * (200012 + 1));
+      });
+    }
+  }
+
+  test("pause, then zoom: still paused, the picture drawn at once in the new view", async ({ page }) => {
+    const r = await followProbe(page, { m: "pentagon", n: 20000, change: CHANGES.zoom, pause: true });
+    expect(r.a.replaying).toBe(true);
+    expect(r.a.running, "paused stays paused").toBe(false);
+    expect(r.a.n).toBe(r.before.n);
+    expect(r.diff, "drawn in the new view without waiting for a frame").toBe(0);
+  });
+
+  test("a gesture draws a subsample of a long run and the exact picture when it settles", async ({ page }) => {
+    const r = await followProbe(page, { m: "fern", n: 300000, count: 1000000, change: CHANGES.zoom, twice: true, settle: true });
+    expect(r.duringGesture.coarse, "the second move of a gesture draws every third point").toBe(true);
+    expect(Math.abs(r.duringGesture.accepted - r.a.accepted) / r.a.accepted, "the subsample counts as many points on screen as the exact picture (within 2%)").toBeLessThan(0.02);
+    expect(r.a.coarse).toBe(false);
+    expect(r.diff, "settled: pixel for pixel the picture of a run begun in that view").toBe(0);
+    expect(r.a.accepted).toBe(r.indep.inView);
+    expect(r.a.lit).toBe(r.indep.litRef);
+  });
+
+  test("it goes on landing points in the new view to the same total, and the hand-off keeps what was drawn", async ({ page }) => {
+    for (const m of ["sierpinski", "fern"]) {
+      const count = 200000;
+      await startLongManual(page, m, { count, seed: 5, extra: { follow: true } });
+      await stepRunTo(page, 4000);
+      const r = await page.evaluate(() => {
+        const v = fernView.view; v.halfHeight *= 0.5; v.cx += 0.1 * v.halfHeight; v.rotation = 0.3;
+        fernView.render(fernRenderOpts());
+        const s = fernView.replayState; fernView.replayStep(s.sched.timeOf(s.total - 1 + 1e-6, s.total) - s.t);
+        const last = { n: fernView.replayState.n, total: fernView.replayState.total, accepted: fernView.accepted, replaying: fernView.replaying };
+        fernView.replayStep(1);
+        return { last, end: { replaying: fernView.replaying, accepted: fernView.accepted }, view: { ...v } };
+      });
+      expect(r.last.n, `${m}: all the points but one down, in the new view`).toBe(r.last.total - 1);
+      expect(r.last.replaying).toBe(true);
+      expect(r.end.replaying, "ended by its own last point").toBe(false);
+      expect(r.end.accepted, "the hand-off keeps the redrawn counts, and the normal render adds to them").toBeGreaterThanOrEqual(r.last.accepted);
+      expect(r.end.accepted, "(the sampler works in batches of 2000, so it may pass the count by a batch)").toBeLessThanOrEqual(count + 2000);
+      expect(await page.evaluate(() => ({ ...fernView.view })), "the view is where the person left it").toEqual(r.view);
+      await settled(page, count);
+      expect(await lit(page), `${m}: the picture is there after the top-up`).toBeGreaterThan(2000);
+    }
+  });
+
+  test("a new color still ends it, and so does the points slider", async ({ page }) => {
+    await startLongManual(page, "levy", { seed: 5, extra: { follow: true } });
+    await stepRunTo(page, 3000);
+    await page.evaluate(() => { setFernColor(3); requestRender(); }); // Ice (Lévy starts in Rose)
+    await page.waitForFunction(() => !fernView.replaying);
+    await settled(page, 1000000);
+    await startLongManual(page, "levy", { seed: 5, extra: { follow: true } });
+    await stepRunTo(page, 3000);
+    await page.evaluate(() => { els.fernPointsSlider.value = 400000; els.fernPointsSlider.dispatchEvent(new Event("input")); });
+    expect(await page.evaluate(() => fernView.replaying)).toBe(false);
+    await settled(page, 400000);
+  });
+
+  test("a default replay (no follow) is still ended by a view change, a touch and a resize", async ({ page }) => {
+    for (const how of ["view", "touch", "resize"]) {
+      await startManual(page, "sierpinski", { count: 200000 });
+      await stepTo(page, 300.05);
+      expect(await page.evaluate(() => fernView.replayFollows)).toBe(false);
+      if (how === "view") await page.evaluate(() => { fernView.view.halfHeight *= 0.8; renderAll(); });
+      if (how === "touch") {
+        const r = await page.locator("#fernCanvas").boundingBox();
+        await page.mouse.click(r.x + r.width / 2, r.y + r.height / 2);
+      }
+      if (how === "resize") await page.setViewportSize({ width: 360, height: 800 });
+      await page.waitForFunction(() => !fernView.replaying);
+      await settled(page, 200000);
+      await page.setViewportSize({ width: 393, height: 852 });
+    }
+  });
+
+  test("a resize of the canvas does not end the app's run: it is drawn again at the new size", async ({ page }) => {
+    await startLongManual(page, "pentagon", { seed: 5, extra: { follow: true } });
+    await stepRunTo(page, 20000);
+    const before = await page.evaluate(() => ({ n: fernView.replayState.n, accepted: fernView.accepted, w: els.fernCanvas.width }));
+    await page.setViewportSize({ width: 340, height: 700 });
+    await frames(page);
+    const after = await page.evaluate(() => { fernView.replayStep(0); return { replaying: fernView.replaying, n: fernView.replayState.n, w: els.fernCanvas.width, accepted: fernView.accepted, lit: null }; });
+    expect(after.replaying).toBe(true);
+    expect(after.n).toBe(before.n);
+    expect(after.w).toBeLessThan(before.w);
+    expect(after.accepted, "the points are drawn again at the new size").toBeGreaterThan(before.accepted * 0.3);
+    await page.evaluate(() => fernView.cancelReplay());
+  });
+});
+
+test.describe("Play: gestures on the picture do not end the run (the owner's wheel-zoom repro)", () => {
+  const playAt = async (page, m, speed, jumps) => {
+    await show(page, m);
+    await page.evaluate((speed) => { depthPlayer.speedIndex = PLAY_SPEEDS.indexOf(speed); syncReplayButtons(); }, speed);
+    await page.locator("#fernReplayBtn").click();
+    await page.waitForFunction((j) => fernView.replayState && fernView.replayState.n >= j, jumps);
+  };
+  const wheel = (page, deltaY) => page.evaluate((deltaY) => {
+    const r = els.fernCanvas.getBoundingClientRect();
+    els.fernCanvas.dispatchEvent(new WheelEvent("wheel", { deltaY, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, bubbles: true, cancelable: true }));
+  }, deltaY);
+
+  for (const m of ["fern", "sierpinski"]) {
+    test(`${m}: wheel zoom mid-run: still replaying, Pause showing, the chip there, points still landing`, async ({ page }) => {
+      await playAt(page, m, 2, 3000);
+      const h0 = await page.evaluate(() => fernView.view.halfHeight);
+      const n0 = await page.evaluate(() => fernView.replayState.n);
+      for (let i = 0; i < 6; i++) await wheel(page, -120);
+      expect(await page.evaluate(() => fernView.view.halfHeight), "the view zoomed").toBeLessThan(h0 * 0.8);
+      await page.waitForTimeout(400);
+      expect(await page.evaluate(() => fernView.replaying), "not ended by the wheel").toBe(true);
+      await expect(page.locator("#fernReplayBtn")).toHaveAttribute("aria-label", "Pause replay");
+      await expect(page.locator("#runChip")).toBeVisible();
+      expect(await page.evaluate(() => fernView.replayState.n), "points keep landing").toBeGreaterThan(n0);
+      expect(await page.evaluate(() => fernView.accepted), "the run's points are not thrown at the screen all at once").toBeLessThan(900000);
+      await page.waitForFunction(() => !fernView.replaying, null, { timeout: 30_000 });
+      await expect(page.locator("#fernReplayBtn")).toHaveAttribute("aria-label", "Play replay");
+      await settled(page, await page.evaluate(() => fernState.count));
+      expect(await page.evaluate(() => fernView.view.halfHeight), "and the view is still the zoomed one").toBeLessThan(h0 * 0.8);
+    });
+  }
+
+  test("a tap, a drag and a pinch-and-twist on the picture, then Back, all leave the run going", async ({ page }) => {
+    await playAt(page, "pentagon", 1, 1500);
+    const r = await page.locator("#fernCanvas").boundingBox();
+    const cx = r.x + r.width / 2, cy = r.y + r.height / 2;
+    const v0 = await page.evaluate(() => ({ ...fernView.view }));
+    await page.mouse.click(cx, cy);
+    expect(await page.evaluate(() => fernView.replaying), "a plain tap").toBe(true);
+    await page.mouse.move(cx, cy);
+    await page.mouse.down();
+    await page.mouse.move(cx + 60, cy + 40, { steps: 5 });
+    await page.mouse.up();
+    expect(await page.evaluate(() => fernView.replaying), "a drag").toBe(true);
+    expect(await page.evaluate(() => fernView.view.cx), "the view panned").not.toBe(v0.cx);
+    await page.evaluate(() => {
+      HTMLElement.prototype.setPointerCapture = () => {}; // synthetic pointers have nothing to capture
+      const canvas = els.fernCanvas, b = canvas.getBoundingClientRect(), x = b.x + b.width / 2, y = b.y + b.height / 2;
+      const fire = (type, id, px, py) => canvas.dispatchEvent(new PointerEvent(type, { pointerId: id, clientX: px, clientY: py, bubbles: true, pointerType: "touch" }));
+      fire("pointerdown", 1, x - 40, y); fire("pointerdown", 2, x + 40, y);
+      fire("pointermove", 1, x - 50, y - 20); fire("pointermove", 2, x + 50, y + 20);
+      fire("pointerup", 1, x - 50, y - 20); fire("pointerup", 2, x + 50, y + 20);
+    });
+    expect(await page.evaluate(() => fernView.replaying), "a pinch and twist").toBe(true);
+    expect(await page.evaluate(() => fernView.view.rotation), "the view turned").not.toBe(0);
+    await page.keyboard.press("ArrowLeft");
+    expect(await page.evaluate(() => fernView.replaying), "an arrow key").toBe(true);
+    await page.locator("#fernBackBtn").click();
+    await page.waitForTimeout(100);
+    expect(await page.evaluate(() => fernView.replaying), "Back").toBe(true);
+    await expect(page.locator("#fernReplayBtn")).toHaveAttribute("aria-label", "Pause replay");
+    await page.waitForFunction(() => !fernView.replaying, null, { timeout: 40_000 });
+    await settled(page, await page.evaluate(() => fernState.count));
+  });
+
+  test("Reset still ends the run, and Pause then a zoom stays paused", async ({ page }) => {
+    await playAt(page, "vicsek", 2, 2000);
+    await wheel(page, -120);
+    await page.locator("#fernReplayBtn").click(); // pause
+    await expect(page.locator("#fernReplayBtn")).toHaveAttribute("aria-label", "Play replay");
+    await wheel(page, -120);
+    await page.waitForTimeout(300);
+    expect(await page.evaluate(() => ({ r: fernView.replaying, running: fernView.replayRunning })), "zoomed while paused: still paused").toEqual({ r: true, running: false });
+    await page.locator("#fernResetBtn").click();
+    expect(await page.evaluate(() => fernView.replaying), "Reset ends it as before").toBe(false);
+    await settled(page, await page.evaluate(() => fernState.count));
+  });
+});
+
+test.describe("zoomed far into a run", () => {
+  for (const [m, zoom] of [["fern", 100], ["fern", 10000], ["pentagon", 100], ["pentagon", 10000]]) {
+    test(`${m}, ${zoom}x: the run goes on, hands off, and the normal render fills the view`, async ({ page }) => {
+      await startLongManual(page, m, { count: 400000, seed: 5, extra: { follow: true } });
+      await stepRunTo(page, 20000);
+      const r = await page.evaluate((zoom) => {
+        // zoom onto a point of the shape: one of the precomputed points, the view centered on it
+        const p = ifsData(fernView.system).base; const i = 2 * 1234;
+        const v = fernView.view; v.cx = p[i]; v.cy = p[i + 1]; v.halfHeight /= zoom;
+        fernView.render(fernRenderOpts());
+        const mid = { replaying: fernView.replaying, accepted: fernView.accepted };
+        const s = fernView.replayState; fernView.replayStep(s.sched.timeOf(s.total - 1, s.total) - s.t);
+        const last = { replaying: fernView.replaying, accepted: fernView.accepted, coverage: fernView.runStats.coverage, refCells: fernView.runStats.refCells };
+        fernView.replayStep(1);
+        return { mid, last, ended: !fernView.replaying };
+      }, zoom);
+      expect(r.mid.replaying).toBe(true);
+      expect(r.last.replaying).toBe(true);
+      expect(r.ended).toBe(true);
+      await settled(page, 400000);
+      const area = await page.evaluate(() => els.fernCanvas.width * els.fernCanvas.height);
+      // (at 10,000x on the fern the view holds only a thin line of its stem, so little is lit; at 100x it holds fronds)
+      expect(await lit(page), `${m} ${zoom}x: the normal render filled the view (run had ${r.last.accepted} points on screen, ${r.last.refCells} reference cells)`).toBeGreaterThan(zoom > 1000 ? 300 : area * 0.002);
+    });
+  }
 });

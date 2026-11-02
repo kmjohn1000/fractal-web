@@ -205,18 +205,21 @@
     font: 0.75rem/1.3 -apple-system, system-ui, sans-serif; color: #fff;
   }
 
-  /* The chaos-game run's counter ("1,204 points · 38% filled", chaos-run.js) over the bottom of the canvas, in the
+  /* The chaos-game run's counter ("1,204 points · 38% filled", chaos-run.js) over the top of the canvas, in the
      card's style; it takes no taps, and shows only while a run is on (the replay is all motion, so
      with reduced motion there is none). The live region beside it is for a screen reader: off screen. */
   #runChip {
     position: absolute; z-index: 10; pointer-events: none;
-    bottom: 10px; left: 50%; transform: translateX(-50%); white-space: nowrap;
+    top: calc(10px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); white-space: nowrap;
     padding: 4px 10px; border-radius: 999px;
     background: rgba(20,20,22,0.6);
     -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4);
     box-shadow: 0 0 0 0.5px rgba(255,255,255,0.12);
     font: 0.75rem/1.3 -apple-system, system-ui, sans-serif; font-variant-numeric: tabular-nums; color: #fff;
   }
+  /* At the top, clear of the web welcome card (bottom) and the rotation compass (top right corner). The open
+     info card, top left, says the same numbers (updateFernHud), so the chip gives way to it. */
+  #hud:not(.hidden) ~ #runChip { display: none; }
   @media (prefers-reduced-motion: reduce) { #runChip { display: none; } }
   .srOnly {
     position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;

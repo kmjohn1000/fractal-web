@@ -290,6 +290,20 @@ coverage never falls and never passes 100%; `formatPointCount` has its table; th
 one line and inside the canvas at 360 and 393 px; a screen reader's one polite region
 hears only the powers of ten and the end.
 
+The app's run follows the view (`follow: true`, `replaySync`/`replayRebuild` in fern.js,
+`touchDotReplay` in teleport.js): a wheel tick, tap, drag, pinch and twist, arrow key, Back, or a
+resize does not end it (a default replay, the Shorts' and the tests', still ends as before; Reset, a new
+color, the points slider, another shape, Save and Share still end any run). Every landed point is kept
+in world coordinates (17 bytes: x, y as Float64 and the transform's index, from which the color follows;
+8.5 MB for 500,000 points) and drawn again through the new view, so after a zoom, pan or twist the
+picture is pixel for pixel what a run begun in that view with the same seed shows (tested on all five
+shapes), with the counted points, the schedule's clock and the first points' transforms unchanged, and
+`accepted`, the lit coverage cells and the reference cells equal an independent recomputation. While the
+view keeps moving a run of more than 120,000 points draws every third to fifth point (each counting
+that many) and the exact picture comes 160 ms after the last move; a paused run stays paused and is
+painted at once. The hand-off keeps the redrawn counts, also zoomed 100x and 10,000x. The chip is at the
+top of the canvas (clear of the welcome card, the compasses and, hidden, the open info card).
+
 `solid-colors.spec.mjs` covers the ten solid colors of the twelve pattern shapes
 (1.52.0). The table is append-only because share links carry the index: Green,
 Autumn, Violet, Ice, Rose, Gold and White are still 0-6 with the same rgb, Blue,
