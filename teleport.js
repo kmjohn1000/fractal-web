@@ -1,19 +1,19 @@
 // Teleport ("Surprise me"): flights to places, the cold open, depth play and its speed bubble.
 // Needs the state, render-layout, modes, places.js and compass-ui.js (prefersReducedMotion,
-// applyHudVisibility, syncSliderFill); the scripts before and after it call cancelTeleport etc.
+// showHud, syncSliderFill); the scripts before and after it call cancelTeleport etc.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { FRACTAL_CONFIGS } from "./configs.js?v=1.54.2";
-import { KOCH_GROW_MS, KOCH_GROW_STEP_SHARE } from "./koch.js?v=1.54.2";
-import { isCurveMode, viewFromBounds } from "./fractal-defs.js?v=1.54.2";
-import { TELEPORT_DESTINATIONS } from "./places.js?v=1.54.2";
-import { applyAutoIter, currentName, dragonState, dualActive, els, fernState, fernView, hexaflakeState, kochState, kochView, mainCanvasAspect, mainState, mode, pushHistory, setActivePane, setHudVisible, treeState } from "./state.js?v=1.54.2";
-import { applyDefaultColormap, markInteracting } from "./state-colors.js?v=1.54.2";
-import { fernRenderOpts, renderAll, requestRender } from "./render-layout.js?v=1.54.2";
-import { normalizeAngle } from "./view-math.js?v=1.54.2";
-import { selectFractal } from "./modes.js?v=1.54.2";
-import { dragonNav, fernNav, fitVectorView, hexaflakeNav, kochNav, treeNav, vectorViewIsFitted } from "./interaction.js?v=1.54.2";
-import { applyHudVisibility, prefersReducedMotion, syncSliderFill } from "./compass-ui.js?v=1.54.2";
+import { FRACTAL_CONFIGS } from "./configs.js?v=1.54.3";
+import { KOCH_GROW_MS, KOCH_GROW_STEP_SHARE } from "./koch.js?v=1.54.3";
+import { isCurveMode, viewFromBounds } from "./fractal-defs.js?v=1.54.3";
+import { TELEPORT_DESTINATIONS } from "./places.js?v=1.54.3";
+import { applyAutoIter, currentName, dragonState, dualActive, els, fernState, fernView, hexaflakeState, kochState, kochView, mainCanvasAspect, mainState, mode, pushHistory, setActivePane, treeState } from "./state.js?v=1.54.3";
+import { applyDefaultColormap, markInteracting } from "./state-colors.js?v=1.54.3";
+import { fernRenderOpts, renderAll, requestRender } from "./render-layout.js?v=1.54.3";
+import { normalizeAngle } from "./view-math.js?v=1.54.3";
+import { selectFractal } from "./modes.js?v=1.54.3";
+import { dragonNav, fernNav, fitVectorView, hexaflakeNav, kochNav, treeNav, vectorViewIsFitted } from "./interaction.js?v=1.54.3";
+import { prefersReducedMotion, showHud, syncSliderFill } from "./compass-ui.js?v=1.54.3";
 
 // ---------------------------------------------------------------- teleport ("Surprise me")
 
@@ -230,8 +230,7 @@ export function coldOpen() {
       if (i < 0) throw new Error(`Cold open place "${label}" is not in TELEPORT_DESTINATIONS`);
       return i;
     });
-    setHudVisible(true);
-    applyHudVisibility();
+    showHud();
     flyToPlace(places[Math.floor(Math.random() * places.length)]);
   }, 600)));
 }

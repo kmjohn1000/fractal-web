@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.54.3 — 2026-11-01
+- Internal: the info card's on/off flag now lives in compass-ui.js with a showHud() function, replacing a setter and three repeated pairs of calls. No visible change.
+
 ## 1.54.2 — 2026-11-01
 - Internal: the box-zoom toggles and the line curves' box cache now live in interaction.js, the only file that uses them (two fewer shared variables and setters). No visible change.
 

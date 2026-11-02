@@ -4,12 +4,12 @@
 // colormaps.js and, inside function bodies only, render-layout.js and share.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { COLORMAPS } from "./colormaps.js?v=1.54.2";
-import { FRACTAL_CONFIGS } from "./configs.js?v=1.54.2";
-import { COLOR_BANDS_RANGE, COLOR_STYLES, colorStyle } from "./color-styles.js?v=1.54.2";
-import { applyAutoIter, currentName, els, juliaHistory, juliaState, mainHistory, mainState, setIsInteracting, setSettleTimer, settleTimer } from "./state.js?v=1.54.2";
-import { labelColormapButton, renderAll, requestRender, updateLUT } from "./render-layout.js?v=1.54.2";
-import { buildShareHash } from "./share.js?v=1.54.2";
+import { COLORMAPS } from "./colormaps.js?v=1.54.3";
+import { FRACTAL_CONFIGS } from "./configs.js?v=1.54.3";
+import { COLOR_BANDS_RANGE, COLOR_STYLES, colorStyle } from "./color-styles.js?v=1.54.3";
+import { applyAutoIter, currentName, els, juliaHistory, juliaState, mainHistory, mainState, setIsInteracting, setSettleTimer, settleTimer } from "./state.js?v=1.54.3";
+import { labelColormapButton, renderAll, requestRender, updateLUT } from "./render-layout.js?v=1.54.3";
+import { buildShareHash } from "./share.js?v=1.54.3";
 
 // ---------------------------------------------------------------- default colormaps
 

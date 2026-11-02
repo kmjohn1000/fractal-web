@@ -2,7 +2,7 @@
 // the picker's order, each with a thumbnail, its depth in words and a Dive pill; a tap flies there.
 // Opens from the "Browse places" button in the info card and the "Places" row at the top of the
 // picker. Needs the state, places.js, fractal-defs.js, render-layout.js, modes.js, teleport.js
-// (flyToPlace), compass-ui.js (prefersReducedMotion, applyHudVisibility) and color-sheet.js
+// (flyToPlace), compass-ui.js (prefersReducedMotion, showHud) and color-sheet.js
 // (colorSheetEl); app.js lists the sheet with the popovers (Escape, aria-expanded).
 //
 // An ES module (no "use strict", modules are strict), imported by app.js, so it runs before app.js
@@ -10,15 +10,15 @@
 // which is what lets test-hooks.js expose them (the places spec and scripts/render_place_thumbs.mjs
 // read placeId); see scripts/check-test-globals.mjs.
 
-import { FRACTAL_CONFIGS, fractalLabel, slugify } from "./configs.js?v=1.54.2";
-import { PICKER_LAYOUT, viewFromBounds } from "./fractal-defs.js?v=1.54.2";
-import { TELEPORT_DESTINATIONS } from "./places.js?v=1.54.2";
-import { currentName, dualActive, els, mainCanvasAspect, mode, setHudVisible } from "./state.js?v=1.54.2";
-import { capitalize, zoomPhrase } from "./hud-format.js?v=1.54.2";
-import { exitDual, selectFractal } from "./modes.js?v=1.54.2";
-import { applyHudVisibility, prefersReducedMotion } from "./compass-ui.js?v=1.54.2";
-import { flyToPlace } from "./teleport.js?v=1.54.2";
-import { colorSheetEl } from "./color-sheet.js?v=1.54.2";
+import { FRACTAL_CONFIGS, fractalLabel, slugify } from "./configs.js?v=1.54.3";
+import { PICKER_LAYOUT, viewFromBounds } from "./fractal-defs.js?v=1.54.3";
+import { TELEPORT_DESTINATIONS } from "./places.js?v=1.54.3";
+import { currentName, dualActive, els, mainCanvasAspect, mode } from "./state.js?v=1.54.3";
+import { capitalize, zoomPhrase } from "./hud-format.js?v=1.54.3";
+import { exitDual, selectFractal } from "./modes.js?v=1.54.3";
+import { prefersReducedMotion, showHud } from "./compass-ui.js?v=1.54.3";
+import { flyToPlace } from "./teleport.js?v=1.54.3";
+import { colorSheetEl } from "./color-sheet.js?v=1.54.3";
 
 // ---------------------------------------------------------------- places sheet
 
@@ -166,8 +166,7 @@ export function flyToPlaceFrom(i) {
     if (dualActive) exitDual();
     selectFractal(d.fractal, { fresh: true });
   }
-  setHudVisible(true);
-  applyHudVisibility();
+  showHud();
   flyToPlace(i);
 }
 

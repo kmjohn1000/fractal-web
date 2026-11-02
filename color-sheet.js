@@ -3,16 +3,16 @@
 // colormap-picker.js (cmGradient). app.js's init schedules prepareColorSheet and fitColorSegment.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { COLORMAPS } from "./colormaps.js?v=1.54.2";
-import { FRACTAL_CONFIGS, fractalLabel } from "./configs.js?v=1.54.2";
-import { COLOR_BANDS_RANGE, COLOR_STYLES, ESCAPE_TIME_TYPES, colorStyle, styleBlocked, styleDrawn } from "./color-styles.js?v=1.54.2";
-import { currentName, els, isInteracting, juliaRenderer, mainRenderer, mainState, mode } from "./state.js?v=1.54.2";
-import { colormapDefaultIndex, colormapIndex, pickColormap, releaseColormapPick, setColorStyle } from "./state-colors.js?v=1.54.2";
-import { zoomPhrase } from "./hud-format.js?v=1.54.2";
-import { requestRender } from "./render-layout.js?v=1.54.2";
-import { fernNav, fitVectorView } from "./interaction.js?v=1.54.2";
-import { syncSliderFill } from "./compass-ui.js?v=1.54.2";
-import { cmGradient } from "./colormap-picker.js?v=1.54.2";
+import { COLORMAPS } from "./colormaps.js?v=1.54.3";
+import { FRACTAL_CONFIGS, fractalLabel } from "./configs.js?v=1.54.3";
+import { COLOR_BANDS_RANGE, COLOR_STYLES, ESCAPE_TIME_TYPES, colorStyle, styleBlocked, styleDrawn } from "./color-styles.js?v=1.54.3";
+import { currentName, els, isInteracting, juliaRenderer, mainRenderer, mainState, mode } from "./state.js?v=1.54.3";
+import { colormapDefaultIndex, colormapIndex, pickColormap, releaseColormapPick, setColorStyle } from "./state-colors.js?v=1.54.3";
+import { zoomPhrase } from "./hud-format.js?v=1.54.3";
+import { requestRender } from "./render-layout.js?v=1.54.3";
+import { fernNav, fitVectorView } from "./interaction.js?v=1.54.3";
+import { syncSliderFill } from "./compass-ui.js?v=1.54.3";
+import { cmGradient } from "./colormap-picker.js?v=1.54.3";
 
 // ---------------------------------------------------------------- color sheet
 
