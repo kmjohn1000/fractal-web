@@ -24,6 +24,7 @@ import * as hudFormat from "./hud-format.js?v=1.54.0";
 import * as configs from "./configs.js?v=1.54.0";
 import * as dragon from "./dragon.js?v=1.54.0";
 import * as fern from "./fern.js?v=1.54.0";
+import * as chaosRunModule from "./chaos-run.js?v=1.54.0";
 import * as shaders from "./shaders.js?v=1.54.0";
 import * as koch from "./koch.js?v=1.54.0";
 import * as pythagoras from "./pythagoras.js?v=1.54.0";
@@ -59,7 +60,7 @@ exposeForTests({
   "colormaps.js": colormaps, "lsystem.js": lsystem, "vectorgeom.js": vectorgeom, "view-math.js": viewMath, "hud-format.js": hudFormat,
   "state-colors.js": stateColors, "render-layout.js": renderLayout, "modes.js": modes, "interaction.js": interaction,
   "compass-ui.js": compassUi, "teleport.js": teleport, "colormap-picker.js": colormapPicker,
-  "color-sheet.js": colorSheet, "places-sheet.js": placesSheet, "share.js": share,
+  "color-sheet.js": colorSheet, "places-sheet.js": placesSheet, "share.js": share, "chaos-run.js": chaosRunModule,
 });
 
 // ---------------------------------------------------------------- toolbar accessibility

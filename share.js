@@ -16,7 +16,8 @@ import { finishRefinement, modeLabel, refineDone, renderAll, requestRender, upda
 import { normalizeAngle } from "./view-math.js?v=1.54.0";
 import { enterDual, exitDual, selectFractal, setMode } from "./modes.js?v=1.54.0";
 import { VECTOR_VIEWS, dragonNav, fernNav, fittedVectorModes } from "./interaction.js?v=1.54.0";
-import { cancelTeleport } from "./teleport.js?v=1.54.0";
+import { cancelTeleport, scheduleSharedRun } from "./teleport.js?v=1.54.0";
+import { currentRunSeed, parseRunSeed } from "./chaos-run.js?v=1.54.0";
 import { setFernColor, updateColorSwatches } from "./colormap-picker.js?v=1.54.0";
 
 // ---------------------------------------------------------------- share: links
@@ -63,6 +64,9 @@ export function buildShareHash() {
     put("x", v.cx); put("y", v.cy); put("s", v.halfHeight); put("r", v.rotation || 0);
     if (isIfsMode(mode)) {
       put("n", fernState.count); put("c", vectorColors[mode]);
+      // The seed of the chaos-game run on screen (chaos-run.js), only after one was played and
+      // while the view is as it left it; opening the link plays that run.
+      if (currentRunSeed()) put("sd", currentRunSeed());
     } else {
       put("cm", COLORMAPS[colormapIndex].name);
       put("c", vectorColors[mode]);
@@ -145,7 +149,11 @@ export function parseShareHash(hash) {
       }
       return st;
     }
-    if (isIfsMode(m)) return { mode: m, ...view, count: int("n", 100000, 4000000), colorIndex: int("c", 0, SOLID_COLORS.length - 1) };
+    if (isIfsMode(m)) {
+      // sd (the run's seed) is lenient, like the style fields: a bad one is left out and the link still opens.
+      const seed = parseRunSeed(p.get("sd"));
+      return { mode: m, ...view, count: int("n", 100000, 4000000), colorIndex: int("c", 0, SOLID_COLORS.length - 1), ...(seed ? { seed } : {}) };
+    }
     if (m === "hexaflake") {
       // Lenient, because 1.42.0 links (a chaos-game mode) carry a points value
       // "n" and no depth: n is ignored, and a missing or out-of-range depth,
@@ -223,6 +231,7 @@ export function applyShareState(st) {
   }
   updateLUT();
   requestRender();
+  if (st.seed) scheduleSharedRun(st.seed, st.mode); // a link with a run's seed plays that run
 }
 
 // Applies a share link from the URL, then strips the hash so a reload

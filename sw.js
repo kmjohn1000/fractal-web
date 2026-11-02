@@ -41,6 +41,7 @@ const APP_SHELL = [
   "./hexaflake.js",
   "./dragon.js",
   "./fern.js",
+  "./chaos-run.js",
   "./lsystem.js",
   "./view-math.js",
   "./hud-format.js",

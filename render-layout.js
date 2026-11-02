@@ -20,6 +20,7 @@ import { cmGradient, labelColorButton } from "./colormap-picker.js?v=1.54.0";
 import { COLOR_LOOKS, bandsText, colorSheetStyles, currentLookId, lookPalette, shiftText } from "./color-sheet.js?v=1.54.0";
 import { apolloCurvatureText, capitalize, formatHudCoords, rotationHudText, scaleBar, unitsPerCssPx, zoomPhrase } from "./hud-format.js?v=1.54.0";
 import { normalizeAngle } from "./view-math.js?v=1.54.0";
+import { runHudParts, updateRunChip } from "./chaos-run.js?v=1.54.0";
 
 // ---------------------------------------------------------------- rendering + layout
 
@@ -403,8 +404,10 @@ export function updateDragonHud() {
 export function updateFernHud() {
   // accepted = points actually on screen so far; it climbs toward the
   // target as refinement runs, and resets on every pan/zoom.
-  setHud(modeLabel(fernView.system), [`${fernView.accepted.toLocaleString()} of ${fernState.count.toLocaleString()} points`, rotationHudText(fernView.view.rotation)],
+  // (a chaos-game run's counter and seed come in through runHudParts, chaos-run.js)
+  setHud(modeLabel(fernView.system), [...runHudParts(`${fernView.accepted.toLocaleString()} of ${fernState.count.toLocaleString()} points`), rotationHudText(fernView.view.rotation)],
     patternBar(fernView.view, els.fernCanvas, fernView.system));
+  updateRunChip();
 }
 
 // Dual view's crosshair marks the main pane's center -- the Julia pane's c.

@@ -14,6 +14,8 @@ import { normalizeAngle } from "./view-math.js?v=1.54.0";
 import { selectFractal } from "./modes.js?v=1.54.0";
 import { dragonNav, fernNav, fitVectorView, hexaflakeNav, kochNav, treeNav, vectorViewIsFitted } from "./interaction.js?v=1.54.0";
 import { applyHudVisibility, prefersReducedMotion, syncSliderFill } from "./compass-ui.js?v=1.54.0";
+import { REPLAY_LONG, replayStopPoints, seededRandom } from "./fern.js?v=1.54.0";
+import { announceRunDone, newRunSeed, rememberRun, updateRunChip } from "./chaos-run.js?v=1.54.0";
 
 // ---------------------------------------------------------------- teleport ("Surprise me")
 
@@ -440,8 +442,9 @@ for (const btn of document.querySelectorAll(".depthSpeedBtn, .replaySpeedBtn")) 
 syncPlayButtons();
 
 // Replay of the chaos game (the dot shapes, fern.js): the Play button beside the speed button
-// runs it, and the speed above is its speed (1x is about 8 s from the first jump to the last of
-// the points slider's count). Tapping again pauses it, with the picture as far as it got, and
+// runs it, and the speed above is its speed (1x is a Long run of about 15 s, from the first jump to
+// the shape's stop point; the normal render carries on to the points slider's count). Tapping again
+// pauses it, with the picture as far as it got, and
 // tapping once more carries on; after the end Play starts over. The view is framed first, as
 // Reset does (Back undoes that), since the points the game lands on would mostly miss a zoomed
 // view. Any gesture, another shape, a color or count change, Reset and Save end it: the dot
@@ -453,6 +456,7 @@ export function syncReplayButtons() {
     btn.setAttribute("aria-label", running ? "Pause replay" : "Play replay");
     btn.title = running ? "Pause replay" : "Play replay: watch the chaos game build the picture";
   }
+  updateRunChip(); // the counter over the canvas shows while a run is on, paused or not
 }
 
 export function stopDotReplay() {
@@ -462,17 +466,39 @@ export function stopDotReplay() {
 export function toggleDotReplay() {
   if (fernView.replayRunning) { fernView.pauseReplay(); return; }
   if (fernView.replaying) { fernView.resumeReplay(); return; }
+  startDotRun(newRunSeed());
+}
+
+// A new run of the chaos game from the origin: the Long run (REPLAY_LONG, about 15 s at 1x), which stops
+// where this shape's picture has its structure (fern.js IFS_STOP_POINTS; the normal render carries on to
+// the points slider's count) and uses the random numbers of its seed, so a link with the seed plays the
+// same jumps. The default run (startReplay without options) is left to tests and the Shorts.
+export function startDotRun(seed) {
   cancelTeleport();
   if (!vectorViewIsFitted(mode)) {
     fernNav.checkpoint();
     fitVectorView(mode);
   }
+  const opts = fernRenderOpts();
+  rememberRun(seed); // after the framing: the seed goes with this view
   fernView.startReplay({
-    ...fernRenderOpts(),
+    ...opts, ...REPLAY_LONG,
+    stop: replayStopPoints(fernView.system, opts.count),
+    rng: seededRandom(seed), seed,
     speed: () => PLAY_SPEEDS[depthPlayer.speedIndex],
     onChange: syncReplayButtons,
+    onDone: announceRunDone,
   });
   requestRender(); // Back, the info card, the compass; the render leaves the replay's picture alone
+}
+
+// A share link with a seed: after the first paint, play that run (never under reduced motion, where
+// the replay has no buttons). Skipped if the person has already left for another shape or started a run.
+export function scheduleSharedRun(seed, system) {
+  if (!seed || prefersReducedMotion()) return;
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (mode === system && fernView.system === system && !fernView.replaying) startDotRun(seed);
+  }));
 }
 
 for (const btn of document.querySelectorAll(".replayPlayBtn")) btn.addEventListener("click", toggleDotReplay);
