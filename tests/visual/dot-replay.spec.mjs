@@ -1097,7 +1097,7 @@ test.describe("the counter", () => {
       }, seed);
       for (const c of r.checks) {
         expect(c.n, `n at ${c.target}`).toBe(c.target);
-        expect(c.points, `points at ${c.target}`).toBe(Math.max(0, c.target - 12));
+        expect(c.points, `points at ${c.target}: every jump made, as many as the dots on screen`).toBe(c.target);
         expect(c.refCells, "the reference cells").toBe(c.wantRef);
         expect(c.lit, `${m}: lit cells at ${c.target} jumps`).toBe(c.wantLit);
         expect(c.coverage).toBeCloseTo(c.wantCov, 12);
@@ -1120,13 +1120,27 @@ test.describe("the counter", () => {
     table.forEach(([n, want], i) => expect(got[i], `formatPointCount(${n})`).toBe(want));
   });
 
+  test("the chip counts every dot drawn from the first jump, on every shape: it never lags the dots on screen", async ({ page }) => {
+    // (the first 12 jumps are still off the shape and stay out of the picture's density and the coverage, but they are
+    // drawn as dots, so they count here: the chip once read 0 points for the first 12 dots and stayed 12 behind)
+    for (const m of IFS_MODES) {
+      await startLongManual(page, m, { seed: 5 });
+      for (const n of [1, 5, 12, 13, 40]) {
+        await stepRunTo(page, n);
+        expect(await page.evaluate(() => fernView.replayState.n), `${m}: jumps landed`).toBe(n);
+        await expect(page.locator("#runChip"), `${m}: the chip at ${n} dots`).toHaveText(new RegExp(`^${n} ${n === 1 ? "point" : "points"} · \\d+% filled$`));
+      }
+      await page.evaluate(() => fernView.cancelReplay());
+    }
+  });
+
   test("the chip shows over the canvas while a run is on, is gone when it ends, and takes no taps", async ({ page }) => {
     await startLongManual(page, "sierpinski", { seed: 5 });
     const chip = page.locator("#runChip");
     await expect(chip).toBeVisible();
     await expect(chip).toHaveText("0 points · 0% filled");
-    await stepRunTo(page, 1216); // 1,204 counted
-    await expect(chip).toHaveText(/^1,204 points · \d+% filled$/);
+    await stepRunTo(page, 1216); // 1,216 dots drawn, 1,216 points
+    await expect(chip).toHaveText(/^1,216 points · \d+% filled$/);
     await stepRunTo(page, 30012);
     await expect(chip).toHaveText(/^30 thousand points · \d+% filled$/);
     const style = await chip.evaluate((e) => ({ pe: getComputedStyle(e).pointerEvents, live: e.getAttribute("aria-live"), insideCanvas: e.parentElement.id }));
@@ -1177,7 +1191,7 @@ test.describe("the counter", () => {
     if (!(await page.evaluate(() => hudVisible))) await page.locator(".hudToggleBtn:visible").first().click();
     await expect(page.locator("#hud")).toBeVisible();
     await expect(page.locator("#runChip"), "the card says the same numbers").toBeHidden();
-    await expect(page.locator("#hud .hudPlain span").nth(0)).toHaveText(/^2,988 points · \d+% filled$/);
+    await expect(page.locator("#hud .hudPlain span").nth(0)).toHaveText(/^3,000 points · \d+% filled$/);
     await page.locator(".hudToggleBtn:visible").first().click(); // the card closed again: the chip is back
     await expect(page.locator("#runChip")).toBeVisible();
     await page.evaluate(() => fernView.cancelReplay());
@@ -1188,7 +1202,7 @@ test.describe("the counter", () => {
     if (!(await page.evaluate(() => hudVisible))) await page.locator(".hudToggleBtn:visible").first().click();
     await stepRunTo(page, 1216);
     const plain = page.locator("#hud .hudPlain span");
-    await expect(plain.nth(0)).toHaveText(/^1,204 points · \d+% filled$/);
+    await expect(plain.nth(0)).toHaveText(/^1,216 points · \d+% filled$/);
     await expect(plain.nth(1)).toHaveText("Run 482913");
     const chipText = await page.locator("#runChip").textContent();
     expect(await plain.nth(0).textContent(), "the card and the chip say the same").toBe(chipText);
@@ -1462,7 +1476,7 @@ test.describe("a run follows the view", () => {
         expect(r.a.lit).toBe(r.indep.litRef);
         expect(r.a.refCells, "the reference cells of the new view").toBe(r.indep.refCells);
         expect(r.a.coverage).toBe(r.b.coverage);
-        expect(r.chip, "the chip says the new view's coverage").toBe(`2,988 points · ${Math.floor(r.a.coverage * 100 + 1e-9)}% filled`);
+        expect(r.chip, "the chip says the new view's coverage").toBe(`3,000 points · ${Math.floor(r.a.coverage * 100 + 1e-9)}% filled`);
         expect(r.a.bytes, "17 bytes a point").toBe(17 * (200012 + 1));
       });
     }

@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.55.1 — 2026-11-02
+- Fixed the points counter during a Play: it now counts from the first dot. It used to read 0 for the first few seconds and then stay 12 behind the dots on screen.
+
 ## 1.55.0 — 2026-11-01
 - Play on the dot shapes (fern, Sierpinski triangle and pentagon, Lévy C, Vicsek) is now a longer run of about 15 seconds: it shows 100 jumps one at a time with the path behind the dot, then builds the picture and hands over to the normal render.
 - Panning, zooming or turning the picture during a Play no longer ends the run: the points drawn so far are redrawn in the new view and the run carries on.

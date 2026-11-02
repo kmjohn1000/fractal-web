@@ -1,6 +1,6 @@
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { SOLID_COLORS, hueTurned, isGreyColor } from "./colormaps.js?v=1.55.0";
-import { backdropPixels } from "./vectorgeom.js?v=1.55.0";
+import { SOLID_COLORS, hueTurned, isGreyColor } from "./colormaps.js?v=1.55.1";
+import { backdropPixels } from "./vectorgeom.js?v=1.55.1";
 
 // Chaos-game IFS fractals: a few affine transforms, picked at random each
 // step (weighted by p) and applied to build a point cloud -- a
@@ -884,12 +884,14 @@ export function createIfsView(canvas) {
     if (done) done(stats);
   }
 
-  // The run's counter: the points counted (jumps after the burn-in) and the share of the coarse
-  // grid's reference cells (the cells the shape itself touches) that a counted jump has lit.
+  // The run's counter: the points shown are every jump made, so the number matches the dots on screen from
+  // the first one (the first REPLAY_BURN_IN are drawn but kept out of the picture's density and of `lit`, as
+  // they are still off the shape). It reads the stop point at the end, not stop + REPLAY_BURN_IN. And the
+  // share of the coarse grid's reference cells (the cells the shape itself touches) that a counted jump has lit.
   function replayStats() {
     const r = replay;
     return {
-      n: r.n, total: r.total, stop: r.stop, seed: r.seed, points: Math.max(0, r.n - REPLAY_BURN_IN),
+      n: r.n, total: r.total, stop: r.stop, seed: r.seed, points: Math.min(r.n, r.stop),
       lit: r.lit, refCells: r.refCells, coverage: r.refCells > 0 ? Math.min(1, r.lit / r.refCells) : 0,
     };
   }

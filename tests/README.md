@@ -297,7 +297,8 @@ link with `sd` plays that run after the first paint (not with reduced motion). T
 counter (`fernView.runStats`, the `#runChip` over the canvas, the same two lines on the
 info card with "Run N") is compared with an independent recomputation of the seeded
 chaos game through the same view and the same 12 css px grid, on every shape: points are
-the jumps after the 12 burn-in, lit cells and the reference cells match exactly,
+every jump made (as many as the dots on screen, the first 12 included; they stay out of
+the lit cells), lit cells and the reference cells match exactly,
 coverage never falls and never passes 100%; `formatPointCount` has its table; the chip is
 one line and inside the canvas at 360 and 393 px; a screen reader's one polite region
 hears only the powers of ten and the end.
