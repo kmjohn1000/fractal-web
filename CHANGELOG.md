@@ -3,7 +3,7 @@
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
 ## 1.54.0 — 2026-11-01
-- Added the Sierpinski pentagon: a chaos game on the five corners of a pentagon, jumping about 62% of the way each time, with Play, corner rings, color, share links and the twist.
+- Added the Sierpinski pentagon: a chaos game on the five corners of a pentagon, jumping about 62% of the way each time, with Play, corner rings, color, share links and the twist. It sits before the Sierpinski triangle in the picker.
 - The replay's corner rings now mark the pentagon's five corners as well as the triangle's three.
 
 ## 1.53.15 — 2026-10-31

@@ -20,7 +20,7 @@ export const PICKER_LAYOUT = [
   ] },
   { label: "Watch it grow", groups: [
     { label: "Build level by level", keys: ["koch", "tree", "hexaflake", "dragon", "hilbert", "gosper", "arrowhead"] },
-    { label: "Dots that build up", keys: ["fern", "sierpinski", "pentagon", "levy", "vicsek"] },
+    { label: "Dots that build up", keys: ["fern", "pentagon", "sierpinski", "levy", "vicsek"] },
   ] },
 ];
 
@@ -91,7 +91,7 @@ export const SHAPE_INFO = {
   },
   pentagon: {
     lines: ["Jump about 62% of the way to a corner chosen at random, over and over. A pentagon of pentagons appears.",
-      "Five copies, each 0.382 times the size, just touch. Dimension 1.67."],
+      "Five copies, each 0.382 times the size. Dimension 1.67."],
   },
   levy: {
     lines: ["Two rules, each shrinking and turning by 45 degrees, draw a C made of smaller Cs.",

@@ -36,7 +36,7 @@ const INFO = {
   sierpinski: ["Jump halfway to a corner chosen at random, over and over. A triangle with holes appears.",
     "This is the “chaos game”. Dimension 1.58.", "Sierpinski, 1915"],
   pentagon: ["Jump about 62% of the way to a corner chosen at random, over and over. A pentagon of pentagons appears.",
-    "Five copies, each 0.382 times the size, just touch. Dimension 1.67.", null],
+    "Five copies, each 0.382 times the size. Dimension 1.67.", null],
   levy: ["Two rules, each shrinking and turning by 45 degrees, draw a C made of smaller Cs.",
     "The curve fills an area. Dimension 2.", null],
   vicsek: ["A square becomes a cross of five squares, each a third the size, again and again.",
