@@ -1,7 +1,7 @@
-// The chaos-game modes (fern, Sierpinski triangle, Lévy C, Vicsek; fern.js) are colored by
+// The chaos-game modes (fern, Sierpinski triangle, Sierpinski pentagon, Lévy C, Vicsek; fern.js) are colored by
 // address: each transform turns the hue of the picked color, so every self-similar piece takes
 // its own tint, and a pixel is the mean of its hits' colors at log-density brightness. Each mode
-// has its own color (vectorColors), starting Green, Violet, Rose and Gold. These checks hold
+// has its own color (vectorColors), starting Green, Violet, Ice, Rose and Gold. These checks hold
 // that to its promises: the picture really is multi-hued and still the picked color's family,
 // the colors are per mode and follow the mode in the toolbar pill, deep zoom stays colored, and
 // share links carry the mode's own color. Baselines of the four modes are in app.spec.mjs.
@@ -11,8 +11,8 @@ import { test, expect } from "@playwright/test";
    requestRender, VECTOR_VIEWS, ifsTransformColors */
 
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
-const IFS_MODES = ["fern", "sierpinski", "levy", "vicsek"];
-const DEFAULT_COLORS = { fern: "Green", sierpinski: "Violet", levy: "Rose", vicsek: "Gold" };
+const IFS_MODES = ["fern", "sierpinski", "pentagon", "levy", "vicsek"];
+const DEFAULT_COLORS = { fern: "Green", sierpinski: "Violet", pentagon: "Ice", levy: "Rose", vicsek: "Gold" };
 
 let pageErrors = [];
 
@@ -165,9 +165,9 @@ test.describe("a color per mode", () => {
     expect(starts).toEqual(IFS_MODES.map((m) => DEFAULT_COLORS[m]));
     await show(page, "levy");
     await page.locator("#fernColorBtn").click();
-    await page.locator('#colormapMenu [role="menuitemradio"]', { hasText: "Ice" }).click();
+    await page.locator('#colormapMenu [role="menuitemradio"]', { hasText: "Coral" }).click(); // (no shape starts in it)
     const after = await page.evaluate((modes) => modes.map((m) => SOLID_COLORS[vectorColors[m]].name), IFS_MODES);
-    expect(after).toEqual(["Green", "Violet", "Ice", "Gold"]);
+    expect(after).toEqual(["Green", "Violet", "Ice", "Coral", "Gold"]);
   });
 
   test("the color button's pill and name follow the mode", async ({ page }) => {
@@ -197,6 +197,45 @@ test.describe("share links", () => {
     await page.evaluate((h) => { vectorColors.vicsek = 0; applyShareLink(`https://example.org/${h}`); }, hash);
     const seen = await page.evaluate(() => ({ mode, vicsek: SOLID_COLORS[vectorColors.vicsek].name, fern: SOLID_COLORS[vectorColors.fern].name, count: fernState.count }));
     expect(seen).toMatchObject({ mode: "vicsek", vicsek: "Ice", fern: "Green" });
+  });
+
+  test("the Sierpinski pentagon's link (m=pentagon) carries its view, points and color and opens in it", async ({ page }) => {
+    await show(page, "pentagon");
+    const want = { cx: 0.12, cy: 0.1, halfHeight: 0.7, rotation: 0.4 };
+    const hash = await page.evaluate((v) => {
+      Object.assign(fernView.view, v);
+      fernState.count = 300000;
+      vectorColors.pentagon = SOLID_COLORS.findIndex((c) => c.name === "Coral");
+      return buildShareHash();
+    }, want);
+    expect(hash).toMatch(/[?&#]m=pentagon(&|$)/);
+    expect(hash).toMatch(/[?&]c=9(&|$)/);
+    await show(page, "fern");
+    await page.evaluate((h) => { vectorColors.pentagon = 0; fernState.count = 1000000; applyShareLink(`https://example.org/${h}`); }, hash);
+    await page.waitForFunction(() => mode === "pentagon" && fernView.system === "pentagon" && !fernView.refining && fernView.accepted > 0);
+    const seen = await page.evaluate(() => ({ mode, system: fernView.system, color: SOLID_COLORS[vectorColors.pentagon].name, count: fernState.count, view: { ...fernView.view } }));
+    expect(seen).toMatchObject({ mode: "pentagon", system: "pentagon", color: "Coral", count: 300000 });
+    for (const k of Object.keys(want)) expect(seen.view[k], k).toBeCloseTo(want[k], 6);
+  });
+
+  test("a two-finger twist turns the Sierpinski pentagon, as the other dot shapes (the shared view's gesture)", async ({ page }) => {
+    await show(page, "pentagon");
+    expect(await page.evaluate(() => fernView.view.rotation)).toBe(0);
+    await page.evaluate(() => {
+      HTMLElement.prototype.setPointerCapture = () => {}; // synthetic pointers have nothing to capture
+      const canvas = els.fernCanvas, r = canvas.getBoundingClientRect(), cx = r.x + r.width / 2, cy = r.y + r.height / 2;
+      const fire = (type, id, x, y) => canvas.dispatchEvent(new PointerEvent(type, { pointerId: id, clientX: x, clientY: y, bubbles: true, pointerType: "touch" }));
+      // two fingers 80 px apart on a horizontal line, then turned a quarter turn about their midpoint
+      fire("pointerdown", 1, cx - 40, cy); fire("pointerdown", 2, cx + 40, cy);
+      for (let i = 1; i <= 6; i++) {
+        const a = (i / 6) * (Math.PI / 2);
+        fire("pointermove", 1, cx - 40 * Math.cos(a), cy - 40 * Math.sin(a)); fire("pointermove", 2, cx + 40 * Math.cos(a), cy + 40 * Math.sin(a));
+      }
+      fire("pointerup", 1, cx, cy - 40); fire("pointerup", 2, cx, cy + 40);
+    });
+    const rot = await page.evaluate(() => fernView.view.rotation);
+    expect(Math.abs(rot), `rotation after a quarter turn: ${rot}`).toBeGreaterThan(1.2);
+    expect(Math.abs(rot)).toBeLessThan(1.9);
   });
 
   test("a link made before 1.47.0 (one color index, any dot mode) still opens", async ({ page }) => {

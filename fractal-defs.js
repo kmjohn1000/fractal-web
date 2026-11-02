@@ -20,7 +20,7 @@ export const PICKER_LAYOUT = [
   ] },
   { label: "Watch it grow", groups: [
     { label: "Build level by level", keys: ["koch", "tree", "hexaflake", "dragon", "hilbert", "gosper", "arrowhead"] },
-    { label: "Dots that build up", keys: ["fern", "sierpinski", "levy", "vicsek"] },
+    { label: "Dots that build up", keys: ["fern", "sierpinski", "pentagon", "levy", "vicsek"] },
   ] },
 ];
 
@@ -36,6 +36,7 @@ export const EXTRA_MODES = [
   { key: "arrowhead", label: "Sierpinski arrowhead", category: "pattern" },
   { key: "fern", label: "Barnsley fern", category: "pattern" },
   { key: "sierpinski", label: "Sierpinski triangle", category: "pattern" },
+  { key: "pentagon", label: "Sierpinski pentagon", category: "pattern" },
   { key: "levy", label: "Lévy C curve", category: "pattern" },
   { key: "vicsek", label: "Vicsek fractal", category: "pattern" },
   { key: "hexaflake", label: "Hexaflake", category: "pattern" },
@@ -87,6 +88,10 @@ export const SHAPE_INFO = {
     lines: ["Jump halfway to a corner chosen at random, over and over. A triangle with holes appears.",
       "This is the “chaos game”. Dimension 1.58."],
     credit: "Sierpinski, 1915",
+  },
+  pentagon: {
+    lines: ["Jump about 62% of the way to a corner chosen at random, over and over. A pentagon of pentagons appears.",
+      "Five copies, each 0.382 times the size, just touch. Dimension 1.67."],
   },
   levy: {
     lines: ["Two rules, each shrinking and turning by 45 degrees, draw a C made of smaller Cs.",

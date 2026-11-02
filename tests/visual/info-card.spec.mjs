@@ -1,4 +1,4 @@
-// The info card (#hud, toggled by the info button) of the eleven pattern shapes carries a short
+// The info card (#hud, toggled by the info button) of the twelve pattern shapes carries a short
 // description between its title and the depth line: two lines of text and, for six shapes with a
 // confirmed maker and year, a quiet credit line (SHAPE_INFO in fractal-defs.js). These checks hold
 // that to its promises: the exact words (this file keeps its own copy of the table, so a changed
@@ -35,6 +35,8 @@ const INFO = {
     "Each leaflet is a smaller, slightly bent copy of the whole fern.", "Barnsley, 1988"],
   sierpinski: ["Jump halfway to a corner chosen at random, over and over. A triangle with holes appears.",
     "This is the “chaos game”. Dimension 1.58.", "Sierpinski, 1915"],
+  pentagon: ["Jump about 62% of the way to a corner chosen at random, over and over. A pentagon of pentagons appears.",
+    "Five copies, each 0.382 times the size, just touch. Dimension 1.67.", null],
   levy: ["Two rules, each shrinking and turning by 45 degrees, draw a C made of smaller Cs.",
     "The curve fills an area. Dimension 2.", null],
   vicsek: ["A square becomes a cross of five squares, each a third the size, again and again.",

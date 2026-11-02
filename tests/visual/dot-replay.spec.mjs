@@ -1,4 +1,4 @@
-// The chaos-game replay of the four dot shapes (fern, Sierpinski triangle, Levy C, Vicsek; fern.js
+// The chaos-game replay of the five dot shapes (fern, Sierpinski triangle, Sierpinski pentagon, Levy C, Vicsek; fern.js
 // and the Play button in teleport.js): from an empty backdrop a dot flies from point to point, each
 // jump by a randomly chosen transform and in that transform's address color, the first ones slow
 // and one by one, then faster until the points slider's count of points is down and the picture has
@@ -9,11 +9,11 @@ import { test, expect } from "@playwright/test";
 
 /* global setMode, fernView, fernState, vectorColors, els, mode, fernRenderOpts, syncReplayButtons,
    vectorViewIsFitted, fitVectorView, requestRender, renderAll, captureShareBlob, buildShareHash, ifsRandom, setIfsRandom,
-   ifsTransformColors, IFS_SYSTEMS, backdropPixels, replayJumpsAt, replayTimeOf, REPLAY_SLOW_S, REPLAY_RAMP_S,
+   ifsTransformColors, ifsPoints, IFS_SYSTEMS, backdropPixels, replayJumpsAt, replayTimeOf, REPLAY_SLOW_S, REPLAY_RAMP_S,
    REPLAY_CAP_S, depthPlayer, PLAY_SPEEDS, setFernColor, stopDepthPlay */
 
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
-const IFS_MODES = ["fern", "sierpinski", "levy", "vicsek"];
+const IFS_MODES = ["fern", "sierpinski", "pentagon", "levy", "vicsek"];
 
 let pageErrors = [];
 
@@ -430,7 +430,97 @@ test.describe("what the replay shows", () => {
     expect(used[0], "the stem rule really is rare").toBeLessThan(total * 0.02);
   });
 
-  for (const m of ["sierpinski", "levy", "vicsek"]) {
+  // The Sierpinski pentagon (the pentaflake): five maps p -> s*p + (1 - s)*v, s = 1/phi^2, v the corners of a
+  // regular pentagon (circumradius 1, point up). The chaos game from the app's own sampler (ifsPoints, with
+  // a seeded ifsRandom) shows what the maps make.
+  test("pentagon: five maps jump 61.8% of the way to the corners of a point-up regular pentagon, and the five copies just touch", async ({ page }) => {
+    const r = await page.evaluate(() => {
+      const trs = IFS_SYSTEMS.pentagon.transforms, s = (3 - Math.sqrt(5)) / 2; // 1/phi^2 = 0.381966
+      const out = { n: trs.length, ratio: 0, shear: 0, weight: 0, corner: 0, angle: 0, edge: [], far: 0, cloud: null };
+      const corners = trs.map((t) => [t.e / (1 - t.a), t.f / (1 - t.d)]); // the fixed points
+      trs.forEach((t, k) => {
+        out.ratio = Math.max(out.ratio, Math.abs(t.a - s), Math.abs(t.d - s));
+        out.shear = Math.max(out.shear, Math.abs(t.b), Math.abs(t.c));
+        out.weight = Math.max(out.weight, Math.abs(t.p - 0.2));
+        out.corner = Math.max(out.corner, Math.abs(Math.hypot(...corners[k]) - 1)); // on the unit circle
+        // clockwise from the top, 72 degrees apart
+        const want = [Math.sin(2 * Math.PI * k / 5), Math.cos(2 * Math.PI * k / 5)];
+        out.angle = Math.max(out.angle, Math.hypot(corners[k][0] - want[0], corners[k][1] - want[1]));
+      });
+      // Copy k is the pentagon's image under map k. Neighbouring copies share exactly one corner point.
+      const image = (t, [x, y]) => [t.a * x + t.b * y + t.e, t.c * x + t.d * y + t.f];
+      for (let k = 0; k < 5; k++) {
+        const a = corners.map((c) => image(trs[k], c)), b = corners.map((c) => image(trs[(k + 1) % 5], c));
+        const d = [];
+        for (const p of a) for (const q of b) d.push(Math.hypot(p[0] - q[0], p[1] - q[1]));
+        out.edge.push({ closest: Math.min(...d), touching: d.filter((v) => v < 1e-9).length });
+      }
+      // ... and copies two apart stay clear of each other
+      const a0 = corners.map((c) => image(trs[0], c)), a2 = corners.map((c) => image(trs[2], c));
+      out.far = Math.min(...a0.flatMap((p) => a2.map((q) => Math.hypot(p[0] - q[0], p[1] - q[1]))));
+      // The chaos game, 200,000 points
+      setIfsRandom(window.__seeded(3));
+      const pts = ifsPoints(trs, 200000);
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, rmin = Infinity;
+      for (let i = 0; i < pts.length; i += 2) {
+        x0 = Math.min(x0, pts[i]); x1 = Math.max(x1, pts[i]); y0 = Math.min(y0, pts[i + 1]); y1 = Math.max(y1, pts[i + 1]);
+        rmin = Math.min(rmin, Math.hypot(pts[i], pts[i + 1]));
+      }
+      out.cloud = { x0, x1, y0, y1, rmin };
+      return out;
+    });
+    expect(r.n).toBe(5);
+    expect(r.ratio, "every map shrinks by 1/phi^2").toBeLessThan(1e-12);
+    expect(r.shear, "no rotation or shear").toBe(0);
+    expect(r.weight, "all five equally likely").toBeLessThan(1e-12);
+    expect(r.corner, "the corners are on the unit circle").toBeLessThan(1e-12);
+    expect(r.angle, "clockwise from the top, 72 degrees apart").toBeLessThan(1e-12);
+    for (const [k, e] of r.edge.entries()) {
+      expect(e.closest, `copies ${k} and ${(k + 1) % 5} touch`).toBeLessThan(1e-9);
+      expect(e.touching, `copies ${k} and ${(k + 1) % 5} share one corner point`).toBe(1);
+    }
+    expect(r.far, "copies two apart do not touch").toBeGreaterThan(0.4);
+    // The shape fills the pentagon's own box (x within +-sin 72 degrees, y from -cos 36 degrees to 1) but never goes outside it...
+    const sin72 = Math.sin(0.4 * Math.PI), cos36 = Math.cos(0.2 * Math.PI);
+    expect(r.cloud.x1).toBeLessThanOrEqual(sin72 + 1e-9);
+    expect(r.cloud.x0).toBeGreaterThanOrEqual(-sin72 - 1e-9);
+    expect(r.cloud.y1).toBeLessThanOrEqual(1 + 1e-9);
+    expect(r.cloud.y0).toBeGreaterThanOrEqual(-cos36 - 1e-9);
+    expect(r.cloud.x1, `x reaches the corners (${r.cloud.x1})`).toBeGreaterThan(sin72 - 0.03);
+    expect(r.cloud.x0).toBeLessThan(-sin72 + 0.03);
+    expect(r.cloud.y1).toBeGreaterThan(1 - 0.03);
+    expect(r.cloud.y0).toBeLessThan(-cos36 + 0.03);
+    // ... and leaves the big hole in the middle (no point within 0.3 of the center: the hole is 0.3136 across from it)
+    expect(r.cloud.rmin, `nearest point to the center ${r.cloud.rmin}`).toBeGreaterThan(0.3);
+  });
+
+  test("pentagon: Play marks the five corners with rings, as the triangle's three, and the fern and the others have none", async ({ page }) => {
+    for (const m of ["pentagon", "sierpinski", "levy", "fern", "vicsek"]) {
+      await startManual(page, m, { seed: 4 });
+      await stepTo(page, 0.05); // nothing has landed: the dot at the start, the rings
+      const r = await page.evaluate(() => {
+        const sys = IFS_SYSTEMS[fernView.system], u = fernView.dpr;
+        const bg = backdropPixels(els.fernCanvas.width, els.fernCanvas.height), W = els.fernCanvas.width;
+        const ctx = els.fernCanvas.getContext("2d");
+        // the pixel on a ring's right side (the ring is 7 css px in radius, drawn 1.4 px thick), against the backdrop there
+        return { corners: !!sys.corners, rings: sys.transforms.map((t) => {
+          const [sx, sy] = fernView.worldToScreen(t.e / (1 - t.a), t.f / (1 - t.d));
+          const x = Math.round(sx + 7 * u), y = Math.round(sy), d = ctx.getImageData(x, y, 1, 1).data, o = (y * W + x) * 3;
+          return Math.max(d[0] - bg[o], d[1] - bg[o + 1], d[2] - bg[o + 2]);
+        }) };
+      });
+      if (m === "pentagon" || m === "sierpinski") {
+        expect(r.corners).toBe(true);
+        expect(r.rings.length, `${m}: a ring per corner`).toBe(m === "pentagon" ? 5 : 3);
+        for (const [i, v] of r.rings.entries()) expect(v, `${m}: ring ${i} is lit above the backdrop (${r.rings})`).toBeGreaterThan(10); // (the thin ring's antialiasing makes it 20 to 65 levels)
+      } else {
+        expect(r.corners, m).toBe(false);
+      }
+      await page.evaluate(() => fernView.cancelReplay());
+    }
+  });
+
+  for (const m of ["sierpinski", "pentagon", "levy", "vicsek"]) {
     test(`${m}: its rules are used as often as their weights say`, async ({ page }) => {
       await startManual(page, m, { count: 100000, seed: 11 });
       await stepTo(page, 20000);

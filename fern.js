@@ -25,6 +25,16 @@ export const SIERPINSKI_TRANSFORMS = [
   { a: 0.5, b: 0, c: 0, d: 0.5, e: Math.sqrt(3) / 4,  f: -0.25, p: 1 / 3 },
 ];
 
+// The Sierpinski pentagon (the pentaflake): the chaos game on the five corners of a regular
+// pentagon (circumradius 1, point up, centered on the origin), jumping 1 - s of the way to the
+// chosen corner v, p -> s*p + (1 - s)*v, with s = 1/phi^2 so that the five copies just touch.
+// Corners clockwise from the top; e, f = (1 - s)*v.
+export const PENTAGON_RATIO = 1 / (((1 + Math.sqrt(5)) / 2) ** 2); // 0.381966
+export const PENTAGON_TRANSFORMS = Array.from({ length: 5 }, (_, k) => {
+  const vx = Math.sin(2 * Math.PI * k / 5), vy = Math.cos(2 * Math.PI * k / 5);
+  return { a: PENTAGON_RATIO, b: 0, c: 0, d: PENTAGON_RATIO, e: (1 - PENTAGON_RATIO) * vx, f: (1 - PENTAGON_RATIO) * vy, p: 0.2 };
+});
+
 export const LEVY_C_TRANSFORMS = [
   { a: 0.5, b: -0.5, c: 0.5,  d: 0.5, e: 0,   f: 0,   p: 0.5 },
   { a: 0.5, b: 0.5,  c: -0.5, d: 0.5, e: 0.5, f: 0.5, p: 0.5 },
@@ -41,10 +51,13 @@ export const VICSEK_TRANSFORMS = [
 // Every IFS the view can show, keyed by fractal-defs.js mode name (EXTRA_MODES
 // lists the same keys for the picker). hueOffsets: the degrees each transform
 // turns the picked color's hue, so every self-similar piece takes its own tint
-// (see "Coloring by address" below).
+// (see "Coloring by address" below). corners: the maps are jumps toward fixed
+// corner points (no shear), so the replay marks those points with rings.
 export const IFS_SYSTEMS = {
   fern:       { transforms: FERN_TRANSFORMS, hueOffsets: [-21, 0, 27, 50] },
-  sierpinski: { transforms: SIERPINSKI_TRANSFORMS, hueOffsets: [-45, 0, 45] },
+  sierpinski: { transforms: SIERPINSKI_TRANSFORMS, hueOffsets: [-45, 0, 45], corners: true },
+  // (the pentagon's hues run left to right: top, upper right, lower right, lower left, upper left)
+  pentagon:   { transforms: PENTAGON_TRANSFORMS, hueOffsets: [0, 24, 48, -48, -24], corners: true },
   levy:       { transforms: LEVY_C_TRANSFORMS, hueOffsets: [-33, 33] },
   vicsek:     { transforms: VICSEK_TRANSFORMS, hueOffsets: [0, -49, 49, -25, 25] },
 };
@@ -584,7 +597,7 @@ export function createIfsView(canvas) {
     }
   }
 
-  // Everything over the picture, in canvas pixels: marks, the Sierpinski's corners, the
+  // Everything over the picture, in canvas pixels: marks, the corner rings, the
   // trail, the landing ripple, the dot. jumps is the schedule's (fractional) count.
   function replayOverlay(jumps) {
     const r = replay, W = canvas.width, H = canvas.height, n = r.n, u = dpr;
@@ -625,8 +638,8 @@ export function createIfsView(canvas) {
     const dotRGB = [0, 1, 2].map((q) => Math.round(255 + (0.75 * chosen[q] + 0.25 * 255 - 255) * tint)).join(",");
     ctx.globalCompositeOperation = "lighter";
     ctx.lineCap = "round";
-    // Corner marks (Sierpinski): faint rings at the three fixed points; the chosen one lights up in flight.
-    if (system === "sierpinski") {
+    // Corner marks (Sierpinski triangle and pentagon): faint rings at the fixed points; the chosen one lights up in flight.
+    if (IFS_SYSTEMS[system].corners) {
       ifs.transforms.forEach((t, q) => {
         const fx = t.e / (1 - t.a), fy = t.f / (1 - t.d); // the fixed point of x -> a*x + e (a == d, no shear)
         const lit = q === r.nci && ft > 0 ? Math.sin(Math.PI * ft) : 0;

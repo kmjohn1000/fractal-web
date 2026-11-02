@@ -1,4 +1,4 @@
-// The ten solid colors of the eleven pattern shapes (1.52.0). SOLID_COLORS is append-only because share links
+// The ten solid colors of the twelve pattern shapes (1.52.0). SOLID_COLORS is append-only because share links
 // carry the index (`c=`): Green, Autumn, Violet, Ice, Rose, Gold, White stay 0-6, and Blue, Teal and Coral are
 // 7-9. The color menu lists them in hue order (SOLID_COLOR_ORDER), by display only; picking one still sets the
 // stored index. The color button's pill is a miniature of the shape's real ramp for the picked color (a CSS
@@ -14,9 +14,9 @@ import { test, expect } from "@playwright/test";
    BACKDROP_CENTER_RGB, TREE_DEPTH_MIN, TREE_LEAN_MIN, TREE_WOOD_RGB */
 
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
-const SHAPES = ["koch", "tree", "hexaflake", "dragon", "hilbert", "gosper", "arrowhead", "fern", "sierpinski", "levy", "vicsek"];
+const SHAPES = ["koch", "tree", "hexaflake", "dragon", "hilbert", "gosper", "arrowhead", "fern", "sierpinski", "pentagon", "levy", "vicsek"];
 const CURVES = ["dragon", "hilbert", "gosper", "arrowhead"];
-const IFS = ["fern", "sierpinski", "levy", "vicsek"];
+const IFS = ["fern", "sierpinski", "pentagon", "levy", "vicsek"];
 const ORIGINAL = [
   ["Green", [70, 190, 90]], ["Autumn", [214, 122, 47]], ["Violet", [148, 100, 214]], ["Ice", [92, 176, 214]],
   ["Rose", [214, 92, 140]], ["Gold", [226, 186, 64]], ["White", [236, 236, 240]],
@@ -25,7 +25,7 @@ const ADDED = [["Blue", [50, 135, 240]], ["Teal", [30, 160, 136]], ["Coral", [24
 // The menu's order: around the hue wheel from red, White last (approved for 1.52.0).
 const RAINBOW = ["Rose", "Coral", "Autumn", "Gold", "Green", "Teal", "Ice", "Blue", "Violet", "White"];
 const DEFAULTS = { koch: "Ice", tree: "Green", hexaflake: "Gold", dragon: "Autumn", hilbert: "Violet", gosper: "Rose", arrowhead: "Gold",
-  fern: "Green", sierpinski: "Violet", levy: "Rose", vicsek: "Gold" };
+  fern: "Green", sierpinski: "Violet", pentagon: "Ice", levy: "Rose", vicsek: "Gold" };
 // The color button of each shape's row.
 const BUTTON = (m) => (CURVES.includes(m) ? "#dragonColormapBtn" : IFS.includes(m) ? "#fernColorBtn" : `#${m}ColormapBtn`);
 const PILL = (m) => (CURVES.includes(m) ? "#dragonColorSwatch" : IFS.includes(m) ? "#fernColorSwatch" : `#${m}ColorSwatch`);
@@ -354,6 +354,8 @@ test.describe("the color button's pill is a miniature of the shape's ramp", () =
     expect((await pillStops(page, "levy")).stops).toHaveLength(2);
     await show(page, "vicsek");
     expect((await pillStops(page, "vicsek")).stops).toHaveLength(5);
+    await show(page, "pentagon");
+    expect((await pillStops(page, "pentagon")).stops).toHaveLength(5);
   });
 });
 
@@ -463,7 +465,7 @@ test.describe("contrast floors, every color", () => {
         return {
           name: c.name,
           curve: Math.min(...curveRamp(ci).map(parse).map(ratio)),
-          dots: Math.min(...["fern", "sierpinski", "levy", "vicsek"].flatMap((k) => ifsTransformColors(k, ci).map(ratio))),
+          dots: Math.min(...["fern", "sierpinski", "pentagon", "levy", "vicsek"].flatMap((k) => ifsTransformColors(k, ci).map(ratio))),
           koch: ratio(kochShade(base, 0, 4)),
           hexaflake: Math.min(ratio(hexaflakeShade(base, 0)), ratio(hexaflakeShade(base, 5))),
           tree: ratio(base.map((v) => v * TREE_DEPTH_MIN * TREE_LEAN_MIN)),
