@@ -109,7 +109,10 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       new `startReplay` options so the Shorts renders stay unchanged; each
       shape's default point total is the count where more dots stop
       changing the picture (measured offline per shape, not detected
-      live); a seed that goes in the share link (the link autoplays on
+      live; the replay ends there and hands off to the normal render,
+      which tops up to the slider's count as it does today, so the
+      replay's stop point must become separate from `opts.count`); a seed
+      that goes in the share link (the link autoplays on
       open, not under reduced motion); a points and coverage counter (a
       coarse occupancy grid, no canvas readback). Build order: schedule
       refactor, then seed and counter, then polygon variants (hexagon,
