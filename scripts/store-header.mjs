@@ -1,36 +1,42 @@
 // The App Store product-page header (3840x1646): the app's Seahorse Valley
-// render, dimmed on the left under the title and a subtitle that counts the
-// picker's fractals.
+// render, dimmed on the left under the title and the listing's stable subtitle
+// ("Explore fractals, zoom deep": no fractal count, so it needn't change when a
+// fractal is added).
 //
-//   node scripts/store-header.mjs
+//   node scripts/store-header.mjs <version>
 //   node scripts/store-header.mjs search <version>
 //
 // The second form makes the 3:2 search-results asset (3840x2560, App Store
 // Connect's creative asset shown in search instead of the screenshots): the
-// same render under the title and a plain line, with the app's real picker
-// screen (listing/<version>/app/iphone-6.3/2-picker.png) in a phone frame, so
-// the interface shows. Writes listing/search-results-3840x2560.png.
+// same render under the title and a plain line that still counts the picker's
+// fractals, with the app's real picker screen
+// (listing/<version>/app/iphone-6.3/2-picker.png) in a phone frame, so the
+// interface shows.
 //
 // Renders the bare canvas from the web build in headless WebKit (the engine
 // of the iOS app's WKWebView) at 1920x823 CSS px, dpr 2, then composes the
-// text over it. Writes listing/product-page-header-3840x1646.png
-// (git-ignored), keeping the previous file as ...png.bak. Fails on a page
-// error, the error banner or a lost WebGL context.
+// text over it. Writes listing/<version>/product-page-header-3840x1646.png and
+// listing/<version>/search-results-3840x2560.png, beside the version's
+// listing-<version>.md (git-ignored), keeping an existing file of the same
+// name as ...png.bak. Fails on a page error, the error banner or a lost WebGL
+// context.
 import { webkit } from "@playwright/test";
 import { spawn } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { PNG } from "pngjs";
 
-const [mode, shotVersion] = process.argv.slice(2);
-const SEARCH = mode === "search";
-if (mode && (!SEARCH || !/^\d+\.\d+\.\d+$/.test(shotVersion || ""))) {
-  console.error("usage: node scripts/store-header.mjs [search <version>]");
+const args = process.argv.slice(2);
+const SEARCH = args[0] === "search";
+const shotVersion = SEARCH ? args[1] : args[0];
+if (!/^\d+\.\d+\.\d+$/.test(shotVersion || "")) {
+  console.error("usage: node scripts/store-header.mjs <version>\n       node scripts/store-header.mjs search <version>");
   process.exit(2);
 }
 
 const root = new URL("..", import.meta.url).pathname;
-const OUT_DIR = join(root, "listing");
+// Both images go in the version's listing folder, beside listing-<version>.md.
+const OUT_DIR = join(root, "listing", shotVersion);
 const OUT = join(OUT_DIR, SEARCH ? "search-results-3840x2560.png" : "product-page-header-3840x1646.png");
 const PORT = 8746;
 const DRIVER = join(root, "tests/driver.js");
@@ -118,7 +124,7 @@ async function renderCanvas(browser) {
 // screenshots) sits in a phone frame beside the title and a plain line. At
 // search-result size the asset is about 580 px wide, so the text is large.
 function searchHtml(canvasPng, count) {
-  const shot = readFileSync(join(OUT_DIR, shotVersion, "app/iphone-6.3/2-picker.png"));
+  const shot = readFileSync(join(OUT_DIR, "app/iphone-6.3/2-picker.png"));
   const icon = readFileSync(join(root, "icons/icon-512.png"));
   const screenH = 2240, screenW = Math.round(screenH * 1206 / 2622), bezel = 26;
   return `<!doctype html><html><head><style>
@@ -146,7 +152,7 @@ async function compose(browser, canvasPng, count) {
     h1{margin:0;font-size:${TEXT.titlePx}px;font-weight:700;letter-spacing:-0.02em;line-height:1}
     p{display:inline-block;margin:30px 0 0 6px;font-size:${TEXT.subtitlePx}px;font-weight:400;color:${TEXT.subtitleColor};letter-spacing:0.005em;line-height:1}
   </style></head><body><img class="bg" src="data:image/png;base64,${canvasPng.toString("base64")}"><div class="fade"></div>
-  <div class="text"><h1>Fractal Atlas</h1><p>Explore ${count} fractals, zoom deep</p></div></body></html>`;
+  <div class="text"><h1>Fractal Atlas</h1><p>Explore fractals, zoom deep</p></div></body></html>`;
   const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
   try {
     await page.setContent(html);
@@ -172,7 +178,7 @@ try {
   mkdirSync(OUT_DIR, { recursive: true });
   if (existsSync(OUT)) copyFileSync(OUT, `${OUT}.bak`);
   writeFileSync(OUT, header);
-  console.log(`${OUT}: "${SEARCH ? `Zoom into ${count} fractals` : `Explore ${count} fractals, zoom deep`}"`);
+  console.log(`${OUT}: "${SEARCH ? `Zoom into ${count} fractals` : "Explore fractals, zoom deep"}"`);
 } finally {
   await browser.close();
   server.kill();

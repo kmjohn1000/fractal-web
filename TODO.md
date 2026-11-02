@@ -72,7 +72,14 @@ git-ignored file.
          modules never export the same name (today that only throws under
          the test hook); add `espree` to `package.json` (lint relies on
          eslint pulling it in; a lockfile change, so ask first).
-      5. Release planned for 2026-11-03 (last tag `v1.53.0`; 40 commits
+      5. DONE 2026-11-02: 1.55.5 (build 455) released: full suite 2963 of
+         2963 on the tree before the tag, tag `v1.55.5` pushed after the
+         pre-push suite passed on its second attempt (the first failed two
+         `dot-replay` tests that race a real-time run against the test's own
+         steps; they pass alone, so they are load-sensitive: consider moving
+         them to the manual clock), IPA `store-assets/1.55.5/ipa/App.ipa`.
+         Still the user's: the real-iPhone check, the upload and the App
+         Store Connect fields. Was: release planned for 2026-11-03 (last tag `v1.53.0`; 40 commits
          since, 1.53.1 to 1.54.7 almost all internal; the user-visible parts
          are the pentagon dot shape in 1.54.0 and the offline picker
          thumbnails in 1.53.12). Decide first: whether the chaos-game-run
