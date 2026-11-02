@@ -2,10 +2,22 @@
 
 ```
 npm run test:visual                                   # everything, ~3.5 min
+npm run test:quick                                    # the quick tier: iPhone WebKit + desktop Chromium
+npm run test:quick -- tests/visual/dual.spec.mjs      # the quick tier, one spec
 npm run test:visual -- --project=webkit-iphone15      # one browser/size
 npm run test:visual -- -g "Seahorse"                  # matching tests only
 npm run test:visual -- --update-snapshots=all -g X    # re-record X's baselines
 ```
+
+`npm run test:quick` is for day-to-day work between releases: it runs only
+`webkit-iphone15` (the iOS app's engine at phone size) and `chromium-desktop` (the website),
+about 46% of the suite's test time, and `webkit-iphone15` alone is about a sixth. A measured
+sample (styles, info-card and dual, 320 tests) took 20 minutes of test time over the four
+projects: chromium-desktop 31%, webkit-desktop 32%, chromium-iphone15 22%, webkit-iphone15 15%.
+It cannot hide a failure that only shows in the other two projects (desktop-size WebKit, which
+also stands in for iPad layouts, and phone-size Chromium), so a release still runs all four
+(`/release` and the pre-push hook for a `v*` tag use `npm run test:visual`). Re-record baselines
+for all four projects, not just the quick two, or the other two go stale.
 
 Playwright (`playwright.config.mjs`) loads the app in four projects
 (Chromium and WebKit, each at 1280x800 desktop and iPhone 15) and puts it in
