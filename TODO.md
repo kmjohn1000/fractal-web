@@ -48,7 +48,11 @@ git-ignored file.
          `keyAction` and `KEY_*`) into `keyboard.js`. Many importers; the
          keyboard has little spec coverage. Specs: `vector`, `places-sheet`,
          `color-sheet`, `solid-colors`, `dot-replay`, `palettes`.
-      3. Optional: `digit-fractals.js` and `apollonian.js` from
+      3. `ifs.js` from `fern.js` DONE 2026-11-02 (`3fcad80`, 1.55.5; 1058
+         tests passed on webkit-iphone15 and chromium-desktop; `fern.js` 851
+         lines, `ifs.js` 262; `make-short.mjs` patches `PENTAGON_RATIO` in
+         `ifs.js` through its own route and now checks that the patched
+         values reached the page). Still open, optional: `digit-fractals.js` and `apollonian.js` from
          `fractal-defs.js` (`EXTRA_MODES` must stay where it is: `tests/cases.mjs`
          reads it as text); `ifs.js` from `fern.js` (the replay constants and
          `createIfsView` stay: `scripts/make-short.mjs` patches that text);
