@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.54.5 — 2026-11-01
+- Internal: four small helpers in state.js (paneState, paneHistory, paneRenderer, shownPane) replace the repeated "main or Julia pane" choices in five places. No visible change.
+
 ## 1.54.4 — 2026-11-01
 - Internal: the gesture-settle timer now lives next to markInteracting() in state-colors.js, with a cancelSettle() function, replacing a shared variable and its setter. No visible change.
 

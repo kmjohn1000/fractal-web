@@ -6,15 +6,15 @@
 // reads, see rendererHost), so they can depend on this file and it on none of them; state-colors.js
 // holds the functions that do call them.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { SOLID_COLORS } from "./colormaps.js?v=1.54.4";
-import { FRACTAL_CONFIGS } from "./configs.js?v=1.54.4";
-import { LINE_CURVES, createCurveView } from "./dragon.js?v=1.54.4";
-import { createIfsView } from "./fern.js?v=1.54.4";
-import { createHexaflakeView } from "./hexaflake.js?v=1.54.4";
-import { createKochView } from "./koch.js?v=1.54.4";
-import { createPythagorasTreeView } from "./pythagoras.js?v=1.54.4";
-import { ignoresMaxIter, suggestedMaxIter, viewFromBounds } from "./fractal-defs.js?v=1.54.4";
-import { createFractalRenderer } from "./renderer.js?v=1.54.4";
+import { SOLID_COLORS } from "./colormaps.js?v=1.54.5";
+import { FRACTAL_CONFIGS } from "./configs.js?v=1.54.5";
+import { LINE_CURVES, createCurveView } from "./dragon.js?v=1.54.5";
+import { createIfsView } from "./fern.js?v=1.54.5";
+import { createHexaflakeView } from "./hexaflake.js?v=1.54.5";
+import { createKochView } from "./koch.js?v=1.54.5";
+import { createPythagorasTreeView } from "./pythagoras.js?v=1.54.5";
+import { ignoresMaxIter, suggestedMaxIter, viewFromBounds } from "./fractal-defs.js?v=1.54.5";
+import { createFractalRenderer } from "./renderer.js?v=1.54.5";
 
 // ---------------------------------------------------------------- app state
 
@@ -188,8 +188,7 @@ export function applyAutoIter() {
     if (ignoresMaxIter(st.ftype)) continue;
     st.maxIter = suggestedMaxIter(st.baseScale, st.scale);
   }
-  const shown = activePane === "julia" && dualActive && juliaState ? juliaState : mainState;
-  els.iterSlider.value = shown.maxIter;
+  els.iterSlider.value = paneState(shownPane()).maxIter;
 }
 
 export let mainState = freshState(FRACTAL_CONFIGS[currentName]);
@@ -222,9 +221,19 @@ export const vectorColors = {
   fern: solidIndex("Green"), sierpinski: solidIndex("Violet"), pentagon: solidIndex("Ice"), levy: solidIndex("Rose"), vicsek: solidIndex("Gold"),
 };
 
+// A pane is "main" or "julia"; the Julia pane's state is null until dual view has been entered.
+export const paneState = (pane) => (pane === "julia" ? juliaState : mainState);
+export const paneHistory = (pane) => (pane === "julia" ? juliaHistory : mainHistory);
+export const paneRenderer = (pane) => (pane === "julia" ? juliaRenderer : mainRenderer);
+// The pane that Back, the keys and the iteration slider follow: the Julia pane only while dual view
+// is open and it was the last one touched.
+export function shownPane() {
+  return dualActive && activePane === "julia" && juliaState ? "julia" : "main";
+}
+
 export function pushHistory(pane) {
-  const st = pane === "julia" ? juliaState : mainState;
-  const hist = pane === "julia" ? juliaHistory : mainHistory;
+  const st = paneState(pane);
+  const hist = paneHistory(pane);
   if (!st) return;
   hist.push({ cx: st.cx, cy: st.cy, scale: st.scale, rotation: st.rotation || 0, flipY: !!st.flipY });
   if (hist.length > 50) hist.shift();

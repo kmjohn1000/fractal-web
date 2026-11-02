@@ -3,17 +3,17 @@
 // calls teleport.js (cancelTeleport) only inside event handlers.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { Platform } from "./platform.js?v=1.54.4";
-import { FRACTAL_CONFIGS, slugify } from "./configs.js?v=1.54.4";
-import { EXTRA_MODES, PICKER_LAYOUT } from "./fractal-defs.js?v=1.54.4";
-import { limitScale } from "./deepzoom.js?v=1.54.4";
-import { activePane, currentName, dualActive, els, juliaRenderer, juliaState, mainRenderer, mainState, mode, pushHistory, setActivePane } from "./state.js?v=1.54.4";
-import { markInteracting, popHistory } from "./state-colors.js?v=1.54.4";
-import { renderAll, requestRender } from "./render-layout.js?v=1.54.4";
-import { normalizeAngle, screenToComplex } from "./view-math.js?v=1.54.4";
-import { closeDual, enterDual, openPresetInDual, selectFractal, setMode, updateMenuActiveState } from "./modes.js?v=1.54.4";
-import { KEY_PAN_FRACTION, activeVectorTarget, keyAction } from "./interaction.js?v=1.54.4";
-import { cancelTeleport } from "./teleport.js?v=1.54.4";
+import { Platform } from "./platform.js?v=1.54.5";
+import { FRACTAL_CONFIGS, slugify } from "./configs.js?v=1.54.5";
+import { EXTRA_MODES, PICKER_LAYOUT } from "./fractal-defs.js?v=1.54.5";
+import { limitScale } from "./deepzoom.js?v=1.54.5";
+import { activePane, currentName, dualActive, els, juliaState, mainState, mode, paneRenderer, paneState, pushHistory, setActivePane, shownPane } from "./state.js?v=1.54.5";
+import { markInteracting, popHistory } from "./state-colors.js?v=1.54.5";
+import { renderAll, requestRender } from "./render-layout.js?v=1.54.5";
+import { normalizeAngle, screenToComplex } from "./view-math.js?v=1.54.5";
+import { closeDual, enterDual, openPresetInDual, selectFractal, setMode, updateMenuActiveState } from "./modes.js?v=1.54.5";
+import { KEY_PAN_FRACTION, activeVectorTarget, keyAction } from "./interaction.js?v=1.54.5";
+import { cancelTeleport } from "./teleport.js?v=1.54.5";
 
 // ---------------------------------------------------------------- compass
 
@@ -159,9 +159,9 @@ document.addEventListener("keydown", (e) => {
   if (mode === "fractal") {
     if (action.reset) { els.resetBtn.click(); return; }
     // In dual mode, keys drive whichever pane was last touched.
-    const pane = dualActive && activePane === "julia" && juliaState ? "julia" : "main";
-    const st = pane === "julia" ? juliaState : mainState;
-    const renderer = pane === "julia" ? juliaRenderer : mainRenderer;
+    const pane = shownPane();
+    const st = paneState(pane);
+    const renderer = paneRenderer(pane);
     cancelTeleport();
     const now = performance.now();
     if (now - lastKeyHistoryPush > 400) { pushHistory(pane); lastKeyHistoryPush = now; }
