@@ -3,17 +3,19 @@
 // showHud, syncSliderFill); the scripts before and after it call cancelTeleport etc.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { FRACTAL_CONFIGS } from "./configs.js?v=1.54.7";
-import { KOCH_GROW_MS, KOCH_GROW_STEP_SHARE } from "./koch.js?v=1.54.7";
-import { isCurveMode, viewFromBounds } from "./fractal-defs.js?v=1.54.7";
-import { TELEPORT_DESTINATIONS } from "./places.js?v=1.54.7";
-import { applyAutoIter, currentName, dragonState, dualActive, els, fernState, fernView, hexaflakeState, kochState, kochView, mainCanvasAspect, mainState, mode, pushHistory, setActivePane, treeState } from "./state.js?v=1.54.7";
-import { applyDefaultColormap, markInteracting } from "./state-colors.js?v=1.54.7";
-import { fernRenderOpts, renderAll, requestRender } from "./render-layout.js?v=1.54.7";
-import { normalizeAngle } from "./view-math.js?v=1.54.7";
-import { selectFractal } from "./modes.js?v=1.54.7";
-import { dragonNav, fernNav, fitVectorView, hexaflakeNav, kochNav, treeNav, vectorViewIsFitted } from "./interaction.js?v=1.54.7";
-import { prefersReducedMotion, showHud, syncSliderFill } from "./compass-ui.js?v=1.54.7";
+import { FRACTAL_CONFIGS } from "./configs.js?v=1.55.0";
+import { KOCH_GROW_MS, KOCH_GROW_STEP_SHARE } from "./koch.js?v=1.55.0";
+import { isCurveMode, viewFromBounds } from "./fractal-defs.js?v=1.55.0";
+import { TELEPORT_DESTINATIONS } from "./places.js?v=1.55.0";
+import { applyAutoIter, currentName, dragonState, dualActive, els, fernState, fernView, hexaflakeState, kochState, kochView, mainCanvasAspect, mainState, mode, pushHistory, setActivePane, treeState } from "./state.js?v=1.55.0";
+import { applyDefaultColormap, markInteracting } from "./state-colors.js?v=1.55.0";
+import { fernRenderOpts, renderAll, requestRender } from "./render-layout.js?v=1.55.0";
+import { normalizeAngle } from "./view-math.js?v=1.55.0";
+import { selectFractal } from "./modes.js?v=1.55.0";
+import { dragonNav, fernNav, fitVectorView, hexaflakeNav, kochNav, treeNav, vectorViewIsFitted } from "./interaction.js?v=1.55.0";
+import { prefersReducedMotion, showHud, syncSliderFill } from "./compass-ui.js?v=1.55.0";
+import { REPLAY_LONG, replayStopPoints, seededRandom } from "./fern.js?v=1.55.0";
+import { announceRunDone, newRunSeed, rememberRun, updateRunChip } from "./chaos-run.js?v=1.55.0";
 
 // ---------------------------------------------------------------- teleport ("Surprise me")
 
@@ -439,8 +441,9 @@ for (const btn of document.querySelectorAll(".depthSpeedBtn, .replaySpeedBtn")) 
 syncPlayButtons();
 
 // Replay of the chaos game (the dot shapes, fern.js): the Play button beside the speed button
-// runs it, and the speed above is its speed (1x is about 8 s from the first jump to the last of
-// the points slider's count). Tapping again pauses it, with the picture as far as it got, and
+// runs it, and the speed above is its speed (1x is a Long run of about 15 s, from the first jump to
+// the shape's stop point; the normal render carries on to the points slider's count). Tapping again
+// pauses it, with the picture as far as it got, and
 // tapping once more carries on; after the end Play starts over. The view is framed first, as
 // Reset does (Back undoes that), since the points the game lands on would mostly miss a zoomed
 // view. Any gesture, another shape, a color or count change, Reset and Save end it: the dot
@@ -452,26 +455,55 @@ export function syncReplayButtons() {
     btn.setAttribute("aria-label", running ? "Pause replay" : "Play replay");
     btn.title = running ? "Pause replay" : "Play replay: watch the chaos game build the picture";
   }
+  updateRunChip(); // the counter over the canvas shows while a run is on, paused or not
 }
 
 export function stopDotReplay() {
   if (fernView.cancelReplay()) requestRender();
 }
 
+// A touch, wheel tick, pan, zoom or twist on a vector view: ends a default replay (the Shorts', the
+// tests'), but not the app's own run, which follows the view (startDotRun) and draws itself again in it.
+export function touchDotReplay() {
+  if (!fernView.replayFollows) stopDotReplay();
+}
+
 export function toggleDotReplay() {
   if (fernView.replayRunning) { fernView.pauseReplay(); return; }
   if (fernView.replaying) { fernView.resumeReplay(); return; }
+  startDotRun(newRunSeed());
+}
+
+// A new run of the chaos game from the origin: the Long run (REPLAY_LONG, about 15 s at 1x), which stops
+// where this shape's picture has its structure (fern.js IFS_STOP_POINTS; the normal render carries on to
+// the points slider's count) and uses the random numbers of its seed, so a link with the seed plays the
+// same jumps. The default run (startReplay without options) is left to tests and the Shorts.
+export function startDotRun(seed) {
   cancelTeleport();
   if (!vectorViewIsFitted(mode)) {
     fernNav.checkpoint();
     fitVectorView(mode);
   }
+  const opts = fernRenderOpts();
+  rememberRun(seed); // after the framing: the seed goes with this view
   fernView.startReplay({
-    ...fernRenderOpts(),
+    ...opts, ...REPLAY_LONG,
+    stop: replayStopPoints(fernView.system, opts.count),
+    rng: seededRandom(seed), seed, follow: true,
     speed: () => PLAY_SPEEDS[depthPlayer.speedIndex],
     onChange: syncReplayButtons,
+    onDone: announceRunDone,
   });
   requestRender(); // Back, the info card, the compass; the render leaves the replay's picture alone
+}
+
+// A share link with a seed: after the first paint, play that run (never under reduced motion, where
+// the replay has no buttons). Skipped if the person has already left for another shape or started a run.
+export function scheduleSharedRun(seed, system) {
+  if (!seed || prefersReducedMotion()) return;
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (mode === system && fernView.system === system && !fernView.replaying) startDotRun(seed);
+  }));
 }
 
 for (const btn of document.querySelectorAll(".replayPlayBtn")) btn.addEventListener("click", toggleDotReplay);

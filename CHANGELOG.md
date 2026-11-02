@@ -2,6 +2,12 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.55.0 — 2026-11-01
+- Play on the dot shapes (fern, Sierpinski triangle and pentagon, Lévy C, Vicsek) is now a longer run of about 15 seconds: it shows 100 jumps one at a time with the path behind the dot, then builds the picture and hands over to the normal render.
+- Panning, zooming or turning the picture during a Play no longer ends the run: the points drawn so far are redrawn in the new view and the run carries on.
+- A points-and-coverage counter shows at the top of the picture during a run, and on the info card.
+- Each run has a six-digit seed, shown as "Run 482913" on the info card. Links made after a run carry it, and opening such a link plays the same run (not with reduced motion).
+
 ## 1.54.7 — 2026-11-01
 - Internal: the info card's drawing and per-mode text moved out of render-layout.js into a new file, hud.js, and deepZoomEligible moved to deepzoom.js, so hud.js and render-layout.js do not import each other. No visible change.
 

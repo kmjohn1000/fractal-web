@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Fractal Atlas&trade;</title>
 
-<link rel="manifest" href="manifest.webmanifest?v=1.54.7">
+<link rel="manifest" href="manifest.webmanifest?v=1.55.0">
 <meta name="theme-color" content="#111111">
-<link rel="icon" href="icons/favicon-32.png?v=1.54.7" sizes="32x32" type="image/png">
+<link rel="icon" href="icons/favicon-32.png?v=1.55.0" sizes="32x32" type="image/png">
 
 <!-- iOS Safari ignores the manifest entirely for install/homescreen purposes
      and needs its own meta tags + a dedicated (non-transparent) icon. -->
@@ -15,7 +15,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fractal Atlas">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.54.7">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.55.0">
 
 <!-- Smart App Banner: Safari on iPhone/iPad offers the App Store app.
      Ignored everywhere else, including the app's own web view. -->
@@ -203,6 +203,27 @@
     -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4);
     box-shadow: 0 0 0 0.5px rgba(255,255,255,0.12);
     font: 0.75rem/1.3 -apple-system, system-ui, sans-serif; color: #fff;
+  }
+
+  /* The chaos-game run's counter ("1,204 points · 38% filled", chaos-run.js) over the top of the canvas, in the
+     card's style; it takes no taps, and shows only while a run is on (the replay is all motion, so
+     with reduced motion there is none). The live region beside it is for a screen reader: off screen. */
+  #runChip {
+    position: absolute; z-index: 10; pointer-events: none;
+    top: calc(10px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); white-space: nowrap;
+    padding: 4px 10px; border-radius: 999px;
+    background: rgba(20,20,22,0.6);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4);
+    box-shadow: 0 0 0 0.5px rgba(255,255,255,0.12);
+    font: 0.75rem/1.3 -apple-system, system-ui, sans-serif; font-variant-numeric: tabular-nums; color: #fff;
+  }
+  /* At the top, clear of the web welcome card (bottom) and the rotation compass (top right corner). The open
+     info card, top left, says the same numbers (updateFernHud), so the chip gives way to it. */
+  #hud:not(.hidden) ~ #runChip { display: none; }
+  @media (prefers-reduced-motion: reduce) { #runChip { display: none; } }
+  .srOnly {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+    clip-path: inset(50%); white-space: nowrap; border: 0;
   }
 
   /* The canvas area is always the topmost in-flow content (the HUD floats
@@ -769,6 +790,8 @@
     <div class="welcomeLinks"><a href="privacy.html">Privacy</a> &middot; <a href="support.html">Support</a></div>
   </div>
   <div id="juliaLabel" class="hidden">Julia set of the center point</div>
+  <div id="runChip" class="hidden"></div>
+  <div id="runAnnounce" class="srOnly" role="status" aria-live="polite"></div>
   <canvas id="mainCanvas"></canvas>
   <canvas id="juliaCanvas" class="hidden"></canvas>
   <canvas id="kochCanvas" class="hidden"></canvas>
@@ -1062,6 +1085,6 @@
   </div>
 </div>
 
-<script type="module" src="app.js?v=1.54.7"></script>
+<script type="module" src="app.js?v=1.55.0"></script>
 </body>
 </html>

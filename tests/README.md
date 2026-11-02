@@ -263,8 +263,46 @@ normal picture is back, all of it, with the button reading Play replay again; Sa
 (`captureShareBlob`) ends it and saves the whole frame, not the partial one; the share
 link does not change while it plays; and a device that falls behind the schedule ends at
 the 10 s cap with the normal render finishing the picture. The points slider is the
-replay's length (it plays `count` points, so its last frame is the normal frame); moving
-it ends the replay.
+replay's length when `startReplay` is called without options (it plays `count` points,
+so its last frame is the normal frame); moving it ends the replay.
+
+The same file covers the app's own Play, the Long run (`startDotRun` in teleport.js,
+`REPLAY_LONG`, `IFS_STOP_POINTS` and `replaySchedule` in fern.js, `chaos-run.js`). The
+default run (no options: 24 slow jumps, trail 6, fade 60, cap 10 s) is held to
+`dot-replay-goldens.json`: the first 150 jumps of seeds 1 and 7 on all five shapes, every
+point to the last bit, recorded before the Long run existed. The Long run is 100 jumps
+one at a time with a trail of 20, then the ramp; its last slow gap follows from where it
+stops (`replayGapLast`), it lasts 14 to 16 s at 1x on every shape (measured 15.1 to 15.5 s
+in real time in Chromium and WebKit), its cap is 1.25 times that, and it stops at the
+shape's own point (fern 500,000, Sierpinski and Vicsek 200,000, pentagon and Lévy 300,000,
+never more than the slider's count), after which the normal render carries on to the
+slider's count with no step in light, lit pixels, hue or 8 x 8 block means against the
+chaos game itself carried to the same number of points. A run has a seed (1 to 999999,
+`seededRandom`, a fresh one for each Play); the same seed gives the same jumps and
+`ifsRandom` is not asked; the share link carries it as `sd` only after a run and while the
+view is unchanged, an old link or a bad `sd` opens as before without a run, and opening a
+link with `sd` plays that run after the first paint (not with reduced motion). The
+counter (`fernView.runStats`, the `#runChip` over the canvas, the same two lines on the
+info card with "Run N") is compared with an independent recomputation of the seeded
+chaos game through the same view and the same 12 css px grid, on every shape: points are
+the jumps after the 12 burn-in, lit cells and the reference cells match exactly,
+coverage never falls and never passes 100%; `formatPointCount` has its table; the chip is
+one line and inside the canvas at 360 and 393 px; a screen reader's one polite region
+hears only the powers of ten and the end.
+
+The app's run follows the view (`follow: true`, `replaySync`/`replayRebuild` in fern.js,
+`touchDotReplay` in teleport.js): a wheel tick, tap, drag, pinch and twist, arrow key, Back, or a
+resize does not end it (a default replay, the Shorts' and the tests', still ends as before; Reset, a new
+color, the points slider, another shape, Save and Share still end any run). Every landed point is kept
+in world coordinates (17 bytes: x, y as Float64 and the transform's index, from which the color follows;
+8.5 MB for 500,000 points) and drawn again through the new view, so after a zoom, pan or twist the
+picture is pixel for pixel what a run begun in that view with the same seed shows (tested on all five
+shapes), with the counted points, the schedule's clock and the first points' transforms unchanged, and
+`accepted`, the lit coverage cells and the reference cells equal an independent recomputation. While the
+view keeps moving a run of more than 120,000 points draws every third to fifth point (each counting
+that many) and the exact picture comes 160 ms after the last move; a paused run stays paused and is
+painted at once. The hand-off keeps the redrawn counts, also zoomed 100x and 10,000x. The chip is at the
+top of the canvas (clear of the welcome card, the compasses and, hidden, the open info card).
 
 `solid-colors.spec.mjs` covers the ten solid colors of the twelve pattern shapes
 (1.52.0). The table is append-only because share links carry the index: Green,
