@@ -36,7 +36,12 @@ git-ignored file.
          `modes.js` (`stopDepthPlay`), `interaction.js` (`stopDotReplay`).
          Medium risk (many load-time listeners). Specs: `vector`,
          `koch-generations`, `dot-replay`, `dual`, `cold-open`.
-      2. `vector-interaction.js` from `interaction.js` (about 290 lines):
+      2. DONE 2026-11-02 (`ff8a408`, 1.55.4; 816 tests passed on
+         webkit-iphone15 and chromium-desktop across ten specs; the moved text
+         diffed identical; the fern's box-zoom toggle and `curveBoxCache` went
+         with it so the two files do not import each other; the keyboard
+         stayed in `interaction.js`, now 295 lines, `vector-interaction.js`
+         330). Was: `vector-interaction.js` from `interaction.js` (about 290 lines):
          `attachVectorViewInteraction`, `vectorViewBox`, `VECTOR_VIEWS`, the
          fit helpers, the `*Nav` objects and their Back listeners,
          `activeVectorTarget`; optionally the keyboard handler (with
