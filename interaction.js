@@ -3,16 +3,16 @@
 // fractal-defs.js; calls the later scripts (cancelTeleport, glideMainTo, ...) only inside function bodies.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { applyAutoIter, dragonState, dragonView, dualActive, els, fernView, hexaflakeView, isInteracting, juliaRenderer, juliaState, kochView, mainRenderer, mainState, mode, pushHistory, setActivePane, setIsInteracting, setSettleTimer, settleTimer, treeView } from "./state.js?v=1.54.3";
-import { LINE_CURVES } from "./dragon.js?v=1.54.3";
-import { ifsData } from "./fern.js?v=1.54.3";
-import { isCurveMode, isIfsMode, viewFromBounds } from "./fractal-defs.js?v=1.54.3";
-import { limitScale } from "./deepzoom.js?v=1.54.3";
-import { endVectorInteracting, markInteracting, markVectorInteracting } from "./state-colors.js?v=1.54.3";
-import { renderAll, requestRender } from "./render-layout.js?v=1.54.3";
-import { centerForAnchor, normalizeAngle, screenToComplex } from "./view-math.js?v=1.54.3";
-import { cancelTeleport, glideMainTo, stopDotReplay } from "./teleport.js?v=1.54.3";
-import { colorSheetTapJustClosed } from "./color-sheet.js?v=1.54.3";
+import { applyAutoIter, dragonState, dragonView, dualActive, els, fernView, hexaflakeView, isInteracting, juliaRenderer, juliaState, kochView, mainRenderer, mainState, mode, pushHistory, setActivePane, treeView } from "./state.js?v=1.54.4";
+import { LINE_CURVES } from "./dragon.js?v=1.54.4";
+import { ifsData } from "./fern.js?v=1.54.4";
+import { isCurveMode, isIfsMode, viewFromBounds } from "./fractal-defs.js?v=1.54.4";
+import { limitScale } from "./deepzoom.js?v=1.54.4";
+import { cancelSettle, endVectorInteracting, markInteracting, markVectorInteracting } from "./state-colors.js?v=1.54.4";
+import { renderAll, requestRender } from "./render-layout.js?v=1.54.4";
+import { centerForAnchor, normalizeAngle, screenToComplex } from "./view-math.js?v=1.54.4";
+import { cancelTeleport, glideMainTo, stopDotReplay } from "./teleport.js?v=1.54.4";
+import { colorSheetTapJustClosed } from "./color-sheet.js?v=1.54.4";
 
 // ---------------------------------------------------------------- box zoom
 
@@ -85,8 +85,7 @@ export function attachFractalInteraction(canvas, getState, paneName, renderer) {
       // current state first, so the box is always drawn on top of exactly
       // the pixels commitBoxZoom's math will use.
       if (isInteracting) {
-        if (settleTimer) { clearTimeout(settleTimer); setSettleTimer(null); }
-        setIsInteracting(false);
+        cancelSettle();
         renderAll();
       }
       // boxRect is position:fixed, so its geometry lives entirely in

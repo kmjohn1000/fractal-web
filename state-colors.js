@@ -4,12 +4,12 @@
 // colormaps.js and, inside function bodies only, render-layout.js and share.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { COLORMAPS } from "./colormaps.js?v=1.54.3";
-import { FRACTAL_CONFIGS } from "./configs.js?v=1.54.3";
-import { COLOR_BANDS_RANGE, COLOR_STYLES, colorStyle } from "./color-styles.js?v=1.54.3";
-import { applyAutoIter, currentName, els, juliaHistory, juliaState, mainHistory, mainState, setIsInteracting, setSettleTimer, settleTimer } from "./state.js?v=1.54.3";
-import { labelColormapButton, renderAll, requestRender, updateLUT } from "./render-layout.js?v=1.54.3";
-import { buildShareHash } from "./share.js?v=1.54.3";
+import { COLORMAPS } from "./colormaps.js?v=1.54.4";
+import { FRACTAL_CONFIGS } from "./configs.js?v=1.54.4";
+import { COLOR_BANDS_RANGE, COLOR_STYLES, colorStyle } from "./color-styles.js?v=1.54.4";
+import { applyAutoIter, currentName, els, juliaHistory, juliaState, mainHistory, mainState, setIsInteracting } from "./state.js?v=1.54.4";
+import { labelColormapButton, renderAll, requestRender, updateLUT } from "./render-layout.js?v=1.54.4";
+import { buildShareHash } from "./share.js?v=1.54.4";
 
 // ---------------------------------------------------------------- default colormaps
 
@@ -91,16 +91,23 @@ export function setColorStyle(next = {}) {
 
 // ---------------------------------------------------------------- interaction timers
 
-// (isInteracting and settleTimer are declared in state.js, with the comment on what the delay costs.)
+// (isInteracting is declared in state.js, with the comment on what the delay costs.)
+export let settleTimer = null;
 export function markInteracting() {
   setIsInteracting(true);
   if (settleTimer) clearTimeout(settleTimer);
-  setSettleTimer(setTimeout(() => {
+  settleTimer = setTimeout(() => {
     setIsInteracting(false);
-    setSettleTimer(null);
+    settleTimer = null;
     applyAutoIter();
     requestRender();
-  }, 200));
+  }, 200);
+}
+
+// Ends the interaction at once instead of waiting out the delay; the caller redraws.
+export function cancelSettle() {
+  if (settleTimer) { clearTimeout(settleTimer); settleTimer = null; }
+  setIsInteracting(false);
 }
 
 // The vector views' counterpart: while a drag, pinch or wheel zoom is in

@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.54.4 — 2026-11-01
+- Internal: the gesture-settle timer now lives next to markInteracting() in state-colors.js, with a cancelSettle() function, replacing a shared variable and its setter. No visible change.
+
 ## 1.54.3 — 2026-11-01
 - Internal: the info card's on/off flag now lives in compass-ui.js with a showHud() function, replacing a setter and three repeated pairs of calls. No visible change.
 

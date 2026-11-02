@@ -3,22 +3,22 @@
 // applyShareHashFromUrl and applyShareLink are called from init in app.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { Platform } from "./platform.js?v=1.54.3";
-import { COLORMAPS, SOLID_COLORS } from "./colormaps.js?v=1.54.3";
-import { FRACTAL_CONFIGS, fractalLabel, slugify } from "./configs.js?v=1.54.3";
-import { LINE_CURVES } from "./dragon.js?v=1.54.3";
-import { Diag } from "./diag.js?v=1.54.3";
-import { EXTRA_MODES, isCurveMode, isIfsMode } from "./fractal-defs.js?v=1.54.3";
-import { limitScale } from "./deepzoom.js?v=1.54.3";
-import { COLOR_BANDS_RANGE, STYLE_LINK_CODES, colorStyle } from "./color-styles.js?v=1.54.3";
-import { HEXAFLAKE_DEFAULT_DEPTH, HEXAFLAKE_MAX_DEPTH, currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, isInteracting, juliaState, kochState, kochView, mainRenderer, mainState, mode, treeState, vectorColors } from "./state.js?v=1.54.3";
-import { colormapIndex, colormapIndexNamed, defaultColormapName, setColorStyle, setColormapIndex, setColormapPicked } from "./state-colors.js?v=1.54.3";
-import { finishRefinement, modeLabel, refineDone, renderAll, requestRender, updateLUT } from "./render-layout.js?v=1.54.3";
-import { normalizeAngle } from "./view-math.js?v=1.54.3";
-import { enterDual, exitDual, selectFractal, setMode } from "./modes.js?v=1.54.3";
-import { VECTOR_VIEWS, dragonNav, fernNav, fittedVectorModes } from "./interaction.js?v=1.54.3";
-import { cancelTeleport } from "./teleport.js?v=1.54.3";
-import { setFernColor, updateColorSwatches } from "./colormap-picker.js?v=1.54.3";
+import { Platform } from "./platform.js?v=1.54.4";
+import { COLORMAPS, SOLID_COLORS } from "./colormaps.js?v=1.54.4";
+import { FRACTAL_CONFIGS, fractalLabel, slugify } from "./configs.js?v=1.54.4";
+import { LINE_CURVES } from "./dragon.js?v=1.54.4";
+import { Diag } from "./diag.js?v=1.54.4";
+import { EXTRA_MODES, isCurveMode, isIfsMode } from "./fractal-defs.js?v=1.54.4";
+import { limitScale } from "./deepzoom.js?v=1.54.4";
+import { COLOR_BANDS_RANGE, STYLE_LINK_CODES, colorStyle } from "./color-styles.js?v=1.54.4";
+import { HEXAFLAKE_DEFAULT_DEPTH, HEXAFLAKE_MAX_DEPTH, currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, isInteracting, juliaState, kochState, kochView, mainRenderer, mainState, mode, treeState, vectorColors } from "./state.js?v=1.54.4";
+import { colormapIndex, colormapIndexNamed, defaultColormapName, setColorStyle, setColormapIndex, setColormapPicked } from "./state-colors.js?v=1.54.4";
+import { finishRefinement, modeLabel, refineDone, renderAll, requestRender, updateLUT } from "./render-layout.js?v=1.54.4";
+import { normalizeAngle } from "./view-math.js?v=1.54.4";
+import { enterDual, exitDual, selectFractal, setMode } from "./modes.js?v=1.54.4";
+import { VECTOR_VIEWS, dragonNav, fernNav, fittedVectorModes } from "./interaction.js?v=1.54.4";
+import { cancelTeleport } from "./teleport.js?v=1.54.4";
+import { setFernColor, updateColorSwatches } from "./colormap-picker.js?v=1.54.4";
 
 // ---------------------------------------------------------------- share: links
 

@@ -6,15 +6,15 @@
 // reads, see rendererHost), so they can depend on this file and it on none of them; state-colors.js
 // holds the functions that do call them.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { SOLID_COLORS } from "./colormaps.js?v=1.54.3";
-import { FRACTAL_CONFIGS } from "./configs.js?v=1.54.3";
-import { LINE_CURVES, createCurveView } from "./dragon.js?v=1.54.3";
-import { createIfsView } from "./fern.js?v=1.54.3";
-import { createHexaflakeView } from "./hexaflake.js?v=1.54.3";
-import { createKochView } from "./koch.js?v=1.54.3";
-import { createPythagorasTreeView } from "./pythagoras.js?v=1.54.3";
-import { ignoresMaxIter, suggestedMaxIter, viewFromBounds } from "./fractal-defs.js?v=1.54.3";
-import { createFractalRenderer } from "./renderer.js?v=1.54.3";
+import { SOLID_COLORS } from "./colormaps.js?v=1.54.4";
+import { FRACTAL_CONFIGS } from "./configs.js?v=1.54.4";
+import { LINE_CURVES, createCurveView } from "./dragon.js?v=1.54.4";
+import { createIfsView } from "./fern.js?v=1.54.4";
+import { createHexaflakeView } from "./hexaflake.js?v=1.54.4";
+import { createKochView } from "./koch.js?v=1.54.4";
+import { createPythagorasTreeView } from "./pythagoras.js?v=1.54.4";
+import { ignoresMaxIter, suggestedMaxIter, viewFromBounds } from "./fractal-defs.js?v=1.54.4";
+import { createFractalRenderer } from "./renderer.js?v=1.54.4";
 
 // ---------------------------------------------------------------- app state
 
@@ -112,7 +112,6 @@ export let activePane = "main"; // "main" | "julia" — which pane Back/box-zoom
 // to an accurate render after you stop — no correctness risk either way,
 // just responsiveness.
 export let isInteracting = false;
-export let settleTimer = null;
 
 // Live frames at a frame-time-driven resolution. During a flight or a pinch
 // each frame is one full-size pass; on a phone a heavy view or style can take
@@ -240,7 +239,6 @@ export function setCurrentName(v) { currentName = v; }
 export function setDualActive(v) { dualActive = v; }
 export function setActivePane(v) { activePane = v; }
 export function setIsInteracting(v) { isInteracting = v; }
-export function setSettleTimer(v) { settleTimer = v; }
 export function setMainState(v) { mainState = v; }
 export function setJuliaState(v) { juliaState = v; }
 export function setMainHistory(v) { mainHistory = v; }
