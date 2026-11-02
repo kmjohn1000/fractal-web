@@ -1333,9 +1333,12 @@ test.describe("Play: a Long run with a seed of its own, and the seed in the link
     await page.evaluate(() => { fernView.cancelReplay(); renderAll(); });
     expect(await page.evaluate(() => buildShareHash())).toBe(link);
     // ... and gone once the view moved, or another shape shows
+    // (put back by assigning the saved value: multiplying by 0.9 and dividing by 0.9 is not always
+    // exact in floating point, and the start value differs from page to page, so that flaked)
+    const h0 = await page.evaluate(() => fernView.view.halfHeight);
     await page.evaluate(() => { fernView.view.halfHeight *= 0.9; renderAll(); });
     expect(await page.evaluate(() => buildShareHash())).not.toMatch(/sd=/);
-    await page.evaluate(() => { fernView.view.halfHeight /= 0.9; renderAll(); });
+    await page.evaluate((h) => { fernView.view.halfHeight = h; renderAll(); }, h0);
     expect(await page.evaluate(() => buildShareHash()), "back exactly as it was: the seed is back").toBe(link);
     await page.evaluate(() => setMode("koch"));
     expect(await page.evaluate(() => buildShareHash())).not.toMatch(/sd=/);
@@ -1583,7 +1586,19 @@ test.describe("Play: gestures on the picture do not end the run (the owner's whe
 
   for (const m of ["fern", "sierpinski"]) {
     test(`${m}: wheel zoom mid-run: still replaying, Pause showing, the chip there, points still landing`, async ({ page }) => {
-      await playAt(page, m, 2, 3000);
+      // The real Play button on the real clock: 4x gets to the fast part of the run quickly, and the
+      // moment it is there the speed drops to 1/4x (the app reads it live), so "mid-run" lasts long
+      // enough for a slow or busy machine; a run at 2x could finish before the checks (it did, under load).
+      await show(page, m);
+      await page.evaluate(() => { depthPlayer.speedIndex = PLAY_SPEEDS.indexOf(4); syncReplayButtons(); });
+      await page.locator("#fernReplayBtn").click();
+      await page.waitForFunction(() => {
+        const s = fernView.replayState;
+        if (!s || s.n < 3000) return false;
+        depthPlayer.speedIndex = PLAY_SPEEDS.indexOf(0.25);
+        syncReplayButtons();
+        return true;
+      });
       const h0 = await page.evaluate(() => fernView.view.halfHeight);
       const n0 = await page.evaluate(() => fernView.replayState.n);
       for (let i = 0; i < 6; i++) await wheel(page, -120);
@@ -1594,6 +1609,7 @@ test.describe("Play: gestures on the picture do not end the run (the owner's whe
       await expect(page.locator("#runChip")).toBeVisible();
       expect(await page.evaluate(() => fernView.replayState.n), "points keep landing").toBeGreaterThan(n0);
       expect(await page.evaluate(() => fernView.accepted), "the run's points are not thrown at the screen all at once").toBeLessThan(900000);
+      await page.evaluate(() => { depthPlayer.speedIndex = PLAY_SPEEDS.indexOf(4); syncReplayButtons(); }); // let it finish
       await page.waitForFunction(() => !fernView.replaying, null, { timeout: 30_000 });
       await expect(page.locator("#fernReplayBtn")).toHaveAttribute("aria-label", "Play replay");
       await settled(page, await page.evaluate(() => fernState.count));
