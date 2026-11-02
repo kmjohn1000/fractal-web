@@ -6,6 +6,53 @@ git-ignored file.
 
 ## Now
 
+- [ ] Code structure after the ES-module conversion (2026-11-01; the split
+      plan comes from two read-only reviews; steps are approved one at a
+      time, none of the open ones is started). Every app file is a module;
+      the first splits and state clean-ups are in Done. Method per step: one
+      commit, a patch bump with an "Internal" CHANGELOG line, `npm run
+      stamp`, lint, and the specs that cover what moved (the full suite only
+      for a release). For a move, write the new file, delete the block with
+      one Edit, and diff it against `git show HEAD:<old file>`; add the file
+      to `app.js` (import and `exposeForTests`) and `sw.js` `APP_SHELL`.
+      Open steps, in the order to take them:
+      1. `pattern-controls.js` from `teleport.js` (about 270 lines): the
+         Koch depth and fill handlers, depth play with its speed bubble and
+         slide gestures, the dot-shape replay button, and the depth-slider
+         and Reset handlers of the tree, hexaflake, dragon and fern. Leaves
+         flights, the cold open and the teleport index state. Importers:
+         `modes.js` (`stopDepthPlay`), `interaction.js` (`stopDotReplay`).
+         Medium risk (many load-time listeners). Specs: `vector`,
+         `koch-generations`, `dot-replay`, `dual`, `cold-open`.
+      2. `vector-interaction.js` from `interaction.js` (about 290 lines):
+         `attachVectorViewInteraction`, `vectorViewBox`, `VECTOR_VIEWS`, the
+         fit helpers, the `*Nav` objects and their Back listeners,
+         `activeVectorTarget`; optionally the keyboard handler (with
+         `keyAction` and `KEY_*`) into `keyboard.js`. Many importers; the
+         keyboard has little spec coverage. Specs: `vector`, `places-sheet`,
+         `color-sheet`, `solid-colors`, `dot-replay`, `palettes`.
+      3. Optional: `digit-fractals.js` and `apollonian.js` from
+         `fractal-defs.js` (`EXTRA_MODES` must stay where it is: `tests/cases.mjs`
+         reads it as text); `ifs.js` from `fern.js` (the replay constants and
+         `createIfsView` stay: `scripts/make-short.mjs` patches that text);
+         the dragon split into three files; `fractal-picker.js`,
+         `toolbar-a11y.js`. Not worth splitting: `shaders.js`, `renderer.js`,
+         the view factories, `configs.js`, `places.js`, `colormaps.js`.
+      4. Safety nets: a smoke check that runs each store, preview and
+         thumbnail script against a scratch output folder (the conversion
+         broke `render_thumbs.mjs` silently once); a lint check that two
+         modules never export the same name (today that only throws under
+         the test hook); add `espree` to `package.json` (lint relies on
+         eslint pulling it in; a lockfile change, so ask first).
+      5. Before the next release: the full visual suite (the refactors since
+         1.53.11 were each checked with targeted specs only) and a Release
+         build tapped through on a real iPhone (simctl cannot tap).
+      Not recommended: a bundler, one `session` or `panes` state object (about
+      300 reference edits and it weakens the read-only guard on imports),
+      regrouping `kochState`/`vectorColors` (tests mutate them in place).
+      Optional, low value: try `// @ts-check` plus `tsc --noEmit` on a file
+      with many callers (the three leaf files `colormaps.js`, `configs.js`
+      and `vectorgeom.js` checked clean once annotated and found no bugs).
 - [ ] Check the 1.38.0 first-visit work on real devices (the code shipped
       to the website in `189e823`; see Done): on a phone, the cold-open
       flight and the welcome card's placement above the toolbar; whether
@@ -889,6 +936,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
+- ES-module conversion and the first file splits (2026-10-30 to 2026-11-01, from the "why not just do the whole conversion?" discussion): every app file is a module (1.53.1 to 1.53.11; `index.html` loads only `app.js`), shared `let`s are written only through setters in the declaring file, `test-hooks.js` exposes every export to the tests when `navigator.webdriver` or `localStorage["fractalAtlas.test"]` is set, `npm run stamp` versions the imports, and `scripts/check-test-globals.mjs` (in lint) checks it all. Then splits: `view-math.js` and `hud-format.js` (1.53.14, 1.53.15), `color-styles.js` with the renderer no longer importing `state.js` (1.54.1), the box-zoom flags into `interaction.js` (1.54.2), `hudVisible` into `compass-ui.js` with `showHud()` (1.54.3), the settle timer with `cancelSettle()` (1.54.4), `paneState`/`paneHistory`/`paneRenderer`/`shownPane` (1.54.5), `share-menu.js` (1.54.6, with `share-menu.spec.mjs` first), `hud.js` and `deepZoomEligible` into `deepzoom.js` (1.54.7). Also: picker thumbnails precached for offline use (1.53.12) and `render_thumbs.mjs` fixed for the test flag.
 - Fractal picker regrouped (1.44.1, 2026-10-24, approved the same day): a display-only `PICKER_LAYOUT` in `fractal-defs.js` (sections "Zoom forever" and "Watch it grow", each with titled groups) replaces `FRACTAL_CATEGORIES`, and the loop in `compass-ui.js` builds the picker from it. Zoom forever = Mandelbrot family (Mandelbrot, Burning Ship, Tricorn, Celtic, Multibrot³, Phoenix), Julia sets (Spiral, Rabbit, Dragon, Phoenix; no longer below the fold), More to zoom into (Newton, Apollonian, carpet, gasket); Watch it grow = Build level by level (Koch, tree, Hexaflake, dragon, Hilbert, Gosper, arrowhead) and Dots that build up (fern, Sierpinski triangle, Lévy, Vicsek). The Hexaflake went under "level by level" instead of "dots" as first proposed, since 1.43.0 draws it as exact hexagons by level like the tree. `category`, `FRACTAL_CONFIGS` order and every share-link key are untouched; no label tweaks. The new `app.spec.mjs` test checks every fractal and mode appears exactly once, in `PICKER_LAYOUT` order, on all four projects. Looked at on a 390 px viewport in headless Chromium, not on a phone. The Places sheet's sections should follow this order — `631eda8`
 - `app.js` split into plain scripts (2026-10-23, from step 2 of the proposed order of work): a pure move along the section headers into plain scripts (the commit says 10; among them `places.js`, `deepzoom.js`, `renderer.js`, `state-colors.js`, `render-layout.js`, `modes.js`, `interaction.js`, `compass-ui.js`, `teleport.js`, `colormap-picker.js`, `color-sheet.js`, `share.js`), section order kept; `app.js` is now 158 lines. `deepzoom.js` has no DOM references and needs only `FTYPE` and `PHOENIX_P` from `configs.js` (checked 2026-10-24), so it can move into a Web Worker once the reference-orbit callers are made asynchronous — `b7fb4a4`
 - Curated palettes and an upright Burning Ship (1.44.0, 2026-10-24, from the "Curated palettes" and "Burning Ship looks like a ship" items): (1) a default palette per fractal, `defaultColormap` in `FRACTAL_CONFIGS` (Burning Ship Fire, Tricorn Classic, Multibrot³ Viridis, Phoenix and its Julia set Hot, Carpet Glacier, Gasket Plasma; the rest stay Inferno), chosen from contact sheets of every fractal's opening view and places in each palette; and an optional `colormap` per Surprise-me place. `colormapPicked` in `state-colors.js` (in memory only, like `fractalMemory`, which keeps views and not palettes) is set by a palette pick in the Color sheet, a Look other than Default, or a share link naming a palette other than the fractal's own default; until then `applyDefaultColormap` (from `selectFractal` and `flyTo`) follows the fractal or place, and the Default Look and Reset (`releaseColormapPick`) put the defaults back. The Default Look's palette is the default of what's on screen (`lookPalette`). Links keep the palette they name (a link without `cm=` is Inferno, as before). (2) The Ship's classic upright picture: `state.flipY` (from `config.flipY`) mirrors the view's imaginary axis last, after the rotation, in `main()` of the escape-time shader (`u_flipY`), `screenToComplex`/`centerForAnchor`, the perturbation reference grid (`chooseReference`) and the deep-zoom gesture preview; the iteration is untouched and `cx`/`cy` stay real coordinates, so Back history carries the flag and links are unchanged except `fl=1`, written only when on and read only for a fractal that has it (old links open exactly as before: `scripts/default-identity.mjs` proves the old path pixel-identical). The places moved from a half turn to rotation 0 (Stingray to `Math.PI - 2.5`) and now look like the classic picture, mirrored left to right from before; Surprise me from an old-link view takes the upright picture at takeoff. The Julia pane is symmetric top to bottom and takes no flag. Checked against the float64 oracle with `oracle-compare.mjs --flip 1` (ship, armada and deep twinships in six styles, within the gates and equal to the old orientation's numbers), 29 identity states with the 26 earlier ones at zero differing pixels, `palettes.spec.mjs` (new) and the covering specs on all four projects. Baselines re-recorded for the Ship, Tricorn, Multibrot³, Phoenix, Julia Phoenix, Carpet and Gasket (and their places) and the Ship's style baselines; the style specs now pin Inferno. Not checked on a phone. What's left is the "Palette follow-ups" item under Next — `8033d0d`
