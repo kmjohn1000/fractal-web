@@ -254,7 +254,7 @@ if (command === "sheet") {
 // polyline behind the dot keeps; the app's is 6), liveFade (the jumps after the slow ones over which
 // the dot and trail fade; the app's is 60) and cap (REPLAY_CAP_S, the schedule seconds after which the app
 // hands the rest to its normal render; the app's is 10, too short for a long one-at-a-time phase) and
-// pentagonRatio (the Sierpinski pentagon's jump size, below).
+// pentagonRatio (the Sierpinski pentagon's jump size, patched in ifs.js by patchPentagon, below).
 // Each pattern must be found exactly once, or the app has changed.
 function patchReplay(src, o) {
   const sub = (re, to) => {
@@ -268,10 +268,16 @@ function patchReplay(src, o) {
   if (o.trail !== undefined) sub(/const REPLAY_TRAIL = \d+;/, `const REPLAY_TRAIL = ${o.trail};`);
   if (o.cap !== undefined) sub(/const REPLAY_CAP_S = \d+;/, `const REPLAY_CAP_S = ${o.cap};`);
   if (o.liveFade !== undefined) sub(/const REPLAY_LIVE_FADE = \d+;/, `const REPLAY_LIVE_FADE = ${o.liveFade};`);
-  // pentagonRatio: the Sierpinski pentagon's jump size s (p' = s*p + (1 - s)*corner; the app's is 1/phi^2 = 0.382, so a
-  // jump covers 61.8% of the way): 0.5 jumps halfway, as the triangle does, which makes the five copies overlap.
-  if (o.pentagonRatio !== undefined) sub(/export const PENTAGON_RATIO = [^;]+;/, `export const PENTAGON_RATIO = ${o.pentagonRatio};`);
   return src;
+}
+
+// pentagonRatio: the Sierpinski pentagon's jump size s (p' = s*p + (1 - s)*corner; the app's is 1/phi^2 = 0.382, so a
+// jump covers 61.8% of the way): 0.5 jumps halfway, as the triangle does, which makes the five copies overlap.
+// PENTAGON_RATIO is in ifs.js (with the transform tables), the rest of the replay's constants in fern.js.
+function patchPentagon(src, o) {
+  const re = /export const PENTAGON_RATIO = [^;]+;/;
+  if ((src.match(new RegExp(re.source, "g")) || []).length !== 1) throw new Error(`ifs.js patch: ${re} not found once; the IFS code has changed`);
+  return src.replace(re, `export const PENTAGON_RATIO = ${o.pentagonRatio};`);
 }
 
 // A static server for the repo (tests/serve.mjs) and a headless WebKit page on the app.
@@ -288,6 +294,10 @@ async function openApp({ width, height, dsf = 1, passCount = 16, url = "index.ht
   if (replay) await context.route(/\/fern\.js(\?.*)?$/, async (route) => {
     const res = await route.fetch();
     await route.fulfill({ response: res, body: patchReplay(await res.text(), replay) });
+  });
+  if (replay && replay.pentagonRatio !== undefined) await context.route(/\/ifs\.js(\?.*)?$/, async (route) => {
+    const res = await route.fetch();
+    await route.fulfill({ response: res, body: patchPentagon(await res.text(), replay) });
   });
   await context.addInitScript((p) => {
     try {
@@ -307,6 +317,7 @@ async function openApp({ width, height, dsf = 1, passCount = 16, url = "index.ht
       };
     };
   }, passCount);
+  const close = async () => { await browser.close(); server.kill(); };
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -314,8 +325,17 @@ async function openApp({ width, height, dsf = 1, passCount = 16, url = "index.ht
   if (url === "index.html") {
     await page.addScriptTag({ path: join(root, "tests/driver.js") });
     if (!ui) await page.addStyleTag({ content: "#controls, #speedBubble, .compass, #crosshair, #welcome, #hud { display: none !important; } *, *::before, *::after { transition: none !important; animation: none !important; }" });
+    // The patched files were really the ones the page loaded (a route that never matched would leave the
+    // app's own value in place without an error).
+    if (replay && replay.pentagonRatio !== undefined) {
+      const got = await page.evaluate("PENTAGON_RATIO");
+      if (got !== Number(replay.pentagonRatio)) { await close(); throw new Error(`ifs.js patch did not reach the page: PENTAGON_RATIO is ${got}, wanted ${replay.pentagonRatio}`); }
+    }
+    if (replay && replay.slowJumps !== undefined) {
+      const got = await page.evaluate("REPLAY_SLOW_JUMPS");
+      if (got !== Number(replay.slowJumps)) { await close(); throw new Error(`fern.js patch did not reach the page: REPLAY_SLOW_JUMPS is ${got}, wanted ${replay.slowJumps}`); }
+    }
   }
-  const close = async () => { await browser.close(); server.kill(); };
   return { page, errors, close };
 }
 

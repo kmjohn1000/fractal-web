@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.55.5 — 2026-11-02
+- Internal: the dot shapes' IFS tables, address colors, chaos game and viewport sampler moved out of fern.js into a new file, ifs.js. fern.js now holds the replay and the dot shapes' view. scripts/make-short.mjs patches PENTAGON_RATIO in ifs.js. No visible change.
+
 ## 1.55.4 — 2026-11-02
 - Internal: the vector views' pan, pinch and wheel gestures, their framing (Reset) and the nav objects moved out of interaction.js into a new file, vector-interaction.js. interaction.js now holds the two fractal canvases' gestures and the keyboard actions. No visible change.
 

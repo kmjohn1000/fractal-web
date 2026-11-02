@@ -90,7 +90,7 @@ test.describe("colored by address", () => {
     });
   }
 
-  // 1.50.1: White has no hue to turn, so its transforms differ in brightness instead (fern.js IFS_GREY_DIM_MIN);
+  // 1.50.1: White has no hue to turn, so its transforms differ in brightness instead (ifs.js IFS_GREY_DIM_MIN);
   // the six chromatic colors still turn their hue and keep their brightness.
   test("White: each transform has its own brightness so the address cue survives; the other colors are unchanged", async ({ page }) => {
     const r = await page.evaluate((modes) => {

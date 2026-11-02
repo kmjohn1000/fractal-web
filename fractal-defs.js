@@ -3,9 +3,9 @@
 // lsystem.js/koch.js (IFS_SYSTEMS, LINE_CURVES), which only its function bodies use.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it;
 // tests/cases.mjs reads this file's text and accepts the `export`).
-import { FTYPE } from "./configs.js?v=1.55.4";
-import { LINE_CURVES } from "./dragon.js?v=1.55.4";
-import { IFS_SYSTEMS } from "./fern.js?v=1.55.4";
+import { FTYPE } from "./configs.js?v=1.55.5";
+import { LINE_CURVES } from "./dragon.js?v=1.55.5";
+import { IFS_SYSTEMS } from "./ifs.js?v=1.55.5";
 
 // The fractal picker's layout, in display order: sections with a title, each
 // split into titled groups of tiles. Display only: a key is a FRACTAL_CONFIGS
@@ -104,7 +104,7 @@ export const SHAPE_INFO = {
   },
 };
 
-// The chaos-game IFS modes (fern.js's IFS_SYSTEMS). They all share one
+// The chaos-game IFS modes (ifs.js's IFS_SYSTEMS). They all share one
 // view, canvas and control row -- the fern's -- and differ only in which
 // transform table that view runs.
 export const isIfsMode = (m) => Object.prototype.hasOwnProperty.call(IFS_SYSTEMS, m);
