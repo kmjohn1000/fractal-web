@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.55.2 — 2026-11-02
+- The dots a Play leaves behind are slightly smaller while a run is getting started.
+
 ## 1.55.1 — 2026-11-02
 - Fixed the points counter during a Play: it now counts from the first dot. It used to read 0 for the first few seconds and then stay 12 behind the dots on screen.
 

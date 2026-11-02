@@ -1,6 +1,6 @@
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { SOLID_COLORS, hueTurned, isGreyColor } from "./colormaps.js?v=1.55.1";
-import { backdropPixels } from "./vectorgeom.js?v=1.55.1";
+import { SOLID_COLORS, hueTurned, isGreyColor } from "./colormaps.js?v=1.55.2";
+import { backdropPixels } from "./vectorgeom.js?v=1.55.2";
 
 // Chaos-game IFS fractals: a few affine transforms, picked at random each
 // step (weighted by p) and applied to build a point cloud -- a
@@ -279,6 +279,8 @@ export const REPLAY_CAP_S = 10;         // at 1x, however slow the device: the r
 export const REPLAY_HOLD = 0.3;         // share of a jump the dot sits at its point before it flies
 export const REPLAY_BURN_IN = 12;       // jumps whose points are only shown, not counted (still off the shape)
 export const REPLAY_MARKS = 20000;      // points drawn as marks over the picture, big at first, shrinking into it
+export const REPLAY_MARK_RAD = 2.75;    // css px: a mark's radius at the start of the slow phase (it was 3.4); see REPLAY_MARK_BLEND
+export const REPLAY_MARK_BLEND = 0.15;  // the marks are smaller only until this share (of the log-time from the slow phase to REPLAY_MARKS) has passed, then follow the original curve, so the picture's lit area does not dip as they shrink into it
 export const REPLAY_STAMP_RAD = 1.5;    // css px: marks smaller than this are written into the picture's pixels
 export const REPLAY_SPARSE_GAIN = 1.2;  // extra brightness of single-pixel points when the marks have gone (n = REPLAY_MARKS), fading to none at the end
 export const REPLAY_SEQ = 100;        // the first points in order (the trail, the tests), world coordinates
@@ -640,13 +642,15 @@ export function createIfsView(canvas) {
     Object.assign(r, { x, y, nx, ny, nci, cr, cg, cb, n, lit });
   }
 
-  // How big and how opaque the marks are after n jumps: 3.4 css px in radius in the slow phase,
-  // shrinking with log(n) until REPLAY_MARKS, where they have faded into the picture's own pixels.
+  // How big and how opaque the marks are after n jumps: REPLAY_MARK_RAD css px in radius at the start of
+  // the slow phase, shrinking with log(n) until REPLAY_MARKS, where they have faded into the picture's own pixels.
   function replayMarkLook(n, slowJumps) {
     const f = Math.min(1, Math.max(0, Math.log(Math.max(n, 1) / slowJumps) / Math.log(REPLAY_MARKS / slowJumps)));
     const s = Math.min(1, Math.max(0, (f - 0.85) / 0.15));
     // down to one pixel across at the end, where a mark is the picture's own pixel and fades into it
-    return { rad: dpr * (0.25 + 3.15 * Math.pow(1 - f, 1.8)), alpha: 1 - s * s * (3 - 2 * s) };
+    // (the original curve starts at 3.4 css px; the first REPLAY_MARK_BLEND of it is that much smaller, fading out linearly)
+    const smaller = (0.25 + 3.15 - REPLAY_MARK_RAD) * Math.max(0, 1 - f / REPLAY_MARK_BLEND);
+    return { rad: dpr * (0.25 + 3.15 * Math.pow(1 - f, 1.8) - smaller), alpha: 1 - s * s * (3 - 2 * s) };
   }
 
   // The small marks, as little squares written into the picture's pixels (thousands a frame
