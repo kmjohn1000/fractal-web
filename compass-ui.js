@@ -3,17 +3,17 @@
 // calls teleport.js (cancelTeleport) only inside event handlers.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { Platform } from "./platform.js?v=1.55.2";
-import { FRACTAL_CONFIGS, slugify } from "./configs.js?v=1.55.2";
-import { EXTRA_MODES, PICKER_LAYOUT } from "./fractal-defs.js?v=1.55.2";
-import { limitScale } from "./deepzoom.js?v=1.55.2";
-import { activePane, currentName, dualActive, els, juliaState, mainState, mode, paneRenderer, paneState, pushHistory, setActivePane, shownPane } from "./state.js?v=1.55.2";
-import { markInteracting, popHistory } from "./state-colors.js?v=1.55.2";
-import { renderAll, requestRender } from "./render-layout.js?v=1.55.2";
-import { normalizeAngle, screenToComplex } from "./view-math.js?v=1.55.2";
-import { closeDual, enterDual, openPresetInDual, selectFractal, setMode, updateMenuActiveState } from "./modes.js?v=1.55.2";
-import { KEY_PAN_FRACTION, activeVectorTarget, keyAction } from "./interaction.js?v=1.55.2";
-import { cancelTeleport } from "./teleport.js?v=1.55.2";
+import { Platform } from "./platform.js?v=1.55.3";
+import { FRACTAL_CONFIGS, slugify } from "./configs.js?v=1.55.3";
+import { EXTRA_MODES, PICKER_LAYOUT } from "./fractal-defs.js?v=1.55.3";
+import { limitScale } from "./deepzoom.js?v=1.55.3";
+import { activePane, currentName, dualActive, els, juliaState, mainState, mode, paneRenderer, paneState, pushHistory, setActivePane, shownPane } from "./state.js?v=1.55.3";
+import { markInteracting, popHistory } from "./state-colors.js?v=1.55.3";
+import { renderAll, requestRender } from "./render-layout.js?v=1.55.3";
+import { normalizeAngle, screenToComplex } from "./view-math.js?v=1.55.3";
+import { closeDual, enterDual, openPresetInDual, selectFractal, setMode, updateMenuActiveState } from "./modes.js?v=1.55.3";
+import { KEY_PAN_FRACTION, activeVectorTarget, keyAction } from "./interaction.js?v=1.55.3";
+import { cancelTeleport } from "./teleport.js?v=1.55.3";
 
 // ---------------------------------------------------------------- compass
 

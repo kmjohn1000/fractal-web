@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.55.3 — 2026-11-02
+- Internal: depth play, the chaos-game replay, and the depth sliders and Reset buttons of the pattern modes moved out of teleport.js into a new file, pattern-controls.js. teleport.js now holds only the flights and the cold open. No visible change.
+
 ## 1.55.2 — 2026-11-02
 - The dots a Play leaves behind are slightly smaller while a run is getting started.
 

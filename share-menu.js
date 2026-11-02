@@ -5,15 +5,15 @@
 // option handlers); nothing imports this file, app.js only lists it for the test hook.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { Platform } from "./platform.js?v=1.55.2";
-import { fractalLabel, slugify } from "./configs.js?v=1.55.2";
-import { Diag } from "./diag.js?v=1.55.2";
-import { isIfsMode } from "./fractal-defs.js?v=1.55.2";
-import { currentName, dualActive, els, fernView, isInteracting, kochView, mainRenderer, mode } from "./state.js?v=1.55.2";
-import { modeLabel } from "./hud.js?v=1.55.2";
-import { finishRefinement, refineDone, renderAll } from "./render-layout.js?v=1.55.2";
-import { VECTOR_VIEWS } from "./interaction.js?v=1.55.2";
-import { buildShareUrl } from "./share.js?v=1.55.2";
+import { Platform } from "./platform.js?v=1.55.3";
+import { fractalLabel, slugify } from "./configs.js?v=1.55.3";
+import { Diag } from "./diag.js?v=1.55.3";
+import { isIfsMode } from "./fractal-defs.js?v=1.55.3";
+import { currentName, dualActive, els, fernView, isInteracting, kochView, mainRenderer, mode } from "./state.js?v=1.55.3";
+import { modeLabel } from "./hud.js?v=1.55.3";
+import { finishRefinement, refineDone, renderAll } from "./render-layout.js?v=1.55.3";
+import { VECTOR_VIEWS } from "./interaction.js?v=1.55.3";
+import { buildShareUrl } from "./share.js?v=1.55.3";
 
 // ---------------------------------------------------------------- share: image + menu
 
