@@ -9,6 +9,8 @@
 //   the-chaos-game.mjs    "The Chaos Game": the dot shapes' replay (renderer "capture")
 //   the-chaos-game-v2.mjs its second cut: all four rules explained, rings on the Vicsek, longer first jumps
 //                         (imports the first cut's scenes, grid, audio; output to the-chaos-game-v2/)
+//   the-pentagon-chaos-game.mjs   "The Chaos Game: Five Corners": the Sierpinski pentagon at jump size 0.5 (a scene's
+//                         replay.pentagonRatio) and then the app's own 0.382 (output to the-pentagon-chaos-game/)
 //   the-endless-carpet.mjs, the-endless-gasket.mjs   seamless-loop dives (renderer "dive", built by loop-dive.mjs)
 //
 // To make a new Short: copy the recipe closest to it, change the fields below, and
@@ -48,6 +50,9 @@
 // renderer "capture": frame-by-frame capture of an app animation, then a compositor
 //   scenes    { id: { driver: "replay", shape, color, count, seed, size: [cssW, cssH],
 //             dsf, frame: {zoom, dx, dy}, speed: [[videoSecond, speed], ...] } }.
+//             `replay: {slowJumps, gapFirst, gapLast, seq, trail, liveFade, cap, pentagonRatio}` (optional) stretches
+//             the replay's schedule: more jumps shown one at a time, a longer connected trail; pentagonRatio sets
+//             the pentagon's jump size for that scene only (see patchReplay below).
 //             The "replay" driver is the dot shapes' chaos-game replay (fern.js) on its
 //             manual clock with a seeded ifsRandom (as tests/visual/dot-replay.spec.mjs):
 //             the canvas pixels are read back directly (no toolbar, no card), one PNG per
@@ -120,7 +125,7 @@
 // deliverables in --out-dir.
 import { webkit } from "@playwright/test";
 import { spawn, spawnSync } from "node:child_process";
-/* global window, setMode, fernView, vectorColors, SOLID_COLORS, fernState, els, fitVectorView, ifsRandom:writable,
+/* global window, setMode, fernView, vectorColors, SOLID_COLORS, fernState, els, fitVectorView, setIfsRandom,
    fernRenderOpts, syncReplayButtons, IFS_SYSTEMS, replayTimeOf, ifsTransformColors */
 /* eslint no-unused-vars: ["error", { "vars": "local" }] */
 // (the globals are the app's: the callbacks given to page.evaluate run inside the page)
@@ -237,9 +242,39 @@ if (command === "sheet") {
 
 // ---------------------------------------------------------------- the app in a page
 
+// A scene's `replay` options rewrite the replay's schedule constants in fern.js as the page loads it (the
+// repo's file is not touched): slowJumps (REPLAY_SLOW_JUMPS, the jumps shown one at a time), gapFirst and
+// gapLast (seconds per jump at 1x, first to last of them), seq (REPLAY_SEQ: how many jumps keep their
+// position, so the trail can follow them; at least slowJumps + 40), trail (how many jumps the fading
+// polyline behind the dot keeps; the app's is 6), liveFade (the jumps after the slow ones over which
+// the dot and trail fade; the app's is 60) and cap (REPLAY_CAP_S, the schedule seconds after which the app
+// hands the rest to its normal render; the app's is 10, too short for a long one-at-a-time phase) and
+// pentagonRatio (the Sierpinski pentagon's jump size, below).
+// Each pattern must be found exactly once, or the app has changed.
+function patchReplay(src, o) {
+  const sub = (re, to) => {
+    if ((src.match(new RegExp(re.source, "g")) || []).length !== 1) throw new Error(`fern.js patch: ${re} not found once; the replay code has changed`);
+    src = src.replace(re, to);
+  };
+  if (o.slowJumps !== undefined) sub(/const REPLAY_SLOW_JUMPS = \d+;/, `const REPLAY_SLOW_JUMPS = ${o.slowJumps};`);
+  if (o.gapFirst !== undefined) sub(/const REPLAY_GAP_FIRST_S = [\d.]+;/, `const REPLAY_GAP_FIRST_S = ${o.gapFirst};`);
+  if (o.gapLast !== undefined) sub(/const REPLAY_GAP_LAST_S = [\d.]+;/, `const REPLAY_GAP_LAST_S = ${o.gapLast};`);
+  if (o.seq !== undefined) sub(/const REPLAY_SEQ = \d+;/, `const REPLAY_SEQ = ${o.seq};`);
+  if (o.trail !== undefined) {
+    sub(/Math\.max\(1, n - 6\)/, `Math.max(1, n - ${o.trail})`);
+    sub(/\(n - j\) \/ 7,/, `(n - j) / ${o.trail + 1},`);
+  }
+  if (o.cap !== undefined) sub(/const REPLAY_CAP_S = \d+;/, `const REPLAY_CAP_S = ${o.cap};`);
+  if (o.liveFade !== undefined) sub(/\(n - REPLAY_SLOW_JUMPS\) \/ 60\)/, `(n - REPLAY_SLOW_JUMPS) / ${o.liveFade})`);
+  // pentagonRatio: the Sierpinski pentagon's jump size s (p' = s*p + (1 - s)*corner; the app's is 1/phi^2 = 0.382, so a
+  // jump covers 61.8% of the way): 0.5 jumps halfway, as the triangle does, which makes the five copies overlap.
+  if (o.pentagonRatio !== undefined) sub(/export const PENTAGON_RATIO = [^;]+;/, `export const PENTAGON_RATIO = ${o.pentagonRatio};`);
+  return src;
+}
+
 // A static server for the repo (tests/serve.mjs) and a headless WebKit page on the app.
 // size: css px; dsf: device scale factor. Only the picture: the UI is hidden.
-async function openApp({ width, height, dsf = 1, passCount = 16, url = "index.html", ui = false }) {
+async function openApp({ width, height, dsf = 1, passCount = 16, url = "index.html", ui = false, replay = null }) {
   const server = spawn("node", [join(root, "tests/serve.mjs"), String(PORT)], { stdio: "ignore" });
   for (let i = 0; ; i++) {
     if (await fetch(`http://127.0.0.1:${PORT}/index.html`).then((r) => r.ok, () => false)) break;
@@ -248,6 +283,10 @@ async function openApp({ width, height, dsf = 1, passCount = 16, url = "index.ht
   }
   const browser = await webkit.launch();
   const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: dsf, serviceWorkers: "block" });
+  if (replay) await context.route(/\/fern\.js(\?.*)?$/, async (route) => {
+    const res = await route.fetch();
+    await route.fulfill({ response: res, body: patchReplay(await res.text(), replay) });
+  });
   await context.addInitScript((p) => {
     try {
       localStorage.setItem("fractalAtlas.visited", "1");
@@ -425,7 +464,7 @@ async function startScene(page, sc) {
     v.cx += (frame?.dx ?? 0) * v.halfHeight;
     v.cy += (frame?.dy ?? 0) * v.halfHeight;
     // (the app's own hook for a repeatable chaos game)
-    ifsRandom = window.__seeded(seed);
+    setIfsRandom(window.__seeded(seed));
     fernView.startReplay({ ...fernRenderOpts(), manual: true, speed: () => 1, onChange: syncReplayButtons });
     // (view, rgb and fixed let a layout draw over the picture where the app does: the canvas pixel of a
     // world point is  x = cw/2 + ((wx - cx) cos r + (wy - cy) sin r) k,  y = ch/2 - (-(wx - cx) sin r + (wy - cy) cos r) k
@@ -446,8 +485,9 @@ async function startScene(page, sc) {
 
 // The events of a scene: when each of the first jumps lands (video seconds in the scene) and the transform it used.
 async function sceneEvents(page, sc, info, prof) {
-  const ts = await page.evaluate((total) => Array.from({ length: 100 }, (_, i) => replayTimeOf(i + 1, total)), info.total);
-  await page.evaluate(() => { const s = fernView.replayState; fernView.replayStep(Math.max(0, replayTimeOf(100.5, s.total) - s.t)); });
+  const nEv = sc.replay?.seq ?? 100; // jumps that keep their positions (REPLAY_SEQ), so the events cover them all
+  const ts = await page.evaluate(([total, n]) => Array.from({ length: n }, (_, i) => replayTimeOf(i + 1, total)), [info.total, nEv]);
+  await page.evaluate((n) => { const s = fernView.replayState; fernView.replayStep(Math.max(0, replayTimeOf(n + 0.5, s.total) - s.t)); }, nEv);
   const seq = await page.evaluate(() => fernView.replayState.seq);
   const marks = {};
   for (const n of [1000, 10000, 100000, 500000]) if (n < info.total) marks[n] = prof.Sinv(await page.evaluate(([n, total]) => replayTimeOf(n, total), [n, info.total]));
@@ -470,7 +510,7 @@ async function captureScenes() {
     if (sceneFilter.length && !sceneFilter.includes(id)) continue;
     const dir = join(scenesDir, id);
     mkdirSync(dir, { recursive: true });
-    const { page, errors, close } = await openApp({ width: sc.size[0], height: sc.size[1], dsf: sc.dsf ?? 1 });
+    const { page, errors, close } = await openApp({ width: sc.size[0], height: sc.size[1], dsf: sc.dsf ?? 1, replay: sc.replay });
     try {
       await page.waitForFunction(() => typeof setMode === "function" && typeof fernView !== "undefined");
       const prof = speedProfile(sc.speed);
@@ -949,7 +989,15 @@ ${p.posting.map((b) => `- ${b}`).join("\n")}
 // ---------------------------------------------------------------- main
 
 if (command === "frames" || command === "build") {
-  if (isCapture) { await captureScenes(); await composeFrames(); } else await renderDiveFrames();
+  if (isCapture) {
+    await captureScenes();
+    // The capture's own meta replaces the one loaded at start (a dry `meta` pass counts one frame more than a
+    // real capture finds, and compose would ask for a frame that was never written).
+    meta = loadMeta();
+    layout = R.layout(meta, { fps: FPS, W: OW, H: OH });
+    if (layout.seconds !== picSeconds) throw new Error(`the captured scenes make a ${layout.seconds} s picture, not ${picSeconds} s: run \`meta\` again, then \`build\``);
+    await composeFrames();
+  } else await renderDiveFrames();
 }
 if (command === "scenes" || command === "meta") await captureScenes();
 if (command === "compose") await composeFrames();
