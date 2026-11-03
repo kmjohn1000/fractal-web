@@ -31,6 +31,8 @@ const INFO = {
     "The line fills a ragged, flower-like region. Dimension 2.", null],
   arrowhead: ["Every line becomes three lines half as long; the zigzag closes in on the Sierpinski triangle.",
     "One unbroken line draws it all. Dimension 1.58.", null],
+  penrose: ["Two shapes of rhombus, one fat and one thin, fit together in a five-fold pattern that never repeats.",
+    "Each level grows the patch outward.", null],
   fern: ["Four simple rules, chosen by chance, plot dot after dot until a fern appears.",
     "Each leaflet is a smaller, slightly bent copy of the whole fern.", "Barnsley, 1988"],
   sierpinski: ["Jump halfway to a corner chosen at random, over and over. A triangle with holes appears.",

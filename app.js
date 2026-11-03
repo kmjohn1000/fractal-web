@@ -29,6 +29,7 @@ import * as shaders from "./shaders.js?v=1.56.0";
 import * as koch from "./koch.js?v=1.56.0";
 import * as pythagoras from "./pythagoras.js?v=1.56.0";
 import * as hexaflake from "./hexaflake.js?v=1.56.0";
+import * as penrose from "./penrose.js?v=1.56.0";
 import * as diag from "./diag.js?v=1.56.0";
 import * as fractalDefs from "./fractal-defs.js?v=1.56.0";
 import * as deepzoom from "./deepzoom.js?v=1.56.0";
@@ -66,7 +67,7 @@ exposeForTests({
   "state-colors.js": stateColors, "render-layout.js": renderLayout, "modes.js": modes, "interaction.js": interaction, "vector-interaction.js": vectorInteraction,
   "compass-ui.js": compassUi, "teleport.js": teleport, "pattern-controls.js": patternControls, "colormap-picker.js": colormapPicker,
   "color-sheet.js": colorSheet, "places-sheet.js": placesSheet, "share.js": share, "share-menu.js": shareMenu, "chaos-run.js": chaosRunModule,
-  "review-prompt.js": reviewPrompt,
+  "review-prompt.js": reviewPrompt, "penrose.js": penrose,
 });
 
 // ---------------------------------------------------------------- toolbar accessibility

@@ -19,7 +19,7 @@ export const PICKER_LAYOUT = [
     { label: "More to zoom into", keys: ["Newton z³", "Nova", "Apollonian", "Carpet", "Gasket"] },
   ] },
   { label: "Watch it grow", groups: [
-    { label: "Build level by level", keys: ["koch", "tree", "hexaflake", "dragon", "hilbert", "gosper", "arrowhead"] },
+    { label: "Build level by level", keys: ["koch", "tree", "hexaflake", "dragon", "hilbert", "gosper", "arrowhead", "penrose"] },
     { label: "Chaos Games", keys: ["fern", "pentagon", "sierpinski", "levy", "vicsek"] },
   ] },
 ];
@@ -34,6 +34,7 @@ export const EXTRA_MODES = [
   { key: "hilbert", label: "Hilbert curve", category: "pattern" },
   { key: "gosper", label: "Gosper curve", category: "pattern" },
   { key: "arrowhead", label: "Sierpinski arrowhead", category: "pattern" },
+  { key: "penrose", label: "Penrose tiling", category: "pattern" },
   { key: "fern", label: "Barnsley fern", category: "pattern" },
   { key: "sierpinski", label: "Sierpinski triangle", category: "pattern" },
   { key: "pentagon", label: "Sierpinski pentagon", category: "pattern" },
@@ -78,6 +79,10 @@ export const SHAPE_INFO = {
   arrowhead: {
     lines: ["Every line becomes three lines half as long; the zigzag closes in on the Sierpinski triangle.",
       "One unbroken line draws it all. Dimension 1.58."],
+  },
+  penrose: {
+    lines: ["Two shapes of rhombus, one fat and one thin, fit together in a five-fold pattern that never repeats.",
+      "Each level grows the patch outward."],
   },
   fern: {
     lines: ["Four simple rules, chosen by chance, plot dot after dot until a fern appears.",

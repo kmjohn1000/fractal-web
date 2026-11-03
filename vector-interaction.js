@@ -281,7 +281,7 @@ export const VECTOR_VIEWS = {
   sierpinski: [fernView, els.fernCanvas], pentagon: [fernView, els.fernCanvas], levy: [fernView, els.fernCanvas],
   vicsek: [fernView, els.fernCanvas], hexaflake: [hexaflakeView, els.hexaflakeCanvas],
   hilbert: [dragonView, els.dragonCanvas], gosper: [dragonView, els.dragonCanvas],
-  arrowhead: [dragonView, els.dragonCanvas],
+  arrowhead: [dragonView, els.dragonCanvas], penrose: [dragonView, els.dragonCanvas],
 };
 export const fittedVectorModes = new Set();
 // The framing Reset gives a pattern mode on its canvas as it is now.
