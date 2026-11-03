@@ -2,6 +2,11 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.57.0 — 2026-11-03
+- Added Corner Rules: a chaos game on a polygon's corners where the next corner is restricted by the last pick or picks. Each tap on its picker entry deals a different rule (seven in all, from a square, a hexagon and a pentagon), and the "Another rule" button beside Play deals the next. It zooms and turns like the other dot shapes.
+- The rule's name shows over the picture and on the info card, and share links remember the rule.
+- Play shows the rule at work: the corners the rule bars from where the dot sits show as faint rings.
+
 ## 1.56.0 — 2026-11-02
 - iOS app: after you've opened it on a few different days and saved or shared an image, it may ask once for an App Store rating, using iOS's own rating sheet (iOS shows it at most a few times a year, and never twice within four months here). Nothing is sent anywhere, and the website never asks.
 
