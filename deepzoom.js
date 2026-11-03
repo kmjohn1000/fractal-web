@@ -2,8 +2,8 @@
 // offsets. No DOM references (no document, els, window or canvas): pure math on numbers and arrays.
 // Needs FTYPE and PHOENIX_P from configs.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { FTYPE, PHOENIX_P } from "./configs.js?v=1.62.8";
-import { EXACT_FRAC, EXACT_ONE, exactCenter, toExact } from "./view-math.js?v=1.62.8";
+import { FTYPE, PHOENIX_P } from "./configs.js?v=1.63.0";
+import { EXACT_FRAC, EXACT_ONE, exactCenter, toExact } from "./view-math.js?v=1.63.0";
 
 // ---------------------------------------------------------------- Phase 3: deep zoom
 // Below this scale, plain float32 starts losing pixels to precision collapse
@@ -61,6 +61,9 @@ export const NOVA_MIN_SCALE = 4e-5;
 //     FLOOR_STEPS steps. The pixel size is taken for a nominal canvas FLOOR_PIXELS device pixels tall: the scale
 //     alone is all limitScale has, and a taller canvas than that only makes pixels smaller than the floor assumes.
 export const EXACT_MIN_SCALE = 1e-30;
+// Carpet and Gasket: a zoom of 1e300 on the opening view. Not the center's limit (it grows with the zoom) but the
+// scale's: a double is normal down to 2.2e-308, and base^level as a double (digitCellFrame) stays finite here.
+export const DIGIT_MIN_SCALE = 1e-300;
 export const FLOOR_STEPS = 2;
 export const FLOOR_PIXELS = 2000;
 export const FIXED_STEP = 2 ** -48;
@@ -69,10 +72,10 @@ export const ulp64 = (r) => (r > 0 ? 2 ** (Math.floor(Math.log2(r)) - 52) : 0);
 export function minScaleFor(state) {
   if (state.ftype === FTYPE.NOVA) return NOVA_MIN_SCALE;
   if (perturbationEligibleType(state)) return EXACT_MIN_SCALE;
-  // Carpet and Gasket have no floor yet: they zoom to about 1e15x by cell rebasing and keep doing so (a pan
-  // stalls there as before). A floor like the others' would cut that depth to about 1e12x; true infinite zoom
-  // (TODO.md, "True infinite zoom on the Sierpinski types") is what lifts the cap, not a floor.
-  if (state.ftype === FTYPE.CARPET || state.ftype === FTYPE.GASKET) return 0;
+  // Carpet and Gasket keep an exact BigInt center that grows with the zoom (view-math.js, exactBitsFor) and the
+  // cell frame reads their digits from it (digitCellFrame), so a pan follows a pixel at any depth. What is left
+  // is the double that holds the scale itself, which stops being a normal number near 1e-308.
+  if (state.ftype === FTYPE.CARPET || state.ftype === FTYPE.GASKET) return DIGIT_MIN_SCALE;
   const r = Math.max(Math.abs(state.cx), Math.abs(state.cy));
   let step;
   if (state.ftype === FTYPE.NEWTON) step = Math.min(r * 2 ** -23, FIXED_STEP); // float32 near 0, else fixed point

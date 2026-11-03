@@ -2,6 +2,10 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.63.0 — 2026-11-03
+- The Sierpinski carpet and gasket now zoom without a limit short of 1e300 times (they stopped near 1e15 times before); a pan and a pinch keep following your finger at every depth.
+- Share links into a very deep carpet or gasket view carry its exact center and reopen on the same spot; older links open as before.
+
 ## 1.62.8 — 2026-11-03
 - Pressing the dual button on a deep Julia view, and closing it again, no longer nudges the view: the exact center now travels into the Julia pane and back.
 

@@ -3,9 +3,9 @@
 // lsystem.js/koch.js (IFS_SYSTEMS, LINE_CURVES), which only its function bodies use.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it;
 // tests/cases.mjs reads this file's text and accepts the `export`).
-import { FTYPE } from "./configs.js?v=1.62.8";
-import { LINE_CURVES } from "./dragon.js?v=1.62.8";
-import { IFS_SYSTEMS } from "./ifs.js?v=1.62.8";
+import { FTYPE } from "./configs.js?v=1.63.0";
+import { LINE_CURVES } from "./dragon.js?v=1.63.0";
+import { IFS_SYSTEMS } from "./ifs.js?v=1.63.0";
 
 // The fractal picker's layout, in display order: sections with a title, each
 // split into titled groups of tiles. Display only: a key is a FRACTAL_CONFIGS
@@ -167,10 +167,15 @@ export function intPow(base, k) {
   return v;
 }
 
-// Deepest rebase level per base: 2^52 and 3^33 are the last powers under
-// 2^53, so cell addresses and their digits stay exact float64 integers.
-// About as deep as a float64 view center can address anyway (~1e15x).
+// Deepest rebase level per base at which cell addresses are still exact float64 integers: 2^52 and 3^33 are
+// the last powers under 2^53. That is about as deep as a float64 view center can address (~1e15x). Past it
+// (or whenever the view has an exact center) digitCellFrame works on the BigInt center instead, so this is no
+// longer a cap on the level, only where the float64 shortcut stops.
 export const DIGIT_MAX_CELL_LEVEL = { 2: 52, 3: 33 };
+// The deepest level at all, per base: base^k as a double (cellsPerUnit) must stay finite (3^640 is about 1e305,
+// 2^1000 about 1e301). The zoom floor (deepzoom.js, DIGIT_MIN_SCALE = 1e-300) stops short of both: level 628
+// for the Carpet, 997 for the Gasket.
+export const DIGIT_LEVEL_LIMIT = { 2: 1000, 3: 640 };
 
 // Cell rebasing for Carpet/Gasket deep zoom -- the digit-test counterpart
 // of the escape-time types' perturbation. Picks the deepest level k whose
@@ -182,9 +187,16 @@ export const DIGIT_MAX_CELL_LEVEL = { 2: 52, 3: 33 };
 // Returns the view center in level-k cell units relative to the center
 // cell, the world-to-cell-units factor, and per cell (row-major from
 // dy = -1, dx = -1) the level it was cut out at, or -1 if it survives all k.
-export function digitCellFrame(ftype, cx, cy, scale, aspect) {
+//
+// `exact` ({ ex, ey, bits }: the center as BigInts of `bits` fraction bits, see view-math.js) is the
+// infinite-zoom input. With it, or whenever k is past DIGIT_MAX_CELL_LEVEL (the caller then builds one from the
+// doubles), the cell address is the BigInt (ex mod 1) * base^k >> bits and the center inside the cell is
+// the bits below it, so the frame is exact at any depth and costs O(k) per call (see digitCellFrameExact).
+// Without it, on a shallow view, the float64 arithmetic below is unchanged.
+export function digitCellFrame(ftype, cx, cy, scale, aspect, exact = null) {
   const base = digitBase(ftype);
   const k = digitCellLevel(ftype, scale, aspect);
+  if (exact) return digitCellFrameExact(base, k, exact.ex, exact.ey, exact.bits);
   const cells = intPow(base, k);
   // The pattern repeats with period 1, so drop the center's whole-number
   // part first (exact in float64). On a copy far from the original,
@@ -199,13 +211,45 @@ export function digitCellFrame(ftype, cx, cy, scale, aspect) {
   return { level: k, center: [fx * cells - ix, fy * cells - iy], cellsPerUnit: cells, holes };
 }
 
+// digitCellFrame from the exact center: ex and ey are BigInts of `bits` fraction bits (one world unit is
+// 2^bits). The pattern repeats with period 1, so only the fraction counts: (ex mod 2^bits) / 2^bits is the
+// center within its unit square, multiplied by base^k it is the level-k cell index (the integer part) and the
+// center inside that cell (the fraction, whose top 64 bits are kept; a double takes them all). The nine
+// cells' holes are found from their digit strings, one toString per distinct x and y address.
+export function digitCellFrameExact(base, k, ex, ey, bits) {
+  const B = BigInt(bits), mask = (1n << B) - 1n, b = BigInt(base);
+  const cells = b ** BigInt(k);
+  const px = (ex & mask) * cells, py = (ey & mask) * cells;
+  const ix = px >> B, iy = py >> B;
+  const local = (p) => Number((p & mask) >> (B - 64n)) / 2 ** 64;
+  const wrap = (v) => ((v % cells) + cells) % cells;
+  const xs = [-1n, 0n, 1n].map((d) => wrap(ix + d)), ys = [-1n, 0n, 1n].map((d) => wrap(iy + d));
+  const holes = [];
+  if (base === 2) {
+    // A bit position where both addresses have a 1; its level counts from the top digit (level 0).
+    for (const y of ys) for (const x of xs) {
+      const z = x & y;
+      holes.push(z === 0n ? -1 : k - z.toString(2).length);
+    }
+  } else {
+    const digits = (v) => v.toString(3).padStart(k, "0");
+    const sx = xs.map(digits), sy = ys.map(digits);
+    for (const y of sy) for (const x of sx) {
+      let hole = -1;
+      for (let j = 0; j < k; j++) if (x.charCodeAt(j) === 49 && y.charCodeAt(j) === 49) { hole = j; break; }
+      holes.push(hole);
+    }
+  }
+  return { level: k, center: [local(px), local(py)], cellsPerUnit: Number(cells), holes };
+}
+
 // The rebase level k for digitCellFrame: the deepest whose cells are at
 // least as wide as the view's half-diagonal.
 export function digitCellLevel(ftype, scale, aspect) {
   const base = digitBase(ftype);
   const halfDiag = scale * Math.hypot(1, aspect);
   let k = Math.floor(Math.log(1 / halfDiag) / Math.log(base));
-  k = Math.max(0, Math.min(DIGIT_MAX_CELL_LEVEL[base], k));
+  k = Math.max(0, Math.min(DIGIT_LEVEL_LIMIT[base], k));
   while (k > 0 && intPow(base, k) * halfDiag > 1) k--;
   return k;
 }

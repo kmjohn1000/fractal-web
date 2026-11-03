@@ -1,6 +1,7 @@
 // The zoom floor (deepzoom.js, minScaleFor): every way of zooming stops where a view's center can no longer follow a
 // one-pixel pan. The escape-time family stops at 1e-30 (its exact BigInt center, float32 deltas); Apollonian, Newton and
-// Phoenix stop a few steps of their center's last digit; Nova keeps its own limit; Carpet and Gasket have none yet.
+// Phoenix stop a few steps of their center's last digit; Nova keeps its own limit; Carpet and Gasket have an exact center that grows with the zoom, so their floor is only the scale's own
+// double, 1e-300 (tests/visual/digit-infinite.spec.mjs).
 // Plain behavior checks, no screenshot baselines.
 import { test, expect } from "@playwright/test";
 
@@ -42,8 +43,8 @@ test("each family's floor", async ({ page }) => {
   expect(r.tricorn).toBe(1e-30);
   expect(r.celtic).toBe(1e-30);
   expect(r.nova).toBe(4e-5);
-  expect(r.carpet).toBe(0);
-  expect(r.gasket).toBe(0);
+  expect(r.carpet).toBe(1e-300);
+  expect(r.gasket).toBe(1e-300);
   // Apollonian at a center of magnitude 0.89: FLOOR_STEPS last-digit steps for each of FLOOR_PIXELS/2 pixels of half-height.
   expect(r.apollonian).toBe(r.steps * r.ulp1 * r.pixels / 2);
   expect(r.apollonian, "Jacob's Ladder (2.8e-12) is above it").toBeLessThan(2.7838699774672232e-12);
@@ -60,7 +61,7 @@ test("limitScale stops at the floor and leaves everything above it alone", async
     return {
       mandelbrotBelow: limitScale(m, 1e-40), mandelbrotAbove: limitScale(m, 1e-20),
       apolloBelow: limitScale(a, 1e-20), apolloAbove: limitScale(a, 1e-9), apolloFloor: minScaleFor(a),
-      carpetDeep: limitScale(c, 1e-20),
+      carpetDeep: limitScale(c, 1e-20), gasketBelow: limitScale({ ftype: FTYPE.GASKET, power: 2, cx: 0.5, cy: 0.5 }, 1e-310),
     };
   });
   expect(r.mandelbrotBelow).toBe(1e-30);
@@ -68,6 +69,7 @@ test("limitScale stops at the floor and leaves everything above it alone", async
   expect(r.apolloBelow).toBe(r.apolloFloor);
   expect(r.apolloAbove).toBe(1e-9);
   expect(r.carpetDeep).toBe(1e-20);
+  expect(r.gasketBelow).toBe(1e-300);
 });
 
 test("every place is above the floor of its own view, so no place is cut short", async ({ page }) => {

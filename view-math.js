@@ -35,74 +35,141 @@ export function screenToComplex(renderer, state, sx, sy) {
 // disagree; a pair that does (some code set cx or cy directly) is detected by exactValid and the
 // doubles are taken as the truth, which is the view such code meant.
 export const EXACT_FRAC = 192n;
+export const EXACT_BITS = 192;    // the same as a Number, and the pair's default fraction length
 export const EXACT_FROM = 1e-9;   // a view with a smaller scale gets an exact center
 export const EXACT_DROP = 1e-4;   // zoomed back out past this, the doubles are enough again and ex/ey are cleared
 export const EXACT_ONE = 2 ** 192;
 
-// A double as the exact fixed-point integer (any double with |x| >= 2^-139 converts without rounding).
-export const toExact = (x) => BigInt(Math.round(x * EXACT_ONE));
-// The nearest double to an exact value.
-export const fromExact = (b) => Number(b) / EXACT_ONE;
+// The pair's fraction length. 192 bits is enough for every view down to a scale of about 1e-39, which is below
+// the escape-time family's floor (1e-30), so those views never leave it. The Sierpinski types have no floor of
+// that kind (their pattern is the same at every depth), so a view deeper than 2^-128 asks for more: the
+// fraction grows in steps of 64 bits so that its last bit stays 2^-64 of the view's half-height, as small as the
+// pan and the cell frame need. state.ef is the length the pair is stored at (absent means 192); it only grows
+// while the pair lives, so zooming out and back in does not lose the center's low bits. Everything that
+// reads the pair as 2^-192 units asks exactCenter(state), which converts.
+export function exactBitsFor(scale) {
+  return scale > 0 ? Math.max(EXACT_BITS, 64 * Math.ceil((64 - Math.log2(scale)) / 64)) : EXACT_BITS;
+}
+export const exactFrac = (state) => (typeof state.ef === "number" ? state.ef : EXACT_BITS);
+// The length to work at now: the stored one, or what the current scale needs if that is longer.
+export const exactFracFor = (state) => Math.max(exactFrac(state), exactBitsFor(state.scale));
 
-export function exactValid(state) {
-  return typeof state.ex === "bigint" && typeof state.ey === "bigint"
-    && fromExact(state.ex) === state.cx && fromExact(state.ey) === state.cy;
+export const pow2 = (e) => { const h = Math.trunc(e / 2); return 2 ** h * 2 ** (e - h); };
+// round(x * 2^F) for a double x, exact in the double's own bits at any F (x * 2^F overflows a double past F = 1000).
+export function bigFromDouble(x, F) {
+  if (x === 0 || !Number.isFinite(x)) return 0n;
+  const dv = new DataView(new ArrayBuffer(8));
+  dv.setFloat64(0, x);
+  const hi = dv.getUint32(0), lo = dv.getUint32(4);
+  const be = (hi >>> 20) & 0x7ff;
+  let m = (BigInt(hi & 0xfffff) << 32n) | BigInt(lo);
+  let e = -1074;
+  if (be !== 0) { m |= 1n << 52n; e = be - 1075; }
+  const sh = e + F;
+  let v;
+  if (sh >= 0) v = m << BigInt(sh);
+  else if (sh < -60) v = 0n;
+  else v = (m + (1n << BigInt(-sh - 1))) >> BigInt(-sh);
+  return hi >>> 31 ? -v : v;
 }
 
-// The view's exact center: ex/ey if they match the doubles, else the doubles themselves.
-export function exactCenter(state) {
-  return exactValid(state) ? { ex: state.ex, ey: state.ey } : { ex: toExact(state.cx), ey: toExact(state.cy) };
+// A double as the exact fixed-point integer, F fraction bits (any double with |x| >= 2^-139 converts without
+// rounding at the default 192).
+export const toExact = (x, F = EXACT_BITS) => (F === EXACT_BITS ? BigInt(Math.round(x * EXACT_ONE)) : bigFromDouble(x, F));
+// The nearest double to an exact value (ties to even, the same at every F for the same number).
+export function fromExact(b, F = EXACT_BITS) {
+  if (F === EXACT_BITS) return Number(b) / EXACT_ONE;
+  if (b === 0n) return 0;
+  const neg = b < 0n, a = neg ? -b : b;
+  const sh = a.toString(2).length - 53;
+  let m = a;
+  if (sh > 0) {
+    const s = BigInt(sh);
+    m = a >> s;
+    const rem = a - (m << s), half = 1n << (s - 1n);
+    if (rem > half || (rem === half && (m & 1n) === 1n)) m += 1n;
+  }
+  const v = Number(m) * pow2(Math.max(sh, 0) - F);
+  return neg ? -v : v;
+}
+// A value held at `from` fraction bits, held at F instead (extra low bits are dropped).
+export const reframe = (v, from, F) => (from === F ? v : from < F ? v << BigInt(F - from) : v >> BigInt(from - F));
+
+export function exactValid(state) {
+  const F = exactFrac(state);
+  return typeof state.ex === "bigint" && typeof state.ey === "bigint"
+    && fromExact(state.ex, F) === state.cx && fromExact(state.ey, F) === state.cy;
+}
+
+// The view's exact center at F fraction bits (default 192): ex/ey if they match the doubles, else the doubles
+// themselves.
+export function exactCenter(state, F = EXACT_BITS) {
+  if (!exactValid(state)) return { ex: toExact(state.cx, F), ey: toExact(state.cy, F) };
+  const f = exactFrac(state);
+  return { ex: reframe(state.ex, f, F), ey: reframe(state.ey, f, F) };
 }
 
 // Moves the center by a world offset (dx, dy), keeping the exact pair in step. The offset is a double and
 // is fine as one: it is a few pixels' worth, so it has as much precision as it needs relative to the scale.
 export function moveCenter(state, dx, dy) {
   if (state.scale < EXACT_FROM || exactValid(state)) {
-    const c = exactCenter(state);
-    state.ex = c.ex + toExact(dx);
-    state.ey = c.ey + toExact(dy);
-    state.cx = fromExact(state.ex);
-    state.cy = fromExact(state.ey);
-    if (state.scale > EXACT_DROP) { state.ex = null; state.ey = null; }
+    const F = exactFracFor(state);
+    const c = exactCenter(state, F);
+    state.ex = c.ex + toExact(dx, F);
+    state.ey = c.ey + toExact(dy, F);
+    state.ef = F;
+    state.cx = fromExact(state.ex, F);
+    state.cy = fromExact(state.ey, F);
+    if (state.scale > EXACT_DROP) { state.ex = null; state.ey = null; state.ef = null; }
   } else {
     state.cx += dx;
     state.cy += dy;
-    state.ex = null; state.ey = null;
+    state.ex = null; state.ey = null; state.ef = null;
   }
 }
 
-// The exact center's share-link fields: signed lowercase hex of the BigInt (no prefix). A coordinate beyond
-// +-4096 world units has no use as a fractal view, and the bound keeps a hand-made link small.
+// The exact center's share-link fields: signed lowercase hex of the BigInt (no prefix), at exactBitsFor(scale)
+// fraction bits, which the reader works out from the scale the link carries. A coordinate beyond +-4096 world
+// units has no use as a fractal view, and the bound keeps a hand-made link small.
 export const EXACT_HEX_LIMIT = 1n << (EXACT_FRAC + 12n);
 export const exactToHex = (b) => (b < 0n ? "-" : "") + (b < 0n ? -b : b).toString(16);
-// A link's exact coordinate: strict (signed lowercase hex, at most 52 digits, inside the bound), or null.
-export function exactFromHex(s) {
-  if (typeof s !== "string" || !/^-?[0-9a-f]{1,52}$/.test(s)) return null;
+// A link's exact coordinate: strict (signed lowercase hex, at most 52 digits at the default 192 bits, inside the
+// bound), or null.
+export function exactFromHex(s, F = EXACT_BITS) {
+  if (typeof s !== "string" || !new RegExp(`^-?[0-9a-f]{1,${Math.ceil((F + 12) / 4) + 1}}$`).test(s)) return null;
   const v = s[0] === "-" ? -BigInt("0x" + s.slice(1)) : BigInt("0x" + s);
-  return v > -EXACT_HEX_LIMIT && v < EXACT_HEX_LIMIT ? v : null;
+  const limit = 1n << BigInt(F + 12);
+  return v > -limit && v < limit ? v : null;
 }
 
 // The pair to write into a link: [ex, ey] as hex, or null when the doubles already are the center (the view is
 // shallow, has no exact pair, or its pair is exactly its doubles) so the link carries nothing extra.
 export function exactLinkFields(state) {
   if (state.scale >= EXACT_FROM || !exactValid(state)) return null;
-  if (state.ex === toExact(state.cx) && state.ey === toExact(state.cy)) return null;
-  return [exactToHex(state.ex), exactToHex(state.ey)];
+  const F = exactBitsFor(state.scale);
+  const c = exactCenter(state, F);
+  if (c.ex === toExact(state.cx, F) && c.ey === toExact(state.cy, F)) return null;
+  return [exactToHex(c.ex), exactToHex(c.ey)];
 }
 
 // Reads a pair back from the link's parameters, or null. Lenient: a missing, malformed or out-of-bound pair, or
 // one that doesn't round to the doubles x and y it travels with (an edited link), is left out and the link opens
-// at its doubles, the view an older build shows.
-export function exactFromLink(params, kx, ky, x, y) {
-  const ex = exactFromHex(params.get(kx)), ey = exactFromHex(params.get(ky));
-  return ex !== null && ey !== null && fromExact(ex) === x && fromExact(ey) === y ? [ex, ey] : null;
+// at its doubles, the view an older build shows. scale is the link's own: it sets the pair's fraction length.
+// Returns [ex, ey, bits].
+export function exactFromLink(params, kx, ky, x, y, scale) {
+  const F = exactBitsFor(scale);
+  const ex = exactFromHex(params.get(kx), F), ey = exactFromHex(params.get(ky), F);
+  return ex !== null && ey !== null && fromExact(ex, F) === x && fromExact(ey, F) === y ? [ex, ey, F] : null;
 }
 
-// Sets the center outright. ex and ey (BigInt) are optional; without them the doubles are the exact center.
-export function setCenter(state, cx, cy, ex = null, ey = null) {
+// Sets the center outright. ex and ey (BigInt, ef fraction bits) are optional; without them the doubles are the
+// exact center.
+export function setCenter(state, cx, cy, ex = null, ey = null, ef = EXACT_BITS) {
   state.cx = cx; state.cy = cy;
-  state.ex = typeof ex === "bigint" && typeof ey === "bigint" && fromExact(ex) === cx && fromExact(ey) === cy ? ex : null;
-  state.ey = state.ex === null ? null : ey;
+  const ok = typeof ex === "bigint" && typeof ey === "bigint" && fromExact(ex, ef) === cx && fromExact(ey, ef) === cy;
+  state.ex = ok ? ex : null;
+  state.ey = ok ? ey : null;
+  state.ef = ok ? ef : null;
 }
 
 // Wraps an angle to (-PI, PI]. cos/sin are periodic, so this never changes

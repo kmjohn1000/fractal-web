@@ -3,13 +3,13 @@
 // (fractal-defs.js), deepzoom.js and color-styles.js. It imports nothing from state.js: state.js
 // calls createFractalRenderer(canvas, host) and passes the two live values a frame needs.
 // An ES module: every top-level declaration is exported (test-hooks.js and state.js rely on it).
-import { FTYPE, PHOENIX_P } from "./configs.js?v=1.62.8";
-import { Diag } from "./diag.js?v=1.62.8";
-import { FRAG_SRC, NEWTON_DEEP_FRAG_SRC, PHOENIX_DEEP_FRAG_SRC, PREVIEW_FRAG_SRC, VERT_SRC, VERT_SRC_300 } from "./shaders.js?v=1.62.8";
-import { apolloCapColor, apolloFrame, digitCellFrame, digitColorCycle, digitFractalDepth, digitSubPixelColor, isDigitFractal } from "./fractal-defs.js?v=1.62.8";
-import { DEEP_ZOOM_THRESHOLD, FIXED_THIRD, PHOENIX_DEEP_SAMPLES, PHOENIX_EXACT_CAP, SAMPLE_OFFSETS, chooseReference, chooseReferenceExact, computeReferenceOrbit, computeReferenceOrbitExact, exactReferencePoint, exactRenderEligible, fixedLimbs, newtonDeepEligible, newtonOrbitF64, perturbationEligibleType, phoenixDeepEligible, phoenixEscapeF64, phoenixReference } from "./deepzoom.js?v=1.62.8";
-import { EXACT_FROM, EXACT_ONE, exactCenter, exactValid, toExact } from "./view-math.js?v=1.62.8";
-import { colorStyle, colorStyleFor, styleDrawn, trapRangeFor } from "./color-styles.js?v=1.62.8";
+import { FTYPE, PHOENIX_P } from "./configs.js?v=1.63.0";
+import { Diag } from "./diag.js?v=1.63.0";
+import { FRAG_SRC, NEWTON_DEEP_FRAG_SRC, PHOENIX_DEEP_FRAG_SRC, PREVIEW_FRAG_SRC, VERT_SRC, VERT_SRC_300 } from "./shaders.js?v=1.63.0";
+import { DIGIT_MAX_CELL_LEVEL, apolloCapColor, apolloFrame, digitBase, digitCellFrame, digitCellLevel, digitColorCycle, digitFractalDepth, digitSubPixelColor, isDigitFractal } from "./fractal-defs.js?v=1.63.0";
+import { DEEP_ZOOM_THRESHOLD, FIXED_THIRD, PHOENIX_DEEP_SAMPLES, PHOENIX_EXACT_CAP, SAMPLE_OFFSETS, chooseReference, chooseReferenceExact, computeReferenceOrbit, computeReferenceOrbitExact, exactReferencePoint, exactRenderEligible, fixedLimbs, newtonDeepEligible, newtonOrbitF64, perturbationEligibleType, phoenixDeepEligible, phoenixEscapeF64, phoenixReference } from "./deepzoom.js?v=1.63.0";
+import { EXACT_FROM, EXACT_ONE, exactCenter, exactFracFor, exactValid, toExact } from "./view-math.js?v=1.63.0";
+import { colorStyle, colorStyleFor, styleDrawn, trapRangeFor } from "./color-styles.js?v=1.63.0";
 
 // ---------------------------------------------------------------- WebGL renderer factory
 
@@ -598,7 +598,14 @@ export function createFractalRenderer(canvas, host) {
     // keeps its uniforms between draws.
     if (sampleIndex === 0 && isDigitFractal(state.ftype)) {
       const aspect = canvas.width / canvas.height;
-      const frame = digitCellFrame(state.ftype, state.cx, state.cy, state.scale, aspect);
+      // A deep view hands the frame its exact center (BigInt), which is what lets it go past a double's reach; a
+      // shallow one without a pair keeps the float64 arithmetic it always had.
+      let exact = null;
+      if (exactValid(state) || digitCellLevel(state.ftype, state.scale, aspect) > DIGIT_MAX_CELL_LEVEL[digitBase(state.ftype)]) {
+        const bits = exactFracFor(state);
+        exact = { ...exactCenter(state, bits), bits };
+      }
+      const frame = digitCellFrame(state.ftype, state.cx, state.cy, state.scale, aspect, exact);
       const depth = digitFractalDepth(state.ftype, state.scale, canvas.height, aspect);
       gl.uniform1i(u.digitDepth, depth);
       gl.uniform1f(u.digitCycle, digitColorCycle(state.ftype));

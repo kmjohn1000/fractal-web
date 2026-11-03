@@ -3,26 +3,26 @@
 // colormap-picker.js; applyShareHashFromUrl and applyShareLink are called from init in app.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { Platform } from "./platform.js?v=1.62.8";
-import { COLORMAPS, SOLID_COLORS } from "./colormaps.js?v=1.62.8";
-import { FRACTAL_CONFIGS } from "./configs.js?v=1.62.8";
-import { LINE_CURVES } from "./dragon.js?v=1.62.8";
-import { Diag } from "./diag.js?v=1.62.8";
-import { EXTRA_MODES, isCurveMode, isIfsMode } from "./fractal-defs.js?v=1.62.8";
-import { limitScale } from "./deepzoom.js?v=1.62.8";
-import { COLOR_BANDS_RANGE, STYLE_LINK_CODES, colorStyle } from "./color-styles.js?v=1.62.8";
-import { HEXAFLAKE_DEFAULT_DEPTH, HEXAFLAKE_MAX_DEPTH, currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, juliaState, kochState, mainState, mode, treeState, vectorColors } from "./state.js?v=1.62.8";
-import { colormapIndex, colormapIndexNamed, defaultColormapName, setColorStyle, setColormapIndex, setColormapPicked } from "./state-colors.js?v=1.62.8";
-import { requestRender, updateLUT } from "./render-layout.js?v=1.62.8";
-import { exactFromLink, exactLinkFields, normalizeAngle, setCenter } from "./view-math.js?v=1.62.8";
-import { enterDual, exitDual, selectFractal, setCornerRule, setMode } from "./modes.js?v=1.62.8";
-import { VECTOR_VIEWS, dragonNav, fernNav, fitVectorView, fittedVectorModes } from "./vector-interaction.js?v=1.62.8";
-import { PENROSE_HH_MAX, PENROSE_HH_MIN, penroseCenterFields, penroseClampHalfHeight, penroseParseExact } from "./penrose.js?v=1.62.8";
-import { cancelTeleport } from "./teleport.js?v=1.62.8";
-import { scheduleSharedRun } from "./pattern-controls.js?v=1.62.8";
-import { currentRunSeed, parseRunSeed } from "./chaos-run.js?v=1.62.8";
-import { cornerDeal, parseCornerRule } from "./corner-rules.js?v=1.62.8";
-import { setFernColor, updateColorSwatches } from "./colormap-picker.js?v=1.62.8";
+import { Platform } from "./platform.js?v=1.63.0";
+import { COLORMAPS, SOLID_COLORS } from "./colormaps.js?v=1.63.0";
+import { FRACTAL_CONFIGS } from "./configs.js?v=1.63.0";
+import { LINE_CURVES } from "./dragon.js?v=1.63.0";
+import { Diag } from "./diag.js?v=1.63.0";
+import { EXTRA_MODES, isCurveMode, isIfsMode } from "./fractal-defs.js?v=1.63.0";
+import { limitScale } from "./deepzoom.js?v=1.63.0";
+import { COLOR_BANDS_RANGE, STYLE_LINK_CODES, colorStyle } from "./color-styles.js?v=1.63.0";
+import { HEXAFLAKE_DEFAULT_DEPTH, HEXAFLAKE_MAX_DEPTH, currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, juliaState, kochState, mainState, mode, treeState, vectorColors } from "./state.js?v=1.63.0";
+import { colormapIndex, colormapIndexNamed, defaultColormapName, setColorStyle, setColormapIndex, setColormapPicked } from "./state-colors.js?v=1.63.0";
+import { requestRender, updateLUT } from "./render-layout.js?v=1.63.0";
+import { exactFromLink, exactLinkFields, normalizeAngle, setCenter } from "./view-math.js?v=1.63.0";
+import { enterDual, exitDual, selectFractal, setCornerRule, setMode } from "./modes.js?v=1.63.0";
+import { VECTOR_VIEWS, dragonNav, fernNav, fitVectorView, fittedVectorModes } from "./vector-interaction.js?v=1.63.0";
+import { PENROSE_HH_MAX, PENROSE_HH_MIN, penroseCenterFields, penroseClampHalfHeight, penroseParseExact } from "./penrose.js?v=1.63.0";
+import { cancelTeleport } from "./teleport.js?v=1.63.0";
+import { scheduleSharedRun } from "./pattern-controls.js?v=1.63.0";
+import { currentRunSeed, parseRunSeed } from "./chaos-run.js?v=1.63.0";
+import { cornerDeal, parseCornerRule } from "./corner-rules.js?v=1.63.0";
+import { setFernColor, updateColorSwatches } from "./colormap-picker.js?v=1.63.0";
 
 // ---------------------------------------------------------------- share: links
 
@@ -164,13 +164,13 @@ export function parseShareHash(hash) {
         flipY: !!FRACTAL_CONFIGS[name].flipY && p.get("fl") === "1",
         cm: cmIndex(), dual: false, color: parseStyleFields(p),
         // The exact center of a deep view, when the link has a valid one (see exactFromLink); else null.
-        exact: exactFromLink(p, "ex", "ey", view.cx, view.cy) };
+        exact: exactFromLink(p, "ex", "ey", view.cx, view.cy, view.scale) };
       if (p.get("d") === "1" && FRACTAL_CONFIGS[name].dual) {
         st.dual = true;
         st.julia = { juliaC: [num("jcx", big), num("jcy", big)], cx: num("jx", big), cy: num("jy", big),
           scale: num("js", (v) => pos(v) && big(v)), rotation: normalizeAngle(num("jr", big)),
           maxIter: int("ji", 50, 2000), baseScale: num("jb", (v) => pos(v) && big(v)) };
-        st.juliaExact = exactFromLink(p, "jex", "jey", st.julia.cx, st.julia.cy);
+        st.juliaExact = exactFromLink(p, "jex", "jey", st.julia.cx, st.julia.cy, st.julia.scale);
       }
       return st;
     }
@@ -237,14 +237,14 @@ export function applyShareState(st) {
       maxIter: st.maxIter, iterAutoLocked: st.iterAutoLocked });
     // The center goes through setCenter, which also clears any exact pair left by the previous view; a link
     // without ex/ey (every link made before 1.62.5) takes its doubles as the exact center.
-    setCenter(mainState, st.cx, st.cy, st.exact?.[0], st.exact?.[1]);
+    setCenter(mainState, st.cx, st.cy, st.exact?.[0], st.exact?.[1], st.exact?.[2]);
     if (st.dual) {
       enterDual();
       // jcx/jcy are ignored: c is the main pane's center (synced in
       // renderAll). Links still carry them so older builds, whose parser
       // requires them, can open links from this one.
       Object.assign(juliaState, st.julia, { juliaC: [mainState.cx, mainState.cy], iterAutoLocked: st.iterAutoLocked });
-      setCenter(juliaState, st.julia.cx, st.julia.cy, st.juliaExact?.[0], st.juliaExact?.[1]);
+      setCenter(juliaState, st.julia.cx, st.julia.cy, st.juliaExact?.[0], st.juliaExact?.[1], st.juliaExact?.[2]);
     }
     els.dualBtn.classList.toggle("active", dualActive);
     els.iterSlider.value = mainState.maxIter;
