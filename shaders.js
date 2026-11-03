@@ -546,13 +546,16 @@ vec3 trapColor(vec2 T, bool escaped) {
 //
 // Deep zoom is cell rebasing (digitCellFrame in fractal-defs.js), the digit-test
 // counterpart of perturbation: the CPU works out the top u_digitLevel
-// digits exactly from float64 integer cell addresses, for the 3x3 block of
-// level-u_digitLevel cells the view lies in, and passes which of them are
-// already holes (u_cellHole). The shader works in those cells' units, where
-// the view is O(1) wide, so float32 only ever runs the last ~10 levels. That
-// carries both fractals to the ~1e15x a float64 view center can address.
-// Before it, everything ran from world coordinates in float32 and both
-// stopped resolving new levels: Gasket at ~3,000x, Carpet at ~3.5e4x.
+// digits exactly, for the 3x3 block of level-u_digitLevel cells the view lies
+// in, and passes which of them are already holes (u_cellHole). The shader
+// works in those cells' units, where the view is O(1) wide, so float32 only
+// ever runs the last ~10 levels. The CPU reads the digits from the view's
+// exact BigInt center (view-math.js), which grows with the zoom, so the
+// level has no ceiling but the scale's own double (zoom floor 1e-300); a
+// shallow view without that center keeps float64 cell addresses (exact to
+// level 52 / 33). Before rebasing, everything ran from world coordinates in
+// float32 and both stopped resolving new levels: Gasket at ~3,000x, Carpet
+// at ~3.5e4x.
 //
 // The per-pixel levels are still capped (digitMaxDepth in fractal-defs.js), by base.
 // Carpet (base 3) stays at 16: *3 rounds, so

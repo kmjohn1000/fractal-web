@@ -15,7 +15,7 @@ import { createKochView } from "./koch.js?v=1.62.7";
 import { createPythagorasTreeView } from "./pythagoras.js?v=1.62.7";
 import { ignoresMaxIter, suggestedMaxIter, viewFromBounds } from "./fractal-defs.js?v=1.62.7";
 import { createFractalRenderer } from "./renderer.js?v=1.62.7";
-import { exactValid } from "./view-math.js?v=1.62.7";
+import { exactFrac, exactValid } from "./view-math.js?v=1.62.7";
 
 // ---------------------------------------------------------------- app state
 
@@ -239,7 +239,7 @@ export function pushHistory(pane) {
   const st = paneState(pane);
   const hist = paneHistory(pane);
   if (!st) return;
-  hist.push({ cx: st.cx, cy: st.cy, ex: exactValid(st) ? st.ex : null, ey: exactValid(st) ? st.ey : null, scale: st.scale, rotation: st.rotation || 0, flipY: !!st.flipY });
+  hist.push({ cx: st.cx, cy: st.cy, ex: exactValid(st) ? st.ex : null, ey: exactValid(st) ? st.ey : null, ef: exactValid(st) ? exactFrac(st) : null, scale: st.scale, rotation: st.rotation || 0, flipY: !!st.flipY });
   if (hist.length > 50) hist.shift();
 }
 

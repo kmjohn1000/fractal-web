@@ -164,13 +164,13 @@ export function parseShareHash(hash) {
         flipY: !!FRACTAL_CONFIGS[name].flipY && p.get("fl") === "1",
         cm: cmIndex(), dual: false, color: parseStyleFields(p),
         // The exact center of a deep view, when the link has a valid one (see exactFromLink); else null.
-        exact: exactFromLink(p, "ex", "ey", view.cx, view.cy) };
+        exact: exactFromLink(p, "ex", "ey", view.cx, view.cy, view.scale) };
       if (p.get("d") === "1" && FRACTAL_CONFIGS[name].dual) {
         st.dual = true;
         st.julia = { juliaC: [num("jcx", big), num("jcy", big)], cx: num("jx", big), cy: num("jy", big),
           scale: num("js", (v) => pos(v) && big(v)), rotation: normalizeAngle(num("jr", big)),
           maxIter: int("ji", 50, 2000), baseScale: num("jb", (v) => pos(v) && big(v)) };
-        st.juliaExact = exactFromLink(p, "jex", "jey", st.julia.cx, st.julia.cy);
+        st.juliaExact = exactFromLink(p, "jex", "jey", st.julia.cx, st.julia.cy, st.julia.scale);
       }
       return st;
     }
@@ -237,14 +237,14 @@ export function applyShareState(st) {
       maxIter: st.maxIter, iterAutoLocked: st.iterAutoLocked });
     // The center goes through setCenter, which also clears any exact pair left by the previous view; a link
     // without ex/ey (every link made before 1.62.5) takes its doubles as the exact center.
-    setCenter(mainState, st.cx, st.cy, st.exact?.[0], st.exact?.[1]);
+    setCenter(mainState, st.cx, st.cy, st.exact?.[0], st.exact?.[1], st.exact?.[2]);
     if (st.dual) {
       enterDual();
       // jcx/jcy are ignored: c is the main pane's center (synced in
       // renderAll). Links still carry them so older builds, whose parser
       // requires them, can open links from this one.
       Object.assign(juliaState, st.julia, { juliaC: [mainState.cx, mainState.cy], iterAutoLocked: st.iterAutoLocked });
-      setCenter(juliaState, st.julia.cx, st.julia.cy, st.juliaExact?.[0], st.juliaExact?.[1]);
+      setCenter(juliaState, st.julia.cx, st.julia.cy, st.juliaExact?.[0], st.juliaExact?.[1], st.juliaExact?.[2]);
     }
     els.dualBtn.classList.toggle("active", dualActive);
     els.iterSlider.value = mainState.maxIter;

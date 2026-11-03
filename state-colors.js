@@ -161,7 +161,7 @@ export function popHistory(pane) {
   const snap = paneHistory(pane).pop();
   if (!snap) return;
   const st = paneState(pane);
-  setCenter(st, snap.cx, snap.cy, snap.ex, snap.ey);
+  setCenter(st, snap.cx, snap.cy, snap.ex, snap.ey, snap.ef ?? undefined);
   st.scale = snap.scale; st.rotation = snap.rotation ?? 0; st.flipY = !!snap.flipY;
   applyAutoIter();
   renderAll();
