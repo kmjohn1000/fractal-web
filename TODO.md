@@ -708,6 +708,55 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       All of the first six use the final orbit point and the distance value,
       so they should hold up at depth (unlike the traps); Phoenix has no
       distance value and stays at Smooth and Bands
+- [ ] New Looks from a 2026-11-02 brainstorm (read-only agent) plus CPU
+      mock-ups drawn the same day (`scratchpad` images, not in the repo; the
+      mock-ups are my approximations of the descriptions, not the shader);
+      none approved, none started. The user's reaction to the mock-ups:
+      Halo "is cool", Topo and Paper cut are interesting with Paper cut the
+      more distinct of the two, Chrome needs work. In that order:
+      - Halo (the black interior glows): for pixels that never escape, shade
+        by log|D| (D = dz/dc at the last iteration, which for an attracting
+        cycle stays finite and grows toward the component boundary), over a
+        palette; the escaped side keeps its normal look. Needs the cardioid and
+        bulb shortcut off for this style so interior pixels run to maxIter
+        (the agent estimates +15 to 25% frame cost at full view, UNVERIFIED),
+        and the deep path must keep D at the last iteration (clamp at 1e30).
+        In the mock-up the mini-Mandelbrot glowed like a lit bulb and the main
+        cardioid glowed at its rim. Medium. The agent's theory for why D is
+        well behaved inside is UNVERIFIED; check it against the float64 oracle.
+      - Paper cut: flat color per iteration band (`floor(n * 0.5)` in the
+        mock-up) with a soft drop shadow to the lower right of each raised
+        edge (a pixel is shadowed if the pixel a few steps up and left sits in a
+        higher layer; no extra pass in a shader is the agent's claim, UNVERIFIED);
+        panning slides the shadows. Medium.
+      - Contours, Topo: lines at integer smooth iteration counts, every 5th
+        thicker, anti-aliased by dividing the distance to the line by the
+        gradient of n in pixels (|grad n| = |dz| / (|z| ln|z| ln 2) per world
+        unit, my derivation, check it against the oracle), over soft shading;
+        an Engraving variant (dark lines on cream) needs one new palette.
+        Zooming makes the lines stream. Small to medium.
+      - Gloss (Chrome, Pearl, Glass): a pseudo-normal from Relief's gradient
+        and the distance value, lit by a matcap or environment. The Chrome
+        mock-up needs work (a harsh horizon line from the fake sky and ground on
+        the whole-set view; try a smoother studio-style environment, a darker
+        base and a softer specular); Pearl (thin-film colors) came out pretty
+        but plastic. Small to medium.
+      - Cathedral (stained glass) did NOT work in the mock-up (garish radial
+        spokes: cells cut by the argument of the escape point alternate too
+        fast); the idea is unproven, needs a different cell definition.
+      - Others the agent listed, not drawn or not yet judged: Pixel (8-bit,
+        worked on a zoomed view), Clay (subtle, low contrast), Halftone,
+        Compass (hue by the gradient's direction), Ripples, Neon, Rings and
+        Petals traps, Gems, Stripes inside the set, Watercolor, Haze, and
+        Looks for the pattern modes (neon, chalkboard, stained glass, glow
+        dots, embers for the chaos-game dots, which would also make the
+        Palette tab meaningful there). Plumbing for any new style: its math
+        mirrored in `scripts/oracle/oracle.py`, a pass of
+        `scripts/default-identity.mjs`, `warmColorVariants` when it shares a
+        compiled variant, a Looks tile per style plus palette, and a plan for
+        the Color sheet's room (about 12 tiles is the ceiling the agent
+        suggests; two pages or a "More Looks" sheet, a "Surprise" tile, and
+        hiding tiles a fractal can't draw).
 - [ ] Orbit traps at depth (2026-10-22). Point and Cross flatten past about
       1,000x deep because every pixel of a deep view traces nearly the same
       orbit, so the minimum distance to a fixed trap is the same number
