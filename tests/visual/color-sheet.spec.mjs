@@ -72,7 +72,7 @@ test.describe("the Color sheet", () => {
     await expect(page.locator('#colorSheet [role="tab"]')).toHaveText(["Looks", "Custom"]);
     await expect(page.locator('#colorSheet [role="tab"][aria-selected="true"]')).toHaveText("Looks");
     await expect(page.locator('#colorSheet [role="radiogroup"][aria-label="Looks"] [role="radio"]')).toHaveText(
-      ["Default", "Edge glow", "Stripes", "Bands", "Orbs", "Rays", "Relief"]);
+      ["Default", "Edge glow", "Stripes", "Bands", "Orbs", "Rays", "Relief", "Halo", "Paper cut"]);
     // The default (Smooth on Inferno) is the Default Look. (Classic and Inferno are palettes, not Looks.)
     await expect(page.locator(LOOK_CHECKED)).toHaveText("Default");
     await expect(page.locator("#colormapBtn")).toHaveAttribute("aria-label", "Choose colors (Default, Inferno)");
@@ -135,8 +135,8 @@ test.describe("the Color sheet", () => {
   test("Custom has the style, palette, repeat and shift controls with names", async ({ page }) => {
     await page.locator("#colormapBtn").click();
     await page.locator('#colorSheet [role="tab"]', { hasText: "Custom" }).click();
-    // The same words as the Look tiles (Edge glow, Stripes, Bands, Orbs, Rays, Relief).
-    await expect(page.locator('#colorSheet [aria-label="Style"] [role="radio"]')).toHaveText(["Smooth", "Bands", "Edge glow", "Stripes", "Orbs", "Rays", "Relief"]);
+    // The same words as the Look tiles (Edge glow, Stripes, Bands, Orbs, Rays, Relief, Halo, Paper cut).
+    await expect(page.locator('#colorSheet [aria-label="Style"] [role="radio"]')).toHaveText(["Smooth", "Bands", "Edge glow", "Stripes", "Orbs", "Rays", "Relief", "Halo", "Paper cut"]);
     await expect(page.locator('#colorSheet [aria-label="Palette"] [role="radio"]')).toHaveCount(await page.evaluate(() => COLORMAPS.length));
     await page.locator('#colorSheet [aria-label="Style"] [role="radio"]', { hasText: "Stripes" }).click();
     expect(await page.evaluate(() => colorStyle.style)).toBe("stripes");
@@ -194,13 +194,51 @@ test.describe("the Color sheet", () => {
     // It is exactly the Default Look (Smooth in Phoenix's own palette, Hot), so the Looks tab says so (and opens there).
     await expect(page.locator('#colorSheet [role="tab"][aria-selected="true"]')).toHaveText("Looks");
     await expect(page.locator(LOOK_CHECKED)).toHaveText("Default");
-    await expect(page.locator("#colorSheetNote-looks")).toContainText("Edge glow, Stripes, Orbs, Rays and Relief aren't available for Phoenix.");
+    await expect(page.locator("#colorSheetNote-looks")).toContainText("Edge glow, Stripes, Orbs, Rays, Relief, Halo and Paper cut aren't available for Phoenix.");
     await page.locator('#colorSheet [role="tab"]', { hasText: "Custom" }).click();
     const states = await page.locator('#colorSheet [aria-label="Style"] [role="radio"]').evaluateAll((els) => els.map((e) => !e.disabled));
-    expect(states).toEqual([true, true, false, false, false, false, false]);
+    expect(states).toEqual([true, true, false, false, false, false, false, false, false]);
     const checked = await page.locator('#colorSheet [aria-label="Style"] [role="radio"][aria-checked="true"]').allInnerTexts();
     expect(checked, "only what is drawn is selected, not the greyed Rays").toEqual(["Smooth"]);
-    await expect(page.locator("#colorSheetNote-custom")).toContainText("Edge glow, Stripes, Orbs, Rays and Relief aren't available for Phoenix.");
+    await expect(page.locator("#colorSheetNote-custom")).toContainText("Edge glow, Stripes, Orbs, Rays, Relief, Halo and Paper cut aren't available for Phoenix.");
+  });
+
+  // Halo is left off the Burning Ship and the Celtic (their set is mostly
+  // non-escaping chaos, which comes out as a flat white mass): the tile is
+  // greyed there with the note saying so, the Custom segment is disabled, and
+  // the view draws Smooth. Paper cut is on every type Relief is.
+  test("Halo is greyed out on the Burning Ship and the Celtic and offered on the Mandelbrot family; Paper cut on all four", async ({ page }) => {
+    const r = [];
+    for (const f of ["Mandelbrot", "Tricorn", "Multibrot³", "Julia:Rabbit", "Burn. Ship", "Celtic"]) {
+      await page.evaluate((n) => window["__vt"].fractal(n), f);
+      await settle(page);
+      await page.locator("#colormapBtn").click();
+      await page.locator('#colorSheet [role="tab"]', { hasText: "Looks" }).click();
+      const tile = (key) => page.locator(`#colorSheet [data-key="look-${key}"]`).getAttribute("aria-disabled");
+      r.push([f, await tile("halo"), await tile("paper-cut")]);
+      await page.keyboard.press("Escape");
+    }
+    // (aria-disabled is "false" on a tile that can be picked, "true" on a greyed one)
+    expect(r).toEqual([["Mandelbrot", "false", "false"], ["Tricorn", "false", "false"], ["Multibrot³", "false", "false"], ["Julia:Rabbit", "false", "false"],
+      ["Burn. Ship", "true", "false"], ["Celtic", "true", "false"]]);
+    await page.locator("#colormapBtn").click();
+    await expect(page.locator("#colorSheetNote-looks")).toContainText("Halo isn't available for Celtic Mandelbrot.");
+    // greyed (aria-disabled, which Playwright won't click): does nothing but flash the note
+    await page.locator('#colorSheet [data-key="look-halo"]').evaluate((el) => el.click());
+    expect(await page.evaluate(() => colorStyle.style)).toBe("smooth");
+    await page.locator('#colorSheet [data-key="look-paper-cut"]').click();
+    expect(await page.evaluate(() => ({ style: colorStyle.style, palette: COLORMAPS[colormapIndex].name }))).toEqual({ style: "paper", palette: "Twilight" });
+    await expect(page.locator("#colormapBtn")).toHaveAttribute("aria-label", "Choose colors (Paper cut, Twilight)");
+  });
+
+  test("the Halo and Paper cut Looks set their style and palette", async ({ page }) => {
+    await page.locator("#colormapBtn").click();
+    await page.locator('#colorSheet [data-key="look-halo"]').click();
+    expect(await page.evaluate(() => ({ style: colorStyle.style, palette: COLORMAPS[colormapIndex].name }))).toEqual({ style: "halo", palette: "Inferno" });
+    await expect(page.locator(LOOK_CHECKED)).toHaveText("Halo");
+    await expect(page.locator("#colormapBtn")).toHaveAttribute("aria-label", "Choose colors (Halo, Inferno)");
+    await page.locator('#colorSheet [data-key="look-paper-cut"]').click();
+    await expect(page.locator(LOOK_CHECKED)).toHaveText("Paper cut");
   });
 
   test("Newton, Nova, Carpet, Gasket and Apollonian open the same sheet with just the palette grid", async ({ page }) => {
@@ -269,8 +307,11 @@ test.describe("the Color sheet", () => {
         seen[tab] = r;
         expect(r.sheetPct, `${tab}${deep ? " (deep)" : ""}: sheet height as % of the screen`).toBeLessThanOrEqual(45);
         // (WebKit's phone emulation keeps its own 659 pt-tall screen whatever setViewportSize says, where the
-        // sheet's cap of 45% of the screen applies; on a real 852 pt screen the sheet is about 38%.)
-        expect(r.visiblePct, `${tab}${deep ? " (deep)" : ""}: % of the fractal still visible`).toBeGreaterThanOrEqual(40);
+        // sheet's cap of 45% of the screen applies; on a real 852 pt screen the sheet was about 38% with the
+        // seven styles.)
+        // (40 until the nine styles: the Custom tab's style row now wraps to two rows of 36 px, which is 30 px
+        // taller, and the Custom tab sets both tabs' height. On the 852 pt screens that is 41.5% of the screen.)
+        expect(r.visiblePct, `${tab}${deep ? " (deep)" : ""}: % of the fractal still visible (sheet ${Math.round(r.sheetH)} px, ${r.sheetPct.toFixed(1)}% of the screen)`).toBeGreaterThanOrEqual(35);
       }
       expect(seen.Looks.sheetH, "Looks and Custom are the same height").toBeCloseTo(seen.Custom.sheetH, 0);
       expect(seen.Looks.tabY, "the tab bar doesn't move between the tabs").toBeCloseTo(seen.Custom.tabY, 0);
@@ -390,7 +431,7 @@ test.describe("the Color sheet", () => {
     expect(picked).toEqual(names);
   });
 
-  test("every Look is on screen at once, in a grid: four across on a phone, none cut off, no scrolling", async ({ page }) => {
+  test("every Look is on screen at once, in a grid: nine make five and four on a phone, none cut off, no scrolling", async ({ page }) => {
     await page.setViewportSize({ width: 393, height: 852 });
     await page.locator("#colormapBtn").click();
     const r = await page.evaluate(() => {
@@ -399,18 +440,23 @@ test.describe("the Color sheet", () => {
       const rows = [...new Set(tiles.map((q) => Math.round(q.t)))].length;
       return { tiles, rows, inside: tiles.every((q) => q.l >= sheet.left && q.r <= sheet.right && q.b <= sheet.bottom), scrolls: grid.scrollWidth > grid.clientWidth + 1, fade: grid.dataset.fade || null, firstRow: tiles.filter((q) => Math.round(q.t) === Math.round(tiles[0].t)).length };
     });
-    expect(r.tiles.map((q) => q.name)).toEqual(["Default", "Edge glow", "Stripes", "Bands", "Orbs", "Rays", "Relief"]);
-    expect(r.firstRow, "four across").toBe(4);
+    expect(r.tiles.map((q) => q.name)).toEqual(["Default", "Edge glow", "Stripes", "Bands", "Orbs", "Rays", "Relief", "Halo", "Paper cut"]);
+    // As many columns as fit, then the fewest that keep the rows (see fitColorSegment): five and four, the
+    // same two rows the seven Looks took, so the sheet is no taller.
+    expect(r.firstRow, "five across").toBe(5);
     expect(r.rows).toBe(2);
     expect(r.inside, "every tile inside the sheet").toBe(true);
     expect(r.scrolls, "nothing to scroll sideways").toBe(false);
     expect(r.fade, "no edge fade left over from the old strip").toBeNull();
     for (const q of r.tiles) expect(q.h, `${q.name} tile height`).toBeGreaterThanOrEqual(44);
-    // On an iPad-width screen they sit in one row.
+    // On an iPad-width screen (the sheet is 540 wide at most) they sit in two rows, five and four.
     await page.setViewportSize({ width: 1032, height: 1376 });
     await page.waitForTimeout(300);
-    const row = await page.evaluate(() => new Set([...document.querySelectorAll("#colorSheet .looks .pickTile")].map((t) => Math.round(t.getBoundingClientRect().top))).size);
-    expect(row, "one row on an iPad").toBe(1);
+    const rowSizes = await page.evaluate(() => {
+      const tops = [...document.querySelectorAll("#colorSheet .looks .pickTile")].map((t) => Math.round(t.getBoundingClientRect().top));
+      return [...new Set(tops)].map((t) => tops.filter((x) => x === t).length);
+    });
+    expect(rowSizes, "two rows on an iPad").toEqual([5, 4]);
   });
 
   // The Looks and the segments don't collide at the larger Dynamic Type sizes
@@ -443,7 +489,7 @@ test.describe("the Color sheet", () => {
     });
   }
 
-  test("a small phone (360x640): all seven styles in one row, both sliders and Reset reachable, nothing cut off", async ({ page }) => {
+  test("a small phone (360x640): the nine styles in two rows, both sliders and Reset reachable, nothing cut off", async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 640 });
     await settle(page);
     await page.evaluate(() => setColorStyle({ density: 2 })); // so Reset shows too
@@ -458,7 +504,7 @@ test.describe("the Color sheet", () => {
       return { segRow: new Set(segs).size, repeat: inside(rect('input[aria-label="Color repeat"]')), shift: inside(rect('input[aria-label="Color shift"]')),
         reset: inside(rect(".reset")), fits: sheet.scrollHeight <= sheet.clientHeight + 1, top: s.top, noSide: sheet.scrollWidth <= sheet.clientWidth + 1 };
     });
-    expect(r.segRow, "the seven styles share one row").toBe(1);
+    expect(r.segRow, "the nine styles split over two rows (five and four)").toBe(2);
     expect(r.repeat && r.shift && r.reset, "sliders and Reset inside the sheet").toBe(true);
     expect(r.fits, "no scrolling needed at this size").toBe(true);
     expect(r.top).toBeGreaterThanOrEqual(0);
@@ -567,7 +613,7 @@ test.describe("share links", () => {
   test("every style, bands and shift round-trip, and rebuilding is stable", async ({ page }) => {
     const r = await page.evaluate(() => {
       const out = [];
-      for (const [style, density, offset] of [["bands", 1, 0], ["glow", 1, 0], ["stripes", 2.5, 0.25], ["point", 0.25, 0.999], ["cross", 8, 0.001], ["relief", 1.5, 0.75], ["smooth", 3, 0.5], ["smooth", 1, 0.125]]) {
+      for (const [style, density, offset] of [["bands", 1, 0], ["glow", 1, 0], ["stripes", 2.5, 0.25], ["point", 0.25, 0.999], ["cross", 8, 0.001], ["relief", 1.5, 0.75], ["halo", 2, 0.5], ["paper", 0.5, 0.125], ["smooth", 3, 0.5], ["smooth", 1, 0.125]]) {
         window["__vt"].fractal("Mandelbrot");
         setColorStyle({ style, density, offset });
         const hash = buildShareHash();
@@ -578,7 +624,7 @@ test.describe("share links", () => {
       }
       return out;
     });
-    const wanted = [["bands", 1, 0], ["glow", 1, 0], ["stripes", 2.5, 0.25], ["point", 0.25, 0.999], ["cross", 8, 0.001], ["relief", 1.5, 0.75], ["smooth", 3, 0.5], ["smooth", 1, 0.125]];
+    const wanted = [["bands", 1, 0], ["glow", 1, 0], ["stripes", 2.5, 0.25], ["point", 0.25, 0.999], ["cross", 8, 0.001], ["relief", 1.5, 0.75], ["halo", 2, 0.5], ["paper", 0.5, 0.125], ["smooth", 3, 0.5], ["smooth", 1, 0.125]];
     r.forEach((x, i) => {
       const [style, density, offset] = wanted[i];
       expect(x.parsed, `link ${i}`).toEqual({ style, density, offset });
@@ -603,6 +649,25 @@ test.describe("share links", () => {
       // A good field survives its bad neighbour.
       "st=de&cd=999&co=0.5": { style: "glow", density: 1, offset: 0.5 },
     });
+  });
+
+  // The new styles' codes are strict like the others: exactly ha and pc, and an
+  // old build's or a made-up neighbour ("hl", "pa", "HA") falls back to Smooth.
+  test("Halo and Paper cut travel as st=ha and st=pc; near misses fall back", async ({ page }) => {
+    const r = await page.evaluate((base) => {
+      const style = (extra) => parseShareHash(`${base}&${extra}`).color.style;
+      window["__vt"].fractal("Mandelbrot");
+      setColorStyle({ style: "halo" });
+      const halo = buildShareHash();
+      setColorStyle({ style: "paper" });
+      const paper = buildShareHash();
+      return { halo, paper, ha: style("st=ha"), pc: style("st=pc"), miss: ["st=hl", "st=pa", "st=HA", "st=paper", "st=halo", "st=h"].map(style) };
+    }, BASE_LINK);
+    expect(r.halo).toMatch(/[&#]st=ha(&|$)/);
+    expect(r.paper).toMatch(/[&#]st=pc(&|$)/);
+    expect(r.ha).toBe("halo");
+    expect(r.pc).toBe("paper");
+    expect(r.miss).toEqual(["smooth", "smooth", "smooth", "smooth", "smooth", "smooth"]);
   });
 });
 

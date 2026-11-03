@@ -234,6 +234,153 @@ test.describe("Relief", () => {
   });
 });
 
+// Pixels of the main canvas as an array of RGBA bytes (the canvas keeps its frame).
+const grabPixels = (page, size = 0) => page.evaluate((n) => {
+  const c = mainRenderer.canvas, t = document.createElement("canvas");
+  t.width = n || c.width; t.height = n || c.height;
+  const g = t.getContext("2d");
+  g.drawImage(c, 0, 0, t.width, t.height);
+  return Array.from(g.getImageData(0, 0, t.width, t.height).data);
+}, size);
+
+test.describe("Halo", () => {
+  const inferno = () => COLORMAPS.findIndex((c) => c.name === "Inferno");
+
+  test("shares Relief's compiled program, on the Mandelbrot family and Julia sets only", async ({ page }) => {
+    const r = await page.evaluate(() => {
+      const out = {};
+      for (const f of ["Mandelbrot", "Tricorn", "Multibrot³", "Julia:Rabbit", "Burn. Ship", "Celtic", "Phoenix", "Newton z³", "Carpet"]) {
+        window["__vt"].fractal(f); setColorStyle({ style: "halo" });
+        const c = colorStyleFor(mainState);
+        out[f] = `${c.glsl}/${c.variant}`;
+      }
+      return out;
+    });
+    expect(r).toEqual({ "Mandelbrot": "7/1", "Tricorn": "7/1", "Multibrot³": "7/1", "Julia:Rabbit": "7/1", "Burn. Ship": "0/0", "Celtic": "0/0",
+      "Phoenix": "0/0", "Newton z³": "0/0", "Carpet": "0/0" });
+  });
+
+  for (const [name, fractal] of [["mandelbrot", "Mandelbrot"], ["tricorn", "Tricorn"], ["julia-rabbit", "Julia:Rabbit"]]) {
+    test(`${fractal} opening view`, async ({ page }) => {
+      await page.evaluate(([f, g]) => { window["__vt"].fractal(f, g); setColorStyle({ style: "halo" }); }, [fractal, await page.evaluate(inferno)]);
+      await checkStyled(page, `style-halo-${name}`);
+    });
+  }
+
+  test("Mini Mandelbrot (deep, perturbation)", async ({ page }) => {
+    await page.evaluate(`${place("Mini Mandelbrot")}; setColorStyle({ style: "halo" })`);
+    await checkStyled(page, "style-halo-minibrot");
+  });
+
+  // The set's inside is black in every other style. Halo lights it from D: a
+  // view inside the main cardioid is dark purple to orange, not black, and
+  // differs from Relief's (which leaves it black) everywhere in it.
+  test("the interior glows: not black, and not what Smooth or Relief draw there", async ({ page }) => {
+    const inside = `__vt.fractal("Mandelbrot", 0); Object.assign(mainState, { cx: -0.1, cy: 0, scale: 0.15 }); requestRender();`;
+    const share = (px) => { let lit = 0; for (let i = 0; i < px.length; i += 4) if (px[i] + px[i + 1] + px[i + 2] > 45) lit++; return lit / (px.length / 4); };
+    await page.evaluate(`${inside}; setColorStyle({ style: "relief" })`);
+    await waitSettled(page);
+    const relief = await grabPixels(page, 120);
+    await page.evaluate(`${inside}; setColorStyle({ style: "halo" })`);
+    await waitSettled(page);
+    const halo = await grabPixels(page, 120);
+    expect(share(relief), "Relief leaves the interior black").toBeLessThan(0.01);
+    expect(share(halo), "Halo lights nearly all of it").toBeGreaterThan(0.95);
+    // Brightness varies across it (dim in the middle, bright toward the rim): not one flat fill.
+    const lum = []; for (let i = 0; i < halo.length; i += 4) lum.push(0.3 * halo[i] + 0.59 * halo[i + 1] + 0.11 * halo[i + 2]);
+    // (a desktop frame spans about 24 levels of luminance here, a narrow phone frame about 6; one flat fill is 0)
+    expect(Math.max(...lum) - Math.min(...lum), "the glow has a gradient").toBeGreaterThan(3);
+  });
+
+  // On a Julia set D shrinks inside a basin instead of settling, so the glow comes from the iteration
+  // where it fell below a threshold (see haloCross): the Rabbit's bulbs glow from dark centers.
+  test("on a Julia set the basins glow too", async ({ page }) => {
+    await page.evaluate((g) => { window["__vt"].fractal("Julia:Rabbit", g); setColorStyle({ style: "halo" }); }, await page.evaluate(inferno));
+    await waitSettled(page);
+    const px = await grabPixels(page, 120);
+    let lit = 0; const lum = [];
+    for (let i = 0; i < px.length; i += 4) { const l = 0.3 * px[i] + 0.59 * px[i + 1] + 0.11 * px[i + 2]; lum.push(l); if (px[i] > 120) lit++; }
+    expect(lit / (px.length / 4), "bright orange basins cover a good part of the view").toBeGreaterThan(0.08);
+    expect(Math.max(...lum) - Math.min(...lum)).toBeGreaterThan(100);
+  });
+});
+
+test.describe("Paper cut", () => {
+  const twilight = () => COLORMAPS.findIndex((c) => c.name === "Twilight");
+
+  test("shares Relief's compiled program, on the same fractal types", async ({ page }) => {
+    const r = await page.evaluate(() => {
+      const out = {};
+      for (const f of ["Mandelbrot", "Burn. Ship", "Tricorn", "Celtic", "Multibrot³", "Julia:Rabbit", "Phoenix", "Newton z³", "Carpet"]) {
+        window["__vt"].fractal(f); setColorStyle({ style: "paper" });
+        const c = colorStyleFor(mainState);
+        out[f] = `${c.glsl}/${c.variant}`;
+      }
+      return out;
+    });
+    expect(r).toEqual({ "Mandelbrot": "8/1", "Burn. Ship": "8/1", "Tricorn": "8/1", "Celtic": "8/1", "Multibrot³": "8/1",
+      "Julia:Rabbit": "8/1", "Phoenix": "0/0", "Newton z³": "0/0", "Carpet": "0/0" });
+  });
+
+  for (const [name, fractal] of [["mandelbrot", "Mandelbrot"], ["ship", "Burn. Ship"], ["julia-rabbit", "Julia:Rabbit"]]) {
+    test(`${fractal} opening view`, async ({ page }) => {
+      await page.evaluate(([f, g]) => { window["__vt"].fractal(f, g); setColorStyle({ style: "paper" }); }, [fractal, await page.evaluate(twilight)]);
+      await checkStyled(page, `style-paper-${name}`);
+    });
+  }
+
+  test("Seahorse Valley (deep, perturbation)", async ({ page }) => {
+    await page.evaluate(`${place("Seahorse Valley")}; setColormapIndex(COLORMAPS.findIndex((c) => c.name === "Twilight")); updateLUT(); setColorStyle({ style: "paper" })`);
+    await checkStyled(page, "style-paper-seahorse");
+  });
+
+  // Each layer is one flat color (Smooth changes a little every pixel): over the open space around
+  // the Antenna Minibrot most horizontal neighbours are identical, and far more than in Smooth.
+  test("draws flat layers, where Smooth shades continuously", async ({ page }) => {
+    const view = `${place("Antenna Minibrot")}; setColormapIndex(COLORMAPS.findIndex((c) => c.name === "Twilight")); updateLUT();`;
+    const sameShare = (px) => {
+      let same = 0, pairs = 0;
+      for (let i = 0; i + 4 < px.length; i += 4) { pairs++; if (px[i] === px[i + 4] && px[i + 1] === px[i + 5] && px[i + 2] === px[i + 6]) same++; }
+      return same / pairs;
+    };
+    await page.evaluate(`${view}; setColorStyle({ style: "smooth" })`);
+    await waitSettled(page);
+    const smooth = sameShare(await grabPixels(page));
+    await page.evaluate(`${view}; setColorStyle({ style: "paper" })`);
+    await waitSettled(page);
+    const paper = sameShare(await grabPixels(page));
+    expect(paper, `paper ${paper.toFixed(3)} vs smooth ${smooth.toFixed(3)}: neighbours share a color`).toBeGreaterThan(0.55);
+    expect(paper).toBeGreaterThan(smooth + 0.1);
+  });
+
+  // The Mandelbrot set is symmetric about the real axis, so Smooth draws the upper half of the opening
+  // view and the lower half alike, and any difference in Paper cut is the shadows. With the light at the
+  // upper left a shadow falls where the higher layer lies up and to the left: below the set, not above
+  // it, so the lower half is the darker. After a half turn the set's lower half is at the top of the
+  // screen, and the lower half of the screen must still be the darker (the light stays upper left).
+  test("the shadows fall to the lower right, and the light stays upper left as the view turns", async ({ page }) => {
+    const halves = async (style, rotation) => {
+      await page.evaluate(([s, r]) => {
+        window["__vt"].fractal("Mandelbrot", COLORMAPS.findIndex((c) => c.name === "Twilight"));
+        setColorStyle({ style: s }); mainState.rotation = r; requestRender();
+      }, [style, rotation]);
+      await waitSettled(page);
+      const px = await grabPixels(page, 200);
+      let top = 0, bottom = 0;
+      for (let y = 0; y < 200; y++) for (let x = 0; x < 200; x++) {
+        const i = (y * 200 + x) * 4, l = 0.3 * px[i] + 0.59 * px[i + 1] + 0.11 * px[i + 2];
+        if (y < 100) top += l; else bottom += l;
+      }
+      return bottom / top;
+    };
+    const smooth = await halves("smooth", 0);
+    const upright = await halves("paper", 0), turned = await halves("paper", Math.PI);
+    expect(Math.abs(smooth - 1), `Smooth is symmetric top to bottom (${smooth.toFixed(4)})`).toBeLessThan(0.002);
+    expect(upright, `lower half / upper half, paper ${upright.toFixed(4)}`).toBeLessThan(0.996);
+    expect(turned, `and after a half turn, ${turned.toFixed(4)}`).toBeLessThan(0.996);
+  });
+});
+
 test.describe("Bands", () => {
   test("Mandelbrot opening view", async ({ page }) => {
     await page.evaluate(() => { window["__vt"].fractal("Mandelbrot"); setColorStyle({ style: "bands" }); });

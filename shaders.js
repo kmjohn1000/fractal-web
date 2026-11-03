@@ -332,6 +332,121 @@ vec3 reliefColor(int iter, vec2 z, vec4 D) {
   float n = max(float(iter) + 1.0 - log2(log2(sqrt(dot(z, z)))) / logBase, 0.0);
   return styleColor(n * 0.025) * shade;
 }
+
+// Halo: Relief outside, and the inside of the set (which Relief and the other
+// styles leave black) glowing. A pixel that never escapes is drawn from D at
+// the last iteration. Inside a bulb the orbit falls onto an attracting cycle
+// and D stays finite there, but it grows toward the bulb's boundary (it
+// diverges where the cycle stops attracting), so log(1 + |D|) is a glow that
+// is dim at each bulb's center and brightest at its rim. It colors the palette
+// from just above its dark end and brightens with it, so the palette, Repeat
+// and Shift all apply. The cardioid and bulb shortcut is off for this style
+// (renderEscapeFast), since it must see the orbit.
+const int STYLE_HALO = 7;
+const float HALO_RANGE = 40.0;       // |D| that reaches the brightest glow
+const float HALO_FLOOR = 0.12;       // palette position at the dimmest
+const float HALO_DIM = 0.25;         // brightness at the dimmest
+const float HALO_GAIN = 1.1;         // brightness added at the brightest
+
+float haloNorm(vec4 D) {
+  float m = max(max(abs(D.x), abs(D.y)), max(max(abs(D.z), abs(D.w)), 1e-30));
+  vec4 d = D / m;
+  return m * (u_ftype == FTYPE_ESCAPE ? length(d.xy) : length(d) * 0.70710678);
+}
+
+// A Julia set's D is the derivative with respect to the starting point, so it
+// shrinks inside a basin (like |lambda|^n, to nothing in float32) instead of
+// settling: its size says only how long the orbit has run. What grows toward
+// the Julia set is the time D takes to fall below HALO_EPS (a pixel near the
+// set wanders close to it first), so a Julia view is lit from that count: the
+// iteration where |D| crossed (interpolated in log |D| from the step before,
+// so it is a smooth count), or -1 when it never did, which is the brightest.
+// It is scaled by log(1 + maxIter), so a deeper view's slower pixels don't
+// all reach the top.
+const float HALO_EPS = 1e-3;
+
+vec2 haloCross(vec2 s, int i, vec4 D) {
+  // s = (the crossing iteration or -1, |D| the step before)
+  float dn = max(haloNorm(D), 1e-30);
+  if (s.x < 0.0 && dn < HALO_EPS) s.x = float(i) + (log(s.y) - log(HALO_EPS)) / max(log(s.y) - log(dn), 1e-6);
+  s.y = dn;
+  return s;
+}
+
+vec3 haloColor(vec4 D, vec2 s) {
+  float t = u_isJulia
+    ? (s.x < 0.0 ? 1.0 : clamp(log(1.0 + s.x) / log(1.0 + float(u_maxIter)), 0.0, 1.0))
+    : clamp(log(1.0 + haloNorm(D)) / log(1.0 + HALO_RANGE), 0.0, 1.0);
+  return styleColor(HALO_FLOOR + (1.0 - HALO_FLOOR) * pow(t, 0.8)) * (HALO_DIM + HALO_GAIN * t);
+}
+
+// Paper cut: the escaped region as layers of paper, one per band of the smooth
+// iteration count n, each a flat color from the palette (pastel: mixed with
+// cream), with a soft shadow falling to the lower right of every raised edge
+// (the layers rise toward the set). A fragment can't look at its neighbours,
+// so the shadow comes from the gradient of n, as Relief's light does: |grad n|
+// = |J^T z| / (|z|^2 ln|z| ln P) per world unit (n = N - log_P log|z_N|, the
+// potential's log; P the map's power), and it points toward the set,
+// against the potential's gradient u that Relief works out. With q = n / band
+// and f = fract(q), the next layer up the light's way starts s = (1 - f) /
+// (dq/ds) CSS pixels along the direction to the light, if that rate is
+// positive; the shadow is full at the edge and fades over PAPER_REACH pixels.
+// The same distance to the nearest layer edge anti-aliases it to a pixel.
+// Past about one layer per pixel (the filaments) the layers are lost in a
+// stack of shadow and fade into their average, so nothing aliases. The light
+// stays at the screen's upper left as the view turns, like Relief's.
+const int STYLE_PAPER = 8;
+const float PAPER_BAND = 2.0;        // iterations of n per layer
+const float PAPER_STEP = 0.1;        // palette positions from one layer to the next
+const float PAPER_SHADOW = 0.55;     // darkest the shadow gets
+const float PAPER_REACH = 8.0;       // CSS pixels it falls over
+const float PAPER_CREAM = 0.4;       // share of cream in each layer's color
+const vec3  PAPER_STOCK = vec3(0.97, 0.95, 0.9);
+const vec3  PAPER_HOLE = vec3(0.1, 0.08, 0.12);   // the set itself
+
+vec3 paperLayer(float band, float shadow) {
+  vec3 c = mix(styleColor(band * PAPER_STEP), PAPER_STOCK, PAPER_CREAM);
+  return c * (1.0 - PAPER_SHADOW * shadow);
+}
+
+vec3 paperColor(int iter, vec2 z, vec4 D) {
+  float m = max(max(abs(D.x), abs(D.y)), max(max(abs(D.z), abs(D.w)), 1e-30));
+  vec4 d = D / m;
+  vec2 g = u_ftype == FTYPE_ESCAPE
+    ? vec2(d.x * z.x + d.y * z.y, d.x * z.y - d.y * z.x)
+    : vec2(d.x * z.x + d.z * z.y, d.y * z.x + d.w * z.y);
+  g.y *= u_flipY;
+  g = vec2(g.x * u_rotCos + g.y * u_rotSin, g.y * u_rotCos - g.x * u_rotSin);
+  float len = length(g);
+  vec2 u = len > 1e-30 ? g / len : vec2(0.0);
+  float r = sqrt(dot(z, z));
+  float logBase = u_power > 2.5 ? log2(3.0) : 1.0;
+  float n = max(float(iter) + 1.0 - log2(log2(r)) / logBase, 0.0);
+  // Far out the count is clamped at 0 (as in escapeColor): one flat bottom layer.
+  if (n <= 0.0) return paperLayer(0.0, 0.0);
+  // |grad n| in layers per CSS pixel, and its part along the light.
+  float gradPx = (m / r) * (len / (r * log(r) * 0.69314718 * logBase)) * u_pixelSize / PAPER_BAND;
+  float q = n / PAPER_BAND;
+  float band = floor(q);
+  float f = q - band;
+  float toLight = -dot(u, RELIEF_LIGHT) * gradPx;   // layers per pixel toward the light
+  float up = (1.0 - f) / max(gradPx, 1e-12);        // pixels to the layer above, and below
+  float down = f / max(gradPx, 1e-12);
+  float shadow = toLight > 0.0 ? 1.0 - smoothstep(0.0, PAPER_REACH, (1.0 - f) / toLight) : 0.0;
+  vec3 c = paperLayer(band, shadow);
+  c = mix(c, paperLayer(max(band - 1.0, 0.0), toLight > 0.0 && band > 0.0 ? 1.0 : 0.0), clamp(0.5 - down, 0.0, 0.5));
+  c = mix(c, paperLayer(band + 1.0, 0.0), clamp(0.5 - up, 0.0, 0.5));
+  // Layers thinner than a pixel and a half: their average.
+  float fine = smoothstep(0.45, 0.9, gradPx);
+  return mix(c, paperLayer(q, 0.5), fine);
+}
+
+// The color of an escaped pixel in this variant's styles.
+vec3 styleLit(int iter, vec2 z, vec4 D) {
+  if (u_style == STYLE_RELIEF || u_style == STYLE_HALO) return reliefColor(iter, z, D);
+  if (u_style == STYLE_PAPER) return paperColor(iter, z, D);
+  return glowColor(z, D);
+}
 #elif COLOR_VARIANT == 2
 // Stripes: Härkönen's stripe average. Each iterate z contributes
 // a = 0.5 + 0.5 sin(4 arg z), computed from x and y alone (sin 4t = 2 sin 2t
@@ -636,11 +751,19 @@ vec3 renderEscapeFast(vec2 p) {
   // Python desktop app's cardioid/bulb skip. (Not for the orbit traps, which
   // color the interior by its orbit.)
 #if COLOR_VARIANT != 3
+#if COLOR_VARIANT == 1
+  // (Halo needs the interior's orbit; Paper cut colors the interior itself.)
+  if (u_style != STYLE_HALO)
+#endif
   if (u_ftype == FTYPE_ESCAPE && u_power < 2.5 && !u_isJulia) {
     float x = c.x, y = c.y;
     float q = (x - 0.25) * (x - 0.25) + y * y;
     if (q * (q + x - 0.25) < 0.25 * y * y || (x + 1.0) * (x + 1.0) + y * y < 0.0625) {
+#if COLOR_VARIANT == 1
+      return u_style == STYLE_PAPER ? PAPER_HOLE : vec3(0.0);
+#else
       return vec3(0.0);
+#endif
     }
   }
 #endif
@@ -652,6 +775,7 @@ vec3 renderEscapeFast(vec2 p) {
   vec2 zPrev = vec2(0.0);
 #if COLOR_VARIANT == 1
   vec4 D = glowStart();
+  vec2 haloS = vec2(-1.0, 1.0);   // Julia Halo's crossing, see haloCross
 #elif COLOR_VARIANT == 2
   vec4 S = stripeStart();
 #elif COLOR_VARIANT == 3
@@ -662,6 +786,7 @@ vec3 renderEscapeFast(vec2 p) {
     if (i >= u_maxIter) break;
 #if COLOR_VARIANT == 1
     D = glowStep(D, z);
+    if (u_isJulia && u_style == STYLE_HALO) haloS = haloCross(haloS, i, D);
 #endif
     vec2 zsq;
     if (u_ftype == FTYPE_SHIP) {
@@ -698,10 +823,14 @@ vec3 renderEscapeFast(vec2 p) {
 #if COLOR_VARIANT == 3
   return trapColor(T, escaped);
 #endif
+#if COLOR_VARIANT == 1
+  if (!escaped) return u_style == STYLE_HALO ? haloColor(D, haloS) : u_style == STYLE_PAPER ? PAPER_HOLE : vec3(0.0);
+#else
   if (!escaped) return vec3(0.0);
+#endif
 
 #if COLOR_VARIANT == 1
-  return u_style == STYLE_RELIEF ? reliefColor(iter, z, D) : glowColor(z, D);
+  return styleLit(iter, z, D);
 #elif COLOR_VARIANT == 2
   return stripeColor(iter, z, S);
 #else
@@ -792,6 +921,7 @@ vec3 renderEscapePerturbation(vec2 uv) {
   vec2 fullAtEscape = vec2(0.0);
 #if COLOR_VARIANT == 1
   vec4 D = glowStart();
+  vec2 haloS = vec2(-1.0, 1.0);   // Julia Halo's crossing, see haloCross
 #elif COLOR_VARIANT == 2
   vec4 S = stripeStart();
 #elif COLOR_VARIANT == 3
@@ -803,6 +933,7 @@ vec3 renderEscapePerturbation(vec2 uv) {
 
 #if COLOR_VARIANT == 1
     D = glowStep(D, Zm + dz);   // the orbit's value before this step
+    if (u_isJulia && u_style == STYLE_HALO) haloS = haloCross(haloS, i, D);
 #endif
     dz = perturbStep(Zm, dz, dc);
 
@@ -837,9 +968,13 @@ vec3 renderEscapePerturbation(vec2 uv) {
 #if COLOR_VARIANT == 3
   return trapColor(T, escaped);
 #endif
-  if (!escaped) return vec3(0.0);
 #if COLOR_VARIANT == 1
-  return u_style == STYLE_RELIEF ? reliefColor(iter, fullAtEscape, D) : glowColor(fullAtEscape, D);
+  if (!escaped) return u_style == STYLE_HALO ? haloColor(D, haloS) : u_style == STYLE_PAPER ? PAPER_HOLE : vec3(0.0);
+#else
+  if (!escaped) return vec3(0.0);
+#endif
+#if COLOR_VARIANT == 1
+  return styleLit(iter, fullAtEscape, D);
 #elif COLOR_VARIANT == 2
   return stripeColor(iter, fullAtEscape, S);
 #else

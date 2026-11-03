@@ -30,6 +30,8 @@ export const COLOR_LOOKS = [
   { id: "orbs", label: "Orbs", style: "point", palette: "Twilight" },
   { id: "rays", label: "Rays", style: "cross", palette: "Plasma" },
   { id: "relief", label: "Relief", style: "relief", palette: "Classic" },
+  { id: "halo", label: "Halo", style: "halo", palette: "Inferno" },
+  { id: "paper-cut", label: "Paper cut", style: "paper", palette: "Twilight" },
 ];
 export let colorSheetTab = "looks";
 
@@ -109,7 +111,7 @@ export function colorSheetNote(where) {
   }
   if (byType.length) {
     if (byDepth.length) note.append(" ");
-    note.append(...boldList(byType), ` aren't available for ${fractalLabel(currentName)}.`);
+    note.append(...boldList(byType), ` ${byType.length === 1 ? "isn't" : "aren't"} available for ${fractalLabel(currentName)}.`);
   }
   return note;
 }
@@ -370,22 +372,43 @@ export function renderColorSheet() {
     }
     sheet.replaceChildren(colorSheetEl("div", { class: "head" }, tabs, done), panels);
   }
-  sheet.scrollTop = scrollTop;
+  // Lay the segments and the Looks out first: the scroll position can only be restored into the final height.
   fitColorSegment();
+  sheet.scrollTop = scrollTop;
   if (focusKey) sheet.querySelector(`[data-key="${focusKey}"]`)?.focus({ preventScroll: true });
 }
 
-// The style segments: all seven in one row when every name fits its cell (a
-// word wider than its cell would overflow, which is what's measured), else
-// four and three. Measured on the open sheet, so it runs after it opens, after
-// a rebuild and when the sheet's width changes (a rotation, the text size).
+// The style segments: all in one row when every name fits its cell (a word
+// wider than its cell would overflow, which is what's measured), else split
+// over two rows, or three (nine styles are five and four, or three and three
+// and three), never leaving one alone on a row. And the Looks' grid: as many
+// columns as fit (a tile is at least LOOK_TILE_MIN rem wide), then the fewest
+// that keep that many rows, so the last row isn't left with one tile where it
+// can be avoided (nine Looks on a phone are five and four, not four, four and
+// one). Measured on the open sheet, so it runs after it opens, after a
+// rebuild and when the sheet's width changes (a rotation, the text size).
+export const LOOK_TILE_MIN = 3.6; // rem, the same as the grid's minmax in index.html
 export function fitColorSegment() {
+  if (!els.colorSheet.classList.contains("open")) return;
   const seg = els.colorSheet.querySelector(".seg");
-  if (!seg || !els.colorSheet.classList.contains("open")) return;
-  const count = seg.children.length;
-  const columns = (n) => { seg.style.gridTemplateColumns = `repeat(${n}, minmax(0, 1fr))`; };
-  columns(count);
-  if ([...seg.children].some((b) => b.scrollWidth > b.clientWidth + 1)) columns(Math.ceil(count / 2));
+  if (seg) {
+    const count = seg.children.length;
+    const columns = (n) => { seg.style.gridTemplateColumns = `repeat(${n}, minmax(0, 1fr))`; };
+    for (let rows = 1; rows <= count; rows++) {
+      const n = Math.ceil(count / rows);
+      if (rows > 1 && count - (rows - 1) * n < 2) continue; // never one alone on the last row
+      columns(n);
+      if (![...seg.children].some((b) => b.scrollWidth > b.clientWidth + 1)) break;
+    }
+  }
+  const looks = els.colorSheet.querySelector(".looks");
+  if (looks && looks.clientWidth > 0) {
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const gap = parseFloat(getComputedStyle(looks).columnGap) || 6;
+    const most = Math.max(1, Math.floor((looks.clientWidth + gap) / (LOOK_TILE_MIN * rem + gap)));
+    const rows = Math.ceil(looks.children.length / most);
+    looks.style.gridTemplateColumns = `repeat(${Math.ceil(looks.children.length / rows)}, minmax(0, 1fr))`;
+  }
 }
 // (fitColorSegment is observed from the start of init.)
 
