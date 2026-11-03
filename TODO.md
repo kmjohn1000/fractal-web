@@ -157,31 +157,6 @@ git-ignored file.
 Help people find beautiful places, and give them more ways to see them.
 Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-minibrot.
 
-- [ ] Restricted-corner chaos games, one picker entry that deals a different
-      rule each time (user idea 2026-11-02; not approved, not started). A
-      chaos game on a polygon's corners where the next corner is restricted
-      by the last pick(s) makes a different fractal per rule. Rules seen in a
-      throwaway render (not in the repo): square at ratio 1/2 that never
-      repeats a corner, never picks the next corner clockwise, never picks
-      the opposite corner (a diamond with notched holes), or bars a
-      neighbour after a repeat (a snowflake cross); also hexagon "not
-      opposite" and pentagon "no repeat" or "not neighbour". Idea: one entry
-      in the Chaos Games picker group; opening it (or a small "Another rule"
-      button) deals the next rule from a shuffled list that never repeats the
-      last one, the rule's name shows on screen, and the rule id rides in the
-      share link beside the seed (`sd`) so a link reopens the same shape.
-      Cost: the game has memory, so `pickTransform` (`ifs.js` ~95) needs the
-      previous map, and so do `ifsAddressPoints`, `buildLeaves` (the zoom
-      sampler walks the address tree and would carry the last map per node)
-      and the two replay pick sites in `fern.js` (~279, ~722); an
-      allowed-successor table per rule; address colour by corner. `corners:
-      true` only suits equal, unrotated maps (fine for polygons). Medium to
-      large; a Play-only first version without the adaptive zoom sampler is
-      smaller but breaks the "zoom into every shape" convention. Needs the
-      usual new-mode pieces (twist comes free via `fernView`, thumbnail, a
-      `docs/learn-more-links.md` row, `APP_SHELL`). Skip the rules that render
-      as faint dust (square "differs from the last two", "not opposite and no
-      repeat") and the ratio changes (0.55 overlaps, 0.45 leaves gaps).
 
 - Ideas from studying the open-source XaoS zoomer (2026-11-02; none approved,
   none started). XaoS is GPL v2 or later (checked: GitHub reports GPL-2.0) and
@@ -1231,6 +1206,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
+- Corner Rules, restricted-corner chaos games with zoom (1.57.0, 2026-11-03, user idea and approval 2026-11-02; branch merged in `4370fcc`, version and changelog in `5913170`): one "Corner Rules" entry, last in the Chaos Games picker group, deals a rule on each tap from a shuffled list (the first deal in a session is always the diamond, so the thumbnail is stable; it never repeats the rule on screen), with an "Another rule" button beside Play; seven rules (square: never the same corner twice, never the next clockwise, never the opposite, after a repeat no neighbour; hexagon never the opposite; pentagon never the same twice, never the next). New `corner-rules.js` holds the rules as small finite-state machines and a graph-directed zoom sampler (a node is a map plus a state), so zooming keeps the true shape at any depth, overlapping copies included; hooks in `ifs.js`, `fern.js`, `modes.js`, `share.js` (`ru` field), `chaos-run.js`, `hud.js`, `compass-ui.js`, `index.html`, `state.js`, `vector-interaction.js`, `fractal-defs.js`, `sw.js`, `app.js`; the rule name shows in a chip and on the info card; Play shows barred corners as faint rings. Verified: lint; the agent's `corner-rules.spec.mjs` on all four setups (it broke the sampler on purpose twice and the checks caught both); the sampler against the real game by total-variation distance and reachable support to 16,384x; and on main after the merge 1,085 specs passed on `webkit-iphone15` and `chromium-desktop` (corner-rules, app, vector, places-sheet, share-menu, info-card, dot-replay, dot-colors, shape-finish, solid-colors, sw, review-prompt). The `mode-corners` picker baseline was recorded on all four setups after looking at it. Not verified: phone performance and the Play run on a real device; the full suite has not run. The Wikipedia link row is in the local `docs/learn-more-links.md`.
 - First-visit work (1.38.0) checked on real devices (user, 2026-11-02: "completed, it works"). Earlier checks: the app side in the simulator 2026-10-20 (iPhone 17 Pro and iPad Pro 13", build 258: whole set, no flight, no card, iPad toolbar unchanged, no crash); the cold-open flight on a phone 2026-10-23. The welcome card's placement, Back on a share link and the link preview in Messages and Slack, which were listed open on 2026-10-23, are covered by this sign-off.
 - Longer chaos-game demo (user, 2026-11-02: "I think this is done"; shipped in 1.55.0, 2026-11-01): Play on the dot shapes is a run of about 15 s with 100 jumps shown one at a time and the path behind the dot, then it builds the picture and hands over to the normal render; panning, zooming or turning no longer ends a run; a points-and-coverage counter shows during a run and on the info card; each run has a six-digit seed on the info card and in links made after a run, which replay the same run (not under reduced motion). The spec's last step, polygon variants (hexagon, carpet), was not part of 1.55.0 (the pentagon came in 1.54.0); more polygon and restricted-corner shapes are under the Chaos Games items under Next.
 - Rating prompt in the iOS app (1.56.0, 2026-11-02, user approved the build and the trigger the same day): the app asks iOS to show its rating sheet once, after the app was opened on 3 different days and the person saves an image to Photos or completes a share (a dismissed share sheet doesn't count). Pieces: `RateAppPlugin` (Swift, in `FractalBridgeViewController.swift`; `AppStore.requestReview` on iOS 18+, `SKStoreReviewController` before), `Platform.requestReview()` and a boolean result from `Platform.share()` in `platform.js`, the decision logic and its few dates in localStorage in `review-prompt.js` (3 days, at least 120 days between asks, asks 2 s after the save, never on the web), the hook in `share-menu.js`, `review-prompt.spec.mjs` (decision, storage, web no-op, the app flow with stand-ins). Verified: lint, the quick tier (29 passed across the new spec, `share-menu` and `sw`), and an Xcode simulator build (compiles). NOT verified: the real sheet (iOS only shows it from the App Store build or a Debug build; TestFlight never shows it), so check it on a Release or Debug build on the phone; the whole suite has not run — `d320353`
