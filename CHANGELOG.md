@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.62.4 — 2026-11-03
+- Groundwork for deeper zoom: a deep view now keeps its center to far more digits than a double holds, and panning, pinching, the wheel, box zoom, the arrow keys and Back move and restore it exactly. Nothing visible changes yet; the picture is still drawn from the double.
+
 ## 1.62.3 — 2026-11-03
 - Added Jacob's Ladder, a deep turned view of the Apollonian gasket, to the Places sheet (131 places).
 

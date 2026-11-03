@@ -4,12 +4,13 @@
 // colormaps.js and, inside function bodies only, render-layout.js and share.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { COLORMAPS } from "./colormaps.js?v=1.62.3";
-import { FRACTAL_CONFIGS } from "./configs.js?v=1.62.3";
-import { COLOR_BANDS_RANGE, COLOR_STYLES, colorStyle } from "./color-styles.js?v=1.62.3";
-import { applyAutoIter, currentName, els, paneHistory, paneState, setIsInteracting } from "./state.js?v=1.62.3";
-import { labelColormapButton, renderAll, requestRender, updateLUT } from "./render-layout.js?v=1.62.3";
-import { buildShareHash } from "./share.js?v=1.62.3";
+import { COLORMAPS } from "./colormaps.js?v=1.62.4";
+import { FRACTAL_CONFIGS } from "./configs.js?v=1.62.4";
+import { COLOR_BANDS_RANGE, COLOR_STYLES, colorStyle } from "./color-styles.js?v=1.62.4";
+import { applyAutoIter, currentName, els, paneHistory, paneState, setIsInteracting } from "./state.js?v=1.62.4";
+import { labelColormapButton, renderAll, requestRender, updateLUT } from "./render-layout.js?v=1.62.4";
+import { buildShareHash } from "./share.js?v=1.62.4";
+import { setCenter } from "./view-math.js?v=1.62.4";
 
 // ---------------------------------------------------------------- default colormaps
 
@@ -160,7 +161,8 @@ export function popHistory(pane) {
   const snap = paneHistory(pane).pop();
   if (!snap) return;
   const st = paneState(pane);
-  st.cx = snap.cx; st.cy = snap.cy; st.scale = snap.scale; st.rotation = snap.rotation ?? 0; st.flipY = !!snap.flipY;
+  setCenter(st, snap.cx, snap.cy, snap.ex, snap.ey);
+  st.scale = snap.scale; st.rotation = snap.rotation ?? 0; st.flipY = !!snap.flipY;
   applyAutoIter();
   renderAll();
 }

@@ -6,15 +6,16 @@
 // reads, see rendererHost), so they can depend on this file and it on none of them; state-colors.js
 // holds the functions that do call them.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { SOLID_COLORS } from "./colormaps.js?v=1.62.3";
-import { FRACTAL_CONFIGS } from "./configs.js?v=1.62.3";
-import { LINE_CURVES, createCurveView } from "./dragon.js?v=1.62.3";
-import { createIfsView } from "./fern.js?v=1.62.3";
-import { createHexaflakeView } from "./hexaflake.js?v=1.62.3";
-import { createKochView } from "./koch.js?v=1.62.3";
-import { createPythagorasTreeView } from "./pythagoras.js?v=1.62.3";
-import { ignoresMaxIter, suggestedMaxIter, viewFromBounds } from "./fractal-defs.js?v=1.62.3";
-import { createFractalRenderer } from "./renderer.js?v=1.62.3";
+import { SOLID_COLORS } from "./colormaps.js?v=1.62.4";
+import { FRACTAL_CONFIGS } from "./configs.js?v=1.62.4";
+import { LINE_CURVES, createCurveView } from "./dragon.js?v=1.62.4";
+import { createIfsView } from "./fern.js?v=1.62.4";
+import { createHexaflakeView } from "./hexaflake.js?v=1.62.4";
+import { createKochView } from "./koch.js?v=1.62.4";
+import { createPythagorasTreeView } from "./pythagoras.js?v=1.62.4";
+import { ignoresMaxIter, suggestedMaxIter, viewFromBounds } from "./fractal-defs.js?v=1.62.4";
+import { createFractalRenderer } from "./renderer.js?v=1.62.4";
+import { exactValid } from "./view-math.js?v=1.62.4";
 
 // ---------------------------------------------------------------- app state
 
@@ -238,7 +239,7 @@ export function pushHistory(pane) {
   const st = paneState(pane);
   const hist = paneHistory(pane);
   if (!st) return;
-  hist.push({ cx: st.cx, cy: st.cy, scale: st.scale, rotation: st.rotation || 0, flipY: !!st.flipY });
+  hist.push({ cx: st.cx, cy: st.cy, ex: exactValid(st) ? st.ex : null, ey: exactValid(st) ? st.ey : null, scale: st.scale, rotation: st.rotation || 0, flipY: !!st.flipY });
   if (hist.length > 50) hist.shift();
 }
 

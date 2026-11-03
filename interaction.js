@@ -4,13 +4,13 @@
 // scripts (cancelTeleport, glideMainTo, ...) only inside function bodies.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { applyAutoIter, dualActive, els, isInteracting, juliaRenderer, juliaState, mainRenderer, mainState, pushHistory, setActivePane } from "./state.js?v=1.62.3";
-import { limitScale } from "./deepzoom.js?v=1.62.3";
-import { cancelSettle, markInteracting } from "./state-colors.js?v=1.62.3";
-import { renderAll, requestRender } from "./render-layout.js?v=1.62.3";
-import { centerForAnchor, normalizeAngle, screenToComplex } from "./view-math.js?v=1.62.3";
-import { cancelTeleport, glideMainTo } from "./teleport.js?v=1.62.3";
-import { colorSheetTapJustClosed } from "./color-sheet.js?v=1.62.3";
+import { applyAutoIter, dualActive, els, isInteracting, juliaRenderer, juliaState, mainRenderer, mainState, pushHistory, setActivePane } from "./state.js?v=1.62.4";
+import { limitScale } from "./deepzoom.js?v=1.62.4";
+import { cancelSettle, markInteracting } from "./state-colors.js?v=1.62.4";
+import { renderAll, requestRender } from "./render-layout.js?v=1.62.4";
+import { EXACT_FROM, centerForAnchor, exactValid, moveCenter, normalizeAngle, screenToComplex } from "./view-math.js?v=1.62.4";
+import { cancelTeleport, glideMainTo } from "./teleport.js?v=1.62.4";
+import { colorSheetTapJustClosed } from "./color-sheet.js?v=1.62.4";
 
 // ---------------------------------------------------------------- box zoom
 
@@ -102,7 +102,7 @@ export function attachFractalInteraction(canvas, getState, paneName, renderer) {
       // rotation.
       const local = toLocal(e.clientX, e.clientY);
       const world = screenToWorldHere(local.x, local.y);
-      panStart = { worldX: world.x, worldY: world.y };
+      panStart = { worldX: world.x, worldY: world.y, localX: local.x, localY: local.y };
       // Pinch/wheel/box-zoom all push a history checkpoint before they
       // change the view; a plain one-finger drag never did, so Back after
       // zoom -> drag skipped straight past the drag to the pre-zoom state,
@@ -139,9 +139,18 @@ export function attachFractalInteraction(canvas, getState, paneName, renderer) {
     const st = getState();
     if (pointers.size === 1 && panStart) {
       const local = toLocal(e.clientX, e.clientY);
-      const anchored = centerForAnchor(renderer, st, local.x, local.y, panStart.worldX, panStart.worldY);
-      st.cx = anchored.cx;
-      st.cy = anchored.cy;
+      if (st.scale < EXACT_FROM || exactValid(st)) {
+        // Deep: the grabbed point is an absolute world point that a double can't hold to a pixel, so move
+        // by the offset between where the finger was and where it is now (the same grab, in steps).
+        const prev = screenToWorldHere(panStart.localX, panStart.localY);
+        const now = screenToWorldHere(local.x, local.y);
+        moveCenter(st, prev.ox - now.ox, prev.oy - now.oy);
+        panStart.localX = local.x; panStart.localY = local.y;
+      } else {
+        const anchored = centerForAnchor(renderer, st, local.x, local.y, panStart.worldX, panStart.worldY);
+        st.cx = anchored.cx;
+        st.cy = anchored.cy;
+      }
       markInteracting();
       requestRender();
     } else if (pointers.size === 2 && pinchStartDist) {
@@ -159,8 +168,7 @@ export function attachFractalInteraction(canvas, getState, paneName, renderer) {
       const angle = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
       st.rotation = normalizeAngle(pinchStartRotation + (angle - pinchStartAngle));
       const after = screenToWorldHere(mid.x, mid.y);
-      st.cx += before.x - after.x;
-      st.cy += before.y - after.y;
+      moveCenter(st, before.ox - after.ox, before.oy - after.oy);
       markInteracting();
       requestRender();
     }
@@ -198,7 +206,7 @@ export function attachFractalInteraction(canvas, getState, paneName, renderer) {
       const [p] = pointers.values();
       const local = toLocal(p.x, p.y);
       const world = screenToWorldHere(local.x, local.y);
-      panStart = { worldX: world.x, worldY: world.y };
+      panStart = { worldX: world.x, worldY: world.y, localX: local.x, localY: local.y };
     } else {
       panStart = null;
     }
@@ -220,8 +228,7 @@ export function attachFractalInteraction(canvas, getState, paneName, renderer) {
     const before = screenToWorldHere(local.x, local.y);
     st.scale = limitScale(st, st.scale * Math.exp(e.deltaY * 0.0015));
     const after = screenToWorldHere(local.x, local.y);
-    st.cx += before.x - after.x;
-    st.cy += before.y - after.y;
+    moveCenter(st, before.ox - after.ox, before.oy - after.oy);
     markInteracting();
     requestRender();
   }, { passive: false });
@@ -253,10 +260,11 @@ export function commitBoxZoom(paneName, state, renderer, canvas) {
   const newScale = limitScale(state, Math.max(halfH, halfW / Math.max(aspect, 1e-6)));
 
   pushHistory(paneName);
-  const cx = centerPoint.x, cy = centerPoint.y;
   // rotation is intentionally left unchanged — box-zoom reframes, it
-  // doesn't reorient
-  state.cx = cx; state.cy = cy; state.scale = newScale;
+  // doesn't reorient. The scale goes first so a box zoom into a deep view moves an exact center; the
+  // offset is from the old center, whichever scale the state now has.
+  state.scale = newScale;
+  moveCenter(state, centerPoint.ox, centerPoint.oy);
   applyAutoIter();
   requestRender();
 }
