@@ -279,7 +279,7 @@ export const VECTOR_VIEWS = {
   koch: [kochView, els.kochCanvas], tree: [treeView, els.treeCanvas],
   dragon: [dragonView, els.dragonCanvas], fern: [fernView, els.fernCanvas],
   sierpinski: [fernView, els.fernCanvas], pentagon: [fernView, els.fernCanvas], levy: [fernView, els.fernCanvas],
-  vicsek: [fernView, els.fernCanvas], hexaflake: [hexaflakeView, els.hexaflakeCanvas],
+  vicsek: [fernView, els.fernCanvas], corners: [fernView, els.fernCanvas], hexaflake: [hexaflakeView, els.hexaflakeCanvas],
   hilbert: [dragonView, els.dragonCanvas], gosper: [dragonView, els.dragonCanvas],
   arrowhead: [dragonView, els.dragonCanvas],
 };

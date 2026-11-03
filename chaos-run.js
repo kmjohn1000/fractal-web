@@ -5,6 +5,7 @@
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
 import { fernView, mode } from "./state.js?v=1.56.0";
 import { formatPointCount } from "./hud-format.js?v=1.56.0";
+import { cornerDeal } from "./corner-rules.js?v=1.56.0";
 
 // ---------------------------------------------------------------- the seed
 
@@ -22,14 +23,16 @@ export function parseRunSeed(raw) {
 // The run last played: its seed, the shape and the view it was played on. The seed belongs to the
 // picture only while all of that is as it was (a pan or zoom, another shape: it is not that run's
 // picture any more), so the share link and the info card ask currentRunSeed.
-export const chaosRun = { seed: 0, system: "", view: null, announced: 0, lastPoints: 0 };
+export const chaosRun = { seed: 0, system: "", rule: 0, view: null, announced: 0, lastPoints: 0 };
+// Corner Rules: the run belongs to the rule it was played under too (0 for the shapes without rules)
+export const runRule = () => (fernView.system === "corners" ? cornerDeal.id : 0);
 export function rememberRun(seed) {
   const v = fernView.view;
-  Object.assign(chaosRun, { seed, system: fernView.system, view: { cx: v.cx, cy: v.cy, halfHeight: v.halfHeight, rotation: v.rotation || 0 }, announced: 0, lastPoints: 0 });
+  Object.assign(chaosRun, { seed, system: fernView.system, rule: runRule(), view: { cx: v.cx, cy: v.cy, halfHeight: v.halfHeight, rotation: v.rotation || 0 }, announced: 0, lastPoints: 0 });
 }
 export function currentRunSeed() {
   const v = fernView.view, w = chaosRun.view;
-  if (!chaosRun.seed || !w || mode !== chaosRun.system || fernView.system !== chaosRun.system) return 0;
+  if (!chaosRun.seed || !w || mode !== chaosRun.system || fernView.system !== chaosRun.system || runRule() !== chaosRun.rule) return 0;
   return v.cx === w.cx && v.cy === w.cy && v.halfHeight === w.halfHeight && (v.rotation || 0) === w.rotation ? chaosRun.seed : 0;
 }
 

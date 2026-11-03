@@ -20,7 +20,7 @@ export const PICKER_LAYOUT = [
   ] },
   { label: "Watch it grow", groups: [
     { label: "Build level by level", keys: ["koch", "tree", "hexaflake", "dragon", "hilbert", "gosper", "arrowhead"] },
-    { label: "Chaos Games", keys: ["fern", "pentagon", "sierpinski", "levy", "vicsek"] },
+    { label: "Chaos Games", keys: ["fern", "pentagon", "sierpinski", "levy", "vicsek", "corners"] },
   ] },
 ];
 
@@ -39,13 +39,14 @@ export const EXTRA_MODES = [
   { key: "pentagon", label: "Sierpinski pentagon", category: "pattern" },
   { key: "levy", label: "Lévy C curve", category: "pattern" },
   { key: "vicsek", label: "Vicsek fractal", category: "pattern" },
+  { key: "corners", label: "Corner Rules", category: "pattern" },
   { key: "hexaflake", label: "Hexaflake", category: "pattern" },
 ];
 
 // What each pattern shape's info card says about it (see setHud's `about`):
 // two short lines, then a quiet credit for the shapes with a confirmed maker
 // and year (left out for the rest: no other maker or year goes here). Keyed by
-// EXTRA_MODES key. The wording is the user's; tests/visual/info-card.spec.mjs
+// EXTRA_MODES key. (Not Corner Rules: its card is the rule dealt, corner-rules.js cornerAbout.) The wording is the user's; tests/visual/info-card.spec.mjs
 // holds its own copy, so a changed string fails there.
 export const SHAPE_INFO = {
   koch: {

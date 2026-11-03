@@ -11,7 +11,7 @@ import { activePane, currentName, dualActive, els, juliaState, mainState, mode, 
 import { markInteracting, popHistory } from "./state-colors.js?v=1.56.0";
 import { renderAll, requestRender } from "./render-layout.js?v=1.56.0";
 import { normalizeAngle, screenToComplex } from "./view-math.js?v=1.56.0";
-import { closeDual, enterDual, openPresetInDual, selectFractal, setMode, updateMenuActiveState } from "./modes.js?v=1.56.0";
+import { closeDual, dealCornerRules, enterDual, openPresetInDual, selectFractal, setMode, updateMenuActiveState } from "./modes.js?v=1.56.0";
 import { KEY_PAN_FRACTION, keyAction } from "./interaction.js?v=1.56.0";
 import { activeVectorTarget } from "./vector-interaction.js?v=1.56.0";
 import { cancelTeleport } from "./teleport.js?v=1.56.0";
@@ -271,12 +271,16 @@ PICKER_LAYOUT.forEach((section) => {
         addPickerTile(config.label, slugify(key), () => selectFractal(key), { name: key });
       } else {
         const mode = EXTRA_MODES.find((m) => m.key === key);
-        addPickerTile(mode.label, mode.key, () => setMode(mode.key), { mode: mode.key });
+        // Corner Rules deals a rule each time it is picked, also when it is already open
+        addPickerTile(mode.label, mode.key, mode.key === "corners" ? dealCornerRules : () => setMode(mode.key), { mode: mode.key });
       }
     });
   });
 });
 updateMenuActiveState();
+
+// Corner Rules' "Another rule" button (beside Play): the same deal as picking the entry again.
+els.cornerRuleBtn.addEventListener("click", dealCornerRules);
 
 // Two hamburger buttons exist (one in #fractalControls, one in #kochControls
 // — see index.html) so the menu stays reachable regardless of mode, since

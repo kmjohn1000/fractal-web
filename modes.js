@@ -14,6 +14,7 @@ import { dragonNav, fernNav, fitVectorView, fittedVectorModes } from "./vector-i
 import { cancelTeleport } from "./teleport.js?v=1.56.0";
 import { stopDepthPlay } from "./pattern-controls.js?v=1.56.0";
 import { updateColorSwatches } from "./colormap-picker.js?v=1.56.0";
+import { applyCornerRule, dealCornerRule } from "./corner-rules.js?v=1.56.0";
 
 // ---------------------------------------------------------------- fractal-type / mode switching
 
@@ -199,6 +200,8 @@ export function setMode(next) {
   els.hexaflakeControls.classList.toggle("hidden", mode !== "hexaflake");
   els.dragonControls.classList.toggle("hidden", !isCurveMode(mode));
   els.fernControls.classList.toggle("hidden", !isIfsMode(mode));
+  els.cornerRuleBtn.classList.toggle("hidden", mode !== "corners"); // Corner Rules' own control and the name of its rule
+  els.ruleChip.classList.toggle("hidden", mode !== "corners");
   els.mainCanvas.classList.toggle("hidden", mode !== "fractal");
   els.juliaCanvas.classList.toggle("hidden", mode !== "fractal" || !dualActive);
   els.kochCanvas.classList.toggle("hidden", mode !== "koch");
@@ -229,6 +232,27 @@ export function setMode(next) {
   // visible and has a real size (later visits keep wherever you left it).
   if (mode !== "fractal" && !fittedVectorModes.has(mode)) fitVectorView(mode);
   updateMenuActiveState();
+  requestRender();
+}
+
+// Corner Rules (corner-rules.js): puts rule `id` on screen. The view's picture starts over on the rule's
+// data, and a run in progress ends (refreshSystem); the framing is left to the caller. Used by a share link,
+// which brings its own view, and by dealCornerRules.
+export function setCornerRule(id) {
+  const rule = applyCornerRule(id);
+  if (fernView.system === "corners") {
+    fernView.refreshSystem();
+    fernNav.clearHistory(); // Back history belongs to the previous rule's picture
+  }
+  return rule;
+}
+
+// The picker's Corner Rules entry and the "Another rule" button: deals the next rule (never the one on
+// screen), shows it framed whole, opening the mode if it was another one.
+export function dealCornerRules() {
+  setCornerRule(dealCornerRule().id);
+  setMode("corners");
+  fitVectorView("corners");
   requestRender();
 }
 

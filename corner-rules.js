@@ -69,9 +69,10 @@ export function parseCornerRule(raw) {
 
 // ---------------------------------------------------------------- the dealer
 
-// id: the rule on screen (the last dealt, or one a link or applyCornerRule set); bag: the rules still to
-// come in this round; dealt: how many deals so far.
-export const cornerDeal = { id: DEFAULT_CORNER_RULE, bag: [], dealt: 0 };
+// id: the rule on screen (the last dealt, or one a link or applyCornerRule set; DEFAULT_CORNER_RULE
+// before any, when nothing has been shown yet: seen is false); bag: the rules still to come in this round;
+// dealt: how many deals so far.
+export const cornerDeal = { id: DEFAULT_CORNER_RULE, seen: false, bag: [], dealt: 0 };
 
 export function shuffledIds(ids, rnd) {
   const a = ids.slice();
@@ -89,11 +90,13 @@ export function dealCornerRule(rnd = Math.random) {
   const d = cornerDeal, all = CORNER_RULES.map((r) => r.id);
   if (d.dealt === 0) d.bag = [DEFAULT_CORNER_RULE, ...shuffledIds(all.filter((id) => id !== DEFAULT_CORNER_RULE), rnd)];
   else if (d.bag.length === 0) d.bag = shuffledIds(all, rnd);
-  let i = d.bag.findIndex((id) => id !== d.id);
-  if (i < 0) { d.bag = shuffledIds(all, rnd); i = d.bag.findIndex((id) => id !== d.id); }
+  const onScreen = d.seen ? d.id : 0; // (nothing yet before the first rule is shown: ids start at 1)
+  let i = d.bag.findIndex((id) => id !== onScreen);
+  if (i < 0) { d.bag = shuffledIds(all, rnd); i = d.bag.findIndex((id) => id !== onScreen); }
   const id = d.bag.splice(i, 1)[0];
   d.dealt++;
   d.id = id;
+  d.seen = true;
   return cornerRuleById(id);
 }
 
@@ -286,6 +289,7 @@ export function applyCornerRule(id) {
   const rule = cornerRuleById(id) || cornerRuleById(DEFAULT_CORNER_RULE);
   const sys = IFS_SYSTEMS.corners;
   cornerDeal.id = rule.id;
+  cornerDeal.seen = true;
   sys.transforms = cornerTransforms(rule.n);
   sys.hueOffsets = cornerHueOffsets(rule.n);
   sys.ruleId = rule.id;
@@ -299,6 +303,7 @@ export const cornerAbout = () => ({ lines: [currentCornerRule().title, currentCo
 
 IFS_SYSTEMS.corners.build = () => cornerData(currentCornerRule());
 applyCornerRule(DEFAULT_CORNER_RULE);
+cornerDeal.seen = false; // (the default's data is only there so the mode has something to open on)
 
 // ---------------------------------------------------------------- the zoom sampler
 

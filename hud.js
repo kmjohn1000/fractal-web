@@ -19,6 +19,7 @@ import { COLOR_LOOKS, bandsText, lookPalette, shiftText } from "./color-sheet.js
 import { apolloCurvatureText, capitalize, formatHudCoords, rotationHudText, scaleBar, unitsPerCssPx, zoomPhrase } from "./hud-format.js?v=1.56.0";
 import { normalizeAngle } from "./view-math.js?v=1.56.0";
 import { runHudParts, updateRunChip } from "./chaos-run.js?v=1.56.0";
+import { cornerAbout, currentCornerRule } from "./corner-rules.js?v=1.56.0";
 
 // Info overlay (see #hud in index.html): the title (a place name, or the
 // fractal or pattern), a plain-language line (how deep, rotation), a scale
@@ -188,7 +189,7 @@ export function modeLabel(key) {
 
 // Scale bar for a pattern's view (Canvas2D views keep halfHeight).
 // and the shape's description from SHAPE_INFO (key: its EXTRA_MODES key).
-export const patternBar = (view, canvas, key) => ({ unitsPerPx: unitsPerCssPx(view.halfHeight, canvas), about: SHAPE_INFO[key] });
+export const patternBar = (view, canvas, key) => ({ unitsPerPx: unitsPerCssPx(view.halfHeight, canvas), about: key === "corners" ? cornerAbout() : SHAPE_INFO[key] });
 
 // "Depth 8" plus, once zooming in has added levels beyond the slider's, the
 // number added: "Depth 8 (+3 from zoom)".
@@ -221,4 +222,12 @@ export function updateFernHud() {
   setHud(modeLabel(fernView.system), [...runHudParts(`${fernView.accepted.toLocaleString()} of ${fernState.count.toLocaleString()} points`), rotationHudText(fernView.view.rotation)],
     patternBar(fernView.view, els.fernCanvas, fernView.system));
   updateRunChip();
+  updateRuleChip();
+}
+
+// Corner Rules: the rule on screen is named in a chip over the canvas (the info card says it too, but is
+// off until asked for). setMode shows the chip in that mode only; this keeps its text current.
+export function updateRuleChip() {
+  const text = currentCornerRule().title;
+  if (els.ruleChip.textContent !== text) els.ruleChip.textContent = text;
 }
