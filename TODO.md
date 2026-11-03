@@ -1074,6 +1074,13 @@ distance estimation → zoom-to-minibrot / AI discovery.
         Crystal, Tiles, the second Cross, the Sierpinski 45-degree curve and
         some bushes. Skipped because the engine can't draw them cleanly:
         golden dragon, Gosper island, Z-order, H-tree, ADH, Dekking, Hilbert II.
+      - Plants: the user liked `plant_c` best (2026-11-02, from the plant
+        sheet): axiom `F`, `F -> FF-[-F+F+F]+[+F-F-F]`, 22.5 degrees,
+        starting upright, depth 4 in the render (a feathery, windswept bush;
+        no source found for the rule, so confirm it against a published
+        L-system before using it). If bracketed plants are ever added, start
+        from this one; it needs the polylines view with per-branch colour
+        mentioned above, which the Penrose mode's turtle path may provide.
 - [ ] "Powers & Dominions" type (Jim Muth's Fractint MandAutoCritInZ):
       z <- a·z^b + d·z^f + c, defaults a=1, b=2.005, d=2, f=1 (b=2 is
       exactly Mandelbrot via w=z+1); z0 = critical point
