@@ -1064,6 +1064,55 @@ distance estimation → zoom-to-minibrot / AI discovery.
       at all for centers near 1-2, up to 1.7x the drag for centers near
       0.1-0.3) and doesn't move at 7.8e-18 (1.6e17x), while zoom itself
       keeps working; there is no zoom cap
+- [ ] APPROVED 2026-11-03 (user chose the expensive fix, Mandelbrot family
+      first): exact view center for the perturbation fractals (Mandelbrot,
+      Julia, Tricorn, Ship, Celtic), down to a new floor near scale 1e-30
+      (where float32 deltas end). Not started. Plan, in steps, each its own
+      commit:
+      1. Exact center in the view: `state.ex/ey` (signed BigInt, units of
+         2^-192) beside the doubles `cx/cy`, which stay the rounded mirror so
+         the HUD, history, places and teleport keep working. Set only once
+         the view is deeper than about 1e-9; null before. The renderer uses
+         it only if it rounds to `cx/cy` (a stale one is dropped, so a missed
+         site can't draw a wrong view). One helper in `view-math.js`
+         (`moveCenter(state, dx, dy)`) adds a world offset to both.
+      2. Gestures: `screenToComplex` also returns the offset from the center
+         (`ox`, `oy`); pan, pinch/wheel anchoring (`before - after`), keys
+         and box zoom move the center by offset differences through
+         `moveCenter`, since `before.x - after.x` of two absolute doubles is
+         exactly what stalls. The snapshot preview in `renderer.js`
+         (`state.cx - snapView.cx`) needs the same.
+      3. Links, old and new: `x`, `y`, `s`, `r` stay the doubles and `v=1`
+         stays, so an older build opens a new link as the same view rounded
+         to a double (what it draws today); new fields `ex`, `ey` (signed
+         hex, like Penrose's) are written only when the exact center differs
+         from its double, and read only when present and when they round to
+         `x`, `y`. An old link has no `ex`, so its double is taken as the
+         exact center, which is the view it always showed. No `pv`-style
+         version flag is needed because nothing about the meaning of x, y, s
+         changes. Places may carry longer `re`/`im` strings the same way.
+      4. Reference orbit in BigInt: `computeReferenceOrbit` and a new
+         `chooseReference` take the exact center. The center's orbit if it
+         never escapes; otherwise an 8x8 grid of BigInt orbits (measured
+         2026-11-03 on this Mac: 64 orbits of 2000 steps take 17 ms at 128
+         bits, 21 ms at 192, 24 ms at 256, so the scan costs tens of ms; a
+         phone is slower and is not measured), longest survivor wins. The
+         old 32x32 float64 scan can't be reused deep (its doubles have no
+         pixel-scale offsets left). Julia mode keeps the double `juliaC`.
+      5. Floor: a clamp for everything else (Newton, Phoenix, Nova,
+         Apollonian, Carpet, Gasket, the Julia pane's c), so none stalls:
+         the "bottom of the map" cue in the Zoom floor item below.
+      6. Tests: pan 1 px at 1e-20 moves the exact center; zoom about a
+         point keeps it fixed; a link written deep and read back is
+         identical; an old-style link still opens; pixel output against the
+         float64 oracle where it overlaps (`scripts/oracle-compare.mjs`),
+         `default-identity.mjs` zero differing pixels. Tier 3 (it changes
+         pixels), a version bump per commit that changes the app.
+      Unknowns: whether float32 deltas hold to 1e-30 in this shader
+      (inference only so far), the scan cost on a phone, and the Apollonian,
+      Carpet and Gasket types, which need the same exact center fed through
+      their own frames (a second plan; Apollonian's `apolloFrame` composes
+      inversions, whose error growth per step has to be measured first).
 - [ ] Zoom floor (user idea 2026-11-03; not approved). Past about 1e13 to
       1e15, depending on how large the center's coordinates are, the float64
       view center can't absorb a one-pixel pan, so panning stalls and
