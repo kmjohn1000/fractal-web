@@ -5,7 +5,7 @@
 import { test, expect } from "@playwright/test";
 
 /* global mainState, setCenter, moveCenter, exactCenter, exactValid, toExact, fromExact, screenToComplex, mainRenderer,
-   pushHistory, popHistory, EXACT_FROM, EXACT_DROP, els, buildShareHash, parseShareHash, applyShareLink */
+   pushHistory, popHistory, selectFractal, openPresetInDual, closeDual, juliaState, EXACT_FROM, EXACT_DROP, els, buildShareHash, parseShareHash, applyShareLink */
 
 let pageErrors = [];
 
@@ -182,6 +182,31 @@ test("Back restores the exact center, not just the double", async ({ page }) => 
   });
   expect(r.same).toBe(true);
   expect(r.valid).toBe(true);
+});
+
+// Found by the step 6 check: the dual button on a deep Julia preset copied only the doubles of the view into the Julia
+// pane (and closing it copied them back), dropping the exact pair and moving the view by up to half a double step.
+test("the dual button on a deep Julia view carries the exact center in and back out", async ({ page }) => {
+  const r = await page.evaluate(() => {
+    selectFractal("Julia:Rabbit", { fresh: true });
+    setCenter(mainState, 0.1, 0.2);
+    mainState.scale = 1e-20;
+    moveCenter(mainState, 3.3e-23, -1.7e-23);
+    const want = exactCenter(mainState);
+    openPresetInDual("Julia:Rabbit", mainState);
+    const inPane = exactCenter(juliaState);
+    const paneValid = exactValid(juliaState);
+    closeDual();
+    const back = exactCenter(mainState);
+    return {
+      paneSame: inPane.ex === want.ex && inPane.ey === want.ey, paneValid,
+      backSame: back.ex === want.ex && back.ey === want.ey, backValid: exactValid(mainState),
+    };
+  });
+  expect(r.paneValid).toBe(true);
+  expect(r.paneSame).toBe(true);
+  expect(r.backValid).toBe(true);
+  expect(r.backSame).toBe(true);
 });
 
 // ---------------------------------------------------------------- share links

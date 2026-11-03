@@ -3,18 +3,19 @@
 // interaction.js and the later scripts only inside function bodies.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { FRACTAL_CONFIGS } from "./configs.js?v=1.62.7";
-import { LINE_CURVES } from "./dragon.js?v=1.62.7";
-import { ignoresMaxIter, isCurveMode, isIfsMode, suggestedMaxIter, viewFromBounds } from "./fractal-defs.js?v=1.62.7";
-import { TELEPORT_DESTINATIONS } from "./places.js?v=1.62.7";
-import { applyAutoIter, currentName, dragonState, dragonView, dualActive, els, fernView, freshState, juliaHistory, juliaState, kochView, mainCanvasAspect, mainHistory, mainState, mode, setActivePane, setCurrentName, setDualActive, setJuliaHistory, setJuliaState, setMainHistory, setMainState, setModeKey } from "./state.js?v=1.62.7";
-import { applyDefaultColormap } from "./state-colors.js?v=1.62.7";
-import { crosshairFlash, labelColormapButton, layoutCanvasArea, requestRender } from "./render-layout.js?v=1.62.7";
-import { dragonNav, fernNav, fitVectorView, fittedVectorModes } from "./vector-interaction.js?v=1.62.7";
-import { cancelTeleport } from "./teleport.js?v=1.62.7";
-import { stopDepthPlay } from "./pattern-controls.js?v=1.62.7";
-import { updateColorSwatches } from "./colormap-picker.js?v=1.62.7";
-import { applyCornerRule, dealCornerRule } from "./corner-rules.js?v=1.62.7";
+import { FRACTAL_CONFIGS } from "./configs.js?v=1.62.8";
+import { LINE_CURVES } from "./dragon.js?v=1.62.8";
+import { ignoresMaxIter, isCurveMode, isIfsMode, suggestedMaxIter, viewFromBounds } from "./fractal-defs.js?v=1.62.8";
+import { TELEPORT_DESTINATIONS } from "./places.js?v=1.62.8";
+import { applyAutoIter, currentName, dragonState, dragonView, dualActive, els, fernView, freshState, juliaHistory, juliaState, kochView, mainCanvasAspect, mainHistory, mainState, mode, setActivePane, setCurrentName, setDualActive, setJuliaHistory, setJuliaState, setMainHistory, setMainState, setModeKey } from "./state.js?v=1.62.8";
+import { setCenter } from "./view-math.js?v=1.62.8";
+import { applyDefaultColormap } from "./state-colors.js?v=1.62.8";
+import { crosshairFlash, labelColormapButton, layoutCanvasArea, requestRender } from "./render-layout.js?v=1.62.8";
+import { dragonNav, fernNav, fitVectorView, fittedVectorModes } from "./vector-interaction.js?v=1.62.8";
+import { cancelTeleport } from "./teleport.js?v=1.62.8";
+import { stopDepthPlay } from "./pattern-controls.js?v=1.62.8";
+import { updateColorSwatches } from "./colormap-picker.js?v=1.62.8";
+import { applyCornerRule, dealCornerRule } from "./corner-rules.js?v=1.62.8";
 
 // ---------------------------------------------------------------- fractal-type / mode switching
 
@@ -133,7 +134,9 @@ export function openPresetInDual(name, juliaView = null) {
   const aspect = jc.clientWidth > 0 && jc.clientHeight > 0 ? jc.clientWidth / jc.clientHeight : 1;
   const opening = viewFromBounds(preset.view, aspect);
   const jv = juliaView || { ...opening, rotation: 0, baseScale: opening.scale };
-  Object.assign(juliaState, { cx: jv.cx, cy: jv.cy, scale: jv.scale, rotation: jv.rotation, baseScale: jv.baseScale, juliaC: [cx, cy] });
+  Object.assign(juliaState, { scale: jv.scale, rotation: jv.rotation, baseScale: jv.baseScale, juliaC: [cx, cy] });
+  // Through setCenter so a deep view's exact center (ex, ey) comes along, not just its double.
+  setCenter(juliaState, jv.cx, jv.cy, jv.ex, jv.ey);
   if (juliaView && juliaView.iterAutoLocked) Object.assign(juliaState, { maxIter: juliaView.maxIter, iterAutoLocked: true });
   dualPreset = { name, c: [cx, cy], fromButton: !!juliaView };
   applyAutoIter();
@@ -155,9 +158,10 @@ export function closeDual() {
   exitDual();
   selectFractal(name, { fresh: true });
   Object.assign(mainState, {
-    cx: j.cx, cy: j.cy, scale: j.scale, rotation: j.rotation, baseScale: j.baseScale,
+    scale: j.scale, rotation: j.rotation, baseScale: j.baseScale,
     maxIter: j.maxIter, iterAutoLocked: j.iterAutoLocked,
   });
+  setCenter(mainState, j.cx, j.cy, j.ex, j.ey); // with the exact center, if the pane had one
   setMainHistory(history);
   dualPreset = null;
   applyAutoIter();

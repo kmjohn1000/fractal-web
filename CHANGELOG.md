@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.62.8 — 2026-11-03
+- Pressing the dual button on a deep Julia view, and closing it again, no longer nudges the view: the exact center now travels into the Julia pane and back.
+
 ## 1.62.7 — 2026-11-03
 - A zoom floor, so panning never stalls and zooming under your finger never drifts: the Mandelbrot family stops at a quintillion-quintillion times (1e30), and Apollonian, Newton and Phoenix stop where one pixel is only a couple of steps of the center's last digit. The info card says "As deep as this fractal goes" there. Every place is above its floor; Carpet and Gasket keep zooming as before. Links deeper than a floor open at the floor.
 

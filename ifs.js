@@ -3,7 +3,7 @@
 // fern.js, which keeps the replay and createIfsView. PENTAGON_RATIO is here, so scripts/make-short.mjs
 // patches it in this file; the REPLAY_* constants it also patches stay in fern.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { SOLID_COLORS, hueTurned, isGreyColor } from "./colormaps.js?v=1.62.7";
+import { SOLID_COLORS, hueTurned, isGreyColor } from "./colormaps.js?v=1.62.8";
 
 // Chaos-game IFS fractals: a few affine transforms, picked at random each
 // step (weighted by p) and applied to build a point cloud -- a
