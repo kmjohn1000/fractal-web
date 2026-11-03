@@ -661,108 +661,19 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       plain link that would navigate the WebView away from the app. It's a
       user-tapped outbound link, so the "no external services" privacy
       answer should still hold, but re-check privacy.html wording
-- [ ] More Looks (user, 2026-10-22; not approved to build). The list rework
-      is done behind the styles flag (`29febe2`, `799750c`): Classic and
-      Inferno left the Looks (they are Smooth plus a palette; the palettes are
-      in the Custom tab), a Default tile (Smooth on Inferno) leads, and the
-      Looks are a grid with room to grow: Default, Edge glow, Stripes, Bands,
-      Orbs, Rays. What's left is new recipes that are really different.
-      Candidate styles, each a compiled variant of the escape-time shader,
-      judged on contact-sheet renders in
-      `docs/coloring-styles/prototype/` (local) before any build:
-      - Relief: DONE, 1.41.0 (`4b5fb4f`), see Done
-      - Ink / Blueprint: only the thin boundary lines, in one color on a flat
-        background, from the same distance estimate; good for wallpapers and
-        printing
-      - Glow plus Stripes hybrid: the glow modulated by the stripe texture;
-        costs both
-      - Angle / Hue: color by the argument of the final orbit point; almost
-        free
-      - Binary decomposition: the retro checkerboard following the escape
-        bands (sign of the imaginary part at escape); almost free
-      - Triangle-inequality average: soft marble shading, a gentler cousin of
-        Stripes; per-iteration cost like Stripes
-      - Interior coloring by cycle length (each bulb its own hue): needs
-        cycle detection, heavy, shallow and moderate zooms only; leave out of
-        a first pass
-      - Colorway recipes, no shader work: Edge glow on Hot, Ice and Neon;
-        Stripes soft (low bands) and bold (high bands)
-      All of the first six use the final orbit point and the distance value,
-      so they should hold up at depth (unlike the traps); Phoenix has no
-      distance value and stays at Smooth and Bands
-- [ ] New Looks from a 2026-11-02 brainstorm (read-only agent) plus CPU
-      mock-ups drawn the same day (`scratchpad` images, not in the repo; the
-      mock-ups are my approximations of the descriptions, not the shader);
-      Halo and Paper cut are DONE in 1.60.0 (see Done); the rest below is
-      still not approved and not started. The user's reaction to the
-      mock-ups: Halo "is cool", Topo and Paper cut are interesting with Paper
-      cut the more distinct of the two, Chrome needs work. In that order:
-      - Halo (the black interior glows): for pixels that never escape, shade
-        by log|D| (D = dz/dc at the last iteration, which for an attracting
-        cycle stays finite and grows toward the component boundary), over a
-        palette; the escaped side keeps its normal look. Needs the cardioid and
-        bulb shortcut off for this style so interior pixels run to maxIter
-        (the agent estimates +15 to 25% frame cost at full view, UNVERIFIED),
-        and the deep path must keep D at the last iteration (clamp at 1e30).
-        In the mock-up the mini-Mandelbrot glowed like a lit bulb and the main
-        cardioid glowed at its rim. Medium. The agent's theory for why D is
-        well behaved inside is UNVERIFIED; check it against the float64 oracle.
-      - Paper cut: flat color per iteration band (`floor(n * 0.5)` in the
-        mock-up) with a soft drop shadow to the lower right of each raised
-        edge (a pixel is shadowed if the pixel a few steps up and left sits in a
-        higher layer; no extra pass in a shader is the agent's claim, UNVERIFIED);
-        panning slides the shadows. Medium.
-      - Contours, Topo: lines at integer smooth iteration counts, every 5th
-        thicker, anti-aliased by dividing the distance to the line by the
-        gradient of n in pixels (|grad n| = |dz| / (|z| ln|z| ln 2) per world
-        unit, my derivation, check it against the oracle), over soft shading;
-        an Engraving variant (dark lines on cream) needs one new palette.
-        Zooming makes the lines stream. Small to medium.
-      - Gloss (Chrome, Pearl, Glass): a pseudo-normal from Relief's gradient
-        and the distance value, lit by a matcap or environment. The Chrome
-        mock-up needs work (a harsh horizon line from the fake sky and ground on
-        the whole-set view; try a smoother studio-style environment, a darker
-        base and a softer specular); Pearl (thin-film colors) came out pretty
-        but plastic. Small to medium.
-      - Cathedral (stained glass) did NOT work in the mock-up (garish radial
-        spokes: cells cut by the argument of the escape point alternate too
-        fast); the idea is unproven, needs a different cell definition.
-      - Others the agent listed, not drawn or not yet judged: Pixel (8-bit,
-        worked on a zoomed view), Clay (subtle, low contrast), Halftone,
-        Compass (hue by the gradient's direction), Ripples, Neon, Rings and
-        Petals traps, Gems, Stripes inside the set, Watercolor, Haze, and
-        Looks for the pattern modes (neon, chalkboard, stained glass, glow
-        dots, embers for the chaos-game dots, which would also make the
-        Palette tab meaningful there). Plumbing for any new style: its math
-        mirrored in `scripts/oracle/oracle.py`, a pass of
-        `scripts/default-identity.mjs`, `warmColorVariants` when it shares a
-        compiled variant, a Looks tile per style plus palette, and a plan for
-        the Color sheet's room (about 12 tiles is the ceiling the agent
-        suggests; two pages or a "More Looks" sheet, a "Surprise" tile, and
-        hiding tiles a fractal can't draw).
-- [ ] Orbit traps at depth (2026-10-22). Point and Cross flatten past about
-      1,000x deep because every pixel of a deep view traces nearly the same
-      orbit, so the minimum distance to a fixed trap is the same number
-      (contrast across the view: 48% of the palette at 1e-2, 11% at 1e-3,
-      2% at 1e-4, 0% at 1e-8). Options, in order:
-      1. DONE behind the styles flag (`99712fc`): auto-range. A 48-row probe
-         of the same view through the same program (a trap-probe mode of
-         `trapColor`) is read back and its 2nd-98th percentile of the escaped
-         pixels' trap distance becomes the colormap range; the colormap moves
-         from the fixed range onto it as it narrows (`trapRangeFor`), so
-         shallow views are unchanged. It held up in the float64 oracle
-         comparison down to 1.5e-12, and float32 resolution wasn't the limit
-         (the views are mostly interior past about 1e-12 whatever the style),
-         so the depth limit is gone. Phone check passed 2026-10-24 (user, on
-         an iPhone 15: Orbs and Rays at Sunburst Fan, 7e-12, both look
-         great); options 2 and 3 are only worth doing if a later check
-         shows a need, so this item can close
-      2. Not needed so far: compute the trap distance as a difference from the reference orbit
-         (the perturbation trick), keeping tiny differences exact in float32,
-         together with auto-range; might carry traps to about 1e-12
-      3. Trap relative to the view: put the trap on the reference orbit at an
-         iteration where the pixels have spread out, so it follows the zoom;
-         a different look from the fixed trap, an experiment
+- [ ] More Looks (user, 2026-10-22; none of the open ones is approved to
+      build). Nine Looks are shipped: Default, Edge glow, Stripes, Bands,
+      Orbs, Rays (1.40.0), Relief (1.41.0), Halo and Paper cut (1.60.0); the
+      orbit traps work at any depth (auto-range, `99712fc`). Open candidates:
+      Ink / Blueprint, Glow plus Stripes, Angle / Hue, Binary decomposition,
+      Triangle-inequality average, interior by cycle length, colorway recipes
+      (Edge glow on Hot, Ice and Neon), Contours / Topo (and Engraving),
+      Gloss (Chrome needs work, Pearl), Pixel, Clay, and the less developed
+      ones (Halftone, Compass, Ripples, Neon, Gems, Watercolor, Haze, Looks
+      for the pattern modes). Cathedral did not work in its mock-up. The
+      research, every contact sheet, the verdicts, costs, the float32 and
+      depth findings and the checklist for adding a style are in the local,
+      git-ignored `docs/coloring-styles/README.md`; start there.
 - [ ] Palette follow-ups after the curated defaults and the upright Burning
       Ship (1.44.0, see Done): no Surprise-me place names its own palette yet
       (the `colormap` field and its tests are in; pick by looking at each
