@@ -50,7 +50,7 @@ export function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive 
   let lastWheelPush = 0;
   function pushViewHistory() {
     const v = vectorView.view;
-    history.push({ cx: v.cx, cy: v.cy, halfHeight: v.halfHeight, rotation: v.rotation || 0 });
+    history.push({ cx: v.cx, cy: v.cy, halfHeight: v.halfHeight, rotation: v.rotation || 0, ...(v.ox === undefined ? {} : { ox: v.ox, oy: v.oy }) });
     if (history.length > 50) history.shift();
   }
   function back() {
@@ -118,9 +118,15 @@ export function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive 
     return { x: (clientX - rect.left) * vectorView.dpr, y: (clientY - rect.top) * vectorView.dpr };
   }
 
+  // A view with an exact origin (the Penrose tiling) folds its offset into it before a gesture holds a
+  // world point; one with a zoom limit keeps the zoom inside it, before the anchor is recomputed.
+  const rebase = () => vectorView.rebase?.();
+  const limitZoom = (halfHeight) => (vectorView.clampHalfHeight ? vectorView.clampHalfHeight(halfHeight) : halfHeight);
+
   canvas.addEventListener("pointerdown", (e) => {
     canvas.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    rebase();
     touchDotReplay(); // a touch on the picture ends a default chaos-game replay (the app's own run follows the view)
     if (isBoxZoomActive() && pointers.size === 1) {
       // Same viewport-coordinate bookkeeping as the WebGL panes' box zoom
@@ -177,7 +183,7 @@ export function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive 
       const midX = ((pts[0].x + pts[1].x) / 2 - rect.left) * vectorView.dpr;
       const midY = ((pts[0].y + pts[1].y) / 2 - rect.top) * vectorView.dpr;
       const before = vectorView.screenToWorld(midX, midY);
-      vectorView.view.halfHeight = pinchStartHalfHeight * (pinchStartDist / Math.max(dist, 1));
+      vectorView.view.halfHeight = limitZoom(pinchStartHalfHeight * (pinchStartDist / Math.max(dist, 1)));
       // Two-finger twist, same convention as attachFractalInteraction:
       // set rotation before recomputing `after` so the before/after anchor
       // trick keeps the midpoint stable under combined pinch+rotate.
@@ -225,11 +231,12 @@ export function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive 
     if (isBoxZoomActive()) return;
     touchDotReplay();
     checkpoint();
+    rebase();
     const rect = canvas.getBoundingClientRect();
     const sx = (e.clientX - rect.left) * vectorView.dpr;
     const sy = (e.clientY - rect.top) * vectorView.dpr;
     const before = vectorView.screenToWorld(sx, sy);
-    vectorView.view.halfHeight *= Math.exp(e.deltaY * 0.0015);
+    vectorView.view.halfHeight = limitZoom(vectorView.view.halfHeight * Math.exp(e.deltaY * 0.0015));
     const after = vectorView.screenToWorld(sx, sy);
     vectorView.view.cx += before[0] - after[0];
     vectorView.view.cy += before[1] - after[1];
@@ -292,7 +299,9 @@ export function vectorFitView(modeKey) {
 }
 export function fitVectorView(modeKey) {
   const v = vectorFitView(modeKey);
-  Object.assign(VECTOR_VIEWS[modeKey][0].view, { cx: v.cx, cy: v.cy, halfHeight: v.scale, rotation: 0 });
+  const view = VECTOR_VIEWS[modeKey][0].view;
+  Object.assign(view, { cx: v.cx, cy: v.cy, halfHeight: v.scale, rotation: 0 });
+  if (view.ox !== undefined) { view.ox = 0n; view.oy = 0n; } // the exact origin (Penrose) starts over too
   fittedVectorModes.add(modeKey);
 }
 // True while a pattern view is still at the framing Reset would give it: not
@@ -301,7 +310,7 @@ export function vectorViewIsFitted(modeKey) {
   const fit = vectorFitView(modeKey);
   const v = VECTOR_VIEWS[modeKey][0].view;
   const same = (a, b) => Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(b));
-  return same(v.cx, fit.cx) && same(v.cy, fit.cy) && same(v.halfHeight, fit.scale) && same(v.rotation || 0, 0);
+  return same(v.cx, fit.cx) && same(v.cy, fit.cy) && same(v.halfHeight, fit.scale) && same(v.rotation || 0, 0) && !v.ox && !v.oy;
 }
 // Koch, tree and dragon add detail beyond the depth slider as you zoom in
 // past this framing's half-height, so the views are told what it is.

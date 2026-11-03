@@ -16,7 +16,8 @@ import { colormapIndex, colormapIndexNamed, defaultColormapName, setColorStyle, 
 import { requestRender, updateLUT } from "./render-layout.js?v=1.60.0";
 import { normalizeAngle } from "./view-math.js?v=1.60.0";
 import { enterDual, exitDual, selectFractal, setCornerRule, setMode } from "./modes.js?v=1.60.0";
-import { VECTOR_VIEWS, dragonNav, fernNav, fittedVectorModes } from "./vector-interaction.js?v=1.60.0";
+import { VECTOR_VIEWS, dragonNav, fernNav, fitVectorView, fittedVectorModes } from "./vector-interaction.js?v=1.60.0";
+import { PENROSE_HH_MAX, PENROSE_HH_MIN, penroseCenterFields, penroseClampHalfHeight, penroseParseExact } from "./penrose.js?v=1.60.0";
 import { cancelTeleport } from "./teleport.js?v=1.60.0";
 import { scheduleSharedRun } from "./pattern-controls.js?v=1.60.0";
 import { currentRunSeed, parseRunSeed } from "./chaos-run.js?v=1.60.0";
@@ -64,7 +65,17 @@ export function buildShareHash() {
     }
   } else {
     const v = VECTOR_VIEWS[mode][0].view;
-    put("x", v.cx); put("y", v.cy); put("s", v.halfHeight); put("r", v.rotation || 0);
+    if (mode === "penrose") {
+      // The tiling's center is exact (an origin plus an offset): x and y are its doubles, ex and ey (signed
+      // hex of the 128-bit fixed point) are written once the view is deep enough for doubles to blur it. pv=2
+      // marks the view as the deflation tiling's: a 1.59.0 link, whose view is the old patch's, has none.
+      const f = penroseCenterFields(v);
+      put("x", f.x); put("y", f.y); put("s", penroseClampHalfHeight(v.halfHeight)); put("r", v.rotation || 0);
+      p.set("pv", "2");
+      if (f.ex !== undefined) { p.set("ex", f.ex); p.set("ey", f.ey); }
+    } else {
+      put("x", v.cx); put("y", v.cy); put("s", v.halfHeight); put("r", v.rotation || 0);
+    }
     if (isIfsMode(mode)) {
       put("n", fernState.count); put("c", vectorColors[mode]);
       // Corner Rules: which rule's shape this is (corner-rules.js; a link without one opens the default rule)
@@ -176,6 +187,24 @@ export function parseShareHash(hash) {
     const minDepth = isCurveMode(m) ? LINE_CURVES[m].minDepth || 0 : 0;
     // "c" (solid color) is optional: links made before 1.10.0 don't have it.
     const colorIndex = p.has("c") ? int("c", 0, SOLID_COLORS.length - 1) : vectorColors[m];
+    if (m === "penrose") {
+      // pv=2: the deflation tiling's view (center, with an exact one past 1e6x in ex and ey, and a zoom inside
+      // the limits), strict like every view. A 1.59.0 link has no pv: its depth and color still count (a depth
+      // the slider no longer has, 9, becomes its last), its view is the old patch's, so the app frames the
+      // star as Reset does (legacyView).
+      const legacy = p.get("pv") !== "2";
+      const depth = int("dp", minDepth, legacy ? 9 : maxDepth);
+      let exact = null;
+      if (!legacy) {
+        if (!(view.scale >= PENROSE_HH_MIN && view.scale <= PENROSE_HH_MAX)) return null;
+        if (p.has("ex") || p.has("ey")) {
+          const ex = penroseParseExact(p.get("ex")), ey = penroseParseExact(p.get("ey"));
+          if (ex === null || ey === null) return null;
+          exact = [ex, ey];
+        }
+      }
+      return { mode: m, ...view, cm: cmIndex(), colorIndex, depth: Math.min(depth, maxDepth), fill: true, legacyView: legacy, exact };
+    }
     return { mode: m, ...view, cm: cmIndex(), colorIndex, depth: int("dp", minDepth, maxDepth), fill: p.get("fl") !== "0" };
   } catch {
     return null;
@@ -234,8 +263,16 @@ export function applyShareState(st) {
     // Mark as fitted first: setMode's first-visit fit would otherwise
     // replace the linked view with the default one.
     fittedVectorModes.add(st.mode);
-    Object.assign(VECTOR_VIEWS[st.mode][0].view, { cx: st.cx, cy: st.cy, halfHeight: st.scale, rotation: st.rotation });
+    const linked = VECTOR_VIEWS[st.mode][0].view;
+    Object.assign(linked, { cx: st.cx, cy: st.cy, halfHeight: st.scale, rotation: st.rotation });
+    if (st.mode === "penrose") {
+      // An exact center is the origin itself (the offset is zero); without one the doubles are the center.
+      linked.ox = st.exact ? st.exact[0] : 0n;
+      linked.oy = st.exact ? st.exact[1] : 0n;
+      if (st.exact) { linked.cx = 0; linked.cy = 0; }
+    }
     setMode(st.mode);
+    if (st.legacyView) fitVectorView(st.mode); // a 1.59.0 Penrose link: its view is the old patch's, so the star is framed whole
   }
   updateLUT();
   requestRender();

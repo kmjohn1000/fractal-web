@@ -1,7 +1,7 @@
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
 import { SOLID_COLORS, hueTurned, isGreyColor, strokeWidthFor } from "./colormaps.js?v=1.60.0";
 import { DRAGON_CURVE, GOSPER_CURVE, HILBERT_CURVE, SIERPINSKI_ARROWHEAD, lsystemPolylines, normalizePolylines } from "./lsystem.js?v=1.60.0";
-import { PENROSE_DEFAULT_DEPTH, PENROSE_MAX_DEPTH, PENROSE_MIN_DEPTH, drawPenrose, penrosePoints } from "./penrose.js?v=1.60.0";
+import { PENROSE_DEFAULT_DEPTH, PENROSE_MAX_DEPTH, PENROSE_MIN_DEPTH, makePenroseRenderer, penroseClampHalfHeight, penrosePoints, penroseRebase } from "./penrose.js?v=1.60.0";
 import { VECTOR_CULL_MARGIN, paintBackdrop, vectorAffine } from "./vectorgeom.js?v=1.60.0";
 
 // The line-turtle curves that share one Canvas2D view (and one control
@@ -519,9 +519,9 @@ export const LINE_CURVES = {
     points: (depth) => normalizedCurve(SIERPINSKI_ARROWHEAD, depth, { startHeadingDeg: depth % 2 ? 60 : 0 }),
     def: SIERPINSKI_ARROWHEAD, startHeading: (depth) => depth % 2, split: 2, frame: "chord",
   },
-  // The Penrose tiling is a patch of rhombs, not a path: penrose.js walks its L-system into distinct
-  // edges and draws them (tiling: true; no def/frame, so curveAdaptive and lcurveSpec never see it).
-  // points() is the extent of the picture, for the Reset framing.
+  // The Penrose tiling is a patch of rhombs, not a path: penrose.js cuts it from the viewport by
+  // deflation and draws the edges (tiling: true; no def/frame, so curveAdaptive and lcurveSpec never
+  // see it). points() is the extent of the picture, for the Reset framing.
   penrose: {
     tiling: true, minDepth: PENROSE_MIN_DEPTH, maxDepth: PENROSE_MAX_DEPTH, defaultDepth: PENROSE_DEFAULT_DEPTH,
     points: penrosePoints,
@@ -570,9 +570,13 @@ export function curveRamp(colorIndex) {
 // keeping each curve's pan/zoom separately.
 export function createCurveView(canvas) {
   const ctx = canvas.getContext("2d");
+  // While the Penrose tiling is shown the view also has ox, oy: the exact origin of its center (BigInt, see
+  // penrose.js), cx and cy then being the offset from it. The other curves' views have no such fields.
   const view = { cx: -0.35, cy: -0.24, halfHeight: 1.0, rotation: 0 };
   let dpr = Math.min(window.devicePixelRatio || 1, 2);
   let curve = "dragon";
+  const penrose = makePenroseRenderer();
+  let penroseBusy = false;
   const savedViews = new Map(); // curve key -> its view while another is shown
   // Canvas-pixel points of the frame being drawn, and each one's place along
   // the curve (0 to 1), which the adaptive walks write.
@@ -588,6 +592,9 @@ export function createCurveView(canvas) {
     curve = key;
     const saved = savedViews.get(key);
     if (saved) Object.assign(view, saved);
+    if (key === "penrose") { view.ox ??= 0n; view.oy ??= 0n; } else { delete view.ox; delete view.oy; }
+    penrose.level.snap(); // no cross-fade from the depth a mode was left at
+    penroseBusy = false;
   }
 
   function resize() {
@@ -629,10 +636,17 @@ export function createCurveView(canvas) {
     resize();
     paintBackdrop(ctx, canvas.width, canvas.height);
     extraLevels = 0;
+    penroseBusy = false;
+    if (LINE_CURVES[curve].tiling) view.halfHeight = penroseClampHalfHeight(view.halfHeight); // the zoom limits (also set by the gestures)
     const aff = vectorAffine(view, canvas.width, canvas.height);
     if (!aff.ok) return;
-    if (LINE_CURVES[curve].tiling) { // a patch of tiles, not a curve: no detail is added while zooming
-      drawPenrose(ctx, aff, { depth: opts.depth, colors: curveRamp(opts.colorIndex), dpr, lite: opts.lite, look: CURVE_LOOK });
+    if (LINE_CURVES[curve].tiling) { // the tiling, cut from the viewport by deflation: finer tiles as you zoom in
+      const r = penrose.render(ctx, view, aff, {
+        depth: opts.depth, fitHalfHeight: opts.fitHalfHeight || 1, colorIndex: opts.colorIndex, ramp: curveRamp(opts.colorIndex),
+        dpr, lite: opts.lite, animate: opts.animate, look: CURVE_LOOK,
+      });
+      extraLevels = Math.max(0, r.top - opts.depth);
+      penroseBusy = r.busy;
       return;
     }
 
@@ -683,6 +697,12 @@ export function createCurveView(canvas) {
     view, resize, render, worldToScreen, screenToWorld, setCurve,
     get curve() { return curve; },
     get dpr() { return dpr; },
+    // The Penrose tiling's renderer (its last frame's edges and stats), the view's zoom limits and the
+    // fold of the gestures' offset into the exact origin (vector-interaction.js calls these when set).
+    penrose,
+    get animating() { return penroseBusy; }, // a level change is still cross-fading: draw another frame
+    clampHalfHeight: (h) => (curve === "penrose" ? penroseClampHalfHeight(h) : h),
+    rebase: () => { if (curve === "penrose") penroseRebase(view); },
     // Levels the last render added beyond the depth slider because of zoom.
     get extraLevels() { return extraLevels; },
   };

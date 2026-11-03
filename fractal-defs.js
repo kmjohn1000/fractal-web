@@ -83,7 +83,7 @@ export const SHAPE_INFO = {
   },
   penrose: {
     lines: ["Two shapes of rhombus, one fat and one thin, fit together in a five-fold pattern that never repeats.",
-      "Each level grows the patch outward."],
+      "Each level cuts every tile into smaller ones, so the tiles get finer as you zoom in."],
   },
   fern: {
     lines: ["Four simple rules, chosen by chance, plot dot after dot until a fern appears.",
