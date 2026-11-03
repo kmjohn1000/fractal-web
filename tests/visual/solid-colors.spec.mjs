@@ -24,7 +24,7 @@ const ORIGINAL = [
 const ADDED = [["Blue", [50, 135, 240]], ["Teal", [30, 160, 136]], ["Coral", [242, 140, 125]]];
 // The menu's order: around the hue wheel from red, White last (approved for 1.52.0).
 const RAINBOW = ["Rose", "Coral", "Autumn", "Gold", "Green", "Teal", "Ice", "Blue", "Violet", "White"];
-const DEFAULTS = { koch: "Ice", tree: "Green", hexaflake: "Gold", dragon: "Autumn", hilbert: "Violet", gosper: "Rose", arrowhead: "Gold",
+const DEFAULTS = { koch: "Ice", tree: "Green", hexaflake: "Gold", dragon: "Autumn", hilbert: "Violet", gosper: "Rose", arrowhead: "Gold", penrose: "Ice",
   fern: "Green", sierpinski: "Violet", pentagon: "Ice", levy: "Rose", vicsek: "Gold" };
 // The color button of each shape's row.
 const BUTTON = (m) => (CURVES.includes(m) ? "#dragonColormapBtn" : IFS.includes(m) ? "#fernColorBtn" : `#${m}ColormapBtn`);
