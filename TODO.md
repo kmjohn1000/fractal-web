@@ -97,21 +97,6 @@ git-ignored file.
       Optional, low value: try `// @ts-check` plus `tsc --noEmit` on a file
       with many callers (the three leaf files `colormaps.js`, `configs.js`
       and `vectorgeom.js` checked clean once annotated and found no bugs).
-- [ ] Check the 1.38.0 first-visit work on real devices (the code shipped
-      to the website in `189e823`; see Done): on a phone, the cold-open
-      flight and the welcome card's placement above the toolbar; whether
-      Back looks enabled or disabled on a cold open from a share link; a
-      link preview in Messages and Slack (previews are cached, so try a
-      fresh URL). The app side was checked 2026-10-20 in the simulator
-      (iPhone 17 Pro and iPad Pro 13", build 258): opens on the whole set
-      with no flight and no card, the iPad toolbar is unchanged, no crash
-      or error banner. Still unseen on screen in the app: the info card's
-      "The whole shape" line (simctl can't tap; check it on a phone or in
-      Xcode before the next release). Relates to the portrait-rotation
-      item under Next.
-      Checked by the user on a phone 2026-10-23: the cold-open flight
-      works. Still open: the welcome card's placement, Back on a share
-      link, and a link preview in Messages and Slack.
 - [ ] Proposed order of work (a suggestion the user pasted 2026-10-23;
       not approved, not started; reorder freely). Existing items it
       touches: Minimap, Auto-dive/flyover, deep flights (reverted in
@@ -241,16 +226,9 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         existing formulas. UNVERIFIED whether it composes with the
         perturbation path (it would need the transform's derivative), so
         limit it to the shallow path first. Small to medium.
-  - [ ] More formulas XaoS ships that the app lacks, each a small branch if
-        the perturbation path can carry it (folds need `diffabs`): Spider
-        (z = z^2 + c, then c = c/2 + z), Manowar (z(n+1) = z(n)^2 + z(n-1) +
-        c), Magnet I (z = ((z^2 + c - 1)/(2z + c - 2))^2, bailout plus
-        convergence to 1), Magnet II, the three Barnsley fold fractals, and
-        a few odd ones (trice, Catseye, Beryl, Octo). Check each against the
-        published definition, not XaoS's code. Spider and Manowar looked good
-        in the agent's reading; Lambda's roles for z0 and c were unclear to
-        it. Low priority next to the Mandelbrot-family variants already
-        listed above.
+  - (The formulas XaoS ships that the app lacks, such as Spider, Manowar and
+        the Magnets, are merged into the "More escape-time formulas" item
+        under Next.)
 
 - Ideas from reading the MIT-licensed fractal-garden project (read-only
   agent review, 2026-11-02; not approved, not started; the review is the
@@ -278,42 +256,6 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         I didn't know that". Write it down in this file's workflow notes
         rather than CLAUDE.md unless decided otherwise. Small.
 
-- [ ] Longer chaos-game demo in the app (user idea 2026-10-29; not approved,
-      not started). The dot shapes' Play replay (`fern.js`, the `REPLAY_*`
-      constants) shows 24 jumps one at a time with a 6-jump fading trail,
-      then a 4.5 s ramp to the full picture. Offer a longer, slower run that
-      shows hundreds of connected jumps (the dot's path behind it, each jump
-      starting where the last landed) before the build. The Shorts tooling
-      already renders this by rewriting those constants as the page loads
-      (`patchReplay` in `scripts/make-short.mjs`; "The Chaos Game:
-      Connected" uses 300 jumps and a 40-jump trail for the triangle,
-      140/110/110 for the fern, Levy C and Vicsek). What an in-app version
-      must handle, found doing that: `REPLAY_CAP_S` (10) hands the rest to
-      the normal render after 10 s of schedule time; `REPLAY_SEQ` (100)
-      keeps positions only for the first 100 jumps, so the trail freezes
-      after that and the arrays must grow with the slow phase; the slow
-      phase's last pace must match the ramp's first (last gap =
-      `REPLAY_RAMP_S / (0.25 * N * ln(total / N))`) or the pace steps; the
-      dot and trail fade over the 60 jumps after the slow ones. Open
-      design questions for the user: how it starts (a "Slow" option beside
-      Play, or a long-press), whether jumps per shape differ, and a speed
-      control (the replay already takes a `speed()`). Needs cases in
-      `tests/visual/dot-replay.spec.mjs`. See STRATEGY.md for the reason.
-      Spec drafted 2026-11-01 (local, `docs/chaos-game-longer-run-spec.md`;
-      still not approved to build; design choices made with the user the
-      same day): no options panel; Play becomes a Long run (about 15 s,
-      100 slow jumps) and the existing speed control speeds it up, behind
-      new `startReplay` options so the Shorts renders stay unchanged; each
-      shape's default point total is the count where more dots stop
-      changing the picture (measured offline per shape, not detected
-      live; the replay ends there and hands off to the normal render,
-      which tops up to the slider's count as it does today, so the
-      replay's stop point must become separate from `opts.count`); a seed
-      that goes in the share link (the link autoplays on
-      open, not under reduced motion); a points and coverage counter (a
-      coarse occupancy grid, no canvas readback). Build order: schedule
-      refactor, then seed and counter, then polygon variants (hexagon,
-      carpet). Step and tap controls are dropped for now.
 - [ ] Picker cards: variant B, rows with a one-line descriptor (user choice
       2026-10-24, after the evaluation of three mockups; not started). One
       row per fractal (about 76 px, a 64 px thumbnail, a bold name and a
@@ -573,9 +515,47 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         styles at deep zoom are out: a deep Glow pass costs about 200 ms in
         headless measurements and a frame is 16 of them, so they would
         compete with the live frame and drain the battery
-- [ ] New escape-time types: Buffalo, Lambda (Celtic is done, see Done)
-      (single-state iteration, reuse existing shader/perturbation/
-      supersampling pipeline with no structural changes)
+- [ ] More escape-time formulas: Buffalo, Lambda, the Mandelbrot-family
+      variants and the formulas XaoS ships (merged 2026-11-02 from three
+      items: "New escape-time types: Buffalo, Lambda", "More Mandelbrot-family
+      variants beyond Buffalo/Lambda" and the XaoS formulas bullet; none
+      approved; Celtic is done, see Done). Single-state iterations reuse the
+      shared shader, perturbation and supersampling pipeline with no
+      structural changes: each is a small `ftype` branch. Check which ones
+      perturbation can handle (abs-folds need `diffabs`) before promising deep
+      zoom, and note that a new fold type would silently inherit Celtic's
+      derivative in the Edge glow and Relief Looks unless it gets its own
+      branch in `glowStep`. Any addition changes the fractal count in the
+      store listing. Candidate formulas (mostly unconfirmed: check each
+      against a published source, never against XaoS's or anyone's code,
+      before building) and a comparison render are in the local
+      `docs/mandelbrot-variants/` (2026-10-20):
+      - Names listed before: Buffalo, Lambda, Heart, Feather, Perpendicular
+        Buffalo and Ship, Mandelbar variants.
+      - A 2026-11-02 review (read-only agent, partly single forum source, the
+        expansions below are its own): Buffalo = the Mandelbrot step with the
+        absolute value on both parts, (|x^2 - y^2|, 2|xy|) + c, sign
+        UNVERIFIED, check against a rendered reference; Perpendicular Burning
+        Ship (x^2 - y^2, 2x|y|) + c; Perpendicular Buffalo (|x^2 - y^2|,
+        2x|y|) + c; the Perpendicular Mandelbrot is described differently by a
+        second source, so build the Ship first. Multibrot to the 4th and 5th
+        power answers the "powers 8, 9, 10" requests without a slider, but the
+        power is hard-coded to 2 or 3 in the shader (`u_power > 2.5` in
+        `shaders.js`, `logBase`, the glow derivative, `stepOrbit` in
+        `deepzoom.js`), so it needs a repeated-multiply loop and a binomial
+        perturbation step (medium); deep zoom looks feasible, unverified.
+        Heart, Simonbrot and Feather had no verifiable source.
+      - From the XaoS source (agent's reading; ideas only, GPL, never port
+        code): Spider (z = z^2 + c, then c = c/2 + z; no perturbation), Manowar
+        (z(n+1) = z(n)^2 + z(n-1) + c; Phoenix-shaped, so the existing
+        `zPrev` path could carry it once `PHOENIX_P` is per config), Magnet I
+        (z = ((z^2 + c - 1)/(2z + c - 2))^2, with a convergence test to 1, no
+        perturbation path; Magnet II likewise), the three Barnsley fold
+        fractals, and odd ones (trice, Catseye, Beryl, Octo). Spider and
+        Manowar looked good in the agent's reading; Lambda's roles for z0 and
+        c were unclear to it (Lambda is z -> c z (1 - z)).
+      - Low priority: Magnet, sine and exponential families, Spider,
+        fractional and negative powers (no perturbation, shallow only).
 - [ ] A one-line "what you're looking at" blurb per fractal or place, in
       the info card or picker (idea from the WebSim Fractal Explorer review,
       2026-10-09). Surprise me itself now covers every zoom fractal
@@ -671,14 +651,6 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       plain link that would navigate the WebView away from the app. It's a
       user-tapped outbound link, so the "no external services" privacy
       answer should still hold, but re-check privacy.html wording
-- [ ] More Mandelbrot-family variants beyond Buffalo/Lambda: Heart, Feather,
-      Perpendicular Buffalo/Ship, Mandelbar variants and similar. Each is a
-      small ftype branch on the shared pipeline; check which ones
-      perturbation can handle (abs-folds need `diffabs`) before promising
-      deep zoom. Any addition changes the fractal count in the store
-      listing (2026-10-09). Candidate formulas (mostly unconfirmed: check
-      each against a source before building) and a comparison render are in
-      the local `docs/mandelbrot-variants/` (2026-10-20)
 - [ ] More Looks (user, 2026-10-22; not approved to build). The list rework
       is done behind the styles flag (`29febe2`, `799750c`): Classic and
       Inferno left the Looks (they are Smooth plus a palette; the palettes are
@@ -1224,6 +1196,8 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
+- First-visit work (1.38.0) checked on real devices (user, 2026-11-02: "completed, it works"). Earlier checks: the app side in the simulator 2026-10-20 (iPhone 17 Pro and iPad Pro 13", build 258: whole set, no flight, no card, iPad toolbar unchanged, no crash); the cold-open flight on a phone 2026-10-23. The welcome card's placement, Back on a share link and the link preview in Messages and Slack, which were listed open on 2026-10-23, are covered by this sign-off.
+- Longer chaos-game demo (user, 2026-11-02: "I think this is done"; shipped in 1.55.0, 2026-11-01): Play on the dot shapes is a run of about 15 s with 100 jumps shown one at a time and the path behind the dot, then it builds the picture and hands over to the normal render; panning, zooming or turning no longer ends a run; a points-and-coverage counter shows during a run and on the info card; each run has a six-digit seed on the info card and in links made after a run, which replay the same run (not under reduced motion). The spec's last step, polygon variants (hexagon, carpet), was not part of 1.55.0 (the pentagon came in 1.54.0); more polygon and restricted-corner shapes are under the Chaos Games items under Next.
 - Rating prompt in the iOS app (1.56.0, 2026-11-02, user approved the build and the trigger the same day): the app asks iOS to show its rating sheet once, after the app was opened on 3 different days and the person saves an image to Photos or completes a share (a dismissed share sheet doesn't count). Pieces: `RateAppPlugin` (Swift, in `FractalBridgeViewController.swift`; `AppStore.requestReview` on iOS 18+, `SKStoreReviewController` before), `Platform.requestReview()` and a boolean result from `Platform.share()` in `platform.js`, the decision logic and its few dates in localStorage in `review-prompt.js` (3 days, at least 120 days between asks, asks 2 s after the save, never on the web), the hook in `share-menu.js`, `review-prompt.spec.mjs` (decision, storage, web no-op, the app flow with stand-ins). Verified: lint, the quick tier (29 passed across the new spec, `share-menu` and `sw`), and an Xcode simulator build (compiles). NOT verified: the real sheet (iOS only shows it from the App Store build or a Debug build; TestFlight never shows it), so check it on a Release or Debug build on the phone; the whole suite has not run — `d320353`
 - Places sorted by depth (1.55.6, 2026-11-02, user idea and request the same day): `placeGroups()` in `places-sheet.js` orders each fractal's places shallowest to deepest by view scale (a larger scale is shallower; stable for ties), with no control, since the user asked for the sort itself. `places-sheet.spec.mjs` checks the order, and the sheet's baseline was re-recorded after looking at the new image (all four setups). The same commit renamed the picker group "Dots that build up" to "Chaos Games" (a label in `PICKER_LAYOUT` only). Not built: a flat list across fractals and a toggle between orders. Verified with lint and the quick tier (452 passed); the other two setups' baselines for the places-sheet image were re-recorded but the full suite has not run — `387eb4e`
 - ES-module conversion and the first file splits (2026-10-30 to 2026-11-01, from the "why not just do the whole conversion?" discussion): every app file is a module (1.53.1 to 1.53.11; `index.html` loads only `app.js`), shared `let`s are written only through setters in the declaring file, `test-hooks.js` exposes every export to the tests when `navigator.webdriver` or `localStorage["fractalAtlas.test"]` is set, `npm run stamp` versions the imports, and `scripts/check-test-globals.mjs` (in lint) checks it all. Then splits: `view-math.js` and `hud-format.js` (1.53.14, 1.53.15), `color-styles.js` with the renderer no longer importing `state.js` (1.54.1), the box-zoom flags into `interaction.js` (1.54.2), `hudVisible` into `compass-ui.js` with `showHud()` (1.54.3), the settle timer with `cancelSettle()` (1.54.4), `paneState`/`paneHistory`/`paneRenderer`/`shownPane` (1.54.5), `share-menu.js` (1.54.6, with `share-menu.spec.mjs` first), `hud.js` and `deepZoomEligible` into `deepzoom.js` (1.54.7). Also: picker thumbnails precached for offline use (1.53.12) and `render_thumbs.mjs` fixed for the test flag.
