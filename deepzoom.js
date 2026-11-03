@@ -2,8 +2,8 @@
 // offsets. No DOM references (no document, els, window or canvas): pure math on numbers and arrays.
 // Needs FTYPE and PHOENIX_P from configs.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { FTYPE, PHOENIX_P } from "./configs.js?v=1.62.6";
-import { EXACT_FRAC, EXACT_ONE, exactCenter, toExact } from "./view-math.js?v=1.62.6";
+import { FTYPE, PHOENIX_P } from "./configs.js?v=1.62.7";
+import { EXACT_FRAC, EXACT_ONE, exactCenter, toExact } from "./view-math.js?v=1.62.7";
 
 // ---------------------------------------------------------------- Phase 3: deep zoom
 // Below this scale, plain float32 starts losing pixels to precision collapse
@@ -50,8 +50,35 @@ export function newtonDeepEligible(state) {
 // 4e-5, and the info card says so. About 37,000 times deeper than the opening
 // view on a phone.
 export const NOVA_MIN_SCALE = 4e-5;
+
+// The zoom floor: how deep each fractal can go before panning stalls and zoom-about-the-cursor drifts. Every
+// way of zooming goes through limitScale, which stops here; the HUD says "As deep as this fractal goes".
+//   - The escape-time family (Mandelbrot, Tricorn, Burning Ship, Celtic, Multibrot^3, and their Julia views) keeps
+//     an exact BigInt center, so its floor is where the float32 per-pixel deltas give out: measured clean to about
+//     1e-33 and grainy by 1e-36 (tests/visual/deep-exact.spec.mjs), floored at 1e-30 with margin.
+//   - Everything else keeps its center in float64 (or, for Newton and Phoenix deep, 16.48 fixed point), which a
+//     one-pixel pan can only move if the pixel is a few steps of the center's last digit. The floor keeps it at
+//     FLOOR_STEPS steps. The pixel size is taken for a nominal canvas FLOOR_PIXELS device pixels tall: the scale
+//     alone is all limitScale has, and a taller canvas than that only makes pixels smaller than the floor assumes.
+export const EXACT_MIN_SCALE = 1e-30;
+export const FLOOR_STEPS = 2;
+export const FLOOR_PIXELS = 2000;
+export const FIXED_STEP = 2 ** -48;
+// The size of the last digit of a float64 near |r|.
+export const ulp64 = (r) => (r > 0 ? 2 ** (Math.floor(Math.log2(r)) - 52) : 0);
 export function minScaleFor(state) {
-  return state.ftype === FTYPE.NOVA ? NOVA_MIN_SCALE : 0;
+  if (state.ftype === FTYPE.NOVA) return NOVA_MIN_SCALE;
+  if (perturbationEligibleType(state)) return EXACT_MIN_SCALE;
+  // Carpet and Gasket have no floor yet: they zoom to about 1e15x by cell rebasing and keep doing so (a pan
+  // stalls there as before). A floor like the others' would cut that depth to about 1e12x; true infinite zoom
+  // (TODO.md, "True infinite zoom on the Sierpinski types") is what lifts the cap, not a floor.
+  if (state.ftype === FTYPE.CARPET || state.ftype === FTYPE.GASKET) return 0;
+  const r = Math.max(Math.abs(state.cx), Math.abs(state.cy));
+  let step;
+  if (state.ftype === FTYPE.NEWTON) step = Math.min(r * 2 ** -23, FIXED_STEP); // float32 near 0, else fixed point
+  else if (state.ftype === FTYPE.PHOENIX) step = FIXED_STEP;
+  else step = ulp64(r);
+  return Math.max(EXACT_MIN_SCALE, FLOOR_STEPS * step * FLOOR_PIXELS / 2);
 }
 export function limitScale(state, scale) {
   return Math.max(scale, minScaleFor(state));

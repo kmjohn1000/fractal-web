@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.62.7 — 2026-11-03
+- A zoom floor, so panning never stalls and zooming under your finger never drifts: the Mandelbrot family stops at a quintillion-quintillion times (1e30), and Apollonian, Newton and Phoenix stop where one pixel is only a couple of steps of the center's last digit. The info card says "As deep as this fractal goes" there. Every place is above its floor; Carpet and Gasket keep zooming as before. Links deeper than a floor open at the floor.
+
 ## 1.62.6 — 2026-11-03
 - Deeper zoom on Mandelbrot, Tricorn, Burning Ship, Celtic and Multibrot³ (and their Julia views): past about 1e-13 the picture is now drawn from the exact center, so you can keep panning and zooming where the view used to stall and drift. Measured clean to about 1e-33.
 

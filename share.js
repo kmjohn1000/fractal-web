@@ -3,26 +3,26 @@
 // colormap-picker.js; applyShareHashFromUrl and applyShareLink are called from init in app.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { Platform } from "./platform.js?v=1.62.6";
-import { COLORMAPS, SOLID_COLORS } from "./colormaps.js?v=1.62.6";
-import { FRACTAL_CONFIGS } from "./configs.js?v=1.62.6";
-import { LINE_CURVES } from "./dragon.js?v=1.62.6";
-import { Diag } from "./diag.js?v=1.62.6";
-import { EXTRA_MODES, isCurveMode, isIfsMode } from "./fractal-defs.js?v=1.62.6";
-import { limitScale } from "./deepzoom.js?v=1.62.6";
-import { COLOR_BANDS_RANGE, STYLE_LINK_CODES, colorStyle } from "./color-styles.js?v=1.62.6";
-import { HEXAFLAKE_DEFAULT_DEPTH, HEXAFLAKE_MAX_DEPTH, currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, juliaState, kochState, mainState, mode, treeState, vectorColors } from "./state.js?v=1.62.6";
-import { colormapIndex, colormapIndexNamed, defaultColormapName, setColorStyle, setColormapIndex, setColormapPicked } from "./state-colors.js?v=1.62.6";
-import { requestRender, updateLUT } from "./render-layout.js?v=1.62.6";
-import { exactFromLink, exactLinkFields, normalizeAngle, setCenter } from "./view-math.js?v=1.62.6";
-import { enterDual, exitDual, selectFractal, setCornerRule, setMode } from "./modes.js?v=1.62.6";
-import { VECTOR_VIEWS, dragonNav, fernNav, fitVectorView, fittedVectorModes } from "./vector-interaction.js?v=1.62.6";
-import { PENROSE_HH_MAX, PENROSE_HH_MIN, penroseCenterFields, penroseClampHalfHeight, penroseParseExact } from "./penrose.js?v=1.62.6";
-import { cancelTeleport } from "./teleport.js?v=1.62.6";
-import { scheduleSharedRun } from "./pattern-controls.js?v=1.62.6";
-import { currentRunSeed, parseRunSeed } from "./chaos-run.js?v=1.62.6";
-import { cornerDeal, parseCornerRule } from "./corner-rules.js?v=1.62.6";
-import { setFernColor, updateColorSwatches } from "./colormap-picker.js?v=1.62.6";
+import { Platform } from "./platform.js?v=1.62.7";
+import { COLORMAPS, SOLID_COLORS } from "./colormaps.js?v=1.62.7";
+import { FRACTAL_CONFIGS } from "./configs.js?v=1.62.7";
+import { LINE_CURVES } from "./dragon.js?v=1.62.7";
+import { Diag } from "./diag.js?v=1.62.7";
+import { EXTRA_MODES, isCurveMode, isIfsMode } from "./fractal-defs.js?v=1.62.7";
+import { limitScale } from "./deepzoom.js?v=1.62.7";
+import { COLOR_BANDS_RANGE, STYLE_LINK_CODES, colorStyle } from "./color-styles.js?v=1.62.7";
+import { HEXAFLAKE_DEFAULT_DEPTH, HEXAFLAKE_MAX_DEPTH, currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, juliaState, kochState, mainState, mode, treeState, vectorColors } from "./state.js?v=1.62.7";
+import { colormapIndex, colormapIndexNamed, defaultColormapName, setColorStyle, setColormapIndex, setColormapPicked } from "./state-colors.js?v=1.62.7";
+import { requestRender, updateLUT } from "./render-layout.js?v=1.62.7";
+import { exactFromLink, exactLinkFields, normalizeAngle, setCenter } from "./view-math.js?v=1.62.7";
+import { enterDual, exitDual, selectFractal, setCornerRule, setMode } from "./modes.js?v=1.62.7";
+import { VECTOR_VIEWS, dragonNav, fernNav, fitVectorView, fittedVectorModes } from "./vector-interaction.js?v=1.62.7";
+import { PENROSE_HH_MAX, PENROSE_HH_MIN, penroseCenterFields, penroseClampHalfHeight, penroseParseExact } from "./penrose.js?v=1.62.7";
+import { cancelTeleport } from "./teleport.js?v=1.62.7";
+import { scheduleSharedRun } from "./pattern-controls.js?v=1.62.7";
+import { currentRunSeed, parseRunSeed } from "./chaos-run.js?v=1.62.7";
+import { cornerDeal, parseCornerRule } from "./corner-rules.js?v=1.62.7";
+import { setFernColor, updateColorSwatches } from "./colormap-picker.js?v=1.62.7";
 
 // ---------------------------------------------------------------- share: links
 
