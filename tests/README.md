@@ -183,13 +183,20 @@ tells `app.js` the text size changed). The shapes' own pictures, with the card h
 the `mode-*` baselines in `app.spec.mjs` and are unchanged.
 
 `styles.spec.mjs` and `color-sheet.spec.mjs` cover the color styles (Smooth,
-Bands, Edge glow, Stripes, Orbs, Rays and Relief; the style ids are `smooth`,
-`bands`, `glow`, `stripes`, `point`, `cross` and `relief`, see `COLOR_STYLES` in
-`state.js`). Relief shares Edge glow's compiled program; its specs check the
+Bands, Edge glow, Stripes, Orbs, Rays, Relief, Halo and Paper cut; the style ids
+are `smooth`, `bands`, `glow`, `stripes`, `point`, `cross`, `relief`, `halo` and
+`paper`, see `COLOR_STYLES` in `color-styles.js`). Relief, Halo and Paper cut share Edge
+glow's compiled program; Relief's specs check the
 types it draws on, baselines on six fractals and two deep views, that the saved
 image is the frame on screen, and that the light stays at the upper left of the
 screen when the view is rotated (the Rabbit's Julia set is point symmetric, so
-a half turn must draw the same picture).
+a half turn must draw the same picture). Halo's check the types (the Mandelbrot
+family and Julia sets, not the Burning Ship or the Celtic), that a view inside the
+main cardioid is lit where Relief leaves it black, and that a Julia set's basins
+glow; Paper cut's that its layers are flat colors (far more identical neighbouring
+pixels than Smooth has) and that the shadows fall to the lower right and stay
+there when the view is turned. Both are in the float64 oracle comparison
+(`scripts/oracle-compare.mjs --styles halo,paper`).
 They check that the style API is strict, which fractal
 types draw which style (Phoenix has Smooth and Bands; Newton, Carpet, Gasket
 and Apollonian color by their own schemes), that the orbit traps are offered

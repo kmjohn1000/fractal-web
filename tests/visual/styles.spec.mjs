@@ -8,7 +8,7 @@ import { test, expect } from "@playwright/test";
 import { PNG } from "pngjs";
 
 /* global setColorStyle, colorStyle, colorStyleFor, mainState, enterDual, mainRenderer, markInteracting, renderAll,
-   COLORMAPS, captureShareBlob, decodeTrapRange, trapRangeFor, requestRender */
+   COLORMAPS, captureShareBlob, decodeTrapRange, trapRangeFor, requestRender, TELEPORT_DESTINATIONS */
 
 const DRIVER = new URL("../driver.js", import.meta.url).pathname;
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
@@ -231,6 +231,147 @@ test.describe("Relief", () => {
     let sum = 0;
     for (let k = 0; k < a.length; k += 4) sum += Math.abs(a[k] - b[k]) + Math.abs(a[k + 1] - b[k + 1]) + Math.abs(a[k + 2] - b[k + 2]);
     expect(sum / (a.length / 4) / 3, "mean difference of 255 between the view and its half turn").toBeLessThan(2);
+  });
+});
+
+// Pixels of the main canvas as an array of RGBA bytes (the canvas keeps its frame).
+const grabPixels = (page, size = 0) => page.evaluate((n) => {
+  const c = mainRenderer.canvas, t = document.createElement("canvas");
+  t.width = n || c.width; t.height = n || c.height;
+  const g = t.getContext("2d");
+  g.drawImage(c, 0, 0, t.width, t.height);
+  return Array.from(g.getImageData(0, 0, t.width, t.height).data);
+}, size);
+
+test.describe("Halo", () => {
+  const inferno = () => COLORMAPS.findIndex((c) => c.name === "Inferno");
+
+  test("shares Relief's compiled program, on the Mandelbrot family and Julia sets only", async ({ page }) => {
+    const r = await page.evaluate(() => {
+      const out = {};
+      for (const f of ["Mandelbrot", "Tricorn", "Multibrot³", "Julia:Rabbit", "Burn. Ship", "Celtic", "Phoenix", "Newton z³", "Carpet"]) {
+        window["__vt"].fractal(f); setColorStyle({ style: "halo" });
+        const c = colorStyleFor(mainState);
+        out[f] = `${c.glsl}/${c.variant}`;
+      }
+      return out;
+    });
+    expect(r).toEqual({ "Mandelbrot": "7/1", "Tricorn": "7/1", "Multibrot³": "7/1", "Julia:Rabbit": "7/1", "Burn. Ship": "0/0", "Celtic": "0/0",
+      "Phoenix": "0/0", "Newton z³": "0/0", "Carpet": "0/0" });
+  });
+
+  for (const [name, fractal] of [["mandelbrot", "Mandelbrot"], ["tricorn", "Tricorn"], ["julia-rabbit", "Julia:Rabbit"]]) {
+    test(`${fractal} opening view`, async ({ page }) => {
+      await page.evaluate(([f, g]) => { window["__vt"].fractal(f, g); setColorStyle({ style: "halo" }); }, [fractal, await page.evaluate(inferno)]);
+      await checkStyled(page, `style-halo-${name}`);
+    });
+  }
+
+  test("Mini Mandelbrot (deep, perturbation)", async ({ page }) => {
+    await page.evaluate(`${place("Mini Mandelbrot")}; setColorStyle({ style: "halo" })`);
+    await checkStyled(page, "style-halo-minibrot");
+  });
+
+  // The set's inside is black in every other style. Halo lights it from D: a
+  // view inside the main cardioid is dark purple to orange, not black, and
+  // differs from Relief's (which leaves it black) everywhere in it.
+  test("the interior glows: not black, and not what Smooth or Relief draw there", async ({ page }) => {
+    const inside = `__vt.fractal("Mandelbrot", 0); Object.assign(mainState, { cx: -0.1, cy: 0, scale: 0.15 }); requestRender();`;
+    const share = (px) => { let lit = 0; for (let i = 0; i < px.length; i += 4) if (px[i] + px[i + 1] + px[i + 2] > 45) lit++; return lit / (px.length / 4); };
+    await page.evaluate(`${inside}; setColorStyle({ style: "relief" })`);
+    await waitSettled(page);
+    const relief = await grabPixels(page, 120);
+    await page.evaluate(`${inside}; setColorStyle({ style: "halo" })`);
+    await waitSettled(page);
+    const halo = await grabPixels(page, 120);
+    expect(share(relief), "Relief leaves the interior black").toBeLessThan(0.01);
+    expect(share(halo), "Halo lights nearly all of it").toBeGreaterThan(0.95);
+    // Brightness varies across it (dim in the middle, bright toward the rim): not one flat fill.
+    const lum = []; for (let i = 0; i < halo.length; i += 4) lum.push(0.3 * halo[i] + 0.59 * halo[i + 1] + 0.11 * halo[i + 2]);
+    expect(Math.max(...lum) - Math.min(...lum), "the glow has a gradient").toBeGreaterThan(30);
+  });
+
+  // On a Julia set D shrinks inside a basin instead of settling, so the glow comes from the iteration
+  // where it fell below a threshold (see haloCross): the Rabbit's bulbs glow from dark centers.
+  test("on a Julia set the basins glow too", async ({ page }) => {
+    await page.evaluate((g) => { window["__vt"].fractal("Julia:Rabbit", g); setColorStyle({ style: "halo" }); }, await page.evaluate(inferno));
+    await waitSettled(page);
+    const px = await grabPixels(page, 120);
+    let lit = 0; const lum = [];
+    for (let i = 0; i < px.length; i += 4) { const l = 0.3 * px[i] + 0.59 * px[i + 1] + 0.11 * px[i + 2]; lum.push(l); if (px[i] > 120) lit++; }
+    expect(lit / (px.length / 4), "bright orange basins cover a good part of the view").toBeGreaterThan(0.08);
+    expect(Math.max(...lum) - Math.min(...lum)).toBeGreaterThan(100);
+  });
+});
+
+test.describe("Paper cut", () => {
+  const twilight = () => COLORMAPS.findIndex((c) => c.name === "Twilight");
+
+  test("shares Relief's compiled program, on the same fractal types", async ({ page }) => {
+    const r = await page.evaluate(() => {
+      const out = {};
+      for (const f of ["Mandelbrot", "Burn. Ship", "Tricorn", "Celtic", "Multibrot³", "Julia:Rabbit", "Phoenix", "Newton z³", "Carpet"]) {
+        window["__vt"].fractal(f); setColorStyle({ style: "paper" });
+        const c = colorStyleFor(mainState);
+        out[f] = `${c.glsl}/${c.variant}`;
+      }
+      return out;
+    });
+    expect(r).toEqual({ "Mandelbrot": "8/1", "Burn. Ship": "8/1", "Tricorn": "8/1", "Celtic": "8/1", "Multibrot³": "8/1",
+      "Julia:Rabbit": "8/1", "Phoenix": "0/0", "Newton z³": "0/0", "Carpet": "0/0" });
+  });
+
+  for (const [name, fractal] of [["mandelbrot", "Mandelbrot"], ["ship", "Burn. Ship"], ["julia-rabbit", "Julia:Rabbit"]]) {
+    test(`${fractal} opening view`, async ({ page }) => {
+      await page.evaluate(([f, g]) => { window["__vt"].fractal(f, g); setColorStyle({ style: "paper" }); }, [fractal, await page.evaluate(twilight)]);
+      await checkStyled(page, `style-paper-${name}`);
+    });
+  }
+
+  test("Seahorse Valley (deep, perturbation)", async ({ page }) => {
+    await page.evaluate(`${place("Seahorse Valley")}; setColormapIndex(COLORMAPS.findIndex((c) => c.name === "Twilight")); updateLUT(); setColorStyle({ style: "paper" })`);
+    await checkStyled(page, "style-paper-seahorse");
+  });
+
+  // Each layer is one flat color (Smooth changes a little every pixel): over the open space around
+  // the Antenna Minibrot most horizontal neighbours are identical, and far more than in Smooth.
+  test("draws flat layers, where Smooth shades continuously", async ({ page }) => {
+    const view = `${place("Antenna Minibrot")}; setColormapIndex(COLORMAPS.findIndex((c) => c.name === "Twilight")); updateLUT();`;
+    const sameShare = (px) => {
+      let same = 0, pairs = 0;
+      for (let i = 0; i + 4 < px.length; i += 4) { pairs++; if (px[i] === px[i + 4] && px[i + 1] === px[i + 5] && px[i + 2] === px[i + 6]) same++; }
+      return same / pairs;
+    };
+    await page.evaluate(`${view}; setColorStyle({ style: "smooth" })`);
+    await waitSettled(page);
+    const smooth = sameShare(await grabPixels(page));
+    await page.evaluate(`${view}; setColorStyle({ style: "paper" })`);
+    await waitSettled(page);
+    const paper = sameShare(await grabPixels(page));
+    expect(paper, `paper ${paper.toFixed(3)} vs smooth ${smooth.toFixed(3)}: neighbours share a color`).toBeGreaterThan(0.8);
+    expect(paper).toBeGreaterThan(smooth + 0.1);
+  });
+
+  // A raised edge casts its shadow to the lower right: across the open layers the lower-right side of
+  // an edge is darker than its upper-left side. Averaged over the whole frame the pixels with a
+  // brighter up-left neighbour outnumber those with a darker one.
+  test("the shadows fall to the lower right, and the light stays upper left as the view turns", async ({ page }) => {
+    const darkerShare = async (rotation) => {
+      await page.evaluate((r) => { window["__vt"].place(TELEPORT_DESTINATIONS.findIndex((d) => d.label === "Antenna Minibrot"), COLORMAPS.findIndex((c) => c.name === "Twilight")); setColorStyle({ style: "paper" }); mainState.rotation = r; requestRender(); }, rotation);
+      await waitSettled(page);
+      const px = await grabPixels(page, 300);
+      const lum = (i) => 0.3 * px[i] + 0.59 * px[i + 1] + 0.11 * px[i + 2];
+      let upLeftBrighter = 0, upLeftDarker = 0;
+      for (let y = 3; y < 300; y++) for (let x = 3; x < 300; x++) {
+        const d = lum((y * 300 + x) * 4) - lum(((y - 3) * 300 + (x - 3)) * 4);
+        if (d < -6) upLeftBrighter++; else if (d > 6) upLeftDarker++;
+      }
+      return upLeftBrighter / (upLeftBrighter + upLeftDarker);
+    };
+    const upright = await darkerShare(0), turned = await darkerShare(1.2);
+    // Shadow edges (a lit layer next to its shadow) run the same way in both; a light turning with the view would flip them.
+    expect(upright, "more pixels are darker than their up-left neighbour").toBeGreaterThan(0.55);
+    expect(turned, "and still are when the view is turned").toBeGreaterThan(0.55);
   });
 });
 
