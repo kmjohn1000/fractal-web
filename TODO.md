@@ -198,6 +198,60 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       as faint dust (square "differs from the last two", "not opposite and no
       repeat") and the ratio changes (0.55 overlaps, 0.45 leaves gaps).
 
+- Ideas from studying the open-source XaoS zoomer (2026-11-02; none approved,
+  none started). XaoS is GPL v2 or later (checked: GitHub reports GPL-2.0) and
+  this repo is all rights reserved, so use only the ideas and the published
+  maths: write everything from scratch, never paste or port XaoS code (and
+  treat its XaoSjs repo, which has no license, as off limits). What follows
+  is a read-only agent's reading of the XaoS source, not checked line by line
+  by me; the formulas especially must be confirmed from the published maths
+  before anything is built.
+  - [ ] Ambient drift with a pixel-probe target picker: XaoS's autopilot looks
+        at the image it just drew, tries random small windows (about 5x5
+        pixels) and picks one that mixes inside and outside pixels (or, for
+        fractals with no inside, a noisy window), keeps zooming toward it,
+        searches near the last target so it doesn't turn sharply, re-picks at
+        random intervals, zooms out when nothing qualifies, and resets the
+        view at the precision limit. No distance estimation needed, but it
+        follows the boundary and never settles on a minibrot, so it doesn't
+        replace "zoom to nearest minibrot". Here: a small low-resolution
+        probe pass in `renderer.js` read back a few times a second (iPhone
+        readback stalls are the risk), a new file feeding `teleport.js`'s
+        `zoomPath`, any touch stops it, a depth cap or `DEEP_ZOOM_THRESHOLD`
+        as the "start somewhere new" trigger, a frame cap and pausing when
+        hidden. Small to medium.
+  - [ ] Tour as data: XaoS tours are scripts of commands (jump, glide, wait,
+        caption, palette) with a trapezoid speed profile (ease in, constant,
+        ease out). Here a tour could be a small list `[{ place, flightMs,
+        dwellMs, caption }]` played through `teleport.js` with the 107 places
+        as the playlist; the app's flight path is already smoother than
+        XaoS's, so borrow only the dwell and ease. A dev-only "record my
+        flights" button could author tours by flying around. Pairs with the
+        flyover-as-a-tour step in the list above. Small to medium.
+  - [ ] Seeded seamless palettes and a "Shuffle colors" button, beside the
+        Colormap animation item under Later: XaoS makes a random palette from
+        a seed as alternating dark and bright keyframe colors, interpolated,
+        with the last color forced equal to the first so a cycle loops
+        without a seam; a palette is just (type, seed, shift), tiny enough
+        for a share-link field. Cycling there runs at steps per second (30 by
+        default) and can reverse. Small.
+  - [ ] "Inside out" plane mappings: render c = 1/w (or 1/(w+0.25), which
+        gives infinitely repeating parabolic boundaries) by remapping the
+        pixel coordinate before iterating; one pre-transform per pixel on
+        existing formulas. UNVERIFIED whether it composes with the
+        perturbation path (it would need the transform's derivative), so
+        limit it to the shallow path first. Small to medium.
+  - [ ] More formulas XaoS ships that the app lacks, each a small branch if
+        the perturbation path can carry it (folds need `diffabs`): Spider
+        (z = z^2 + c, then c = c/2 + z), Manowar (z(n+1) = z(n)^2 + z(n-1) +
+        c), Magnet I (z = ((z^2 + c - 1)/(2z + c - 2))^2, bailout plus
+        convergence to 1), Magnet II, the three Barnsley fold fractals, and
+        a few odd ones (trice, Catseye, Beryl, Octo). Check each against the
+        published definition, not XaoS's code. Spider and Manowar looked good
+        in the agent's reading; Lambda's roles for z0 and c were unclear to
+        it. Low priority next to the Mandelbrot-family variants already
+        listed above.
+
 - [ ] Longer chaos-game demo in the app (user idea 2026-10-29; not approved,
       not started). The dot shapes' Play replay (`fern.js`, the `REPLAY_*`
       constants) shows 24 jumps one at a time with a 6-jump fading trail,
