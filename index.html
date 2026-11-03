@@ -388,20 +388,23 @@
     flex: 1 1 0; min-width: 0; padding: 0 2px; border: none; border-radius: 8px; background: transparent; color: #ddd;
     font: 500 0.8125rem -apple-system, system-ui, sans-serif;
   }
-  /* Seven styles in one row on a phone (down to 360 pt), four and three at the
-     larger Dynamic Type sizes, where their names no longer fit: fitColorSegment
-     in color-sheet.js sets the columns after measuring, so one is never left alone on
-     a row. A name of two words ("Edge glow") wraps to two lines. */
-  #colorSheet .seg { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  /* The nine styles in one row when every name fits (a wide sheet), else five
+     and four: fitColorSegment in color-sheet.js sets the columns after
+     measuring, so one is never left alone on a row. A name of two words ("Edge
+     glow") wraps to two lines. */
+  #colorSheet .seg { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); }
   #colorSheet .seg button { min-width: 0; padding: 0 2px; font-size: 0.6875rem; line-height: 1.1; white-space: normal; }
   #colorSheet .tabs button.active, #colorSheet .seg button.active { background: #3a6ea5; box-shadow: 0 0 0 1px #6cf inset; color: #fff; }
   #colorSheet .seg button:disabled { color: rgba(235,235,245,0.3); }
   #colorSheet .tabs button:active, #colorSheet .seg button:active { transform: none; }
   #colorSheet .tabs { margin-bottom: 0; }
   /* The Looks: every one on screen, in a grid. The columns scale with the text
-     (four across on a phone, one row of six on an iPad, two at the largest
-     Dynamic Type sizes), so a label never runs into its neighbour and nothing
-     is hidden off to the side. */
+     (fitColorSegment in color-sheet.js counts how many tiles of this minimum
+     width fit, then the fewest columns that keep that many rows: nine are
+     three rows of three on a phone, five and four on an iPad, one row in
+     landscape), so a label never runs into its neighbour, no row is left with
+     one tile and nothing is hidden off to the side. The auto-fit is what
+     shows until that has measured. */
   #colorSheet .looks {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(4.1rem, 1fr)); gap: 8px 6px; padding: 2px 0 4px;
   }

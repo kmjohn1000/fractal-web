@@ -24,6 +24,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // Seahorse Valley at 6e-3 (233x deep) shows every style well, the orbit traps
 // included now that their colormap range is set per view.
 const VIEW = { cx: -0.743643887037151, cy: 0.131825904205330, scale: 6e-3, maxIter: 770 };
+// Looks that need another view to show: Halo glows inside the set and Paper
+// cut wants wide flat layers, so both are drawn on the Antenna Minibrot
+// (places.js), which has a bulb in frame and open space around it.
+const ANTENNA = { cx: -0.1586, cy: 1.0331, scale: 2e-2, maxIter: 600 };
+const VIEWS = { halo: ANTENNA, "paper-cut": ANTENNA };
 
 const src = readFileSync(join(root, "color-sheet.js"), "utf8");
 const m = src.match(/^(?:export )?const COLOR_LOOKS = \[[\s\S]*?\n\];/m); // color-sheet.js is an ES module: `export` is optional here
@@ -60,9 +65,10 @@ try {
   await page.setViewportSize({ width: SIZE, height: Math.round(SIZE + toolbarH) });
   await page.addStyleTag({ content: "#speedBubble, .compass, #crosshair, #hud { visibility: hidden !important; }" });
   for (const look of looks) {
+    const view = VIEWS[look.id] || VIEW;
     await page.evaluate(`(() => {
       __vt.fractal("Mandelbrot", COLORMAPS.findIndex((c) => c.name === ${JSON.stringify(look.palette)}));
-      Object.assign(mainState, { cx: ${VIEW.cx}, cy: ${VIEW.cy}, scale: ${VIEW.scale}, rotation: 0, maxIter: ${VIEW.maxIter}, iterAutoLocked: true });
+      Object.assign(mainState, { cx: ${view.cx}, cy: ${view.cy}, scale: ${view.scale}, rotation: 0, maxIter: ${view.maxIter}, iterAutoLocked: true });
       setColorStyle({ style: ${JSON.stringify(look.style)}, density: ${look.density}, offset: ${look.offset} });
       requestRender();
     })()`);
