@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.56.0 — 2026-11-02
+- iOS app: after you've opened it on a few different days and saved or shared an image, it may ask once for an App Store rating, using iOS's own rating sheet (iOS shows it at most a few times a year, and never twice within four months here). Nothing is sent anywhere, and the website never asks.
+
 ## 1.55.6 — 2026-11-02
 - The Places sheet now lists each fractal's places from the shallowest to the deepest, so you can work your way down.
 - The picker's "Dots that build up" group is now called "Chaos Games".

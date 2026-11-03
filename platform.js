@@ -32,6 +32,7 @@ export const Platform = (() => {
             Haptics: reg("Haptics"),
             Filesystem: reg("Filesystem"),
             SavePhoto: reg("SavePhoto"), // app-local, ios/App/App/FractalBridgeViewController.swift
+            RateApp: reg("RateApp"), // app-local, same file
             SplashScreen: reg("SplashScreen"),
             App: reg("App"),
           });
@@ -181,7 +182,8 @@ export const Platform = (() => {
     },
 
     // System share sheet with the image (where supported) and link.
-    // Resolves quietly if the user dismisses the sheet.
+    // Resolves quietly if the user dismisses the sheet: true once something
+    // was shared, false when the sheet was dismissed.
     // `text` is for sharing words alone (the diagnostics report); a link
     // share leaves it out.
     async share({ blob, fileName, url, title, text }) {
@@ -194,10 +196,10 @@ export const Platform = (() => {
             await navigator.share({ title, text, url });
           }
         } catch (err) {
-          if (err && err.name === "AbortError") return;
+          if (err && err.name === "AbortError") return false;
           throw err;
         }
-        return;
+        return true;
       }
       const { Share, Filesystem } = await plugins();
       const files = [];
@@ -210,8 +212,24 @@ export const Platform = (() => {
       try {
         await Share.share({ title, text, url, files });
       } catch (err) {
-        if (isNativeCancel(err)) return;
+        if (isNativeCancel(err)) return false;
         throw err;
+      }
+      return true;
+    },
+
+    // Asks iOS to show its rating sheet (the app only; the web has none).
+    // iOS decides whether it appears and never says whether it did, so this
+    // resolves true once the request is made, false on the web or on error.
+    // review-prompt.js decides when to ask.
+    async requestReview() {
+      if (!isNative) return false;
+      try {
+        const { RateApp } = await plugins();
+        await RateApp.request();
+        return true;
+      } catch {
+        return false;
       }
     },
   };

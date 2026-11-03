@@ -5,15 +5,16 @@
 // option handlers); nothing imports this file, app.js only lists it for the test hook.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { Platform } from "./platform.js?v=1.55.6";
-import { fractalLabel, slugify } from "./configs.js?v=1.55.6";
-import { Diag } from "./diag.js?v=1.55.6";
-import { isIfsMode } from "./fractal-defs.js?v=1.55.6";
-import { currentName, dualActive, els, fernView, isInteracting, kochView, mainRenderer, mode } from "./state.js?v=1.55.6";
-import { modeLabel } from "./hud.js?v=1.55.6";
-import { finishRefinement, refineDone, renderAll } from "./render-layout.js?v=1.55.6";
-import { VECTOR_VIEWS } from "./vector-interaction.js?v=1.55.6";
-import { buildShareUrl } from "./share.js?v=1.55.6";
+import { Platform } from "./platform.js?v=1.56.0";
+import { fractalLabel, slugify } from "./configs.js?v=1.56.0";
+import { Diag } from "./diag.js?v=1.56.0";
+import { isIfsMode } from "./fractal-defs.js?v=1.56.0";
+import { currentName, dualActive, els, fernView, isInteracting, kochView, mainRenderer, mode } from "./state.js?v=1.56.0";
+import { modeLabel } from "./hud.js?v=1.56.0";
+import { finishRefinement, refineDone, renderAll } from "./render-layout.js?v=1.56.0";
+import { VECTOR_VIEWS } from "./vector-interaction.js?v=1.56.0";
+import { buildShareUrl } from "./share.js?v=1.56.0";
+import { reviewMaybeAsk } from "./review-prompt.js?v=1.56.0";
 
 // ---------------------------------------------------------------- share: image + menu
 
@@ -157,8 +158,10 @@ els.shareSaveBtn.textContent = Platform.saveImageLabel;
 els.shareSaveBtn.addEventListener("click", async () => {
   try {
     const saved = await Platform.saveImage(await pendingCapture, shareFileName());
-    if (saved) flashLabel(els.shareSaveBtn, "Saved!");
-    else closeShareMenu();
+    if (saved) {
+      flashLabel(els.shareSaveBtn, "Saved!");
+      reviewMaybeAsk(); // the app, after a few days of use: iOS may ask for a rating (review-prompt.js)
+    } else closeShareMenu();
   } catch (err) {
     closeShareMenu();
     reportError(`Save image failed: ${err && err.message ? err.message : err}`);
@@ -195,7 +198,8 @@ els.shareNativeBtn.addEventListener("click", async () => {
   const url = buildShareUrl();
   closeShareMenu();
   try {
-    await Platform.share({ blob: await pendingCapture, fileName: shareFileName(), url, title: "Fractal Atlas" });
+    const shared = await Platform.share({ blob: await pendingCapture, fileName: shareFileName(), url, title: "Fractal Atlas" });
+    if (shared) reviewMaybeAsk(); // not when the sheet was dismissed
   } catch (err) {
     reportError(`Share failed: ${err && err.message ? err.message : err}`);
   }

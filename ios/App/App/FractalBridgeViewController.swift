@@ -1,5 +1,6 @@
 import UIKit
 import Photos
+import StoreKit
 import WebKit
 import Capacitor
 
@@ -12,6 +13,7 @@ import Capacitor
 class FractalBridgeViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(SavePhotoPlugin())
+        bridge?.registerPluginInstance(RateAppPlugin())
 
         // Set before and after the page parses, so there's no flash at the
         // wrong size on launch; the notification covers changes while running.
@@ -68,6 +70,34 @@ public class SavePhotoPlugin: CAPPlugin, CAPBridgedPlugin {
                     call.reject(error?.localizedDescription ?? "Couldn't save to Photos")
                 }
             })
+        }
+    }
+}
+
+/// Asks iOS to show its rating sheet (JS: `RateApp.request()`, called from review-prompt.js). iOS
+/// decides whether the sheet appears (at most 3 times per 365 days per person; always in a debug
+/// build, never in TestFlight) and tells the app neither that nor whether the person rated, so
+/// this resolves as soon as the request is made. The sheet is Apple's; nothing leaves the device.
+@objc(RateAppPlugin)
+public class RateAppPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "RateAppPlugin"
+    public let jsName = "RateApp"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "request", returnType: CAPPluginReturnPromise)
+    ]
+
+    @objc func request(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            let scene = UIApplication.shared.connectedScenes
+                .first { $0.activationState == .foregroundActive } as? UIWindowScene
+            if let scene = scene {
+                if #available(iOS 18.0, *) {
+                    AppStore.requestReview(in: scene)
+                } else {
+                    SKStoreReviewController.requestReview(in: scene)
+                }
+            }
+            call.resolve()
         }
     }
 }
