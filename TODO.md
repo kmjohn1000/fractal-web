@@ -963,6 +963,33 @@ distance estimation → zoom-to-minibrot / AI discovery.
       on the antenna, where orbits run along the branch cut, so the
       fixup matters
 
+### Tilted 3D terrain view
+- [ ] Mandelbrot (and the other distance-estimate fractals) as a tiltable 3D
+      relief terrain you can pan across, a "Tilt" view on the existing zoom
+      fractals (user idea 2026-11-02; spike only, not approved to build). An
+      evaluation (read-only agent, 2026-11-02) recommended: height from the
+      exterior distance estimate shaped by a saturating falloff
+      (Lorentzian, ridges at least ~3 texels wide, a few blur passes), not
+      the iteration count; a view-local (floating-origin) clipmap of nested
+      height textures drawn as a displaced mesh with a vertex texture fetch,
+      so "zoom forever" survives; a short height-march for cast shadows; tilt
+      as a new control; fits only the escape-time family (not Phoenix, Nova,
+      the pattern modes). Estimate for a shippable version: 10 to 15 days
+      (not measured). The throwaway spike is local-only in
+      `scripts/relief-spike/` (git-excluded, never commit it; it serves its
+      own folder with `node scripts/relief-spike/server.mjs` for a phone on
+      the LAN). Measured on the owner's iPhone, 60 s runs, shallow views,
+      1024x1024 height texture: dpr 1.5 averaged 17.1 ms (58 fps), worst
+      frame 70 ms, 0 context losses, slowest height render 59 ms; dpr 2
+      averaged 18.0 ms (56 fps), worst frame 111 ms, 0 context losses,
+      slowest height render 86 ms; the phone stayed fine (user, no heat
+      problem). NOT yet known: deep zoom (the spike has no perturbation path;
+      the evaluation's worry is deep height passes of 0.2 to 1 s against a
+      400 ms limit), the look against the flat Relief Look (user judgement),
+      shimmer while panning, a 2-minute session, older phones. Next step if
+      pursued: a second spike that feeds the app's deep-zoom path into the
+      height pass.
+
 ### Discovery
 - [ ] AI-curated "find something beautiful" auto-discovery
       (if it calls an AI service, that breaks the App Store "no external
