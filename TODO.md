@@ -1032,6 +1032,48 @@ distance estimation → zoom-to-minibrot / AI discovery.
       90); a Sierpinski curve (axiom F+XF+F+XF, X -> XF-F+F-XF+F+XF-F+F-X,
       angle 90); Penrose P3 via an L-system (angle 36). All small. Weigh them
       against the proposal to hold new fractal types back.
+      A second read-only agent rendered about 45 curves with a throwaway
+      turtle and looked at each (2026-11-02; sheets are scratchpad images, not
+      in the repo). What it found, with confidence marked:
+      - Engine facts: `lsystem.js` (`expandLSystem`, `turtleInterpret`)
+        already handles any angle, `[ ]`, several draw symbols and several
+        polylines. The `LINE_CURVES` fast path (`makeLCurveSpec` and
+        `curveAdaptive` in `dragon.js`) is narrower: the axiom must be one rule
+        variable, rules may use only variables, draw symbols and `+`/`-`
+        (brackets ignored), the angle must divide 360, one polyline, a uniform
+        stroke width, and a "square" or "chord" frame. Depth caps are about
+        200k segments.
+      - All five rules in the list above came out right (they were checked
+        against Bourke, Wikipedia and a second repo; Peano and Moore differ
+        from other sources only by a mirror image). Moore needs one extra
+        closing segment to show as a closed loop. Penrose's rules agree across
+        three sources: axiom `[N]++[N]++[N]++[N]++[N]`, angle 36, `M ->
+        OF++PF----NF[-OF----MF]++`, `N -> +OF--PF[---MF--NF]+`, `O ->
+        -MF++NF[+++OF++PF]-`, `P -> --OF++++MF[+PF++++NF]--NF`, `F ->`
+        (empty), and M, N, O and P draw nothing (depth 4 is 1,780 segments,
+        depth 5 is 7,920).
+      - More verified-by-picture curves (rules in the agent's report; each
+        also needs checking against a published source): Terdragon (depth 11,
+        177,147 segments) and its closed triangle tile (axiom `F+F+F`, `F ->
+        F-F+F`, 120); Krishna anklets (`-X--X`, `X -> XFX--XFX`, 45);
+        Pentigree (`F-F-F-F-F`, `F -> F-F++F+F-F-F`, 72, depth 5 is 38,880
+        segments, cap about 6); a five-arm Pentadendrite (rule `F ->
+        F+F-F--F+F+F`, 72; the five-arm axiom is the agent's own); a Lévy
+        tapestry (four Lévy copies, 45; the name and axiom are the agent's
+        own); Minkowski sausage; Board; Rings; Cross. Unverified: Cesàro torn
+        square (85 degrees, from memory), the Koch island variant's book
+        attribution, Plant E (standard Lindenmayer plant, no source found).
+      - Suggested order: Terdragon, Peano, Moore (all small on the fast path),
+        then Penrose P3 (large: needs brackets, several polylines, non-drawing
+        letters and an F-to-empty rule, so it uses the plain `turtleInterpret`
+        path), then Krishna anklets or the Sierpinski square curve (pick one,
+        they look alike), then Pentigree. Bracketed plants would need a new
+        polylines view with per-branch colour, because the fast path ignores
+        brackets and 25.7 degrees doesn't divide 360. Rejected as redundant or
+        ugly: both quadratic Gosper forms, the Koch anti-snowflake variants,
+        Crystal, Tiles, the second Cross, the Sierpinski 45-degree curve and
+        some bushes. Skipped because the engine can't draw them cleanly:
+        golden dragon, Gosper island, Z-order, H-tree, ADH, Dekking, Hilbert II.
 - [ ] "Powers & Dominions" type (Jim Muth's Fractint MandAutoCritInZ):
       z <- a·z^b + d·z^f + c, defaults a=1, b=2.005, d=2, f=1 (b=2 is
       exactly Mandelbrot via w=z+1); z0 = critical point
