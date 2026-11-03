@@ -241,6 +241,25 @@ test("Another rule: only in this mode, beside Play, deals a rule and frames it w
   await expect(btn, "hidden again outside the mode").toBeHidden();
 });
 
+for (const width of [393, 360]) {
+  test(`the toolbar row with Another rule stays on one line at ${width} px, 44 px tall, nothing overlapping`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 852 });
+    await showRule(page, 3);
+    const boxes = await page.evaluate(() => [...document.querySelectorAll("#fernControls button")].filter((b) => b.offsetParent).map((b) => {
+      const r = b.getBoundingClientRect();
+      return { id: b.id || b.className, x: r.x, y: r.y, w: r.width, h: r.height };
+    }));
+    expect(boxes.map((b) => b.id), "the shape's own button is in the row").toContain("cornerRuleBtn");
+    expect(new Set(boxes.map((b) => Math.round(b.y))).size, "all the buttons on one line").toBe(1);
+    const sorted = [...boxes].sort((a, b) => a.x - b.x);
+    for (let i = 1; i < sorted.length; i++) expect(sorted[i].x, `${sorted[i].id} clear of ${sorted[i - 1].id}`).toBeGreaterThanOrEqual(sorted[i - 1].x + sorted[i - 1].w - 0.01);
+    const rule = boxes.find((b) => b.id === "cornerRuleBtn");
+    expect(rule.h, "tall enough to tap").toBeGreaterThanOrEqual(44);
+    expect(rule.w, "wide enough to tap").toBeGreaterThanOrEqual(32);
+    expect(sorted[sorted.length - 1].x + sorted[sorted.length - 1].w, "inside the screen").toBeLessThanOrEqual(width);
+  });
+}
+
 test("the rule's name is on screen in a chip and on the info card, and follows the rule", async ({ page }) => {
   await showRule(page, 3);
   const chip = page.locator("#ruleChip");
