@@ -461,10 +461,16 @@ rule and cover what is, at the opening view and zooms to 16384, against an oracl
 tree by `allows` (with a control: another rule's oracle rejects the samples). A new rule must be added to
 the spec's `IDS` (the first test checks it lists them all).
 
-`scripts/test-visual.mjs` kills leftover Playwright browsers and test
-servers before and after each run, but only orphaned ones (parent pid 1,
-their runner already dead), so it never touches another session's live run
-(give concurrent runs their own `PW_PORT`); it runs with stdin closed. The git
+`scripts/test-visual.mjs` sweeps leftovers before and after each run and
+never touches another session's live run (give concurrent runs their own
+`PW_PORT`); it runs with stdin closed. What it sweeps: orphaned runners and
+workers (parent pid 1), and this run's own test server (its `PW_PORT` only).
+Playwright's browsers are swept only when no other Playwright run is alive on
+the machine, because "parent pid 1" does not mean orphaned for them: WebKit's
+helper processes are launched through launchd and have pid 1 as parent in a
+live run, and Chrome's `chrome_crashpad_handler` always does (never killed).
+Until then, stale browsers from an interrupted run wait for the next run that
+starts when the machine is otherwise idle. The git
 pre-push hook (`.githooks/pre-push`, turned on by `npm install`) runs lint on
 every push and the whole suite only when the push carries a release tag
 (`v*`, which `/release` pushes); `RUN_VISUAL=1 git push` forces the suite on

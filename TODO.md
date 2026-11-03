@@ -59,14 +59,13 @@ git-ignored file.
          the dragon split into three files; `fractal-picker.js`,
          `toolbar-a11y.js`. Not worth splitting: `shaders.js`, `renderer.js`,
          the view factories, `configs.js`, `places.js`, `colormaps.js`.
-      4. Safety nets: make `scripts/test-visual.mjs` (behind `npm run
-         test:visual` and `npm run test:quick`) kill only the processes it
-         started: its `killLeftovers()` runs `pkill -f` on every
-         `ms-playwright/`, `playwright test` and `tests/serve.mjs` process
-         on the machine, which killed another session's spec run partway on
-         2026-11-02 (until then, run `npx playwright test <spec>` directly
-         while another session may be testing; CLAUDE.md asks for the
-         cleanup, so ask first); a smoke check that runs each store, preview and
+      4. Safety nets: `scripts/test-visual.mjs` no longer kills another
+         session's run: DONE 2026-11-02 (`9c9fdf0`, only orphaned processes)
+         and tightened 2026-11-03 (parent pid 1 is not proof of an orphan:
+         WebKit's helpers and Chrome's crash handlers have it in a live
+         run, so browsers are swept only when no other Playwright run is
+         alive, crash handlers are never killed, and only this run's own
+         test-server port is swept; see `tests/README.md`). Still open: a smoke check that runs each store, preview and
          thumbnail script against a scratch output folder (the conversion
          broke `render_thumbs.mjs` silently once); a lint check that two
          modules never export the same name (today that only throws under
