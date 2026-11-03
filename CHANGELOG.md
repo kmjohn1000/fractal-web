@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.62.2 — 2026-11-03
+- Removed the Zipper place from the Gasket (a mostly flat purple view); the Places sheet now has 130 places.
+
 ## 1.62.1 — 2026-11-03
 - The button that takes you back to the opening view now shows four corner brackets (fit the shape in the frame) instead of a house, and is named "Show whole shape" instead of "Reset view".
 

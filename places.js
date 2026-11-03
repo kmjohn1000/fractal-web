@@ -145,7 +145,6 @@ export const TELEPORT_DESTINATIONS = [
   { fractal: "Gasket", label: "Stair Dive", re: String(2 / 15), im: String(1 / 15), scale: 0.65 / 2 ** 32, rotation: 0, spiral: true },
   { fractal: "Gasket", label: "Long Step", re: String(2 / 5), im: String(1 / 15), scale: 0.65 / 2 ** 32, rotation: 0, spiral: true },
   { fractal: "Gasket", label: "Hypotenuse Slide", re: String(2 / 3), im: String(1 / 3), scale: 0.65 / 2 ** 30, rotation: 0, spiral: true },
-  { fractal: "Gasket", label: "Zipper", re: "0.3", im: "0.3", scale: 0.2, rotation: Math.PI / 4 },
   // Apollonian places sit off the tangency points, where the inversion count
   // has no limit and a deep view is flat. Circle Fifteen is the gap between
   // the three big circles, centered in its biggest circle (curvature 15).
