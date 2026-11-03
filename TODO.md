@@ -157,6 +157,22 @@ Help people find beautiful places, and give them more ways to see them.
 Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-minibrot.
 
 
+- [ ] Ambient auto-zoom mode (user idea 2026-11-03; not approved). A
+      hands-off slow zoom toward a curated destination, Mandelbrot only to
+      start; any touch stops it. To make it endless, loop a Misiurewicz point
+      by wrapping scale and rotation by its self-similarity factor (the
+      point's multiplier, a complex number: its modulus is the scale step and
+      its argument the rotation step), with the center in plain double
+      precision, so the zoom never reaches the float64 floor. UNVERIFIED: the
+      self-similarity math is from memory and untested; prototype one point
+      first (for example the Misiurewicz point at c = i, whose multiplier
+      comes from the derivative along its preperiodic orbit; derive it,
+      then check that the frame after a wrap matches the frame before it
+      to a few pixels). Related: the autopilot and tour items in the XaoS
+      list below, and the "ambient drift" note in the places list above;
+      decide how they fit together before building any of them. See also
+      STRATEGY.md.
+
 - Ideas from studying the open-source XaoS zoomer (2026-11-02; none approved,
   none started). XaoS is GPL v2 or later (checked: GitHub reports GPL-2.0) and
   this repo is all rights reserved, so use only the ideas and the published
@@ -1048,6 +1064,30 @@ distance estimation → zoom-to-minibrot / AI discovery.
       at all for centers near 1-2, up to 1.7x the drag for centers near
       0.1-0.3) and doesn't move at 7.8e-18 (1.6e17x), while zoom itself
       keeps working; there is no zoom cap
+- [ ] Zoom floor (user idea 2026-11-03; not approved). Past about 1e13 to
+      1e15, depending on how large the center's coordinates are, the float64
+      view center can't absorb a one-pixel pan, so panning stalls and
+      zoom-about-cursor drifts (the measurements are in the item above).
+      Proposal: clamp the scale so one pixel stays a few ulps of the center
+      (`scale >= k * ulp(max(|cx|, |cy|)) * pixels`, k to be chosen by
+      looking), with a short "bottom of the map" cue when a pinch or wheel
+      hits it. This is the cheap alternative to the BigInt center and
+      reference orbit above: it fixes the stall and the drift without
+      deeper math, at the price of a floor. Test case: the Apollonian link
+      at s of about 2.8e-12, center magnitude 1 (Jacob's Ladder, 1.62.3, is
+      such a place). Check that the clamp leaves every place's saved view
+      reachable and the default output unchanged (`default-identity.mjs`).
+- [ ] True infinite zoom on the Sierpinski types (user idea 2026-11-03; not
+      approved). Store the view as a digit address plus a small local
+      offset, and renormalize on crossing into a child cell, so the view no
+      longer depends on a float64 center. This removes the ~1e15 cap on the
+      gasket and carpet (see Done, cell rebasing 1.18.6) without touching
+      the rest of the app. Needs a share-link field for the address (a
+      version bump, with old links still opening), `digitCellFrame` fed from
+      the address instead of the float center, and pan/zoom/twist in
+      `attachFractalInteraction` working on the local offset; the same
+      idea may apply to the other digit-addressed IFS modes. Measure the
+      cost first: the digit walk is per frame on the CPU.
 - [ ] maxIter past 8000 (the cap planned for Bird's Eye, see Next): one
       draw looping 10⁴–10⁶ times needs multi-pass iteration, saving
       per-pixel state (z, dz, reference index) in float textures between
