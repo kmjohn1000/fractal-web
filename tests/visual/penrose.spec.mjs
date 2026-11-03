@@ -784,6 +784,40 @@ test.describe("gestures and play", () => {
     expect(r.mids.length, "a cross-fade was on screen (both levels at once)").toBeGreaterThan(0);
   });
 
+  test("with reduced motion a level change is immediate, and without it the slider cross-fades through both levels", async ({ page }) => {
+    await show(page, 3);
+    const slide = (to) => page.evaluate(async (to) => {
+      els.dragonDepthSlider.value = to;
+      els.dragonDepthSlider.dispatchEvent(new Event("input"));
+      await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)));
+      const s = dragonView.penrose.stats;
+      return { level: s.level, c: s.trisC, f: s.trisF, busy: s.busy };
+    }, to);
+    const smooth = await slide(4);
+    expect(smooth.busy, "the cross-fade is under way").toBe(true);
+    await page.waitForFunction(() => !dragonView.penrose.stats.busy && dragonView.penrose.stats.level === 4);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    expect(await slide(7)).toEqual({ level: 7, c: 6100, f: 0, busy: false });
+  });
+
+  test("each curve keeps its own view: the exact origin is the tiling's alone, and it survives a trip to another curve", async ({ page }) => {
+    const [ox, oy] = await page.evaluate(`(${PLACE})(91)`);
+    await show(page, 5, { ox, oy, z: 1e9 });
+    const r = await page.evaluate(async () => {
+      const frame = () => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)));
+      const deep = { ox: String(dragonView.view.ox), hh: dragonView.view.halfHeight };
+      setMode("hilbert");
+      await frame();
+      const other = { has: "ox" in dragonView.view, curve: dragonView.curve, fitted: vectorViewIsFitted("hilbert") };
+      setMode("penrose");
+      await frame();
+      return { deep, other, back: { ox: String(dragonView.view.ox), hh: dragonView.view.halfHeight }, tris: dragonView.penrose.stats.tris };
+    });
+    expect(r.other).toEqual({ has: false, curve: "hilbert", fitted: true });
+    expect(r.back).toEqual(r.deep);
+    expect(r.tris).toBeGreaterThan(1000);
+  });
+
   test("Play turns round at the top, depth 8, and steps back down", async ({ page }) => {
     await show(page, 7);
     const r = await page.evaluate(async () => {
