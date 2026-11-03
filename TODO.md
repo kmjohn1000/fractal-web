@@ -172,6 +172,17 @@ git-ignored file.
 Help people find beautiful places, and give them more ways to see them.
 Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-minibrot.
 
+- [ ] Sort the Places sheet by depth (user idea 2026-11-02; not approved, not
+      started). Each row already shows its depth in words
+      (`placeDepthText` in `places-sheet.js`, from the place's `scale`
+      against the fractal's opening view). Add a way to order the places by
+      that depth, shallowest to deepest, either within each fractal's
+      section or as one flat list across fractals (rows then need the
+      fractal's name, since the section heading is gone). Keep the current
+      picker order as the default. Needs a small control at the top of the
+      sheet, a spec in `places-sheet.spec.mjs`, and a check that the order
+      holds when the sheet rebuilds after a depth reading changes.
+
 - [ ] Longer chaos-game demo in the app (user idea 2026-10-29; not approved,
       not started). The dot shapes' Play replay (`fern.js`, the `REPLAY_*`
       constants) shows 24 jumps one at a time with a 6-jump fading trail,

@@ -66,13 +66,15 @@ test.describe("what the sheet lists", () => {
       })),
       chips: [...document.querySelectorAll("#placesSheet .chip")].map((c) => c.dataset.fractal),
       pickerOrder: PICKER_LAYOUT.flatMap((s) => s.groups.flatMap((g) => g.keys)),
-      expected: TELEPORT_DESTINATIONS.map((d) => ({ fractal: d.fractal, id: placeId(d) })),
+      expected: TELEPORT_DESTINATIONS.map((d) => ({ fractal: d.fractal, id: placeId(d), scale: d.scale })),
     }));
     const order = seen.pickerOrder.filter((k) => seen.expected.some((e) => e.fractal === k));
     expect(seen.groups.map((g) => g.fractal)).toEqual(order);
     expect(seen.chips).toEqual(order);
     for (const g of seen.groups) {
-      expect(g.places, g.fractal).toEqual(seen.expected.filter((e) => e.fractal === g.fractal).map((e) => e.id));
+      // Within a group the places run shallowest to deepest: a larger view scale is a shallower place.
+      const shallowToDeep = seen.expected.filter((e) => e.fractal === g.fractal).sort((a, b) => b.scale - a.scale);
+      expect(g.places, g.fractal).toEqual(shallowToDeep.map((e) => e.id));
     }
     expect(seen.groups.flatMap((g) => g.places).length).toBe(seen.expected.length);
   });

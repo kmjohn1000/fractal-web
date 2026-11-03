@@ -3,16 +3,16 @@
 // colormap-picker.js (cmGradient). app.js's init schedules prepareColorSheet and fitColorSegment.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { COLORMAPS } from "./colormaps.js?v=1.55.5";
-import { FRACTAL_CONFIGS, fractalLabel } from "./configs.js?v=1.55.5";
-import { COLOR_BANDS_RANGE, COLOR_STYLES, ESCAPE_TIME_TYPES, colorStyle, styleBlocked, styleDrawn } from "./color-styles.js?v=1.55.5";
-import { currentName, els, isInteracting, juliaRenderer, mainRenderer, mainState, mode } from "./state.js?v=1.55.5";
-import { colormapDefaultIndex, colormapIndex, pickColormap, releaseColormapPick, setColorStyle } from "./state-colors.js?v=1.55.5";
-import { zoomPhrase } from "./hud-format.js?v=1.55.5";
-import { requestRender } from "./render-layout.js?v=1.55.5";
-import { fernNav, fitVectorView } from "./vector-interaction.js?v=1.55.5";
-import { syncSliderFill } from "./compass-ui.js?v=1.55.5";
-import { cmGradient } from "./colormap-picker.js?v=1.55.5";
+import { COLORMAPS } from "./colormaps.js?v=1.55.6";
+import { FRACTAL_CONFIGS, fractalLabel } from "./configs.js?v=1.55.6";
+import { COLOR_BANDS_RANGE, COLOR_STYLES, ESCAPE_TIME_TYPES, colorStyle, styleBlocked, styleDrawn } from "./color-styles.js?v=1.55.6";
+import { currentName, els, isInteracting, juliaRenderer, mainRenderer, mainState, mode } from "./state.js?v=1.55.6";
+import { colormapDefaultIndex, colormapIndex, pickColormap, releaseColormapPick, setColorStyle } from "./state-colors.js?v=1.55.6";
+import { zoomPhrase } from "./hud-format.js?v=1.55.6";
+import { requestRender } from "./render-layout.js?v=1.55.6";
+import { fernNav, fitVectorView } from "./vector-interaction.js?v=1.55.6";
+import { syncSliderFill } from "./compass-ui.js?v=1.55.6";
+import { cmGradient } from "./colormap-picker.js?v=1.55.6";
 
 // ---------------------------------------------------------------- color sheet
 

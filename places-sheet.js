@@ -1,5 +1,5 @@
 // Places sheet: every named place (TELEPORT_DESTINATIONS) in a bottom sheet, grouped by fractal in
-// the picker's order, each with a thumbnail, its depth in words and a Dive pill; a tap flies there.
+// the picker's order and shallowest to deepest within each group, each with a thumbnail, its depth in words and a Dive pill; a tap flies there.
 // Opens from the "Browse places" button in the info card and the "Places" row at the top of the
 // picker. Needs the state, places.js, fractal-defs.js, render-layout.js, modes.js, teleport.js
 // (flyToPlace), compass-ui.js (prefersReducedMotion, showHud) and color-sheet.js
@@ -10,15 +10,15 @@
 // which is what lets test-hooks.js expose them (the places spec and scripts/render_place_thumbs.mjs
 // read placeId); see scripts/check-test-globals.mjs.
 
-import { FRACTAL_CONFIGS, fractalLabel, slugify } from "./configs.js?v=1.55.5";
-import { PICKER_LAYOUT, viewFromBounds } from "./fractal-defs.js?v=1.55.5";
-import { TELEPORT_DESTINATIONS } from "./places.js?v=1.55.5";
-import { currentName, dualActive, els, mainCanvasAspect, mode } from "./state.js?v=1.55.5";
-import { capitalize, zoomPhrase } from "./hud-format.js?v=1.55.5";
-import { exitDual, selectFractal } from "./modes.js?v=1.55.5";
-import { prefersReducedMotion, showHud } from "./compass-ui.js?v=1.55.5";
-import { flyToPlace } from "./teleport.js?v=1.55.5";
-import { colorSheetEl } from "./color-sheet.js?v=1.55.5";
+import { FRACTAL_CONFIGS, fractalLabel, slugify } from "./configs.js?v=1.55.6";
+import { PICKER_LAYOUT, viewFromBounds } from "./fractal-defs.js?v=1.55.6";
+import { TELEPORT_DESTINATIONS } from "./places.js?v=1.55.6";
+import { currentName, dualActive, els, mainCanvasAspect, mode } from "./state.js?v=1.55.6";
+import { capitalize, zoomPhrase } from "./hud-format.js?v=1.55.6";
+import { exitDual, selectFractal } from "./modes.js?v=1.55.6";
+import { prefersReducedMotion, showHud } from "./compass-ui.js?v=1.55.6";
+import { flyToPlace } from "./teleport.js?v=1.55.6";
+import { colorSheetEl } from "./color-sheet.js?v=1.55.6";
 
 // ---------------------------------------------------------------- places sheet
 
@@ -26,11 +26,18 @@ import { colorSheetEl } from "./color-sheet.js?v=1.55.5";
 // service worker's APP_SHELL: the sheet fetches them when it first scrolls them into view.
 export const placeId = (d) => `${slugify(d.fractal)}-${slugify(d.label)}`;
 
-// The fractals that have places, in the picker's order, each with its TELEPORT_DESTINATIONS indexes.
+// The fractals that have places, in the picker's order, each with its TELEPORT_DESTINATIONS indexes,
+// shallowest place first. A place's scale is the width of its view, so a larger scale is shallower;
+// every place in a group is measured against the same opening view, so comparing scales compares
+// depths (the sort is stable: equal scales keep their order in places.js).
 export function placeGroups() {
   const keys = PICKER_LAYOUT.flatMap((section) => section.groups.flatMap((group) => group.keys));
   return keys
-    .map((key) => ({ key, indexes: TELEPORT_DESTINATIONS.flatMap((d, i) => (d.fractal === key ? [i] : [])) }))
+    .map((key) => ({
+      key,
+      indexes: TELEPORT_DESTINATIONS.flatMap((d, i) => (d.fractal === key ? [i] : []))
+        .sort((a, b) => TELEPORT_DESTINATIONS[b].scale - TELEPORT_DESTINATIONS[a].scale),
+    }))
     .filter((g) => g.indexes.length > 0);
 }
 

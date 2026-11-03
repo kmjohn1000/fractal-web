@@ -2,6 +2,10 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.55.6 — 2026-11-02
+- The Places sheet now lists each fractal's places from the shallowest to the deepest, so you can work your way down.
+- The picker's "Dots that build up" group is now called "Chaos Games".
+
 ## 1.55.5 — 2026-11-02
 - Internal: the dot shapes' IFS tables, address colors, chaos game and viewport sampler moved out of fern.js into a new file, ifs.js. fern.js now holds the replay and the dot shapes' view. scripts/make-short.mjs patches PENTAGON_RATIO in ifs.js. No visible change.
 
