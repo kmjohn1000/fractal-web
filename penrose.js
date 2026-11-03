@@ -34,7 +34,7 @@ export const INV_PHI = 1 / PHI;
 export const LOG_PHI = Math.log(PHI);
 
 export const PENROSE_MIN_DEPTH = 1;       // the first deflation of the wheel: 20 triangles, the star
-export const PENROSE_MAX_DEPTH = 8;       // 15,900 triangles on the whole star; it is already about 4-6 px a tile
+export const PENROSE_MAX_DEPTH = 8;       // 15,970 triangles on the whole star; it is already about 4-6 px a tile
 export const PENROSE_DEFAULT_DEPTH = 5;
 export const PENROSE_TILE_PX = 12;        // css px: the zoom adds levels until an edge is no longer than this
 export const PENROSE_HH_MIN = 1e-15;      // deepest view (half the view's height, in world units; the star's radius is 1): about 1e15 times
@@ -276,7 +276,7 @@ export function makePenroseColors() {
   };
   return c;
 }
-// How far the colors have blended to the tile types at a zoom: none to 10x, all of it from 300x.
+// How far the colors have blended to the tile types at a zoom: none to 10x, all of it from about 320x.
 export function penroseTypeMix(zoom) {
   return Math.min(1, Math.max(0, (Math.log10(zoom) - 1) / 1.5));
 }
