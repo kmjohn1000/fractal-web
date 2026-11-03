@@ -57,6 +57,7 @@ import * as share from "./share.js?v=1.58.0";
 import { applyShareHashFromUrl, applyShareLink, parseShareHash } from "./share.js?v=1.58.0";
 import * as shareMenu from "./share-menu.js?v=1.58.0";
 import * as reviewPrompt from "./review-prompt.js?v=1.58.0";
+import * as penrose from "./penrose.js?v=1.58.0";
 
 exposeForTests({
   "platform.js": platform, "places.js": places, "renderer.js": renderer, "state.js": state,
@@ -67,7 +68,7 @@ exposeForTests({
   "state-colors.js": stateColors, "render-layout.js": renderLayout, "modes.js": modes, "interaction.js": interaction, "vector-interaction.js": vectorInteraction,
   "compass-ui.js": compassUi, "teleport.js": teleport, "pattern-controls.js": patternControls, "colormap-picker.js": colormapPicker,
   "color-sheet.js": colorSheet, "places-sheet.js": placesSheet, "share.js": share, "share-menu.js": shareMenu, "chaos-run.js": chaosRunModule,
-  "review-prompt.js": reviewPrompt,
+  "review-prompt.js": reviewPrompt, "penrose.js": penrose,
 });
 
 // ---------------------------------------------------------------- toolbar accessibility

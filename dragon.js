@@ -1,6 +1,7 @@
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
 import { SOLID_COLORS, hueTurned, isGreyColor, strokeWidthFor } from "./colormaps.js?v=1.58.0";
 import { DRAGON_CURVE, GOSPER_CURVE, HILBERT_CURVE, SIERPINSKI_ARROWHEAD, lsystemPolylines, normalizePolylines } from "./lsystem.js?v=1.58.0";
+import { PENROSE_DEFAULT_DEPTH, PENROSE_MAX_DEPTH, PENROSE_MIN_DEPTH, drawPenrose, penrosePoints } from "./penrose.js?v=1.58.0";
 import { VECTOR_CULL_MARGIN, paintBackdrop, vectorAffine } from "./vectorgeom.js?v=1.58.0";
 
 // The line-turtle curves that share one Canvas2D view (and one control
@@ -518,6 +519,13 @@ export const LINE_CURVES = {
     points: (depth) => normalizedCurve(SIERPINSKI_ARROWHEAD, depth, { startHeadingDeg: depth % 2 ? 60 : 0 }),
     def: SIERPINSKI_ARROWHEAD, startHeading: (depth) => depth % 2, split: 2, frame: "chord",
   },
+  // The Penrose tiling is a patch of rhombs, not a path: penrose.js walks its L-system into distinct
+  // edges and draws them (tiling: true; no def/frame, so curveAdaptive and lcurveSpec never see it).
+  // points() is the extent of the picture, for the Reset framing.
+  penrose: {
+    tiling: true, minDepth: PENROSE_MIN_DEPTH, maxDepth: PENROSE_MAX_DEPTH, defaultDepth: PENROSE_DEFAULT_DEPTH,
+    points: penrosePoints,
+  },
 };
 
 // The curves are drawn in color steps along their length: the picked color's
@@ -535,6 +543,11 @@ export const CURVE_CORE_ALPHA = 0.95, CURVE_CORE_ALPHA_DENSE = 0.8;
 export const CURVE_GLOW_WIDTH = 3.5;        // times the core's width
 export const CURVE_GLOW_ALPHA = 0.1;
 export const CURVE_GLOW_MIN_SEG = 2.5;      // css px: below this segment length the lines are a mesh the glow would only haze, and stroking it twice costs the most
+// The same pen as the numbers above, for penrose.js (which can't import them back without a cycle).
+export const CURVE_LOOK = {
+  coreMinPx: CURVE_CORE_MIN_PX, coreAlpha: CURVE_CORE_ALPHA, coreAlphaDense: CURVE_CORE_ALPHA_DENSE,
+  glowWidth: CURVE_GLOW_WIDTH, glowAlpha: CURVE_GLOW_ALPHA, glowMinSeg: CURVE_GLOW_MIN_SEG,
+};
 export let curveRampKey = -1, curveRampColors = [];
 export function curveRamp(colorIndex) {
   if (colorIndex === curveRampKey) return curveRampColors;
@@ -618,6 +631,10 @@ export function createCurveView(canvas) {
     extraLevels = 0;
     const aff = vectorAffine(view, canvas.width, canvas.height);
     if (!aff.ok) return;
+    if (LINE_CURVES[curve].tiling) { // a patch of tiles, not a curve: no detail is added while zooming
+      drawPenrose(ctx, aff, { depth: opts.depth, colors: curveRamp(opts.colorIndex), dpr, lite: opts.lite, look: CURVE_LOOK });
+      return;
+    }
 
     // Built from the viewport each frame, so there's no depth limit to zoom
     // into. refPx: how long a segment may stay at the slider's depth: the

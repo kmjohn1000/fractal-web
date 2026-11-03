@@ -219,7 +219,7 @@ export const fernState = { count: 1000000 };
 export const solidIndex = (name) => SOLID_COLORS.findIndex((c) => c.name === name);
 export const vectorColors = {
   koch: solidIndex("Ice"), tree: solidIndex("Green"), hexaflake: solidIndex("Gold"), dragon: solidIndex("Autumn"),
-  hilbert: solidIndex("Violet"), gosper: solidIndex("Rose"), arrowhead: solidIndex("Gold"),
+  hilbert: solidIndex("Violet"), gosper: solidIndex("Rose"), arrowhead: solidIndex("Gold"), penrose: solidIndex("Ice"),
   fern: solidIndex("Green"), sierpinski: solidIndex("Violet"), pentagon: solidIndex("Ice"), levy: solidIndex("Rose"), vicsek: solidIndex("Gold"),
   corners: solidIndex("Teal"),
 };
