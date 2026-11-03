@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.59.0 — 2026-11-03
+- Added the Penrose tiling: thick and thin rhombs in a five-fold pattern that never repeats, grown level by level (depth 1 to 9). It sits with the other curves in "Build level by level", plays up level by level, and turns with two fingers.
+
 ## 1.58.0 — 2026-11-03
 - Added 24 new places across eleven fractals, bringing the Places sheet to 131: deep Mandelbrot dives, Burning Ship vessels, a Tricorn minibrot with spokes, more Julia Rabbit ears, rotated carpets, Newton and Apollonian dives (one of them a spiral flight), and more.
 

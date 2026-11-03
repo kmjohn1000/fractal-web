@@ -25,7 +25,7 @@
 // just adds up there, as the game's own points do.
 //
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { IFS_SYSTEMS, affineBoxImage, composeAffine, ifsDataCache, ifsRandom } from "./ifs.js?v=1.58.0";
+import { IFS_SYSTEMS, affineBoxImage, composeAffine, ifsDataCache, ifsRandom } from "./ifs.js?v=1.59.0";
 
 // ---------------------------------------------------------------- the rules
 

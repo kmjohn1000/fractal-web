@@ -1,7 +1,7 @@
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { PENROSE_TILING } from "./lsystem.js?v=1.56.0";
-import { VECTOR_CULL_MARGIN } from "./vectorgeom.js?v=1.56.0";
-import { strokeWidthFor } from "./colormaps.js?v=1.56.0";
+import { PENROSE_TILING } from "./lsystem.js?v=1.59.0";
+import { VECTOR_CULL_MARGIN } from "./vectorgeom.js?v=1.59.0";
+import { strokeWidthFor } from "./colormaps.js?v=1.59.0";
 
 // The Penrose tiling (P3, thick and thin rhombs) as an L-system: lsystem.js's
 // PENROSE_TILING. Unlike the line curves it needs brackets, four letters that
