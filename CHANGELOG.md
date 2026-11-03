@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.62.1 — 2026-11-03
+- The button that takes you back to the opening view now shows four corner brackets (fit the shape in the frame) instead of a house, and is named "Show whole shape" instead of "Reset view".
+
 ## 1.62.0 — 2026-11-03
 - The color button on the pattern shapes (Koch, tree, Hexaflake, the curves and the dot shapes) now opens the same Color sheet the fractals use, with the ten colors as a grid of swatches and a Done button, instead of a tall list.
 

@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Fractal Atlas&trade;</title>
 
-<link rel="manifest" href="manifest.webmanifest?v=1.62.0">
+<link rel="manifest" href="manifest.webmanifest?v=1.62.1">
 <meta name="theme-color" content="#111111">
-<link rel="icon" href="icons/favicon-32.png?v=1.62.0" sizes="32x32" type="image/png">
+<link rel="icon" href="icons/favicon-32.png?v=1.62.1" sizes="32x32" type="image/png">
 
 <!-- iOS Safari ignores the manifest entirely for install/homescreen purposes
      and needs its own meta tags + a dedicated (non-transparent) icon. -->
@@ -15,7 +15,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fractal Atlas">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.62.0">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.62.1">
 
 <!-- Smart App Banner: Safari on iPhone/iPad offers the App Store app.
      Ignored everywhere else, including the app's own web view. -->
@@ -844,9 +844,10 @@
         <path d="M8.5 10.5H7a2 2 0 0 0-2 2V19a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6.5a2 2 0 0 0-2-2h-1.5"/>
       </svg>
     </button>
-    <button id="resetBtn" class="iconBtn" aria-label="Reset view" title="Reset view">
+    <button id="resetBtn" class="iconBtn" aria-label="Show whole shape" title="Show whole shape">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3.5 11.5L12 4l8.5 7.5"/><path d="M6 9.5V19a1 1 0 0 0 1 1h3.5v-5.5h3V20H17a1 1 0 0 0 1-1V9.5"/>
+        <!-- Four corner brackets: "fit the whole shape in the frame". -->
+        <path d="M4 9V6.5A2.5 2.5 0 0 1 6.5 4H9"/><path d="M15 4h2.5A2.5 2.5 0 0 1 20 6.5V9"/><path d="M20 15v2.5a2.5 2.5 0 0 1-2.5 2.5H15"/><path d="M9 20H6.5A2.5 2.5 0 0 1 4 17.5V15"/>
       </svg>
     </button>
   </div>
@@ -895,9 +896,10 @@
         <path d="M8.5 10.5H7a2 2 0 0 0-2 2V19a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6.5a2 2 0 0 0-2-2h-1.5"/>
       </svg>
     </button>
-    <button id="kochResetBtn" class="iconBtn" aria-label="Reset view" title="Reset view">
+    <button id="kochResetBtn" class="iconBtn" aria-label="Show whole shape" title="Show whole shape">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3.5 11.5L12 4l8.5 7.5"/><path d="M6 9.5V19a1 1 0 0 0 1 1h3.5v-5.5h3V20H17a1 1 0 0 0 1-1V9.5"/>
+        <!-- Four corner brackets: "fit the whole shape in the frame". -->
+        <path d="M4 9V6.5A2.5 2.5 0 0 1 6.5 4H9"/><path d="M15 4h2.5A2.5 2.5 0 0 1 20 6.5V9"/><path d="M20 15v2.5a2.5 2.5 0 0 1-2.5 2.5H15"/><path d="M9 20H6.5A2.5 2.5 0 0 1 4 17.5V15"/>
       </svg>
     </button>
   </div>
@@ -934,9 +936,10 @@
         <path d="M8.5 10.5H7a2 2 0 0 0-2 2V19a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6.5a2 2 0 0 0-2-2h-1.5"/>
       </svg>
     </button>
-    <button id="treeResetBtn" class="iconBtn" aria-label="Reset view" title="Reset view">
+    <button id="treeResetBtn" class="iconBtn" aria-label="Show whole shape" title="Show whole shape">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3.5 11.5L12 4l8.5 7.5"/><path d="M6 9.5V19a1 1 0 0 0 1 1h3.5v-5.5h3V20H17a1 1 0 0 0 1-1V9.5"/>
+        <!-- Four corner brackets: "fit the whole shape in the frame". -->
+        <path d="M4 9V6.5A2.5 2.5 0 0 1 6.5 4H9"/><path d="M15 4h2.5A2.5 2.5 0 0 1 20 6.5V9"/><path d="M20 15v2.5a2.5 2.5 0 0 1-2.5 2.5H15"/><path d="M9 20H6.5A2.5 2.5 0 0 1 4 17.5V15"/>
       </svg>
     </button>
   </div>
@@ -973,9 +976,10 @@
         <path d="M8.5 10.5H7a2 2 0 0 0-2 2V19a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6.5a2 2 0 0 0-2-2h-1.5"/>
       </svg>
     </button>
-    <button id="hexaflakeResetBtn" class="iconBtn" aria-label="Reset view" title="Reset view">
+    <button id="hexaflakeResetBtn" class="iconBtn" aria-label="Show whole shape" title="Show whole shape">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3.5 11.5L12 4l8.5 7.5"/><path d="M6 9.5V19a1 1 0 0 0 1 1h3.5v-5.5h3V20H17a1 1 0 0 0 1-1V9.5"/>
+        <!-- Four corner brackets: "fit the whole shape in the frame". -->
+        <path d="M4 9V6.5A2.5 2.5 0 0 1 6.5 4H9"/><path d="M15 4h2.5A2.5 2.5 0 0 1 20 6.5V9"/><path d="M20 15v2.5a2.5 2.5 0 0 1-2.5 2.5H15"/><path d="M9 20H6.5A2.5 2.5 0 0 1 4 17.5V15"/>
       </svg>
     </button>
   </div>
@@ -1012,9 +1016,10 @@
         <path d="M8.5 10.5H7a2 2 0 0 0-2 2V19a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6.5a2 2 0 0 0-2-2h-1.5"/>
       </svg>
     </button>
-    <button id="dragonResetBtn" class="iconBtn" aria-label="Reset view" title="Reset view">
+    <button id="dragonResetBtn" class="iconBtn" aria-label="Show whole shape" title="Show whole shape">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3.5 11.5L12 4l8.5 7.5"/><path d="M6 9.5V19a1 1 0 0 0 1 1h3.5v-5.5h3V20H17a1 1 0 0 0 1-1V9.5"/>
+        <!-- Four corner brackets: "fit the whole shape in the frame". -->
+        <path d="M4 9V6.5A2.5 2.5 0 0 1 6.5 4H9"/><path d="M15 4h2.5A2.5 2.5 0 0 1 20 6.5V9"/><path d="M20 15v2.5a2.5 2.5 0 0 1-2.5 2.5H15"/><path d="M9 20H6.5A2.5 2.5 0 0 1 4 17.5V15"/>
       </svg>
     </button>
   </div>
@@ -1063,14 +1068,15 @@
         <path d="M8.5 10.5H7a2 2 0 0 0-2 2V19a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6.5a2 2 0 0 0-2-2h-1.5"/>
       </svg>
     </button>
-    <button id="fernResetBtn" class="iconBtn" aria-label="Reset view" title="Reset view">
+    <button id="fernResetBtn" class="iconBtn" aria-label="Show whole shape" title="Show whole shape">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3.5 11.5L12 4l8.5 7.5"/><path d="M6 9.5V19a1 1 0 0 0 1 1h3.5v-5.5h3V20H17a1 1 0 0 0 1-1V9.5"/>
+        <!-- Four corner brackets: "fit the whole shape in the frame". -->
+        <path d="M4 9V6.5A2.5 2.5 0 0 1 6.5 4H9"/><path d="M15 4h2.5A2.5 2.5 0 0 1 20 6.5V9"/><path d="M20 15v2.5a2.5 2.5 0 0 1-2.5 2.5H15"/><path d="M9 20H6.5A2.5 2.5 0 0 1 4 17.5V15"/>
       </svg>
     </button>
   </div>
 </div>
 
-<script type="module" src="app.js?v=1.62.0"></script>
+<script type="module" src="app.js?v=1.62.1"></script>
 </body>
 </html>
