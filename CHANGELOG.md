@@ -2,6 +2,12 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.61.0 — 2026-11-03
+- The Penrose tiling now shows finer tiles as you zoom in, down to about a quadrillion times, instead of a fixed patch.
+- The depth slider sets the starting level (1 to 8), and Play fades smoothly from one level to the next.
+- Deep views color thick and thin rhombs differently so they stay readable.
+- Penrose links from the previous version still open (framed on the whole star).
+
 ## 1.60.0 — 2026-11-03
 - Added the Halo look: the inside of the set glows from its center out, dim in the middle of each bulb and bright at its rim. It works on the Mandelbrot set, the Tricorn, the cubic Multibrot and the Julia sets; Burning Ship and Celtic keep it greyed out.
 - Added the Paper cut look: flat paper layers, one per band, with soft shadows that fall to the lower right of each raised edge and slide as you pan.
