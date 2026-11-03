@@ -172,17 +172,6 @@ git-ignored file.
 Help people find beautiful places, and give them more ways to see them.
 Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-minibrot.
 
-- [ ] Sort the Places sheet by depth (user idea 2026-11-02; not approved, not
-      started). Each row already shows its depth in words
-      (`placeDepthText` in `places-sheet.js`, from the place's `scale`
-      against the fractal's opening view). Add a way to order the places by
-      that depth, shallowest to deepest, either within each fractal's
-      section or as one flat list across fractals (rows then need the
-      fractal's name, since the section heading is gone). Keep the current
-      picker order as the default. Needs a small control at the top of the
-      sheet, a spec in `places-sheet.spec.mjs`, and a check that the order
-      holds when the sheet rebuilds after a depth reading changes.
-
 - [ ] Longer chaos-game demo in the app (user idea 2026-10-29; not approved,
       not started). The dot shapes' Play replay (`fern.js`, the `REPLAY_*`
       constants) shows 24 jumps one at a time with a 6-jump fading trail,
@@ -991,6 +980,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
+- Places sorted by depth (1.55.6, 2026-11-02, user idea and request the same day): `placeGroups()` in `places-sheet.js` orders each fractal's places shallowest to deepest by view scale (a larger scale is shallower; stable for ties), with no control, since the user asked for the sort itself. `places-sheet.spec.mjs` checks the order, and the sheet's baseline was re-recorded after looking at the new image (all four setups). The same commit renamed the picker group "Dots that build up" to "Chaos Games" (a label in `PICKER_LAYOUT` only). Not built: a flat list across fractals and a toggle between orders. Verified with lint and the quick tier (452 passed); the other two setups' baselines for the places-sheet image were re-recorded but the full suite has not run — `387eb4e`
 - ES-module conversion and the first file splits (2026-10-30 to 2026-11-01, from the "why not just do the whole conversion?" discussion): every app file is a module (1.53.1 to 1.53.11; `index.html` loads only `app.js`), shared `let`s are written only through setters in the declaring file, `test-hooks.js` exposes every export to the tests when `navigator.webdriver` or `localStorage["fractalAtlas.test"]` is set, `npm run stamp` versions the imports, and `scripts/check-test-globals.mjs` (in lint) checks it all. Then splits: `view-math.js` and `hud-format.js` (1.53.14, 1.53.15), `color-styles.js` with the renderer no longer importing `state.js` (1.54.1), the box-zoom flags into `interaction.js` (1.54.2), `hudVisible` into `compass-ui.js` with `showHud()` (1.54.3), the settle timer with `cancelSettle()` (1.54.4), `paneState`/`paneHistory`/`paneRenderer`/`shownPane` (1.54.5), `share-menu.js` (1.54.6, with `share-menu.spec.mjs` first), `hud.js` and `deepZoomEligible` into `deepzoom.js` (1.54.7). Also: picker thumbnails precached for offline use (1.53.12) and `render_thumbs.mjs` fixed for the test flag.
 - Fractal picker regrouped (1.44.1, 2026-10-24, approved the same day): a display-only `PICKER_LAYOUT` in `fractal-defs.js` (sections "Zoom forever" and "Watch it grow", each with titled groups) replaces `FRACTAL_CATEGORIES`, and the loop in `compass-ui.js` builds the picker from it. Zoom forever = Mandelbrot family (Mandelbrot, Burning Ship, Tricorn, Celtic, Multibrot³, Phoenix), Julia sets (Spiral, Rabbit, Dragon, Phoenix; no longer below the fold), More to zoom into (Newton, Apollonian, carpet, gasket); Watch it grow = Build level by level (Koch, tree, Hexaflake, dragon, Hilbert, Gosper, arrowhead) and Dots that build up (fern, Sierpinski triangle, Lévy, Vicsek). The Hexaflake went under "level by level" instead of "dots" as first proposed, since 1.43.0 draws it as exact hexagons by level like the tree. `category`, `FRACTAL_CONFIGS` order and every share-link key are untouched; no label tweaks. The new `app.spec.mjs` test checks every fractal and mode appears exactly once, in `PICKER_LAYOUT` order, on all four projects. Looked at on a 390 px viewport in headless Chromium, not on a phone. The Places sheet's sections should follow this order — `631eda8`
 - `app.js` split into plain scripts (2026-10-23, from step 2 of the proposed order of work): a pure move along the section headers into plain scripts (the commit says 10; among them `places.js`, `deepzoom.js`, `renderer.js`, `state-colors.js`, `render-layout.js`, `modes.js`, `interaction.js`, `compass-ui.js`, `teleport.js`, `colormap-picker.js`, `color-sheet.js`, `share.js`), section order kept; `app.js` is now 158 lines. `deepzoom.js` has no DOM references and needs only `FTYPE` and `PHOENIX_P` from `configs.js` (checked 2026-10-24), so it can move into a Web Worker once the reference-orbit callers are made asynchronous — `b7fb4a4`
