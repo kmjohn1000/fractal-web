@@ -218,11 +218,13 @@ test.describe("the Color sheet", () => {
       r.push([f, await tile("halo"), await tile("paper-cut")]);
       await page.keyboard.press("Escape");
     }
-    expect(r).toEqual([["Mandelbrot", null, null], ["Tricorn", null, null], ["Multibrot³", null, null], ["Julia:Rabbit", null, null],
-      ["Burn. Ship", "true", null], ["Celtic", "true", null]]);
+    // (aria-disabled is "false" on a tile that can be picked, "true" on a greyed one)
+    expect(r).toEqual([["Mandelbrot", "false", "false"], ["Tricorn", "false", "false"], ["Multibrot³", "false", "false"], ["Julia:Rabbit", "false", "false"],
+      ["Burn. Ship", "true", "false"], ["Celtic", "true", "false"]]);
     await page.locator("#colormapBtn").click();
     await expect(page.locator("#colorSheetNote-looks")).toContainText("Halo isn't available for Celtic Mandelbrot.");
-    await page.locator('#colorSheet [data-key="look-halo"]').click(); // greyed: does nothing but flash the note
+    // greyed (aria-disabled, which Playwright won't click): does nothing but flash the note
+    await page.locator('#colorSheet [data-key="look-halo"]').evaluate((el) => el.click());
     expect(await page.evaluate(() => colorStyle.style)).toBe("smooth");
     await page.locator('#colorSheet [data-key="look-paper-cut"]').click();
     expect(await page.evaluate(() => ({ style: colorStyle.style, palette: COLORMAPS[colormapIndex].name }))).toEqual({ style: "paper", palette: "Twilight" });
@@ -305,8 +307,11 @@ test.describe("the Color sheet", () => {
         seen[tab] = r;
         expect(r.sheetPct, `${tab}${deep ? " (deep)" : ""}: sheet height as % of the screen`).toBeLessThanOrEqual(45);
         // (WebKit's phone emulation keeps its own 659 pt-tall screen whatever setViewportSize says, where the
-        // sheet's cap of 45% of the screen applies; on a real 852 pt screen the sheet is about 38%.)
-        expect(r.visiblePct, `${tab}${deep ? " (deep)" : ""}: % of the fractal still visible`).toBeGreaterThanOrEqual(40);
+        // sheet's cap of 45% of the screen applies; on a real 852 pt screen the sheet was about 38% with the
+        // seven styles.)
+        // (40 until the nine styles: the Custom tab's style row now wraps to two rows of 36 px, which is 30 px
+        // taller, and the Custom tab sets both tabs' height. On the 852 pt screens that is 41.5% of the screen.)
+        expect(r.visiblePct, `${tab}${deep ? " (deep)" : ""}: % of the fractal still visible (sheet ${Math.round(r.sheetH)} px, ${r.sheetPct.toFixed(1)}% of the screen)`).toBeGreaterThanOrEqual(35);
       }
       expect(seen.Looks.sheetH, "Looks and Custom are the same height").toBeCloseTo(seen.Custom.sheetH, 0);
       expect(seen.Looks.tabY, "the tab bar doesn't move between the tabs").toBeCloseTo(seen.Custom.tabY, 0);
@@ -426,7 +431,7 @@ test.describe("the Color sheet", () => {
     expect(picked).toEqual(names);
   });
 
-  test("every Look is on screen at once, in a grid: nine make three rows of three on a phone, none cut off, no scrolling", async ({ page }) => {
+  test("every Look is on screen at once, in a grid: nine make five and four on a phone, none cut off, no scrolling", async ({ page }) => {
     await page.setViewportSize({ width: 393, height: 852 });
     await page.locator("#colormapBtn").click();
     const r = await page.evaluate(() => {
@@ -436,10 +441,10 @@ test.describe("the Color sheet", () => {
       return { tiles, rows, inside: tiles.every((q) => q.l >= sheet.left && q.r <= sheet.right && q.b <= sheet.bottom), scrolls: grid.scrollWidth > grid.clientWidth + 1, fade: grid.dataset.fade || null, firstRow: tiles.filter((q) => Math.round(q.t) === Math.round(tiles[0].t)).length };
     });
     expect(r.tiles.map((q) => q.name)).toEqual(["Default", "Edge glow", "Stripes", "Bands", "Orbs", "Rays", "Relief", "Halo", "Paper cut"]);
-    // As many columns as fit (four), then the fewest that keep the rows: no row is left with one tile
-    // (four, four and one would have been the grid's own auto-fit; see fitColorSegment).
-    expect(r.firstRow, "three across").toBe(3);
-    expect(r.rows).toBe(3);
+    // As many columns as fit, then the fewest that keep the rows (see fitColorSegment): five and four, the
+    // same two rows the seven Looks took, so the sheet is no taller.
+    expect(r.firstRow, "five across").toBe(5);
+    expect(r.rows).toBe(2);
     expect(r.inside, "every tile inside the sheet").toBe(true);
     expect(r.scrolls, "nothing to scroll sideways").toBe(false);
     expect(r.fade, "no edge fade left over from the old strip").toBeNull();
@@ -526,8 +531,7 @@ test.describe("the Color sheet", () => {
         expect(r.left).toBeGreaterThanOrEqual(0);
         expect(r.right).toBeLessThanOrEqual(r.vw);
         expect(r.noSide).toBe(true);
-        // Nine Looks fit one row at 852 wide, and wrap to two (five and four) at 667.
-        if (tab === "Looks") expect(r.lookRows, "the Looks lie in one row, or two where nine don't fit").toBe(w === 852 ? 1 : 2);
+        if (tab === "Looks") expect(r.lookRows, "the Looks lie in one row").toBe(1);
         else {
           expect(r.beside, "the sliders are beside the palettes").toBe(true);
           // Reachable: if it doesn't all fit, the sheet scrolls, and the last slider can be scrolled to.

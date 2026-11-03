@@ -379,21 +379,26 @@ export function renderColorSheet() {
 
 // The style segments: all in one row when every name fits its cell (a word
 // wider than its cell would overflow, which is what's measured), else split
-// over two rows. And the Looks' grid: as many columns as fit (a tile is at
-// least LOOK_TILE_MIN rem wide), then the fewest that keep that many rows, so
-// the last row isn't left with one tile (nine Looks on a phone are three rows
-// of three, not four, four and one). Measured on the open sheet, so it runs
-// after it opens, after a rebuild and when the sheet's width changes (a
-// rotation, the text size).
-export const LOOK_TILE_MIN = 4.1; // rem, the same as the grid's minmax in index.html
+// over two rows, or three (nine styles are five and four, or three and three
+// and three), never leaving one alone on a row. And the Looks' grid: as many
+// columns as fit (a tile is at least LOOK_TILE_MIN rem wide), then the fewest
+// that keep that many rows, so the last row isn't left with one tile where it
+// can be avoided (nine Looks on a phone are five and four, not four, four and
+// one). Measured on the open sheet, so it runs after it opens, after a
+// rebuild and when the sheet's width changes (a rotation, the text size).
+export const LOOK_TILE_MIN = 3.6; // rem, the same as the grid's minmax in index.html
 export function fitColorSegment() {
   if (!els.colorSheet.classList.contains("open")) return;
   const seg = els.colorSheet.querySelector(".seg");
   if (seg) {
     const count = seg.children.length;
     const columns = (n) => { seg.style.gridTemplateColumns = `repeat(${n}, minmax(0, 1fr))`; };
-    columns(count);
-    if ([...seg.children].some((b) => b.scrollWidth > b.clientWidth + 1)) columns(Math.ceil(count / 2));
+    for (let rows = 1; rows <= count; rows++) {
+      const n = Math.ceil(count / rows);
+      if (rows > 1 && count - (rows - 1) * n < 2) continue; // never one alone on the last row
+      columns(n);
+      if (![...seg.children].some((b) => b.scrollWidth > b.clientWidth + 1)) break;
+    }
   }
   const looks = els.colorSheet.querySelector(".looks");
   if (looks && looks.clientWidth > 0) {

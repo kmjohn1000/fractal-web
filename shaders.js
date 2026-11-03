@@ -359,8 +359,10 @@ float haloNorm(vec4 D) {
 // settling: its size says only how long the orbit has run. What grows toward
 // the Julia set is the time D takes to fall below HALO_EPS (a pixel near the
 // set wanders close to it first), so a Julia view is lit from that count: the
-// iteration where |D| crossed (HALO_PREV is the |D| before it, for the
-// fraction), or -1 when it never did, which is the brightest.
+// iteration where |D| crossed (interpolated in log |D| from the step before,
+// so it is a smooth count), or -1 when it never did, which is the brightest.
+// It is scaled by log(1 + maxIter), so a deeper view's slower pixels don't
+// all reach the top.
 const float HALO_EPS = 1e-3;
 
 vec2 haloCross(vec2 s, int i, vec4 D) {
@@ -398,7 +400,7 @@ const float PAPER_BAND = 2.0;        // iterations of n per layer
 const float PAPER_STEP = 0.1;        // palette positions from one layer to the next
 const float PAPER_SHADOW = 0.55;     // darkest the shadow gets
 const float PAPER_REACH = 8.0;       // CSS pixels it falls over
-const float PAPER_CREAM = 0.4;      // share of cream in each layer's color
+const float PAPER_CREAM = 0.4;       // share of cream in each layer's color
 const vec3  PAPER_STOCK = vec3(0.97, 0.95, 0.9);
 const vec3  PAPER_HOLE = vec3(0.1, 0.08, 0.12);   // the set itself
 

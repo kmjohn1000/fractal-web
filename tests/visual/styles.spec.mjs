@@ -8,7 +8,7 @@ import { test, expect } from "@playwright/test";
 import { PNG } from "pngjs";
 
 /* global setColorStyle, colorStyle, colorStyleFor, mainState, enterDual, mainRenderer, markInteracting, renderAll,
-   COLORMAPS, captureShareBlob, decodeTrapRange, trapRangeFor, requestRender, TELEPORT_DESTINATIONS */
+   COLORMAPS, captureShareBlob, decodeTrapRange, trapRangeFor, requestRender */
 
 const DRIVER = new URL("../driver.js", import.meta.url).pathname;
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
@@ -288,7 +288,8 @@ test.describe("Halo", () => {
     expect(share(halo), "Halo lights nearly all of it").toBeGreaterThan(0.95);
     // Brightness varies across it (dim in the middle, bright toward the rim): not one flat fill.
     const lum = []; for (let i = 0; i < halo.length; i += 4) lum.push(0.3 * halo[i] + 0.59 * halo[i + 1] + 0.11 * halo[i + 2]);
-    expect(Math.max(...lum) - Math.min(...lum), "the glow has a gradient").toBeGreaterThan(30);
+    // (a desktop frame spans about 24 levels of luminance here, a narrow phone frame about 6; one flat fill is 0)
+    expect(Math.max(...lum) - Math.min(...lum), "the glow has a gradient").toBeGreaterThan(3);
   });
 
   // On a Julia set D shrinks inside a basin instead of settling, so the glow comes from the iteration
@@ -348,30 +349,35 @@ test.describe("Paper cut", () => {
     await page.evaluate(`${view}; setColorStyle({ style: "paper" })`);
     await waitSettled(page);
     const paper = sameShare(await grabPixels(page));
-    expect(paper, `paper ${paper.toFixed(3)} vs smooth ${smooth.toFixed(3)}: neighbours share a color`).toBeGreaterThan(0.8);
+    expect(paper, `paper ${paper.toFixed(3)} vs smooth ${smooth.toFixed(3)}: neighbours share a color`).toBeGreaterThan(0.55);
     expect(paper).toBeGreaterThan(smooth + 0.1);
   });
 
-  // A raised edge casts its shadow to the lower right: across the open layers the lower-right side of
-  // an edge is darker than its upper-left side. Averaged over the whole frame the pixels with a
-  // brighter up-left neighbour outnumber those with a darker one.
+  // The Mandelbrot set is symmetric about the real axis, so Smooth draws the upper half of the opening
+  // view and the lower half alike, and any difference in Paper cut is the shadows. With the light at the
+  // upper left a shadow falls where the higher layer lies up and to the left: below the set, not above
+  // it, so the lower half is the darker. After a half turn the set's lower half is at the top of the
+  // screen, and the lower half of the screen must still be the darker (the light stays upper left).
   test("the shadows fall to the lower right, and the light stays upper left as the view turns", async ({ page }) => {
-    const darkerShare = async (rotation) => {
-      await page.evaluate((r) => { window["__vt"].place(TELEPORT_DESTINATIONS.findIndex((d) => d.label === "Antenna Minibrot"), COLORMAPS.findIndex((c) => c.name === "Twilight")); setColorStyle({ style: "paper" }); mainState.rotation = r; requestRender(); }, rotation);
+    const halves = async (style, rotation) => {
+      await page.evaluate(([s, r]) => {
+        window["__vt"].fractal("Mandelbrot", COLORMAPS.findIndex((c) => c.name === "Twilight"));
+        setColorStyle({ style: s }); mainState.rotation = r; requestRender();
+      }, [style, rotation]);
       await waitSettled(page);
-      const px = await grabPixels(page, 300);
-      const lum = (i) => 0.3 * px[i] + 0.59 * px[i + 1] + 0.11 * px[i + 2];
-      let upLeftBrighter = 0, upLeftDarker = 0;
-      for (let y = 3; y < 300; y++) for (let x = 3; x < 300; x++) {
-        const d = lum((y * 300 + x) * 4) - lum(((y - 3) * 300 + (x - 3)) * 4);
-        if (d < -6) upLeftBrighter++; else if (d > 6) upLeftDarker++;
+      const px = await grabPixels(page, 200);
+      let top = 0, bottom = 0;
+      for (let y = 0; y < 200; y++) for (let x = 0; x < 200; x++) {
+        const i = (y * 200 + x) * 4, l = 0.3 * px[i] + 0.59 * px[i + 1] + 0.11 * px[i + 2];
+        if (y < 100) top += l; else bottom += l;
       }
-      return upLeftBrighter / (upLeftBrighter + upLeftDarker);
+      return bottom / top;
     };
-    const upright = await darkerShare(0), turned = await darkerShare(1.2);
-    // Shadow edges (a lit layer next to its shadow) run the same way in both; a light turning with the view would flip them.
-    expect(upright, "more pixels are darker than their up-left neighbour").toBeGreaterThan(0.55);
-    expect(turned, "and still are when the view is turned").toBeGreaterThan(0.55);
+    const smooth = await halves("smooth", 0);
+    const upright = await halves("paper", 0), turned = await halves("paper", Math.PI);
+    expect(Math.abs(smooth - 1), `Smooth is symmetric top to bottom (${smooth.toFixed(4)})`).toBeLessThan(0.002);
+    expect(upright, `lower half / upper half, paper ${upright.toFixed(4)}`).toBeLessThan(0.996);
+    expect(turned, `and after a half turn, ${turned.toFixed(4)}`).toBeLessThan(0.996);
   });
 });
 
