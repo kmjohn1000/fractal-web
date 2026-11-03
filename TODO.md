@@ -252,6 +252,32 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         it. Low priority next to the Mandelbrot-family variants already
         listed above.
 
+- Ideas from reading the MIT-licensed fractal-garden project (read-only
+  agent review, 2026-11-02; not approved, not started; the review is the
+  agent's reading of their source, not checked line by line by me). MIT would
+  require keeping their copyright notice in any reused code, which clashes
+  with this repo's all-rights-reserved license, so take only the ideas and
+  write everything from scratch.
+  - [ ] Place captions and themed groups in the Places sheet (this is the
+        "caption per place" idea in the atlas plan above, step 4): give each
+        place one plain sentence saying what you will see (their examples:
+        "Tiny branches repeat along the knot's edges", "Another tenfold zoom
+        into the same spiral") and an "N× deeper" label (rows already show
+        depth in words). They also group places by theme as well as by
+        fractal ("Start wide", "Valleys and spirals", "Along the antenna");
+        thematic groups may read better than grouping only by fractal, and a
+        "same spot, tenfold deeper" pair is a nice device. Add `detail` (and a
+        theme `group`) fields to the entries in `places.js` and show them in
+        `places-sheet.js`; keep established names apart from our own invented
+        names. Small.
+  - [ ] A caption voice note for place captions, info-card text and the
+        "Learn more" blurbs (their rules, which fit "passive delight, not a
+        mathy nerdfest"): start with something the reader can see or try;
+        short plain sentences; no lyrical filler and no generic "wow"; name
+        the one discovery in a sentence; cut any fact that doesn't earn "huh,
+        I didn't know that". Write it down in this file's workflow notes
+        rather than CLAUDE.md unless decided otherwise. Small.
+
 - [ ] Longer chaos-game demo in the app (user idea 2026-10-29; not approved,
       not started). The dot shapes' Play replay (`fern.js`, the `REPLAY_*`
       constants) shows 24 jumps one at a time with a 6-jump fading trail,
@@ -944,6 +970,19 @@ distance estimation → zoom-to-minibrot / AI discovery.
       mask idea, not standalone work)
 
 ### New and harder fractals
+- [ ] More L-system curves as data (idea from the fractal-garden review,
+      2026-11-02; not approved, not started; the rules below are the review
+      agent's reading of their preset files, so confirm each against a
+      published source before building, not against their repo). The
+      generic engine (`lsystem.js`, `dragon.js`) can take them, each needing
+      a thumbnail, a `docs/learn-more-links.md` row and an `APP_SHELL` entry:
+      Terdragon (axiom F, F -> F+F-F, angle 120); Twindragon (axiom FX+FX+,
+      X -> X+YF, Y -> FX-Y, angle 90); Moore curve (a closed Hilbert loop;
+      axiom LFL+F+LFL, L -> -RF+LFL+FR-, R -> +LF-RFR-FL+, angle 90); Peano
+      (axiom X, X -> XFYFX+F+YFXFY-F-XFYFX, Y -> YFXFY-F-XFYFX+F+YFXFY, angle
+      90); a Sierpinski curve (axiom F+XF+F+XF, X -> XF-F+F-XF+F+XF-F+F-X,
+      angle 90); Penrose P3 via an L-system (angle 36). All small. Weigh them
+      against the proposal to hold new fractal types back.
 - [ ] "Powers & Dominions" type (Jim Muth's Fractint MandAutoCritInZ):
       z <- a·z^b + d·z^f + c, defaults a=1, b=2.005, d=2, f=1 (b=2 is
       exactly Mandelbrot via w=z+1); z0 = critical point
