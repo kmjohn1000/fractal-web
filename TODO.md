@@ -172,6 +172,32 @@ git-ignored file.
 Help people find beautiful places, and give them more ways to see them.
 Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-minibrot.
 
+- [ ] Restricted-corner chaos games, one picker entry that deals a different
+      rule each time (user idea 2026-11-02; not approved, not started). A
+      chaos game on a polygon's corners where the next corner is restricted
+      by the last pick(s) makes a different fractal per rule. Rules seen in a
+      throwaway render (not in the repo): square at ratio 1/2 that never
+      repeats a corner, never picks the next corner clockwise, never picks
+      the opposite corner (a diamond with notched holes), or bars a
+      neighbour after a repeat (a snowflake cross); also hexagon "not
+      opposite" and pentagon "no repeat" or "not neighbour". Idea: one entry
+      in the Chaos Games picker group; opening it (or a small "Another rule"
+      button) deals the next rule from a shuffled list that never repeats the
+      last one, the rule's name shows on screen, and the rule id rides in the
+      share link beside the seed (`sd`) so a link reopens the same shape.
+      Cost: the game has memory, so `pickTransform` (`ifs.js` ~95) needs the
+      previous map, and so do `ifsAddressPoints`, `buildLeaves` (the zoom
+      sampler walks the address tree and would carry the last map per node)
+      and the two replay pick sites in `fern.js` (~279, ~722); an
+      allowed-successor table per rule; address colour by corner. `corners:
+      true` only suits equal, unrotated maps (fine for polygons). Medium to
+      large; a Play-only first version without the adaptive zoom sampler is
+      smaller but breaks the "zoom into every shape" convention. Needs the
+      usual new-mode pieces (twist comes free via `fernView`, thumbnail, a
+      `docs/learn-more-links.md` row, `APP_SHELL`). Skip the rules that render
+      as faint dust (square "differs from the last two", "not opposite and no
+      repeat") and the ratio changes (0.55 overlaps, 0.45 leaves gaps).
+
 - [ ] Longer chaos-game demo in the app (user idea 2026-10-29; not approved,
       not started). The dot shapes' Play replay (`fern.js`, the `REPLAY_*`
       constants) shows 24 jumps one at a time with a 6-jump fading trail,
