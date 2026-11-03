@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.62.5 — 2026-11-03
+- Share links from deep views now carry the exact center (two extra fields, `ex` and `ey`), so a link opens at the same place to far more digits than a double holds. Links made before this open as they always did, and older builds open the new ones at the nearest double.
+
 ## 1.62.4 — 2026-11-03
 - Groundwork for deeper zoom: a deep view now keeps its center to far more digits than a double holds, and panning, pinching, the wheel, box zoom, the arrow keys and Back move and restore it exactly. Nothing visible changes yet; the picture is still drawn from the double.
 

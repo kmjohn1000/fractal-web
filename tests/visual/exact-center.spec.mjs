@@ -5,7 +5,7 @@
 import { test, expect } from "@playwright/test";
 
 /* global mainState, setCenter, moveCenter, exactCenter, exactValid, toExact, fromExact, screenToComplex, mainRenderer,
-   pushHistory, popHistory, EXACT_FROM, EXACT_DROP, els */
+   pushHistory, popHistory, EXACT_FROM, EXACT_DROP, els, buildShareHash, parseShareHash, applyShareLink */
 
 let pageErrors = [];
 
@@ -182,4 +182,82 @@ test("Back restores the exact center, not just the double", async ({ page }) => 
   });
   expect(r.same).toBe(true);
   expect(r.valid).toBe(true);
+});
+
+// ---------------------------------------------------------------- share links
+
+test("a deep link carries the exact center and opens at it", async ({ page }) => {
+  await setDeep(page);
+  const r = await page.evaluate(() => {
+    moveCenter(mainState, 7.3e-23, -4.1e-23);
+    const a = exactCenter(mainState);
+    const hash = buildShareHash();
+    const p = new URLSearchParams(hash.slice(1));
+    // Somewhere else first, so the link has to bring the view back.
+    setCenter(mainState, -0.5, 0);
+    mainState.scale = 1;
+    applyShareLink("https://example.test/" + hash);
+    const b = exactCenter(mainState);
+    return { hasFields: p.has("ex") && p.has("ey"), v: p.get("v"), x: p.get("x"), same: a.ex === b.ex && a.ey === b.ey,
+      valid: exactValid(mainState), scale: mainState.scale };
+  });
+  expect(r.hasFields).toBe(true);
+  expect(r.v).toBe("1");
+  expect(r.x).toBe("0.4472135954957291");
+  expect(r.same).toBe(true);
+  expect(r.valid).toBe(true);
+  expect(r.scale).toBe(DEEP.scale);
+});
+
+test("a shallow view, or a deep one at exactly its doubles, writes no exact fields", async ({ page }) => {
+  const r = await page.evaluate((d) => {
+    setCenter(mainState, -0.5, 0.25);
+    mainState.scale = 1;
+    const shallow = buildShareHash();
+    setCenter(mainState, d.cx, d.cy);
+    mainState.scale = d.scale;
+    moveCenter(mainState, 0, 0); // an exact pair, equal to the doubles
+    const atDoubles = buildShareHash();
+    return { shallow: /[?&#]ex=/.test(shallow), atDoubles: /[&]ex=/.test(atDoubles) };
+  }, DEEP);
+  expect(r.shallow).toBe(false);
+  expect(r.atDoubles).toBe(false);
+});
+
+test("an old-style link (no ex, ey) opens with its doubles as the exact center", async ({ page }) => {
+  const r = await page.evaluate((d) => {
+    // The previous view has an exact pair that the link must not inherit.
+    setCenter(mainState, d.cx, d.cy);
+    mainState.scale = d.scale;
+    moveCenter(mainState, 1e-23, 0);
+    const old = "#v=1&m=fractal&f=Mandelbrot&x=" + d.cx + "&y=" + d.cy + "&s=" + d.scale + "&r=0&i=500&cm=Classic";
+    const st = parseShareHash(old);
+    applyShareLink("https://example.test/" + old);
+    const e = exactCenter(mainState);
+    return { parsed: !!st, exact: st && st.exact, ex: String(e.ex), want: String(toExact(d.cx)), cx: mainState.cx };
+  }, DEEP);
+  expect(r.parsed).toBe(true);
+  expect(r.exact).toBeNull();
+  expect(r.cx).toBe(DEEP.cx);
+  expect(r.ex).toBe(r.want);
+});
+
+test("a tampered pair is ignored and the link opens at its doubles", async ({ page }) => {
+  const r = await page.evaluate((d) => {
+    setCenter(mainState, d.cx, d.cy);
+    mainState.scale = d.scale;
+    moveCenter(mainState, 9e-24, 2e-24);
+    const good = buildShareHash();
+    const base = "#v=1&m=fractal&f=Mandelbrot&x=" + d.cx + "&y=" + d.cy + "&s=" + d.scale + "&r=0&i=500&cm=Classic";
+    const bad = {
+      notHex: base + "&ex=zz&ey=1",
+      onlyOne: good.replace(/&ey=[^&]*/, ""),
+      tooLong: base + "&ex=" + "f".repeat(60) + "&ey=1",
+      wrongDouble: base + "&ex=1&ey=1", // a valid pair, but not the center x and y name
+    };
+    const out = {};
+    for (const [k, h] of Object.entries(bad)) { const st = parseShareHash(h); out[k] = st ? st.exact : "rejected"; }
+    return out;
+  }, DEEP);
+  expect(r).toEqual({ notHex: null, onlyOne: null, tooLong: null, wrongDouble: null });
 });

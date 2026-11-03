@@ -3,26 +3,26 @@
 // colormap-picker.js; applyShareHashFromUrl and applyShareLink are called from init in app.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { Platform } from "./platform.js?v=1.62.4";
-import { COLORMAPS, SOLID_COLORS } from "./colormaps.js?v=1.62.4";
-import { FRACTAL_CONFIGS } from "./configs.js?v=1.62.4";
-import { LINE_CURVES } from "./dragon.js?v=1.62.4";
-import { Diag } from "./diag.js?v=1.62.4";
-import { EXTRA_MODES, isCurveMode, isIfsMode } from "./fractal-defs.js?v=1.62.4";
-import { limitScale } from "./deepzoom.js?v=1.62.4";
-import { COLOR_BANDS_RANGE, STYLE_LINK_CODES, colorStyle } from "./color-styles.js?v=1.62.4";
-import { HEXAFLAKE_DEFAULT_DEPTH, HEXAFLAKE_MAX_DEPTH, currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, juliaState, kochState, mainState, mode, treeState, vectorColors } from "./state.js?v=1.62.4";
-import { colormapIndex, colormapIndexNamed, defaultColormapName, setColorStyle, setColormapIndex, setColormapPicked } from "./state-colors.js?v=1.62.4";
-import { requestRender, updateLUT } from "./render-layout.js?v=1.62.4";
-import { normalizeAngle } from "./view-math.js?v=1.62.4";
-import { enterDual, exitDual, selectFractal, setCornerRule, setMode } from "./modes.js?v=1.62.4";
-import { VECTOR_VIEWS, dragonNav, fernNav, fitVectorView, fittedVectorModes } from "./vector-interaction.js?v=1.62.4";
-import { PENROSE_HH_MAX, PENROSE_HH_MIN, penroseCenterFields, penroseClampHalfHeight, penroseParseExact } from "./penrose.js?v=1.62.4";
-import { cancelTeleport } from "./teleport.js?v=1.62.4";
-import { scheduleSharedRun } from "./pattern-controls.js?v=1.62.4";
-import { currentRunSeed, parseRunSeed } from "./chaos-run.js?v=1.62.4";
-import { cornerDeal, parseCornerRule } from "./corner-rules.js?v=1.62.4";
-import { setFernColor, updateColorSwatches } from "./colormap-picker.js?v=1.62.4";
+import { Platform } from "./platform.js?v=1.62.5";
+import { COLORMAPS, SOLID_COLORS } from "./colormaps.js?v=1.62.5";
+import { FRACTAL_CONFIGS } from "./configs.js?v=1.62.5";
+import { LINE_CURVES } from "./dragon.js?v=1.62.5";
+import { Diag } from "./diag.js?v=1.62.5";
+import { EXTRA_MODES, isCurveMode, isIfsMode } from "./fractal-defs.js?v=1.62.5";
+import { limitScale } from "./deepzoom.js?v=1.62.5";
+import { COLOR_BANDS_RANGE, STYLE_LINK_CODES, colorStyle } from "./color-styles.js?v=1.62.5";
+import { HEXAFLAKE_DEFAULT_DEPTH, HEXAFLAKE_MAX_DEPTH, currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, juliaState, kochState, mainState, mode, treeState, vectorColors } from "./state.js?v=1.62.5";
+import { colormapIndex, colormapIndexNamed, defaultColormapName, setColorStyle, setColormapIndex, setColormapPicked } from "./state-colors.js?v=1.62.5";
+import { requestRender, updateLUT } from "./render-layout.js?v=1.62.5";
+import { exactFromLink, exactLinkFields, normalizeAngle, setCenter } from "./view-math.js?v=1.62.5";
+import { enterDual, exitDual, selectFractal, setCornerRule, setMode } from "./modes.js?v=1.62.5";
+import { VECTOR_VIEWS, dragonNav, fernNav, fitVectorView, fittedVectorModes } from "./vector-interaction.js?v=1.62.5";
+import { PENROSE_HH_MAX, PENROSE_HH_MIN, penroseCenterFields, penroseClampHalfHeight, penroseParseExact } from "./penrose.js?v=1.62.5";
+import { cancelTeleport } from "./teleport.js?v=1.62.5";
+import { scheduleSharedRun } from "./pattern-controls.js?v=1.62.5";
+import { currentRunSeed, parseRunSeed } from "./chaos-run.js?v=1.62.5";
+import { cornerDeal, parseCornerRule } from "./corner-rules.js?v=1.62.5";
+import { setFernColor, updateColorSwatches } from "./colormap-picker.js?v=1.62.5";
 
 // ---------------------------------------------------------------- share: links
 
@@ -45,6 +45,10 @@ export function buildShareHash() {
     const s = mainState;
     p.set("f", currentName);
     put("x", s.cx); put("y", s.cy); put("s", s.scale); put("r", s.rotation || 0);
+    // A deep view's exact center (ex, ey: signed hex of a 2^-192 fixed point), only when the doubles aren't it.
+    // Older builds ignore the two fields and open the view at the doubles. See view-math.js.
+    const exact = exactLinkFields(s);
+    if (exact) { p.set("ex", exact[0]); p.set("ey", exact[1]); }
     // The Burning Ship's upright picture (state.flipY), written only when it
     // is on: x and y are real coordinates either way, and a link without
     // the field (every link made before 1.44.0) opens as it always did.
@@ -61,6 +65,8 @@ export function buildShareHash() {
       p.set("d", "1");
       put("jcx", mainState.cx); put("jcy", mainState.cy); // = c; see applyShareState
       put("jx", j.cx); put("jy", j.cy); put("js", j.scale); put("jr", j.rotation || 0);
+      const jexact = exactLinkFields(j);
+      if (jexact) { p.set("jex", jexact[0]); p.set("jey", jexact[1]); }
       put("ji", j.maxIter); put("jb", j.baseScale);
     }
   } else {
@@ -156,12 +162,15 @@ export function parseShareHash(hash) {
       const st = { mode: m, name, ...view, maxIter: int("i", 50, 2000), iterAutoLocked: p.get("il") === "1",
         // fl=1 only counts on a fractal that has the flipped picture; lenient, like the style fields.
         flipY: !!FRACTAL_CONFIGS[name].flipY && p.get("fl") === "1",
-        cm: cmIndex(), dual: false, color: parseStyleFields(p) };
+        cm: cmIndex(), dual: false, color: parseStyleFields(p),
+        // The exact center of a deep view, when the link has a valid one (see exactFromLink); else null.
+        exact: exactFromLink(p, "ex", "ey", view.cx, view.cy) };
       if (p.get("d") === "1" && FRACTAL_CONFIGS[name].dual) {
         st.dual = true;
         st.julia = { juliaC: [num("jcx", big), num("jcy", big)], cx: num("jx", big), cy: num("jy", big),
           scale: num("js", (v) => pos(v) && big(v)), rotation: normalizeAngle(num("jr", big)),
           maxIter: int("ji", 50, 2000), baseScale: num("jb", (v) => pos(v) && big(v)) };
+        st.juliaExact = exactFromLink(p, "jex", "jey", st.julia.cx, st.julia.cy);
       }
       return st;
     }
@@ -224,14 +233,18 @@ export function applyShareState(st) {
     setColorStyle({ style: st.color.style, density: st.color.density, offset: st.color.offset });
     if (dualActive) exitDual();
     selectFractal(st.name, { fresh: true });
-    Object.assign(mainState, { cx: st.cx, cy: st.cy, scale: limitScale(mainState, st.scale), rotation: st.rotation, flipY: st.flipY,
+    Object.assign(mainState, { scale: limitScale(mainState, st.scale), rotation: st.rotation, flipY: st.flipY,
       maxIter: st.maxIter, iterAutoLocked: st.iterAutoLocked });
+    // The center goes through setCenter, which also clears any exact pair left by the previous view; a link
+    // without ex/ey (every link made before 1.62.5) takes its doubles as the exact center.
+    setCenter(mainState, st.cx, st.cy, st.exact?.[0], st.exact?.[1]);
     if (st.dual) {
       enterDual();
       // jcx/jcy are ignored: c is the main pane's center (synced in
       // renderAll). Links still carry them so older builds, whose parser
       // requires them, can open links from this one.
       Object.assign(juliaState, st.julia, { juliaC: [mainState.cx, mainState.cy], iterAutoLocked: st.iterAutoLocked });
+      setCenter(juliaState, st.julia.cx, st.julia.cy, st.juliaExact?.[0], st.juliaExact?.[1]);
     }
     els.dualBtn.classList.toggle("active", dualActive);
     els.iterSlider.value = mainState.maxIter;

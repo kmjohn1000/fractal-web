@@ -71,6 +71,33 @@ export function moveCenter(state, dx, dy) {
   }
 }
 
+// The exact center's share-link fields: signed lowercase hex of the BigInt (no prefix). A coordinate beyond
+// +-4096 world units has no use as a fractal view, and the bound keeps a hand-made link small.
+export const EXACT_HEX_LIMIT = 1n << (EXACT_FRAC + 12n);
+export const exactToHex = (b) => (b < 0n ? "-" : "") + (b < 0n ? -b : b).toString(16);
+// A link's exact coordinate: strict (signed lowercase hex, at most 52 digits, inside the bound), or null.
+export function exactFromHex(s) {
+  if (typeof s !== "string" || !/^-?[0-9a-f]{1,52}$/.test(s)) return null;
+  const v = s[0] === "-" ? -BigInt("0x" + s.slice(1)) : BigInt("0x" + s);
+  return v > -EXACT_HEX_LIMIT && v < EXACT_HEX_LIMIT ? v : null;
+}
+
+// The pair to write into a link: [ex, ey] as hex, or null when the doubles already are the center (the view is
+// shallow, has no exact pair, or its pair is exactly its doubles) so the link carries nothing extra.
+export function exactLinkFields(state) {
+  if (state.scale >= EXACT_FROM || !exactValid(state)) return null;
+  if (state.ex === toExact(state.cx) && state.ey === toExact(state.cy)) return null;
+  return [exactToHex(state.ex), exactToHex(state.ey)];
+}
+
+// Reads a pair back from the link's parameters, or null. Lenient: a missing, malformed or out-of-bound pair, or
+// one that doesn't round to the doubles x and y it travels with (an edited link), is left out and the link opens
+// at its doubles, the view an older build shows.
+export function exactFromLink(params, kx, ky, x, y) {
+  const ex = exactFromHex(params.get(kx)), ey = exactFromHex(params.get(ky));
+  return ex !== null && ey !== null && fromExact(ex) === x && fromExact(ey) === y ? [ex, ey] : null;
+}
+
 // Sets the center outright. ex and ey (BigInt) are optional; without them the doubles are the exact center.
 export function setCenter(state, cx, cy, ex = null, ey = null) {
   state.cx = cx; state.cy = cy;
