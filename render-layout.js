@@ -11,7 +11,7 @@ import { SAMPLE_OFFSETS, deepZoomEligible } from "./deepzoom.js?v=1.60.0";
 import { activePane, adaptLiveResolution, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, hexaflakeView, isInteracting, juliaRenderer, juliaState, kochState, kochView, mainRenderer, mainState, mode, paneHistory, treeState, treeView, vectorColors } from "./state.js?v=1.60.0";
 import { colormapIndex, vectorLite } from "./state-colors.js?v=1.60.0";
 import { dragonNav, fernNav, hexaflakeNav, kochNav, treeNav, vectorFitHalfHeight } from "./vector-interaction.js?v=1.60.0";
-import { flash, updateCompasses } from "./compass-ui.js?v=1.60.0";
+import { flash, prefersReducedMotion, updateCompasses } from "./compass-ui.js?v=1.60.0";
 import { cmGradient, labelColorButton } from "./colormap-picker.js?v=1.60.0";
 import { COLOR_LOOKS, colorSheetStyles, currentLookId } from "./color-sheet.js?v=1.60.0";
 import { updateDragonHud, updateFernHud, updateHexaflakeHud, updateHud, updateJuliaLabel, updateKochHud, updateTreeHud } from "./hud.js?v=1.60.0";
@@ -100,9 +100,11 @@ export function renderAll() {
   } else if (isCurveMode(mode)) {
     dragonView.render({
       depth: dragonState.depth, colorIndex: vectorColors[dragonView.curve], lite: vectorLite,
-      fitHalfHeight: vectorFitHalfHeight(dragonView.curve),
+      fitHalfHeight: vectorFitHalfHeight(dragonView.curve), animate: !prefersReducedMotion(),
     });
     updateDragonHud();
+    // The Penrose tiling's level change is a cross-fade that needs a frame after this one.
+    if (dragonView.animating) requestRender();
   } else {
     fernView.render(fernRenderOpts());
     updateFernHud();
