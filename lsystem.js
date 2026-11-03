@@ -41,6 +41,22 @@ export const SIERPINSKI_ARROWHEAD = {
   drawSymbols: ["A", "B"],
 };
 
+// The Penrose P3 tiling (thick and thin rhombs, five-fold): M, N, O and P draw nothing and only the
+// F steps left by the last iteration do, so a rule's own F is dropped by the next iteration. Rules
+// as published for L-systems (Rosetta Code, Processing's "Penrose Tile"); penrose.js walks it.
+export const PENROSE_TILING = {
+  axiom: "[N]++[N]++[N]++[N]++[N]",
+  rules: {
+    M: "OF++PF----NF[-OF----MF]++",
+    N: "+OF--PF[---MF--NF]+",
+    O: "-MF++NF[+++OF++PF]-",
+    P: "--OF++++MF[+PF++++NF]--NF",
+    F: "",
+  },
+  angleDeg: 36,
+  drawSymbols: ["F"],
+};
+
 // String rewriting: every character with a rule is replaced by it, all at
 // once per iteration; anything without one (+, -, [, ], placeholders)
 // passes through unchanged. Built with an array join -- repeated string
