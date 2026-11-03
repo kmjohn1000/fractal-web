@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.62.3 — 2026-11-03
+- Added Jacob's Ladder, a deep turned view of the Apollonian gasket, to the Places sheet (131 places).
+
 ## 1.62.2 — 2026-11-03
 - Removed the Zipper place from the Gasket (a mostly flat purple view); the Places sheet now has 130 places.
 

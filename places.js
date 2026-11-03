@@ -156,6 +156,9 @@ export const TELEPORT_DESTINATIONS = [
   { fractal: "Apollonian", label: "Circle Fifteen", re: "0", im: "0.215", scale: 0.2 },
   { fractal: "Apollonian", label: "Golden Glide", re: String(1 / Math.sqrt(5)), im: String(2 / Math.sqrt(5)), scale: 5e-2 },
   { fractal: "Apollonian", label: "Golden Dive", re: String(1 / Math.sqrt(5)), im: String(2 / Math.sqrt(5)), scale: 5e-2 / (9 + 4 * Math.sqrt(5)) ** 8, rotation: 0, spiral: true },
+  // Jacob's Ladder: the user's own find (a share link), a view near Golden Dive's fixed point and about 1.7x deeper,
+  // turned 1.0119 rad. Its digits are the link's, not 1/sqrt(5): the center sits a view-width or two off the fixed point.
+  { fractal: "Apollonian", label: "Jacob's Ladder", re: "0.4472135954957291", im: "0.8944271910020332", scale: 2.7838699774672232e-12, rotation: 1.011881497742925 },
   { fractal: "Apollonian", label: "Triangle Chain", re: "0.035190936333361365", im: "0.18426213483334736", scale: 2e-2 },
   { fractal: "Apollonian", label: "Lace Triangle", re: "-0.6314757303333053", im: "0.4824045318333193", scale: 3e-3 },
   { fractal: "Apollonian", label: "Bead Strand", re: "-0.3144318014344091", im: "0.7773181617212908", scale: 1e-2 },
