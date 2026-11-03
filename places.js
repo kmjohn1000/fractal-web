@@ -90,8 +90,8 @@ export const TELEPORT_DESTINATIONS = [
   { fractal: "Burn. Ship", label: "Clipper", re: "-1.8605", im: "-0.0035", scale: 4.5e-3, rotation: 0 },
   { fractal: "Burn. Ship", label: "Needle Forest", re: "-1.5099", im: "-0.00115", scale: 1.8e-3, rotation: 0 },
   { fractal: "Burn. Ship", label: "Stingray", re: "0.8774", im: "-1.5198", scale: 4e-2, rotation: Math.PI - 2.5 },
-  // Schooner is a small ship near the real axis; Rigging a view of the lines
-  // of spires between the larger ships.
+  // Schooner is a small ship near the real axis; Rigging a hull under curtains
+  // of fine filament lines.
   { fractal: "Burn. Ship", label: "Schooner", re: "-1.832315203", im: "-0.0006", scale: 0.0011, rotation: 0 },
   { fractal: "Burn. Ship", label: "Rigging", re: "-1.57488914", im: "-0.0025", scale: 0.005, rotation: 0 },
   // Tricorn copies alternate in kind: odd periods are baby Tricorns, even
