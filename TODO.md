@@ -1064,68 +1064,30 @@ distance estimation → zoom-to-minibrot / AI discovery.
       at all for centers near 1-2, up to 1.7x the drag for centers near
       0.1-0.3) and doesn't move at 7.8e-18 (1.6e17x), while zoom itself
       keeps working; there is no zoom cap
-- [ ] APPROVED 2026-11-03 (user chose the expensive fix, Mandelbrot family
-      first): exact view center for the perturbation fractals (Mandelbrot,
-      Julia, Tricorn, Ship, Celtic), down to a new floor near scale 1e-30
-      (where float32 deltas end). Not started. Plan, in steps, each its own
-      commit:
-      1. Exact center in the view: `state.ex/ey` (signed BigInt, units of
-         2^-192) beside the doubles `cx/cy`, which stay the rounded mirror so
-         the HUD, history, places and teleport keep working. Set only once
-         the view is deeper than about 1e-9; null before. The renderer uses
-         it only if it rounds to `cx/cy` (a stale one is dropped, so a missed
-         site can't draw a wrong view). One helper in `view-math.js`
-         (`moveCenter(state, dx, dy)`) adds a world offset to both.
-      2. Gestures: `screenToComplex` also returns the offset from the center
-         (`ox`, `oy`); pan, pinch/wheel anchoring (`before - after`), keys
-         and box zoom move the center by offset differences through
-         `moveCenter`, since `before.x - after.x` of two absolute doubles is
-         exactly what stalls. The snapshot preview in `renderer.js`
-         (`state.cx - snapView.cx`) needs the same.
-      3. Links, old and new: `x`, `y`, `s`, `r` stay the doubles and `v=1`
-         stays, so an older build opens a new link as the same view rounded
-         to a double (what it draws today); new fields `ex`, `ey` (signed
-         hex, like Penrose's) are written only when the exact center differs
-         from its double, and read only when present and when they round to
-         `x`, `y`. An old link has no `ex`, so its double is taken as the
-         exact center, which is the view it always showed. No `pv`-style
-         version flag is needed because nothing about the meaning of x, y, s
-         changes. Places may carry longer `re`/`im` strings the same way.
-      4. Reference orbit in BigInt: `computeReferenceOrbit` and a new
-         `chooseReference` take the exact center. The center's orbit if it
-         never escapes; otherwise an 8x8 grid of BigInt orbits (measured
-         2026-11-03 on this Mac: 64 orbits of 2000 steps take 17 ms at 128
-         bits, 21 ms at 192, 24 ms at 256, so the scan costs tens of ms; a
-         phone is slower and is not measured), longest survivor wins. The
-         old 32x32 float64 scan can't be reused deep (its doubles have no
-         pixel-scale offsets left). Julia mode keeps the double `juliaC`.
-      5. Floor: a clamp for everything else (Newton, Phoenix, Nova,
-         Apollonian, Carpet, Gasket, the Julia pane's c), so none stalls:
-         the "bottom of the map" cue in the Zoom floor item below.
-      6. Tests: pan 1 px at 1e-20 moves the exact center; zoom about a
-         point keeps it fixed; a link written deep and read back is
-         identical; an old-style link still opens; pixel output against the
-         float64 oracle where it overlaps (`scripts/oracle-compare.mjs`),
-         `default-identity.mjs` zero differing pixels. Tier 3 (it changes
-         pixels), a version bump per commit that changes the app.
-      Unknowns: whether float32 deltas hold to 1e-30 in this shader
-      (inference only so far), the scan cost on a phone, and the Apollonian,
-      Carpet and Gasket types, which need the same exact center fed through
-      their own frames (a second plan; Apollonian's `apolloFrame` composes
-      inversions, whose error growth per step has to be measured first).
-- [ ] Zoom floor (user idea 2026-11-03; not approved). Past about 1e13 to
-      1e15, depending on how large the center's coordinates are, the float64
-      view center can't absorb a one-pixel pan, so panning stalls and
-      zoom-about-cursor drifts (the measurements are in the item above).
-      Proposal: clamp the scale so one pixel stays a few ulps of the center
-      (`scale >= k * ulp(max(|cx|, |cy|)) * pixels`, k to be chosen by
-      looking), with a short "bottom of the map" cue when a pinch or wheel
-      hits it. This is the cheap alternative to the BigInt center and
-      reference orbit above: it fixes the stall and the drift without
-      deeper math, at the price of a floor. Test case: the Apollonian link
-      at s of about 2.8e-12, center magnitude 1 (Jacob's Ladder, 1.62.3, is
-      such a place). Check that the clamp leaves every place's saved view
-      reachable and the default output unchanged (`default-identity.mjs`).
+- [ ] Exact center, what is left after 1.62.4 to 1.62.8 (see Done): (a) the
+      Apollonian gasket, Newton and Phoenix still keep a float64 (or fixed
+      point) center and stop at their zoom floor; the Apollonian needs a
+      second plan, because `apolloFrame` composes inversions and its error
+      growth per step has to be measured first (Jacob's Ladder is the test
+      case, now 12.5x above its floor); (b) the 8x8 BigInt reference scan
+      was measured on a Mac only (about 0.3 ms when the center survives, up
+      to 14 ms when it escapes late, maxIter 2000), not on a phone; (c) the
+      exact pair is dropped when a view zooms out past scale 1e-4 (a wide
+      view needs no more than a double), so zooming far out and back in loses
+      the sub-double position; Back keeps it; (d) a flight that lands on the
+      same double as a stale pair leaves the pair in place (`flyTo` assigns
+      the target with Object.assign); under a pixel for every shipped place;
+      (e) a real iPhone check of the deep views (speed, heat, the float32
+      range: denormals may flush earlier on a phone than on the Mac).
+- [ ] Deeper than 1e-30 (user question 2026-11-03; not approved). The center
+      (192 bits, about 1e-55) and the BigInt orbit are not the limit; the
+      GPU's float32 deltas are (measured clean to 1e-33, grainy by 1e-36 on
+      the Mac). Needs extended-range deltas in the perturbation shader:
+      rescaled deltas (z = S*w with a CPU-tracked power-of-two S) or a
+      floatexp (mantissa plus exponent), likely 150-300 lines and 2-3x
+      slower per pass (unmeasured); a wider `EXACT_FRAC`; and past 2000
+      iterations the multi-pass iteration item below. Measure on the phone
+      first with `#diag`. See `docs/render-research-2026-10-20.md` section 3.1.
 - [ ] True infinite zoom on the Sierpinski types (user idea 2026-11-03; not
       approved). Store the view as a digit address plus a small local
       offset, and renormalize on crossing into a child cell, so the view no
@@ -1207,6 +1169,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
+- Exact view center and zoom floor (1.62.4 to 1.62.8, 2026-11-03, user chose the expensive fix, Mandelbrot family first): deep views keep their center as a BigInt pair (`ex`/`ey`, 2^-192 units) beside the doubles, moved by offsets in pan, pinch, wheel, box zoom, keys and Back (`ba9c60f`, 1.62.4); share links carry `ex`/`ey` only when the doubles aren't the center, old links open at their doubles, bad pairs are ignored (`0df5b47`, 1.62.5); below scale 1e-13 the reference orbit and the 8x8 reference search run in BigInt (`ade1e90`, 1.62.6); a zoom floor through `limitScale`: escape-time family 1e-30, Apollonian/Newton/Phoenix two last-digit steps, Nova as before, Carpet and Gasket none yet (`d3c6d10`, 1.62.7); the dual button carries the exact center (`21f8498`, 1.62.8). Verified: lint; new specs `exact-center` (14), `deep-exact` (22), `deep-exact-edges` (13), `zoom-floor` (5) on `webkit-iphone15` and `chromium-desktop`; a view moved N pixels equals the original N pixels over (mean 0.002 at 1e-16 to 1e-33, 9.4 with the exact path off), `default-identity.mjs` zero differing pixels; every place above its floor. Float32 deltas were measured clean to 1e-33, grainy by 1e-36 (Mac). Not verified: a real iPhone (speed, heat, denormals), the float64 oracle below 1e-13 (it cannot go that deep), the whole visual suite.
 - Halo and Paper cut Looks (1.60.0, 2026-11-03, user approved after seeing mock-ups and the build's screenshots; branch merged in `fdaefb8`, version in `b9bec8c`): both share Relief's compiled program (style codes `ha` and `pc`; no new program, `warmColorVariants` unchanged); Halo glows the interior from log(1+|D|) over the palette (the cardioid and bulb shortcut is skipped for this style only), with a different formula for Julia sets (D decays and underflows in float32, so the glow comes from the iteration where |D| falls below 1e-3), and is greyed on the Burning Ship and Celtic (their non-escaping regions saturate D and draw flat white); Paper cut layers every 2 iterations of the smooth count, mixed with cream, with a shadow from the gradient of the count gated against the upper-left light. New Looks: Halo on Inferno, Paper cut on Twilight. The Color sheet's Looks grid is 5 plus 4 on phones and the Custom tab's style row wraps to two rows, so the sheet is taller (354 px, 41.5% of an 852 pt screen, up from about 324 px); a sheet-height guard went from 40 to 35 percent. Verified: lint; `default-identity.mjs` zero differing pixels in every state, on the branch and on main; the float64 oracle within its gates on calm views (higher on chaotic and deep views; Halo "fails" on Ship, Celtic and Armada because it draws Smooth there by design); 480 specs passed on main on all four setups after re-recording the two Color sheet baselines (looked at them) and writing the eight new style baselines. Not verified: iPhone cost and battery. Halo's cost: about 99 ms against Relief's 21 ms at the Mandelbrot opening view (the cardioid and bulbs now run to `maxIter`) and about 1,191 ms against 938 ms at deep Seahorse, measured at heavy machine load, so rough. Halo at the deep Rabbit Hole place (1e-3) is one flat orange fill.
 - Coherence pass from the 2026-11-03 design review (1.61.1 `3253f7a`, 1.62.0 `b56ef24`; user asked for the recommendations to be implemented): the pattern shapes' color button opens the same Color sheet as the fractals (`color-sheet.js`: `openSolidColorSheet`, a five-by-two grid of the ten flat colors with Done), so `#colormapMenu` and its code, CSS and element are gone; the sheet's arrow keys no longer pan the view behind it (`rovingRadios` stops propagation, which also fixes the fractals' palette grid); the pattern shapes' info cards no longer show "Browse places" (they have no places), which also lets a description fit on the landscape phones; the info card's technical line breaks between readings instead of inside one; sentence-case "Chaos games" and "Corner rules"; the Places row says "named places to dive into"; the info and dual buttons are named "Info card" and "Dual view"; the palette-only fractals' color button says "Choose palette". Verified: lint; on `webkit-iphone15` and `chromium-desktop`, 552 specs after 1.61.1 and 1103 after 1.62.0 (plus the color specs on the way), the old menu's tests rewritten for the sheet. Looked at the new sheet on a 393 px phone next to the palette-only sheet. Not verified: real iPhone, VoiceOver on the new sheet, landscape by eye (the specs check fit on 852x393 and 667x375). Then 1.62.1 (user chose the corner-brackets icon, option A of seven mocked in the real toolbar, and a rename): the Reset button is now four corner brackets named "Show whole shape" (it was a house named "Reset view"), in all six toolbar rows; 551 specs on two setups. Left open, needs a decision: the fractal picker has no title or Done while the sheets do.
 - Penrose tiling by deflation (1.61.0, 2026-11-03, user approved the merge after seeing the screenshots; merged in `f6d5208`, version in `af8e5e7`): finer tiles as you zoom, down to about 1e15, instead of one fixed patch. `penrose.js` is rewritten to cut Robinson triangles from the viewport (the L-system walker `PENROSE_TILING` is gone from `lsystem.js`); the level follows the depth slider (now 1 to 8, default 5) plus the zoom, levels cross-fade (Play fades from level to level; reduced motion snaps); the exact view center is kept as a 128-bit fixed-point origin plus a small double offset, so deep views stay exact (`ox`/`oy` in the view, `ex`/`ey` in links); deep views color thick and thin rhombs by tile type. Links: new ones carry `pv=2`; 1.59.0 links open framed on the whole star with depth 9 read as 8. The info card says "Each level cuts every tile into smaller ones, so the tiles get finer as you zoom in." and shows "(+N from zoom)". Verified: lint; `penrose.spec.mjs` (29 tests, including drawn edges against an independent 256-bit reference at 8 places from 1e5 to 1e15, worst error under 0.02 px); on main after the merge 382 specs passed on `webkit-iphone15` and `chromium-desktop` (penrose, vector, info-card, share-menu, solid-colors); `default-identity.mjs` zero differing pixels; the `mode-penrose` baseline re-recorded on all four setups after looking at it. Not verified: raster speed and memory on a real iPhone (headless software canvas: a full depth-5 frame zoomed 180 to 525 ms, a gesture frame 30 to 55 ms; dropping the glow above about 20k triangles is the fallback), real multi-touch, real Safari. Every tile edge is drawn twice (once per rhomb); deduping would roughly halve the segments but needs the P3 edge-arrow rule, not derived. A frame caught mid-fade can look fuzzy.
