@@ -576,6 +576,21 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       Relax value R, which the same rule allows but which adds controls the
       user was unsure about. Each new entry changes the fractal count in the
       store listing.
+      Conventions (a web search, 2026-11-02; third-party pages, check Ultra
+      Fractal's and Wikipedia's own pages before quoting): the formula is Paul
+      Derbyshire's Nova, named by Damien M. Jones; Ultra Fractal's "Nova
+      (Mandelbrot)" defaults to exponent 3 and start value 1, and Wikipedia
+      says the Mandelbrot variant starts at a critical point of the Newton
+      step, which for z^n - 1 includes the root z = 1 for every n, so
+      starting at 1 is valid for all powers. So "Nova" in the picker is
+      already the conventional exponent-3 Nova; the new ones would be named
+      by power (Nova², Nova⁴ …) like Multibrot³.
+      Fractional powers (CPU mock-up, principal branch): they render and
+      morph smoothly between the integer shapes (n = 2.25 and 2.5 grow out of
+      n = 2, 2.75 looks like n = 3, 3.25 and 3.5 are n = 3 with a black seam
+      along the negative real axis, the branch cut). They need a polar power
+      in the shader (log, exp, atan) instead of repeated multiplication. More
+      interesting as a slow morph animation than as separate entries.
 - [ ] A one-line "what you're looking at" blurb per fractal or place, in
       the info card or picker (idea from the WebSim Fractal Explorer review,
       2026-10-09). Surprise me itself now covers every zoom fractal
