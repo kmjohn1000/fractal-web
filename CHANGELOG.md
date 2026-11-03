@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.58.0 — 2026-11-03
+- Added 24 new places across eleven fractals, bringing the Places sheet to 131: deep Mandelbrot dives, Burning Ship vessels, a Tricorn minibrot with spokes, more Julia Rabbit ears, rotated carpets, Newton and Apollonian dives (one of them a spiral flight), and more.
+
 ## 1.57.0 — 2026-11-03
 - Added Corner Rules: a chaos game on a polygon's corners where the next corner is restricted by the last pick or picks. Each tap on its picker entry deals a different rule (seven in all, from a square, a hexagon and a pentagon), and the "Another rule" button beside Play deals the next. It zooms and turns like the other dot shapes.
 - The rule's name shows over the picture and on the info card, and share links remember the rule.

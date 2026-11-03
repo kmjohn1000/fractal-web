@@ -2,9 +2,9 @@
 // in ifs.js. scripts/make-short.mjs patches the REPLAY_* constants below as the page loads this file
 // (PENTAGON_RATIO, in ifs.js, it patches there).
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { IFS_FRESHEN_STEPS, IFS_MAX_ATTEMPTS_PER_POINT, IFS_SLICE_MS, IFS_SYSTEMS, buildLeaves, ifsData, ifsRandom, ifsTransformColors, pickTransform } from "./ifs.js?v=1.57.0";
-import { backdropPixels } from "./vectorgeom.js?v=1.57.0";
-import { cornerLeaves, cornerPick, cornerSample } from "./corner-rules.js?v=1.57.0";
+import { IFS_FRESHEN_STEPS, IFS_MAX_ATTEMPTS_PER_POINT, IFS_SLICE_MS, IFS_SYSTEMS, buildLeaves, ifsData, ifsRandom, ifsTransformColors, pickTransform } from "./ifs.js?v=1.58.0";
+import { backdropPixels } from "./vectorgeom.js?v=1.58.0";
+import { cornerLeaves, cornerPick, cornerSample } from "./corner-rules.js?v=1.58.0";
 
 // --- Chaos-game replay -------------------------------------------------------
 // The Play button of the dot shapes shows the chaos game itself: from an empty
