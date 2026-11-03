@@ -3,14 +3,14 @@
 // calls color-sheet.js (openColorSheet, openSolidColorSheet, colorSheetApplies) only inside event handlers.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { SOLID_COLORS } from "./colormaps.js?v=1.62.5";
-import { curveRamp } from "./dragon.js?v=1.62.5";
-import { IFS_SYSTEMS, ifsTransformColors } from "./ifs.js?v=1.62.5";
-import { kochShade } from "./koch.js?v=1.62.5";
-import { treeSwatchStops } from "./pythagoras.js?v=1.62.5";
-import { hexaflakeShade } from "./hexaflake.js?v=1.62.5";
-import { dragonView, els, fernView, vectorColors } from "./state.js?v=1.62.5";
-import { colorSheetApplies, colorSheetSolid, openColorSheet, openSolidColorSheet } from "./color-sheet.js?v=1.62.5";
+import { SOLID_COLORS } from "./colormaps.js?v=1.62.6";
+import { curveRamp } from "./dragon.js?v=1.62.6";
+import { IFS_SYSTEMS, ifsTransformColors } from "./ifs.js?v=1.62.6";
+import { kochShade } from "./koch.js?v=1.62.6";
+import { treeSwatchStops } from "./pythagoras.js?v=1.62.6";
+import { hexaflakeShade } from "./hexaflake.js?v=1.62.6";
+import { dragonView, els, fernView, vectorColors } from "./state.js?v=1.62.6";
+import { colorSheetApplies, colorSheetSolid, openColorSheet, openSolidColorSheet } from "./color-sheet.js?v=1.62.6";
 
 // ---------------------------------------------------------------- color buttons
 

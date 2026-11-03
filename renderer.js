@@ -3,12 +3,13 @@
 // (fractal-defs.js), deepzoom.js and color-styles.js. It imports nothing from state.js: state.js
 // calls createFractalRenderer(canvas, host) and passes the two live values a frame needs.
 // An ES module: every top-level declaration is exported (test-hooks.js and state.js rely on it).
-import { FTYPE, PHOENIX_P } from "./configs.js?v=1.62.5";
-import { Diag } from "./diag.js?v=1.62.5";
-import { FRAG_SRC, NEWTON_DEEP_FRAG_SRC, PHOENIX_DEEP_FRAG_SRC, PREVIEW_FRAG_SRC, VERT_SRC, VERT_SRC_300 } from "./shaders.js?v=1.62.5";
-import { apolloCapColor, apolloFrame, digitCellFrame, digitColorCycle, digitFractalDepth, digitSubPixelColor, isDigitFractal } from "./fractal-defs.js?v=1.62.5";
-import { DEEP_ZOOM_THRESHOLD, FIXED_THIRD, PHOENIX_DEEP_SAMPLES, PHOENIX_EXACT_CAP, SAMPLE_OFFSETS, chooseReference, computeReferenceOrbit, fixedLimbs, newtonDeepEligible, newtonOrbitF64, perturbationEligibleType, phoenixDeepEligible, phoenixEscapeF64, phoenixReference } from "./deepzoom.js?v=1.62.5";
-import { colorStyle, colorStyleFor, styleDrawn, trapRangeFor } from "./color-styles.js?v=1.62.5";
+import { FTYPE, PHOENIX_P } from "./configs.js?v=1.62.6";
+import { Diag } from "./diag.js?v=1.62.6";
+import { FRAG_SRC, NEWTON_DEEP_FRAG_SRC, PHOENIX_DEEP_FRAG_SRC, PREVIEW_FRAG_SRC, VERT_SRC, VERT_SRC_300 } from "./shaders.js?v=1.62.6";
+import { apolloCapColor, apolloFrame, digitCellFrame, digitColorCycle, digitFractalDepth, digitSubPixelColor, isDigitFractal } from "./fractal-defs.js?v=1.62.6";
+import { DEEP_ZOOM_THRESHOLD, FIXED_THIRD, PHOENIX_DEEP_SAMPLES, PHOENIX_EXACT_CAP, SAMPLE_OFFSETS, chooseReference, chooseReferenceExact, computeReferenceOrbit, computeReferenceOrbitExact, exactReferencePoint, exactRenderEligible, fixedLimbs, newtonDeepEligible, newtonOrbitF64, perturbationEligibleType, phoenixDeepEligible, phoenixEscapeF64, phoenixReference } from "./deepzoom.js?v=1.62.6";
+import { EXACT_FROM, EXACT_ONE, exactCenter, exactValid, toExact } from "./view-math.js?v=1.62.6";
+import { colorStyle, colorStyleFor, styleDrawn, trapRangeFor } from "./color-styles.js?v=1.62.6";
 
 // ---------------------------------------------------------------- WebGL renderer factory
 
@@ -545,7 +546,10 @@ export function createFractalRenderer(canvas, host) {
     // A resize clears the canvas, so there's nothing left to blend into.
     if (resize()) sampleIndex = 0;
     if (sampleIndex === 0) {
-      lastView = { cx: state.cx, cy: state.cy, scale: state.scale, rotation: state.rotation || 0 };
+      // A deep view also remembers its exact center, so the gesture preview can place the snapshot by the
+      // difference of two exact centers (see renderPreview).
+      lastView = { cx: state.cx, cy: state.cy, scale: state.scale, rotation: state.rotation || 0,
+        ...(state.scale < EXACT_FROM ? exactCenter(state) : {}) };
       needSnapshot = true;
     }
     // Mid-gesture, deep views show the moving preview instead (renderAll);
@@ -634,16 +638,32 @@ export function createFractalRenderer(canvas, host) {
       return null;
     }
 
-    const key = [state.ftype, state.cx, state.cy, state.scale, state.rotation || 0, !!state.flipY,
+    // Below exactRender.below (deepzoom.js) the reference comes from the view's exact center (BigInt), so the key names it.
+    const useExact = exactRenderEligible(state);
+    const key = [state.ftype, state.cx, state.cy, useExact ? (exactValid(state) ? state.ex + ":" + state.ey : "exact") : "",
+      state.scale, state.rotation || 0, !!state.flipY,
       state.power, state.maxIter, state.isJulia, state.juliaC[0], state.juliaC[1],
       canvas.width, canvas.height].join(",");
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, refOrbitTex);
     if (key !== refCacheKey) {
-      const ref = chooseReference(state, canvas.width, canvas.height);
+      const ref = useExact ? chooseReferenceExact(state, canvas.width, canvas.height) : chooseReference(state, canvas.width, canvas.height);
       const rx = state.cx + ref.dx, ry = state.cy + ref.dy;
+      const pt = useExact ? exactReferencePoint(state, ref) : null;
       let data, refLen, critOffset, critLen;
-      if (state.isJulia) {
+      if (state.isJulia && useExact) {
+        const [jr, ji] = state.juliaC;
+        const view = computeReferenceOrbitExact(state, pt[0], pt[1], toExact(jr), toExact(ji));
+        const crit = computeReferenceOrbit(state, 0, 0, jr, ji);
+        data = new Float32Array(view.data.length + crit.data.length);
+        data.set(view.data, 0);
+        data.set(crit.data, view.data.length);
+        refLen = view.length; critOffset = view.length; critLen = crit.length;
+      } else if (useExact) {
+        const orbit = computeReferenceOrbitExact(state, 0n, 0n, pt[0], pt[1]);
+        data = orbit.data;
+        refLen = orbit.length; critOffset = 0; critLen = orbit.length;
+      } else if (state.isJulia) {
         // [view-point orbit | critical orbit] in one texture, see
         // renderEscapePerturbation. At most 2*(maxIter+1) = 4002 texels,
         // within every WebGL device's MAX_TEXTURE_SIZE (4096 minimum in
@@ -702,7 +722,14 @@ export function createFractalRenderer(canvas, host) {
     const rc = Math.cos(snapView.rotation), rs = Math.sin(snapView.rotation);
     // A flipped view (the Burning Ship) mirrors the center's imaginary offset
     // into screen axes; the rest of the mapping is the same on both sides.
-    const dx = state.cx - snapView.cx, dy = (state.cy - snapView.cy) * (state.flipY ? -1 : 1);
+    let dx = state.cx - snapView.cx, dy = state.cy - snapView.cy;
+    if (snapView.ex !== undefined || state.scale < EXACT_FROM) {
+      // Deep: two doubles this close are equal or a few steps apart; the exact centers' difference isn't.
+      const now = exactCenter(state);
+      dx = Number(now.ex - (snapView.ex ?? toExact(snapView.cx))) / EXACT_ONE;
+      dy = Number(now.ey - (snapView.ey ?? toExact(snapView.cy))) / EXACT_ONE;
+    }
+    if (state.flipY) dy = -dy;
     const inv = 1 / (2 * snapView.scale);
 
     gl.useProgram(previewProg);

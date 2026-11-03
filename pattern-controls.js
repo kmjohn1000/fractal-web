@@ -6,15 +6,15 @@
 // fern.js, chaos-run.js and teleport.js (cancelTeleport, inside startDotRun only).
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { KOCH_GROW_MS, KOCH_GROW_STEP_SHARE } from "./koch.js?v=1.62.5";
-import { isCurveMode } from "./fractal-defs.js?v=1.62.5";
-import { dragonState, els, fernState, fernView, hexaflakeState, kochState, kochView, mode, treeState } from "./state.js?v=1.62.5";
-import { fernRenderOpts, requestRender } from "./render-layout.js?v=1.62.5";
-import { dragonNav, fernNav, fitVectorView, hexaflakeNav, kochNav, treeNav, vectorViewIsFitted } from "./vector-interaction.js?v=1.62.5";
-import { prefersReducedMotion, syncSliderFill } from "./compass-ui.js?v=1.62.5";
-import { REPLAY_LONG, replayStopPoints, seededRandom } from "./fern.js?v=1.62.5";
-import { announceRunDone, newRunSeed, rememberRun, updateRunChip } from "./chaos-run.js?v=1.62.5";
-import { cancelTeleport } from "./teleport.js?v=1.62.5";
+import { KOCH_GROW_MS, KOCH_GROW_STEP_SHARE } from "./koch.js?v=1.62.6";
+import { isCurveMode } from "./fractal-defs.js?v=1.62.6";
+import { dragonState, els, fernState, fernView, hexaflakeState, kochState, kochView, mode, treeState } from "./state.js?v=1.62.6";
+import { fernRenderOpts, requestRender } from "./render-layout.js?v=1.62.6";
+import { dragonNav, fernNav, fitVectorView, hexaflakeNav, kochNav, treeNav, vectorViewIsFitted } from "./vector-interaction.js?v=1.62.6";
+import { prefersReducedMotion, syncSliderFill } from "./compass-ui.js?v=1.62.6";
+import { REPLAY_LONG, replayStopPoints, seededRandom } from "./fern.js?v=1.62.6";
+import { announceRunDone, newRunSeed, rememberRun, updateRunChip } from "./chaos-run.js?v=1.62.6";
+import { cancelTeleport } from "./teleport.js?v=1.62.6";
 
 els.kochDepthSlider.addEventListener("input", () => {
   syncSliderFill(els.kochDepthSlider);

@@ -2,7 +2,8 @@
 // offsets. No DOM references (no document, els, window or canvas): pure math on numbers and arrays.
 // Needs FTYPE and PHOENIX_P from configs.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { FTYPE, PHOENIX_P } from "./configs.js?v=1.62.5";
+import { FTYPE, PHOENIX_P } from "./configs.js?v=1.62.6";
+import { EXACT_FRAC, EXACT_ONE, exactCenter, toExact } from "./view-math.js?v=1.62.6";
 
 // ---------------------------------------------------------------- Phase 3: deep zoom
 // Below this scale, plain float32 starts losing pixels to precision collapse
@@ -277,6 +278,113 @@ export function chooseReference(state, widthPx, heightPx) {
       const dx = (uvx * rc - uvy * rs) * state.scale * 2.0;
       const dy = (uvx * rs + uvy * rc) * state.scale * 2.0 * flip;
       const iter = escapeIter(state.cx + dx, state.cy + dy);
+      if (iter > best.iter) {
+        best = { dx, dy, iter };
+        if (iter === Infinity) return best;
+      }
+    }
+  }
+  return best;
+}
+
+// ---------------------------------------------------------------- exact reference (BigInt)
+// Below this scale the float64 view center can't place the reference orbit to a pixel (a pixel is then within a
+// few steps of a double at the center), so the reference is computed from the view's exact center (view-math.js)
+// in BigInt fixed point, 2^-192 units like the center itself. Only the reference is exact; the GPU's per-pixel
+// deltas are offsets from the reference and never needed the center (see renderEscapePerturbation in shaders.js).
+// Above it the float64 path above is unchanged, so every opening view and place keeps its picture.
+// An object so a test can move the limit (to draw a shallow place through the exact path and compare it with the
+// float64 path); nothing else changes it.
+export const exactRender = { below: 1e-13 };
+export const exactRenderEligible = (state) => state.scale < exactRender.below;
+// Candidates per side for the exact reference search: 64 orbits of up to maxIter BigInt steps (about 20 ms on an
+// M-series Mac for 2000 steps each), against the float64 search's 1024 cheap ones.
+export const EXACT_REFERENCE_GRID = 8;
+export const EXACT_ESCAPE_SQ =BigInt(ESCAPE_RADIUS_SQ) << (2n * EXACT_FRAC);
+
+// One BigInt fixed-point step of the escape-family map, in place on z = [re, im]. The same cases as stepOrbit; a
+// product is shifted back down by EXACT_FRAC (floor), which is an error of one 2^-192 unit a step, far below the
+// pixel at the 1e-30 floor.
+export function stepOrbitExact(ftype, power, z, cr, ci) {
+  const F = EXACT_FRAC;
+  const zr = z[0], zi = z[1];
+  if (ftype === FTYPE.SHIP) {
+    const ar = zr < 0n ? -zr : zr, ai = zi < 0n ? -zi : zi;
+    z[0] = ((ar * ar - ai * ai) >> F) + cr;
+    z[1] = ((ar * ai) >> (F - 1n)) + ci;
+  } else if (ftype === FTYPE.CELTIC) {
+    const re = (zr * zr - zi * zi) >> F;
+    z[0] = (re < 0n ? -re : re) + cr;
+    z[1] = ((zr * zi) >> (F - 1n)) + ci;
+  } else if (ftype === FTYPE.TRICORN) {
+    z[0] = ((zr * zr - zi * zi) >> F) + cr;
+    z[1] = -((zr * zi) >> (F - 1n)) + ci;
+  } else if (power === 3) {
+    const zr2 = (zr * zr - zi * zi) >> F, zi2 = (zr * zi) >> (F - 1n);
+    z[0] = ((zr2 * zr - zi2 * zi) >> F) + cr;
+    z[1] = ((zr2 * zi + zi2 * zr) >> F) + ci;
+  } else {
+    z[0] = ((zr * zr - zi * zi) >> F) + cr;
+    z[1] = ((zr * zi) >> (F - 1n)) + ci;
+  }
+}
+
+// computeReferenceOrbit with BigInt start and constant (fixed-point integers); the same Float32Array texel layout.
+export function computeReferenceOrbitExact(state, z0r, z0i, cr, ci) {
+  const maxIter = state.maxIter;
+  const data = new Float32Array((maxIter + 1) * 4);
+  data[0] = Number(z0r) / EXACT_ONE; data[1] = Number(z0i) / EXACT_ONE; data[3] = 1.0;
+  const z = [z0r, z0i];
+  let len = 1;
+  for (let n = 0; n < maxIter; n++) {
+    stepOrbitExact(state.ftype, state.power, z, cr, ci);
+    data[len * 4] = Number(z[0]) / EXACT_ONE;
+    data[len * 4 + 1] = Number(z[1]) / EXACT_ONE;
+    data[len * 4 + 3] = 1.0;
+    len++;
+    if (z[0] * z[0] + z[1] * z[1] > EXACT_ESCAPE_SQ) break;
+  }
+  return { data: data.subarray(0, len * 4), length: len };
+}
+
+// The reference point of chooseReferenceExact's answer as a BigInt pair: the exact center plus its offset.
+export function exactReferencePoint(state, ref) {
+  const c = exactCenter(state);
+  return [c.ex + toExact(ref.dx), c.ey + toExact(ref.dy)];
+}
+
+// chooseReference for a view with an exact center: the same rule (the center if it never escapes, else the
+// longest survivor of a grid over the rotated view), run in BigInt on a coarser grid. Returns the same
+// { dx, dy } offset from the center, in doubles (it is a few pixels' worth, so a double holds it fine).
+export function chooseReferenceExact(state, widthPx, heightPx) {
+  const c = exactCenter(state);
+  const jr = state.isJulia ? toExact(state.juliaC[0]) : 0n, ji = state.isJulia ? toExact(state.juliaC[1]) : 0n;
+  const z = [0n, 0n];
+  const escapeIter = (pr, pi) => {
+    const cr = state.isJulia ? jr : pr, ci = state.isJulia ? ji : pi;
+    z[0] = state.isJulia ? pr : 0n; z[1] = state.isJulia ? pi : 0n;
+    for (let n = 0; n < state.maxIter; n++) {
+      stepOrbitExact(state.ftype, state.power, z, cr, ci);
+      if (z[0] * z[0] + z[1] * z[1] > EXACT_ESCAPE_SQ) return n;
+    }
+    return Infinity;
+  };
+  if (escapeIter(c.ex, c.ey) === Infinity) return { dx: 0, dy: 0 };
+
+  // Same uv -> world mapping as chooseReference and FRAG_SRC's main(), rotation included.
+  const rot = state.rotation || 0;
+  const rc = Math.cos(rot), rs = Math.sin(rot);
+  const halfW = 0.5 * widthPx / heightPx;
+  const flip = state.flipY ? -1 : 1;
+  const G = EXACT_REFERENCE_GRID;
+  let best = { dx: 0, dy: 0, iter: -1 };
+  for (let gy = 0; gy < G; gy++) {
+    for (let gx = 0; gx < G; gx++) {
+      const uvx = ((gx + 0.5) / G * 2 - 1) * halfW;
+      const uvy = ((gy + 0.5) / G * 2 - 1) * 0.5;
+      const dx = (uvx * rc - uvy * rs) * state.scale * 2.0;
+      const dy = (uvx * rs + uvy * rc) * state.scale * 2.0 * flip;
+      const iter = escapeIter(c.ex + toExact(dx), c.ey + toExact(dy));
       if (iter > best.iter) {
         best = { dx, dy, iter };
         if (iter === Infinity) return best;

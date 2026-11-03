@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.62.6 — 2026-11-03
+- Deeper zoom on Mandelbrot, Tricorn, Burning Ship, Celtic and Multibrot³ (and their Julia views): past about 1e-13 the picture is now drawn from the exact center, so you can keep panning and zooming where the view used to stall and drift. Measured clean to about 1e-33.
+
 ## 1.62.5 — 2026-11-03
 - Share links from deep views now carry the exact center (two extra fields, `ex` and `ey`), so a link opens at the same place to far more digits than a double holds. Links made before this open as they always did, and older builds open the new ones at the nearest double.
 
