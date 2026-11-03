@@ -249,7 +249,8 @@ test.describe("the Play button", () => {
       await page.setViewportSize({ width, height: 852 });
       for (const m of IFS_MODES) {
         await show(page, m);
-        const boxes = await page.evaluate(() => [...document.querySelectorAll("#fernControls button")].map((b) => {
+        // (the shown buttons: Corner Rules' own button is hidden in the other shapes)
+        const boxes = await page.evaluate(() => [...document.querySelectorAll("#fernControls button")].filter((b) => b.offsetParent).map((b) => {
           const r = b.getBoundingClientRect();
           return { id: b.id || b.className, x: r.x, y: r.y, w: r.width, h: r.height, label: b.getAttribute("aria-label") };
         }));
@@ -1029,7 +1030,7 @@ test.describe("the Long run's schedule", () => {
       small: ["fern", "sierpinski", "pentagon", "levy", "vicsek"].map((k) => replayStopPoints(k, 150000)),
       big: ["fern", "sierpinski", "pentagon", "levy", "vicsek"].map((k) => replayStopPoints(k, 4000000)),
     }));
-    expect(r.table).toEqual({ fern: 500000, sierpinski: 200000, pentagon: 300000, levy: 300000, vicsek: 200000 });
+    expect(r.table).toEqual({ fern: 500000, sierpinski: 200000, pentagon: 300000, levy: 300000, vicsek: 200000, corners: 200000 });
     expect(r.small).toEqual([150000, 150000, 150000, 150000, 150000]);
     expect(r.big).toEqual([500000, 200000, 300000, 300000, 200000]);
     // a short slider ends the run at the slider: no top-up is left

@@ -15,11 +15,12 @@ import { HEXAFLAKE_DEFAULT_DEPTH, HEXAFLAKE_MAX_DEPTH, currentName, dragonState,
 import { colormapIndex, colormapIndexNamed, defaultColormapName, setColorStyle, setColormapIndex, setColormapPicked } from "./state-colors.js?v=1.56.0";
 import { requestRender, updateLUT } from "./render-layout.js?v=1.56.0";
 import { normalizeAngle } from "./view-math.js?v=1.56.0";
-import { enterDual, exitDual, selectFractal, setMode } from "./modes.js?v=1.56.0";
+import { enterDual, exitDual, selectFractal, setCornerRule, setMode } from "./modes.js?v=1.56.0";
 import { VECTOR_VIEWS, dragonNav, fernNav, fittedVectorModes } from "./vector-interaction.js?v=1.56.0";
 import { cancelTeleport } from "./teleport.js?v=1.56.0";
 import { scheduleSharedRun } from "./pattern-controls.js?v=1.56.0";
 import { currentRunSeed, parseRunSeed } from "./chaos-run.js?v=1.56.0";
+import { cornerDeal, parseCornerRule } from "./corner-rules.js?v=1.56.0";
 import { setFernColor, updateColorSwatches } from "./colormap-picker.js?v=1.56.0";
 
 // ---------------------------------------------------------------- share: links
@@ -66,6 +67,8 @@ export function buildShareHash() {
     put("x", v.cx); put("y", v.cy); put("s", v.halfHeight); put("r", v.rotation || 0);
     if (isIfsMode(mode)) {
       put("n", fernState.count); put("c", vectorColors[mode]);
+      // Corner Rules: which rule's shape this is (corner-rules.js; a link without one opens the default rule)
+      if (mode === "corners") put("ru", cornerDeal.id);
       // The seed of the chaos-game run on screen (chaos-run.js), only after one was played and
       // while the view is as it left it; opening the link plays that run.
       if (currentRunSeed()) put("sd", currentRunSeed());
@@ -154,7 +157,9 @@ export function parseShareHash(hash) {
     if (isIfsMode(m)) {
       // sd (the run's seed) is lenient, like the style fields: a bad one is left out and the link still opens.
       const seed = parseRunSeed(p.get("sd"));
-      return { mode: m, ...view, count: int("n", 100000, 4000000), colorIndex: int("c", 0, SOLID_COLORS.length - 1), ...(seed ? { seed } : {}) };
+      // ru (Corner Rules' rule) is lenient too: a missing or unknown one is the default rule.
+      return { mode: m, ...view, count: int("n", 100000, 4000000), colorIndex: int("c", 0, SOLID_COLORS.length - 1), ...(seed ? { seed } : {}),
+        ...(m === "corners" ? { rule: parseCornerRule(p.get("ru")) } : {}) };
     }
     if (m === "hexaflake") {
       // Lenient, because 1.42.0 links (a chaos-game mode) carry a points value
@@ -203,6 +208,7 @@ export function applyShareState(st) {
     els.iterSlider.value = mainState.maxIter;
   } else {
     if (isIfsMode(st.mode)) {
+      if (st.mode === "corners") setCornerRule(st.rule); // before the view is written below: the rule's own shape
       if (fernView.system !== st.mode) {
         fernView.setSystem(st.mode); // before the view is written below
         fernNav.clearHistory(); // Back history belongs to the previous system

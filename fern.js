@@ -4,6 +4,7 @@
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
 import { IFS_FRESHEN_STEPS, IFS_MAX_ATTEMPTS_PER_POINT, IFS_SLICE_MS, IFS_SYSTEMS, buildLeaves, ifsData, ifsRandom, ifsTransformColors, pickTransform } from "./ifs.js?v=1.56.0";
 import { backdropPixels } from "./vectorgeom.js?v=1.56.0";
+import { cornerLeaves, cornerPick, cornerSample } from "./corner-rules.js?v=1.56.0";
 
 // --- Chaos-game replay -------------------------------------------------------
 // The Play button of the dot shapes shows the chaos game itself: from an empty
@@ -92,7 +93,7 @@ export const REPLAY_CAP_RATIO = 1.25;
 // Where each shape's chaos-game replay stops and hands over to the normal render (which carries on to the
 // slider's count): the points (before the burn-in) after which more dots stop changing the structure,
 // measured offline per shape (coverage of 10 px cells, and by eye at 50k to 1M points).
-export const IFS_STOP_POINTS = { fern: 500000, sierpinski: 200000, pentagon: 300000, levy: 300000, vicsek: 200000 };
+export const IFS_STOP_POINTS = { fern: 500000, sierpinski: 200000, pentagon: 300000, levy: 300000, vicsek: 200000, corners: 200000 };
 // The stop point of a replay of `key` with the slider at `count` points.
 export const replayStopPoints = (key, count) => Math.min(IFS_STOP_POINTS[key] ?? count, count);
 
@@ -141,6 +142,14 @@ export function createIfsView(canvas) {
     ifs = ifsData(key);
     const saved = savedViews.get(key);
     if (saved) Object.assign(view, saved);
+  }
+
+  // The system's transforms changed under it (Corner Rules dealt another rule: ifs.js's ifsData has new data
+  // for the same key): back to an empty picture on the new data. The caller frames the view and renders.
+  function refreshSystem() {
+    endReplay();
+    ifs = ifsData(system);
+    viewKey = "";
   }
 
   function resize() {
@@ -241,7 +250,7 @@ export function createIfsView(canvas) {
       x0 = Math.min(x0, x); x1 = Math.max(x1, x);
       y0 = Math.min(y0, y); y1 = Math.max(y1, y);
     }
-    return buildLeaves(ifs, [x0, x1, y0, y1], cols);
+    return ifs.machine ? cornerLeaves(ifs, [x0, x1, y0, y1], cols) : buildLeaves(ifs, [x0, x1, y0, y1], cols);
   }
 
   function isDone(target) {
@@ -255,6 +264,7 @@ export function createIfsView(canvas) {
     const W = canvas.width, H = canvas.height;
     const { maps, cumWeights, leafRGB, leafS } = leaves;
     const { base, transforms } = ifs;
+    const mach = ifs.machine; // undefined for the shapes without a memory
     const total = cumWeights[cumWeights.length - 1];
     const nBase = base.length / 2;
     // worldToScreen, inlined with its constants hoisted for the hot loop.
@@ -272,16 +282,23 @@ export function createIfsView(canvas) {
           if (cumWeights[mid] < r) lo = mid + 1; else hi = mid;
         }
         const m = maps[lo];
-        const bi = (Math.random() * nBase) | 0;
-        let x = base[bi * 2], y = base[bi * 2 + 1];
-        let cr = baseRGB[bi * 3], cg = baseRGB[bi * 3 + 1], cb = baseRGB[bi * 3 + 2];
-        for (let s = 0; s < IFS_FRESHEN_STEPS; s++) {
-          const t = pickTransform(transforms);
-          const nx = t.a * x + t.b * y + t.e;
-          y = t.c * x + t.d * y + t.f;
-          x = nx;
-          const col = cols[t.ci]; // the newest transform weighs half, as in the base points' mix
-          cr = 0.5 * cr + 0.5 * col[0]; cg = 0.5 * cg + 0.5 * col[1]; cb = 0.5 * cb + 0.5 * col[2];
+        let x, y, cr, cg, cb;
+        if (mach) { // a rule with a memory: the leaf's state decides which base points and fresh digits fit (corner-rules.js)
+          cornerSample(mach, leaves.states[lo], base, baseRGB, cols, transforms, mach.out);
+          const o = mach.out;
+          x = o[0]; y = o[1]; cr = o[2]; cg = o[3]; cb = o[4];
+        } else {
+          const bi = (Math.random() * nBase) | 0;
+          x = base[bi * 2]; y = base[bi * 2 + 1];
+          cr = baseRGB[bi * 3]; cg = baseRGB[bi * 3 + 1]; cb = baseRGB[bi * 3 + 2];
+          for (let s = 0; s < IFS_FRESHEN_STEPS; s++) {
+            const t = pickTransform(transforms);
+            const nx = t.a * x + t.b * y + t.e;
+            y = t.c * x + t.d * y + t.f;
+            x = nx;
+            const col = cols[t.ci]; // the newest transform weighs half, as in the base points' mix
+            cr = 0.5 * cr + 0.5 * col[0]; cg = 0.5 * cg + 0.5 * col[1]; cb = 0.5 * cb + 0.5 * col[2];
+          }
         }
         // The leaf's own address gives the coarse digits, the point the fine ones.
         const ls = leafS[lo];
@@ -348,7 +365,8 @@ export function createIfsView(canvas) {
     const rot = -(view.rotation || 0), k = (H / 2) / view.halfHeight;
     const kc = Math.cos(rot) * k, ks = Math.sin(rot) * k; // worldToScreen, as in runSlice
     const { cover, coverRef, cell, coverW, seqLen, pw, pc } = r; // the coverage counter: the cells lit, the cells the shape has, their size and row length; pw, pc: every landed point, if the run follows the view
-    let { x, y, nx, ny, nci, cr, cg, cb, n, lit } = r;
+    let { x, y, nx, ny, nci, cr, cg, cb, n, lit, ms, forbid } = r;
+    const mach = r.mach; // the rule's tables (corner-rules.js) when the shape has a memory: ms is the state, forbid the corners it bars
     while (n < target) {
       const stop = Math.min(target, n + 2048);
       while (n < stop) {
@@ -378,7 +396,11 @@ export function createIfsView(canvas) {
         }
         const u = rnd();
         let q = 0;
-        while (q < last && u >= cum[q]) q++;
+        if (mach) { // the next corner is one the state allows; the pick leads to the next state
+          q = cornerPick(mach, ms, u);
+          forbid = mach.forbid[ms];
+          ms = mach.nextTab[ms * mach.n + q];
+        } else while (q < last && u >= cum[q]) q++;
         const t = trs[q];
         nci = q;
         nx = t.a * x + t.b * y + t.e;
@@ -386,7 +408,7 @@ export function createIfsView(canvas) {
       }
       if (performance.now() > deadline) break;
     }
-    Object.assign(r, { x, y, nx, ny, nci, cr, cg, cb, n, lit });
+    Object.assign(r, { x, y, nx, ny, nci, cr, cg, cb, n, lit, ms, forbid });
   }
 
   // How big and how opaque the marks are after n jumps: REPLAY_MARK_RAD css px in radius at the start of
@@ -467,7 +489,8 @@ export function createIfsView(canvas) {
       ifs.transforms.forEach((t, q) => {
         const fx = t.e / (1 - t.a), fy = t.f / (1 - t.d); // the fixed point of x -> a*x + e (a == d, no shear)
         const lit = q === r.nci && ft > 0 ? Math.sin(Math.PI * ft) : 0;
-        ctx.strokeStyle = `rgba(${rgb[q]},${(0.32 + 0.6 * lit) * live})`;
+        const barred = (r.forbid >> q) & 1; // a corner the rule bars from here (Corner Rules) is only a faint ring
+        ctx.strokeStyle = `rgba(${rgb[q]},${((barred ? 0.1 : 0.32) + 0.6 * lit) * live})`;
         ctx.lineWidth = 1.4 * u;
         ctx.beginPath();
         ctx.arc(sx(fx, fy), sy(fx, fy), (7 + 3 * lit) * u, 0, 2 * Math.PI);
@@ -722,6 +745,7 @@ export function createIfsView(canvas) {
       cum: ifs.transforms.map((t) => (sum += t.p)),
       t: 0, wall: 0, n: 0, drawnN: -1, drawMs: 0, paused: false, raf: 0, last: 0, dot: null,
       x: 0, y: 0, nx: 0, ny: 0, nci: 0, // the point the dot is at, and the one it flies to next
+      mach: ifs.machine || null, ms: 0, forbid: 0, // a shape with a memory (Corner Rules): its tables, the state the run is in, the corners barred where the dot sits
       cr: cols.reduce((s, c) => s + c[0] / T, 0), cg: cols.reduce((s, c) => s + c[1] / T, 0), cb: cols.reduce((s, c) => s + c[2] / T, 0),
       // A run that follows the view keeps every point (world x, y, and the transform that made it: its color
       // follows from the transforms in order, from the start color below) to draw them again in another view.
@@ -737,7 +761,11 @@ export function createIfsView(canvas) {
     // The first jump's transform is chosen like all the others: land nothing, pick.
     const r = replay, u = (opts.rng || ifsRandom)();
     let q = 0;
-    while (q < T - 1 && u >= r.cum[q]) q++;
+    if (r.mach) { // nothing picked yet: the start state allows every corner
+      q = cornerPick(r.mach, r.ms, u);
+      r.forbid = r.mach.forbid[r.ms];
+      r.ms = r.mach.nextTab[r.ms * r.mach.n + q];
+    } else while (q < T - 1 && u >= r.cum[q]) q++;
     const t = ifs.transforms[q];
     r.nci = q; r.nx = t.e; r.ny = t.f;
     replayFrame(0, Infinity); // the empty picture, with the dot at the start
@@ -810,7 +838,7 @@ export function createIfsView(canvas) {
   }
 
   return {
-    view, resize, render, worldToScreen, screenToWorld, setSystem,
+    view, resize, render, worldToScreen, screenToWorld, setSystem, refreshSystem,
     get system() { return system; },
     get bounds() { return ifs.bounds; },
     get dpr() { return dpr; },

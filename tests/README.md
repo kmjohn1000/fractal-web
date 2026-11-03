@@ -442,6 +442,18 @@ button, Escape or a tap elsewhere closes it, Save image downloads a PNG named fo
 link copies the current share link (the clipboard is stubbed) and restores its label, and Share…
 hands the image and link to a stubbed `navigator.share` and is hidden where there is none.
 
+`corner-rules.spec.mjs` covers Corner Rules (`corner-rules.js`) with plain behavior checks, no
+screenshots and no baselines: the dealer (never the rule on screen, every rule comes round), the picker
+entry and the Another rule button, the rule's name in the chip and on the info card, the `ru` field of
+the share link beside `sd` (bad values are the default rule), the Play run (every jump obeys the rule, the
+seed gives the same jumps) and the twist. The sampler is held to the game itself, played from each rule's
+own `allows` function and never from the compiled tables: the address tree only has pairs of digits the
+rule allows (rule 3: no opposite pair), the sampler's distribution is within a game's own noise of
+the game's (total variation distance, opening view and a zoom of 24), and its points are reachable under the
+rule and cover what is, at the opening view and zooms to 16384, against an oracle that walks the address
+tree by `allows` (with a control: another rule's oracle rejects the samples). A new rule must be added to
+the spec's `IDS` (the first test checks it lists them all).
+
 `scripts/test-visual.mjs` kills leftover Playwright browsers and test
 servers before and after each run, but only orphaned ones (parent pid 1,
 their runner already dead), so it never touches another session's live run

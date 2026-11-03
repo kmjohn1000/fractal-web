@@ -24,6 +24,7 @@ import * as configs from "./configs.js?v=1.56.0";
 import * as dragon from "./dragon.js?v=1.56.0";
 import * as fern from "./fern.js?v=1.56.0";
 import * as ifs from "./ifs.js?v=1.56.0";
+import * as cornerRules from "./corner-rules.js?v=1.56.0";
 import * as chaosRunModule from "./chaos-run.js?v=1.56.0";
 import * as shaders from "./shaders.js?v=1.56.0";
 import * as koch from "./koch.js?v=1.56.0";
@@ -61,7 +62,7 @@ exposeForTests({
   "platform.js": platform, "places.js": places, "renderer.js": renderer, "state.js": state,
   "shaders.js": shaders, "koch.js": koch, "pythagoras.js": pythagoras, "hexaflake.js": hexaflake,
   "diag.js": diag, "fractal-defs.js": fractalDefs, "deepzoom.js": deepzoom,
-  "configs.js": configs, "dragon.js": dragon, "fern.js": fern, "ifs.js": ifs,
+  "configs.js": configs, "dragon.js": dragon, "fern.js": fern, "ifs.js": ifs, "corner-rules.js": cornerRules,
   "colormaps.js": colormaps, "lsystem.js": lsystem, "vectorgeom.js": vectorgeom, "view-math.js": viewMath, "color-styles.js": colorStyles, "hud.js": hud, "hud-format.js": hudFormat,
   "state-colors.js": stateColors, "render-layout.js": renderLayout, "modes.js": modes, "interaction.js": interaction, "vector-interaction.js": vectorInteraction,
   "compass-ui.js": compassUi, "teleport.js": teleport, "pattern-controls.js": patternControls, "colormap-picker.js": colormapPicker,

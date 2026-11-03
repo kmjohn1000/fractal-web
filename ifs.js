@@ -63,6 +63,10 @@ export const IFS_SYSTEMS = {
   pentagon:   { transforms: PENTAGON_TRANSFORMS, hueOffsets: [0, 24, 48, -48, -24], corners: true },
   levy:       { transforms: LEVY_C_TRANSFORMS, hueOffsets: [-33, 33] },
   vicsek:     { transforms: VICSEK_TRANSFORMS, hueOffsets: [0, -49, 49, -25, 25] },
+  // Corner Rules (corner-rules.js): a chaos game on a polygon's corners with a memory, so not a plain IFS.
+  // corner-rules.js fills in the transforms and hues of the rule on screen (applyCornerRule) and `build`,
+  // which ifsData calls instead of ifsAddressPoints.
+  corners:    { transforms: [], hueOffsets: [], corners: true, build: null },
 };
 // White has no hue to turn, so its transforms differ in brightness instead:
 // the one with the lowest hue offset takes this share of the picked color,
@@ -184,6 +188,11 @@ export const ifsDataCache = new Map();
 export function ifsData(key) {
   let data = ifsDataCache.get(key);
   if (data) return data;
+  if (IFS_SYSTEMS[key].build) { // a system with a memory (Corner Rules) builds its own data
+    data = IFS_SYSTEMS[key].build();
+    ifsDataCache.set(key, data);
+    return data;
+  }
   const transforms = IFS_SYSTEMS[key].transforms;
   const { pts: base, mix: baseMix } = ifsAddressPoints(transforms, 50000);
   let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;

@@ -83,6 +83,8 @@ export const els = {
   dragonColorSwatch: document.getElementById("dragonColorSwatch"),
   fernResetBtn: document.getElementById("fernResetBtn"),
   fernBoxZoomBtn: document.getElementById("fernBoxZoomBtn"),
+  cornerRuleBtn: document.getElementById("cornerRuleBtn"),
+  ruleChip: document.getElementById("ruleChip"),
   kochBackBtn: document.getElementById("kochBackBtn"),
   treeBackBtn: document.getElementById("treeBackBtn"),
   hexaflakeBackBtn: document.getElementById("hexaflakeBackBtn"),
@@ -219,6 +221,7 @@ export const vectorColors = {
   koch: solidIndex("Ice"), tree: solidIndex("Green"), hexaflake: solidIndex("Gold"), dragon: solidIndex("Autumn"),
   hilbert: solidIndex("Violet"), gosper: solidIndex("Rose"), arrowhead: solidIndex("Gold"),
   fern: solidIndex("Green"), sierpinski: solidIndex("Violet"), pentagon: solidIndex("Ice"), levy: solidIndex("Rose"), vicsek: solidIndex("Gold"),
+  corners: solidIndex("Teal"),
 };
 
 // A pane is "main" or "julia"; the Julia pane's state is null until dual view has been entered.
