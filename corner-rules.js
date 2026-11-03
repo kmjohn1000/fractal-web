@@ -37,7 +37,7 @@ import { IFS_SYSTEMS, affineBoxImage, composeAffine, ifsDataCache, ifsRandom } f
 export const CORNER_RULES = [
   {
     id: 1, n: 4, order: 1, title: "Never the same corner twice",
-    blurb: "Jump halfway to a corner of a square, never the one just used. Four lacy clumps appear.",
+    blurb: "Jump halfway to a corner of a square, never the one just used. A lacy lattice appears.",
     allows: (k, p) => k !== p,
   },
   {
@@ -54,6 +54,21 @@ export const CORNER_RULES = [
     id: 4, n: 4, order: 2, title: "After a repeat, no neighbour",
     blurb: "Jump halfway to a corner of a square. After the same corner twice in a row, a neighbouring corner is barred. A snowflake cross with round holes appears.",
     allows: (k, p, q, n) => !(p >= 0 && p === q && (k === (p + 1) % n || k === (p + n - 1) % n)),
+  },
+  {
+    id: 5, n: 6, order: 1, title: "Hexagon: never the opposite corner",
+    blurb: "Jump halfway to a corner of a hexagon, never the one opposite the last. A hexagon with hexagonal holes appears.",
+    allows: (k, p, q, n) => p < 0 || k !== (p + 3) % n,
+  },
+  {
+    id: 6, n: 5, order: 1, title: "Pentagon: never the same corner twice",
+    blurb: "Jump halfway to a corner of a pentagon, never the one just used. A ring of frilly clumps appears.",
+    allows: (k, p) => k !== p,
+  },
+  {
+    id: 7, n: 5, order: 1, title: "Pentagon: never the next corner",
+    blurb: "Jump halfway to a corner of a pentagon, never the one just clockwise of the last. A lopsided star appears.",
+    allows: (k, p, q, n) => p < 0 || k !== (p + 1) % n,
   },
 ];
 // The rule the first deal gives, a link without one opens, and a link with a bad one falls back to.
@@ -120,7 +135,7 @@ export function cornerTransforms(n) {
 
 // One hue per corner, spread evenly over the corner order (the turn of the picked color, in degrees).
 export function cornerHueOffsets(n) {
-  const spread = 60;
+  const spread = 100;
   return Array.from({ length: n }, (_, k) => Math.round(-spread + 2 * spread * k / (n - 1)));
 }
 
