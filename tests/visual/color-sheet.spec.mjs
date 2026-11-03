@@ -251,7 +251,7 @@ test.describe("the Color sheet", () => {
       await expect(page.locator('#colorSheet [role="tab"]'), `${f}: no tabs`).toHaveCount(0);
       await expect(page.locator('#colorSheet [aria-label="Style"], #colorSheet [aria-label="Looks"], #colorSheet input'), `${f}: no styles, Looks or sliders`).toHaveCount(0);
       await expect(page.locator('#colorSheet [aria-label="Palette"] [role="radio"]'), f).toHaveCount(await page.evaluate(() => COLORMAPS.length));
-      await expect(page.locator("#colormapBtn"), f).toHaveAttribute("aria-label", /^Choose colormap \(/);
+      await expect(page.locator("#colormapBtn"), f).toHaveAttribute("aria-label", /^Choose palette \(/);
       // Picking a palette works there too, and Done closes it.
       await page.locator('#colorSheet [aria-label="Palette"] [aria-label="Glacier"]').click();
       expect(await page.evaluate(() => COLORMAPS[colormapIndex].name), f).toBe("Glacier");

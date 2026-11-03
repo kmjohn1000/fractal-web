@@ -195,13 +195,13 @@ test("the dealer never repeats the rule on screen, deals the default first, and 
   expect(afterLink).not.toBe(r.def);
 });
 
-test("the picker has the entry once, in the Chaos Games group; each tap deals a rule, also while the mode is open", async ({ page }) => {
+test("the picker has the entry once, in the Chaos games group; each tap deals a rule, also while the mode is open", async ({ page }) => {
   const entry = page.locator('#fractalTypeRow button[data-mode="corners"]');
   await expect(entry).toHaveCount(1);
-  const layout = await page.evaluate(() => PICKER_LAYOUT.flatMap((s) => s.groups.filter((g) => g.label === "Chaos Games").flatMap((g) => g.keys)));
+  const layout = await page.evaluate(() => PICKER_LAYOUT.flatMap((s) => s.groups.filter((g) => g.label === "Chaos games").flatMap((g) => g.keys)));
   expect(layout.filter((k) => k === "corners")).toHaveLength(1);
   expect(await page.evaluate(() => PICKER_LAYOUT.flatMap((s) => s.groups.flatMap((g) => g.keys)).filter((k) => k === "corners").length)).toBe(1);
-  expect(await page.evaluate(() => EXTRA_MODES.filter((m) => m.key === "corners").map((m) => m.label))).toEqual(["Corner Rules"]);
+  expect(await page.evaluate(() => EXTRA_MODES.filter((m) => m.key === "corners").map((m) => m.label))).toEqual(["Corner rules"]);
   const seen = [];
   for (let i = 0; i < 9; i++) {
     await page.locator("#fernControls:visible, #fractalControls:visible").first().locator(".fractalMenuBtn").click();
@@ -268,7 +268,7 @@ test("the rule's name is on screen in a chip and on the info card, and follows t
   await showRule(page, 4);
   await expect(chip).toHaveText("After a repeat, no neighbour");
   await page.locator(".hudToggleBtn:visible").first().click(); // the info card
-  await expect(page.locator("#hud .hudName")).toHaveText("Corner Rules");
+  await expect(page.locator("#hud .hudName")).toHaveText("Corner rules");
   await expect(page.locator("#hud .hudAboutLine").nth(0)).toHaveText("After a repeat, no neighbour");
   const blurb = await page.locator("#hud .hudAboutLine").nth(1).textContent();
   expect(blurb).toMatch(/snowflake cross/);

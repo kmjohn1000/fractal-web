@@ -2,6 +2,11 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.61.1 — 2026-11-03
+- The info card no longer offers "Browse places" on the pattern shapes, which have no places.
+- The technical line on the info card now breaks between readings ("scale", "maxIter", "precision") instead of in the middle of one.
+- Consistent names: "Chaos games" and "Corner rules" in sentence case like the rest of the picker; the Places row says "named places to dive into" to match its Dive buttons; the info and dual buttons are named "Info card" and "Dual view"; on Newton, the Sierpinski shapes and the Apollonian gasket the color button says "Choose palette".
+
 ## 1.61.0 — 2026-11-03
 - The Penrose tiling now shows finer tiles as you zoom in, down to about a quadrillion times, instead of a fixed patch.
 - The depth slider sets the starting level (1 to 8), and Play fades smoothly from one level to the next.

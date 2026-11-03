@@ -262,14 +262,15 @@ test.describe("the description", () => {
   });
 });
 
-// The sizes the app is used at. cover: the description is shown in full there; the two landscape
-// phones have a canvas only about 270-300 px tall, where even the card without a description
-// reaches the middle, so it is left out (the card is as it was before descriptions).
+// The sizes the app is used at. cover true: the description is shown in full there; "some": the two
+// landscape phones have a canvas only about 270-300 px tall, where the card keeps what fits above the
+// middle (the description in full, or its first line; the pattern cards have no Browse places button
+// since 1.61.1, which is what lets a description fit at all).
 const SCREENS = [
   { name: "393x852 portrait phone", w: 393, h: 852, cover: true },
   { name: "360x640 small phone", w: 360, h: 640, cover: true },
-  { name: "852x393 landscape phone", w: 852, h: 393, cover: false },
-  { name: "667x375 landscape phone", w: 667, h: 375, cover: false },
+  { name: "852x393 landscape phone", w: 852, h: 393, cover: "some" },
+  { name: "667x375 landscape phone", w: 667, h: 375, cover: "some" },
   { name: "1280x800 desktop", w: 1280, h: 800, cover: true },
   { name: "820x1180 iPad portrait", w: 820, h: 1180, cover: true },
 ];
@@ -296,13 +297,13 @@ test.describe("layout", () => {
         expect(q.overflowY, `${where}: no vertical overflow in the card`).toBeLessThanOrEqual(1);
         // Never lower than the middle of the canvas area, where the shape is.
         expect(hud.b - area.y, `${where}: card bottom against the middle`).toBeLessThanOrEqual(area.h / 2 + 0.5);
-        if (s.cover) {
+        if (s.cover === true) {
           expect(q.aboutShown, `${where}: the description is shown`).toBe(true);
           expect(q.level, where).toBe("full");
           await expect(page.locator("#hud .hudAboutLine").nth(1), where).toBeVisible();
         } else {
-          expect(q.aboutShown, `${where}: no description on a screen this short`).toBe(false);
-          expect(hud.h, `${where}: the card is the size it was without one`).toBeLessThan(140);
+          expect(q.aboutShown, `${where}: some of the description is shown`).toBe(true);
+          expect(["full", "first"], `${where}: the level is full or first`).toContain(q.level);
         }
         // The depth line (or the point count), the rotation text and the scale bar are all still there.
         const plain = await page.locator("#hud .hudPlain").innerText();
@@ -340,22 +341,13 @@ test.describe("layout", () => {
     await expect(page.locator("#hud .hudScaleText")).toContainText("across");
   });
 
-  test("Browse places is still tappable (nothing covers it) and opens the Places sheet", async ({ page }) => {
-    await showShape(page, "koch", { settle: true });
-    const probe = await page.evaluate(() => {
-      const b = document.querySelector("#hud .hudPlaces");
-      const rb = b.getBoundingClientRect();
-      const top = document.elementFromPoint(rb.x + rb.width / 2, rb.y + rb.height / 2);
-      const about = document.querySelector("#hud .hudAbout").getBoundingClientRect();
-      const card = document.getElementById("hud").getBoundingClientRect();
-      return { onButton: top === b, height: rb.height, aboveButton: about.bottom <= rb.top + 1, insideCard: rb.bottom <= card.bottom + 1 && rb.right <= card.right + 1 && rb.x >= card.x - 1 };
-    });
-    expect(probe.onButton, "the button is the topmost element at its center").toBe(true);
-    expect(probe.height, "a 44 px tap target").toBeGreaterThanOrEqual(44);
-    expect(probe.aboveButton, "the description ends above the button").toBe(true);
-    expect(probe.insideCard).toBe(true);
-    await page.locator("#hud .hudPlaces").click();
-    await expect(page.locator("#placesSheet")).toHaveClass(/open/);
+  // The Places sheet lists the zoom fractals' places, so a pattern shape's card has no Browse places
+  // button (a fractal's card keeps it: places-sheet.spec.mjs taps it and opens the sheet).
+  test("a pattern shape's card has no Browse places button", async ({ page }) => {
+    for (const m of SHAPES) {
+      await showShape(page, m, { settle: true });
+      await expect(page.locator("#hud .hudPlaces"), `${m}: no Browse places`).toBeHidden();
+    }
   });
 });
 

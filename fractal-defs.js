@@ -3,9 +3,9 @@
 // lsystem.js/koch.js (IFS_SYSTEMS, LINE_CURVES), which only its function bodies use.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it;
 // tests/cases.mjs reads this file's text and accepts the `export`).
-import { FTYPE } from "./configs.js?v=1.61.0";
-import { LINE_CURVES } from "./dragon.js?v=1.61.0";
-import { IFS_SYSTEMS } from "./ifs.js?v=1.61.0";
+import { FTYPE } from "./configs.js?v=1.61.1";
+import { LINE_CURVES } from "./dragon.js?v=1.61.1";
+import { IFS_SYSTEMS } from "./ifs.js?v=1.61.1";
 
 // The fractal picker's layout, in display order: sections with a title, each
 // split into titled groups of tiles. Display only: a key is a FRACTAL_CONFIGS
@@ -20,7 +20,7 @@ export const PICKER_LAYOUT = [
   ] },
   { label: "Watch it grow", groups: [
     { label: "Build level by level", keys: ["koch", "tree", "hexaflake", "dragon", "hilbert", "gosper", "arrowhead", "penrose"] },
-    { label: "Chaos Games", keys: ["fern", "pentagon", "sierpinski", "levy", "vicsek", "corners"] },
+    { label: "Chaos games", keys: ["fern", "pentagon", "sierpinski", "levy", "vicsek", "corners"] },
   ] },
 ];
 
@@ -40,7 +40,7 @@ export const EXTRA_MODES = [
   { key: "pentagon", label: "Sierpinski pentagon", category: "pattern" },
   { key: "levy", label: "Lévy C curve", category: "pattern" },
   { key: "vicsek", label: "Vicsek fractal", category: "pattern" },
-  { key: "corners", label: "Corner Rules", category: "pattern" },
+  { key: "corners", label: "Corner rules", category: "pattern" },
   { key: "hexaflake", label: "Hexaflake", category: "pattern" },
 ];
 

@@ -4,22 +4,22 @@
 // updateHud taking the main pane's last deep-zoom path as an argument), which calls the updaters after each
 // frame; this file imports nothing from render-layout.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { COLORMAPS } from "./colormaps.js?v=1.61.0";
-import { FRACTAL_CONFIGS, FTYPE, fractalLabel } from "./configs.js?v=1.61.0";
-import { EXTRA_MODES, SHAPE_INFO, apolloFrame, digitFractalDepth, isDigitFractal } from "./fractal-defs.js?v=1.61.0";
-import { DEEP_ZOOM_THRESHOLD, atZoomLimit, deepZoomEligible, newtonDeepEligible, perturbationEligibleType, phoenixDeepEligible } from "./deepzoom.js?v=1.61.0";
-import { TELEPORT_DESTINATIONS } from "./places.js?v=1.61.0";
-import { COLOR_STYLES, ESCAPE_TIME_TYPES, colorStyle, styleDrawn } from "./color-styles.js?v=1.61.0";
-import { currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, hexaflakeView, isInteracting, kochState, kochView, mainRenderer, mainState, mode, treeState, treeView } from "./state.js?v=1.61.0";
-import { colormapIndex } from "./state-colors.js?v=1.61.0";
-import { dualPresetName } from "./modes.js?v=1.61.0";
-import { teleportLandingIndex } from "./teleport.js?v=1.61.0";
-import { hudVisible } from "./compass-ui.js?v=1.61.0";
-import { COLOR_LOOKS, bandsText, lookPalette, shiftText } from "./color-sheet.js?v=1.61.0";
-import { apolloCurvatureText, capitalize, formatHudCoords, rotationHudText, scaleBar, unitsPerCssPx, zoomPhrase } from "./hud-format.js?v=1.61.0";
-import { normalizeAngle } from "./view-math.js?v=1.61.0";
-import { runHudParts, updateRunChip } from "./chaos-run.js?v=1.61.0";
-import { cornerAbout, currentCornerRule } from "./corner-rules.js?v=1.61.0";
+import { COLORMAPS } from "./colormaps.js?v=1.61.1";
+import { FRACTAL_CONFIGS, FTYPE, fractalLabel } from "./configs.js?v=1.61.1";
+import { EXTRA_MODES, SHAPE_INFO, apolloFrame, digitFractalDepth, isDigitFractal } from "./fractal-defs.js?v=1.61.1";
+import { DEEP_ZOOM_THRESHOLD, atZoomLimit, deepZoomEligible, newtonDeepEligible, perturbationEligibleType, phoenixDeepEligible } from "./deepzoom.js?v=1.61.1";
+import { TELEPORT_DESTINATIONS } from "./places.js?v=1.61.1";
+import { COLOR_STYLES, ESCAPE_TIME_TYPES, colorStyle, styleDrawn } from "./color-styles.js?v=1.61.1";
+import { currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, hexaflakeView, isInteracting, kochState, kochView, mainRenderer, mainState, mode, treeState, treeView } from "./state.js?v=1.61.1";
+import { colormapIndex } from "./state-colors.js?v=1.61.1";
+import { dualPresetName } from "./modes.js?v=1.61.1";
+import { teleportLandingIndex } from "./teleport.js?v=1.61.1";
+import { hudVisible } from "./compass-ui.js?v=1.61.1";
+import { COLOR_LOOKS, bandsText, lookPalette, shiftText } from "./color-sheet.js?v=1.61.1";
+import { apolloCurvatureText, capitalize, formatHudCoords, rotationHudText, scaleBar, unitsPerCssPx, zoomPhrase } from "./hud-format.js?v=1.61.1";
+import { normalizeAngle } from "./view-math.js?v=1.61.1";
+import { runHudParts, updateRunChip } from "./chaos-run.js?v=1.61.1";
+import { cornerAbout, currentCornerRule } from "./corner-rules.js?v=1.61.1";
 
 // Info overlay (see #hud in index.html): the title (a place name, or the
 // fractal or pattern), a plain-language line (how deep, rotation), a scale
@@ -40,6 +40,8 @@ export function setHud(name, plainParts, { unitsPerPx = 0, center = "", tech = "
   lastHudKey = key;
   els.hudName.textContent = name;
   els.hudAbout.classList.toggle("hidden", !about);
+  // The Places sheet lists the zoom fractals' places; the pattern shapes (the ones with an `about`) have none.
+  els.hudPlaces.classList.toggle("hidden", !!about);
   if (about) {
     els.hudAboutLines.forEach((p, i) => { p.textContent = about.lines[i] || ""; });
     els.hudCredit.textContent = about.credit || "";
@@ -57,7 +59,15 @@ export function setHud(name, plainParts, { unitsPerPx = 0, center = "", tech = "
   }
   els.hudCenter.textContent = center;
   els.hudCenter.classList.toggle("hidden", !center);
-  els.hudStats.textContent = tech;
+  // Each item is kept whole (nowrap) so a narrow card breaks between "scale: 2.7" and "maxIter: 300", never inside one
+  // ("precision:" alone on a line); the spaces between them stay text, so the card reads as it always did.
+  els.hudStats.replaceChildren(...tech.split(/( {2,})/).filter(Boolean).map((piece) => {
+    if (/^ +$/.test(piece)) return document.createTextNode(piece);
+    const item = document.createElement("span");
+    item.className = "hudStat";
+    item.textContent = piece;
+    return item;
+  }));
   els.hudStats.classList.toggle("hidden", !tech);
   fitHudAbout(); // last: it measures the card as it now is
 }
