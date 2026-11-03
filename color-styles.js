@@ -1,4 +1,4 @@
-// The color styles (Smooth, Bands, Edge glow, Stripes, Orbs, Rays, Relief): the style table, the shared
+// The color styles (Smooth, Bands, Edge glow, Stripes, Orbs, Rays, Relief, Halo, Paper cut): the style table, the shared
 // colorStyle choice, the orbit traps' center and range, and what a view actually draws. Imports only
 // configs.js (FTYPE), so renderer.js, state.js and the rest can all depend on it. Split from state.js
 // (a pure move); colorStyle is assigned only by setColorStyle in state-colors.js.
@@ -38,11 +38,21 @@ export const COLOR_STYLES = [
   // Relief is lit from the distance estimate's derivative, so it shares Edge
   // glow's compiled program (variant 1) and its limits.
   { id: "relief", glsl: 6, variant: 1, label: "Relief", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
+  // Halo (Relief outside, the inside of the set glowing from D) and Paper cut
+  // (flat layers with shadows from the gradient of the iteration count) are
+  // lit from the same derivative, so they share Relief's compiled program.
+  // Halo is left off the Burning Ship and the Celtic: a large part of their
+  // non-escaping region has D saturated (it never settles), so the glow there
+  // draws as a flat white mass instead of a gradient. On the Mandelbrot
+  // family, a Julia set's basins are lit by their own formula (haloCross in
+  // shaders.js).
+  { id: "halo", glsl: 7, variant: 1, label: "Halo", types: [FTYPE.ESCAPE, FTYPE.TRICORN] },
+  { id: "paper", glsl: 8, variant: 1, label: "Paper cut", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
 ];
 export const COLOR_BANDS_RANGE = [0.25, 8];
 // A style's id in share links (st=); "c" is taken by the vector modes' solid
 // color, so the three fields are st (style), cd (bands) and co (shift).
-export const STYLE_LINK_CODES = new Map([["smooth", "sm"], ["bands", "bd"], ["glow", "de"], ["stripes", "sp"], ["point", "pt"], ["cross", "xt"], ["relief", "rl"]]);
+export const STYLE_LINK_CODES = new Map([["smooth", "sm"], ["bands", "bd"], ["glow", "de"], ["stripes", "sp"], ["point", "pt"], ["cross", "xt"], ["relief", "rl"], ["halo", "ha"], ["paper", "pc"]]);
 // trap: an [x, y] override of the orbit traps' center (the checks use it to
 // match the oracle); null for the per-fractal default, see trapCenterFor.
 export const colorStyle = { style: "smooth", density: 1, offset: 0, trap: null };

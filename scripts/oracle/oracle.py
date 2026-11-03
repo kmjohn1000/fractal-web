@@ -14,15 +14,15 @@ colormaps.js, and the lookup copies lutColor and the LUT texture rules
 (256 texels, NEAREST, CLAMP_TO_EDGE, t == 1 is the end color), so Smooth at
 bands 1 and shift 0 is what the app draws.
 
-The style constants below (DE_RANGE, STRIPE_*, TRAP_*) are mirrored in
-shaders.js (the COLOR_* constants); change both together.
+The style constants below (DE_RANGE, STRIPE_*, TRAP_*, HALO_*, PAPER_*) are mirrored in
+shaders.js (the COLOR_*, HALO_* and PAPER_* constants); change both together.
 
 Needs python3 with numpy and Pillow (`python3 -c "import numpy, PIL"`).
 
   oracle.py views                          the views as JSON (for oracle-compare.mjs)
   oracle.py render VIEW STYLE CMAP OUT.png [--density D] [--shift S] [--size PX]
             [--ss N] [--trap=X,Y]
-  STYLE is one of smooth, bands, glow, stripes, stripes_atan, point, cross, relief
+  STYLE is one of smooth, bands, glow, stripes, stripes_atan, point, cross, relief, halo, paper
       writes OUT.png and OUT.mask.png (white = escaped); fields are cached in
       test-results/oracle/ (git-ignored)
 """
@@ -46,6 +46,18 @@ STRIPE_GAIN = 2.2    # contrast gain around 0.5
 DE_RANGE = 40.0      # distance estimate: glow fades out over this many CSS pixels
 TRAP_RANGE = 1.0     # point trap distance that maps to the far end of the colormap
 CROSS_RANGE = 0.2    # the same for the cross trap
+HALO_RANGE = 40.0    # halo: |D| that reaches the brightest interior glow
+HALO_FLOOR = 0.12    # palette position at the dimmest interior
+HALO_DIM = 0.25      # brightness at the dimmest
+HALO_GAIN = 1.1      # brightness added at the brightest
+HALO_EPS = 1e-3      # halo on a Julia set: the |D| whose crossing time lights the interior
+PAPER_BAND = 2.0     # paper cut: iterations of n per layer
+PAPER_STEP = 0.1     # palette positions from one layer to the next
+PAPER_SHADOW = 0.55  # darkest the shadow gets
+PAPER_REACH = 8.0    # CSS pixels the shadow falls over
+PAPER_CREAM = 0.4    # share of cream in each layer's color
+PAPER_STOCK = np.array([0.97, 0.95, 0.9])
+PAPER_HOLE = np.array([0.1, 0.08, 0.12])   # the set itself
 
 # name: app fractal (FRACTAL_CONFIGS key), ftype, center, half-height (the
 # app's "scale"), maxIter (what suggestedMaxIter gives), Julia c, trap center.
@@ -116,9 +128,12 @@ def render_fields(name, tile=360, ss=2):
         da = np.zeros(N); db = np.zeros(N); dc_ = np.zeros(N); dd = np.zeros(N)
         add = 1.0
     tx, ty = v["trap"]
-    names = ("steps", "zabs", "logD", "E", "Eprev", "Ea", "Eaprev", "pt", "cross", "escaped", "gx", "gy")
+    names = ("steps", "zabs", "logD", "E", "Eprev", "Ea", "Eaprev", "pt", "cross", "escaped", "gx", "gy", "Dn", "hcross")
     out = {k: np.zeros(N) for k in names}
     out["pt"][:] = 1e9; out["cross"][:] = 1e9
+    out["hcross"][:] = -1.0
+    # halo style, Julia: the iteration where |D| first fell below HALO_EPS (-1: never), and |D| the step before
+    hcross = np.full(N, -1.0); hprev = np.ones(N)
     idx = np.arange(N)
     E = np.zeros(N); Eprev = np.zeros(N)    # windowed stripe average (atan)
     Ea = np.zeros(N); Eaprev = np.zeros(N)  # the same with the algebraic k = 4 stripe (no trig)
@@ -134,6 +149,12 @@ def render_fields(name, tile=360, ss=2):
             nc = r * da + s * dc_
             nd = r * db + s * dd + add
             da, db, dc_, dd = na, nb, nc, nd
+            if julia:  # shaders.js haloCross: |D| (as haloNorm) first below HALO_EPS, interpolated in log between two steps
+                dnh = np.maximum(np.sqrt(da ** 2 + db ** 2 + dc_ ** 2 + dd ** 2) / np.sqrt(2.0), 1e-30)
+                hit = (hcross < 0) & (dnh < HALO_EPS)
+                frac = (np.log(hprev) - np.log(HALO_EPS)) / np.maximum(np.log(hprev) - np.log(dnh), 1e-6)
+                hcross = np.where(hit, (it - 1) + frac, hcross)
+                hprev = dnh
             zx = fx + cx; zy = fy + cy
             a = 0.5 + 0.5 * np.sin(STRIPE_K * np.arctan2(zy, zx))
             # sin(4 theta) from x and y alone: 2 * sin(2t) * cos(2t)
@@ -166,14 +187,18 @@ def render_fields(name, tile=360, ss=2):
                 zx, zy, cx, cy = zx[k], zy[k], cx[k], cy[k]
                 da, db, dc_, dd = da[k], db[k], dc_[k], dd[k]
                 pt, cr, E, Eprev, Ea, Eaprev = pt[k], cr[k], E[k], Eprev[k], Ea[k], Eaprev[k]
+                hcross, hprev = hcross[k], hprev[k]
                 if idx.size == 0:
                     break
         if idx.size:  # never escaped: interior; the trap minima still color it
             out["pt"][idx] = pt; out["cross"][idx] = cr
+            # the halo style lights the interior from D after the last iteration
+            out["Dn"][idx] = np.sqrt(da ** 2 + db ** 2 + dc_ ** 2 + dd ** 2) / np.sqrt(2.0)
+            out["hcross"][idx] = hcross
     print(f"{name}: iterated in {time.time() - t0:.1f}s, escaped {out['escaped'].mean() * 100:.1f}%",
           file=sys.stderr, flush=True)
     meta = dict(tile=tile, ss=ss, ps_out=2 * v["s"] / tile, maxit=maxit, trap=list(v["trap"]),
-                power=3 if v["ftype"] == "mandel3" else 2)
+                power=3 if v["ftype"] == "mandel3" else 2, julia=bool(julia))
     lg = out["logD"][out["escaped"] > 0]
     meta["max_log10_D"] = float(lg.max()) if lg.size else 0.0
     meta["frac_D_over_float32"] = float((lg > 38.5).mean()) if lg.size else 0.0
@@ -182,7 +207,7 @@ def render_fields(name, tile=360, ss=2):
 
 def cached_fields(name, tile, ss):
     CACHE.mkdir(parents=True, exist_ok=True)
-    f = CACHE / f"{name}-{tile}-{ss}-v3.npz"  # bump when render_fields changes
+    f = CACHE / f"{name}-{tile}-{ss}-v4.npz"  # bump when render_fields changes
     if f.exists():
         z = np.load(f)
         return {k: z[k] for k in z.files if k != "meta"}, json.loads(str(z["meta"]))
@@ -282,7 +307,8 @@ def trap_range(v, escaped, fixed_hi):
     return float(lo), float(hi)
 
 
-STYLES = ("smooth", "bands", "glow", "stripes", "stripes_atan", "point", "cross", "point_fixed", "cross_fixed", "relief")
+STYLES = ("smooth", "bands", "glow", "stripes", "stripes_atan", "point", "cross", "point_fixed", "cross_fixed", "relief",
+          "halo", "paper")
 
 RELIEF_HEIGHT = 1.5
 RELIEF_LIGHT = (-np.sqrt(0.5), np.sqrt(0.5))   # upper left of the screen (the oracle views aren't rotated)
@@ -297,14 +323,76 @@ def relief_shade(F):
     return (ux * RELIEF_LIGHT[0] + uy * RELIEF_LIGHT[1] + RELIEF_HEIGHT) / (1.0 + RELIEF_HEIGHT)
 
 
+def halo_image(F, P, lut, density, shift):
+    """Halo, as haloColor and styleLit in shaders.js: Relief outside; inside the set (the cardioid and bulb
+    shortcut is off for this style) the glow from |D| after the last iteration, or on a Julia set from the
+    iteration where |D| fell below HALO_EPS (-1, never, is the brightest)."""
+    t, _ = style_t(F, P, "relief")
+    t = np.nan_to_num(t, nan=0.0, posinf=1.0, neginf=0.0)
+    outside = lut_color(lut, t * density + shift) * np.nan_to_num(relief_shade(F), nan=0.6)[..., None]
+    with np.errstate(all="ignore"):
+        if P.get("julia"):
+            h = F["hcross"]
+            g = np.where(h < 0, 1.0, np.clip(np.log1p(np.maximum(h, 0.0)) / np.log1p(P["maxit"]), 0, 1))
+        else:
+            g = np.clip(np.log1p(F["Dn"]) / np.log1p(HALO_RANGE), 0, 1)
+    inside = lut_color(lut, (HALO_FLOOR + (1.0 - HALO_FLOOR) * g ** 0.8) * density + shift) * (HALO_DIM + HALO_GAIN * g)[..., None]
+    img = np.where((F["escaped"] > 0)[..., None], outside, inside)
+    return np.clip(img, 0, 1)
+
+
+def smoothstep(a, b, x):
+    t = np.clip((x - a) / (b - a), 0.0, 1.0)
+    return t * t * (3.0 - 2.0 * t)
+
+
+def paper_image(F, P, lut, density, shift):
+    """Paper cut, as paperColor in shaders.js: flat layers (PAPER_BAND iterations of the smooth count each) with
+    a shadow to the lower right of every raised edge, from the count's gradient, and pixel anti-aliasing."""
+    esc = F["escaped"] > 0
+    log_base = np.log2(3.0) if P.get("power", 2) == 3 else 1.0
+    with np.errstate(all="ignore"):
+        r = np.where(esc, F["zabs"], 4.0)
+        n_raw = F["steps"] - np.log2(np.log2(r)) / log_base
+        n = np.maximum(n_raw, 0.0)
+        g = np.hypot(F["gx"], F["gy"])
+        ux, uy = np.where(g > 0, F["gx"] / g, 0.0), np.where(g > 0, F["gy"] / g, 0.0)
+        # |grad n| = |J^T z| / (|z|^2 ln|z| ln P), in layers per CSS pixel
+        grad_px = g / (r * r * np.log(r) * np.log(2.0) * log_base) * P["ps_out"] / PAPER_BAND
+        q = n / PAPER_BAND
+        band = np.floor(q)
+        f = q - band
+        to_light = -(ux * RELIEF_LIGHT[0] + uy * RELIEF_LIGHT[1]) * grad_px
+        gp = np.maximum(grad_px, 1e-12)
+        up, down = (1.0 - f) / gp, f / gp
+        shadow = np.where(to_light > 0, 1.0 - smoothstep(0.0, PAPER_REACH, (1.0 - f) / to_light), 0.0)
+
+        def layer(b, s):
+            c = lut_color(lut, b * PAPER_STEP * density + shift) * (1.0 - PAPER_CREAM) + PAPER_STOCK * PAPER_CREAM
+            return c * (1.0 - PAPER_SHADOW * s)[..., None]
+
+        def mix(a, b, w):
+            return a + (b - a) * w[..., None]
+
+        c = layer(band, shadow)
+        c = mix(c, layer(np.maximum(band - 1.0, 0.0), np.where((to_light > 0) & (band > 0), 1.0, 0.0)), np.clip(0.5 - down, 0, 0.5))
+        c = mix(c, layer(band + 1.0, np.zeros_like(band)), np.clip(0.5 - up, 0, 0.5))
+        c = mix(c, layer(q, np.full_like(q, 0.5)), smoothstep(0.45, 0.9, grad_px))
+        c = np.where((n <= 0)[..., None], layer(np.zeros_like(band), np.zeros_like(band)), c)
+    return np.where(esc[..., None], np.nan_to_num(c, nan=0.5), PAPER_HOLE)
+
+
 def colorize(F, meta, style, lut, density=1.0, shift=0.0):
     """uint8 image and the escaped mask, averaged down from the ss x ss samples."""
-    t, colored = style_t(F, meta, style)
-    t = np.nan_to_num(t, nan=0.0, posinf=1.0, neginf=0.0)
-    img = lut_color(lut, t * density + shift)
-    if style == "relief":
-        img = img * np.nan_to_num(relief_shade(F), nan=0.6)[..., None]
-    img[~colored] = 0
+    if style in ("halo", "paper"):
+        img = (halo_image if style == "halo" else paper_image)(F, meta, lut, density, shift)
+    else:
+        t, colored = style_t(F, meta, style)
+        t = np.nan_to_num(t, nan=0.0, posinf=1.0, neginf=0.0)
+        img = lut_color(lut, t * density + shift)
+        if style == "relief":
+            img = img * np.nan_to_num(relief_shade(F), nan=0.6)[..., None]
+        img[~colored] = 0
     ss = meta["ss"]
     n = img.shape[0] // ss
     img = img.reshape(n, ss, n, ss, 3).mean(axis=(1, 3))
