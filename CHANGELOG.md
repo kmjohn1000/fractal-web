@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.62.0 — 2026-11-03
+- The color button on the pattern shapes (Koch, tree, Hexaflake, the curves and the dot shapes) now opens the same Color sheet the fractals use, with the ten colors as a grid of swatches and a Done button, instead of a tall list.
+
 ## 1.61.1 — 2026-11-03
 - The info card no longer offers "Browse places" on the pattern shapes, which have no places.
 - The technical line on the info card now breaks between readings ("scale", "maxIter", "precision") instead of in the middle of one.

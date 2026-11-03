@@ -3,16 +3,16 @@
 // colormap-picker.js (cmGradient). app.js's init schedules prepareColorSheet and fitColorSegment.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { COLORMAPS } from "./colormaps.js?v=1.61.1";
-import { FRACTAL_CONFIGS, fractalLabel } from "./configs.js?v=1.61.1";
-import { COLOR_BANDS_RANGE, COLOR_STYLES, ESCAPE_TIME_TYPES, colorStyle, styleBlocked, styleDrawn } from "./color-styles.js?v=1.61.1";
-import { currentName, els, isInteracting, juliaRenderer, mainRenderer, mainState, mode } from "./state.js?v=1.61.1";
-import { colormapDefaultIndex, colormapIndex, pickColormap, releaseColormapPick, setColorStyle } from "./state-colors.js?v=1.61.1";
-import { zoomPhrase } from "./hud-format.js?v=1.61.1";
-import { requestRender } from "./render-layout.js?v=1.61.1";
-import { fernNav, fitVectorView } from "./vector-interaction.js?v=1.61.1";
-import { syncSliderFill } from "./compass-ui.js?v=1.61.1";
-import { cmGradient } from "./colormap-picker.js?v=1.61.1";
+import { COLORMAPS, SOLID_COLORS, SOLID_COLOR_ORDER, solidCss } from "./colormaps.js?v=1.62.0";
+import { FRACTAL_CONFIGS, fractalLabel } from "./configs.js?v=1.62.0";
+import { COLOR_BANDS_RANGE, COLOR_STYLES, ESCAPE_TIME_TYPES, colorStyle, styleBlocked, styleDrawn } from "./color-styles.js?v=1.62.0";
+import { currentName, els, isInteracting, juliaRenderer, mainRenderer, mainState, mode, vectorColors } from "./state.js?v=1.62.0";
+import { colormapDefaultIndex, colormapIndex, pickColormap, releaseColormapPick, setColorStyle } from "./state-colors.js?v=1.62.0";
+import { zoomPhrase } from "./hud-format.js?v=1.62.0";
+import { requestRender } from "./render-layout.js?v=1.62.0";
+import { fernNav, fitVectorView } from "./vector-interaction.js?v=1.62.0";
+import { syncSliderFill } from "./compass-ui.js?v=1.62.0";
+import { cmGradient, updateColorSwatches } from "./colormap-picker.js?v=1.62.0";
 
 // ---------------------------------------------------------------- color sheet
 
@@ -34,6 +34,10 @@ export const COLOR_LOOKS = [
   { id: "paper-cut", label: "Paper cut", style: "paper", palette: "Twilight" },
 ];
 export let colorSheetTab = "looks";
+// The pattern shapes (Koch, tree, the dot shapes, the line curves) pick one flat color, not a palette
+// and a Look: their color button opens this same sheet showing only a grid of colors. This is the
+// vectorColors key whose color the sheet shows (null: the fractals' sheet).
+export let colorSheetSolid = null;
 
 // The sheet is the palette list on every fractal; the escape-time fractals get
 // the styles, Looks and sliders with it, the rest (Newton, Carpet, Gasket,
@@ -202,6 +206,7 @@ export function rovingRadios(group) {
     const i = radios.indexOf(document.activeElement);
     if (!step || i < 0) return;
     e.preventDefault();
+    e.stopPropagation(); // the document's arrow-key handler would pan the view behind the open sheet
     const next = radios[(i + step + radios.length) % radios.length];
     next.setAttribute("tabindex", "0");
     radios[i].setAttribute("tabindex", "-1");
@@ -256,12 +261,29 @@ export function colorSheetPalettes() {
 
 // "Palette  Inferno" and, on the Custom tab while anything differs from the
 // Default (style, palette, repeat or shift), a Reset that puts all four back.
-export function colorSheetPaletteHead(withReset) {
+export function colorSheetPaletteHead(withReset, label = "Palette", name = COLORMAPS[colormapIndex].name) {
   const reset = withReset
     ? colorSheetEl("button", { class: `reset${currentLookId() === "default" ? " off" : ""}`, "data-key": "reset", "aria-label": "Reset to Default" }, "Reset") : null;
   reset?.addEventListener("click", () => { applyLook(COLOR_LOOKS[0]); renderColorSheet(); });
   return colorSheetEl("div", { class: "palHead" },
-    ...[colorSheetEl("p", {}, colorSheetEl("span", {}, "Palette"), colorSheetEl("b", {}, COLORMAPS[colormapIndex].name)), reset].filter(Boolean));
+    ...[colorSheetEl("p", {}, ...[label && colorSheetEl("span", {}, label), colorSheetEl("b", {}, name)].filter(Boolean)), reset].filter(Boolean));
+}
+
+// The pattern shapes' colors: the same grid as the palettes, one swatch per flat color in hue order,
+// the current one ringed and ticked. Picking one sets it for that shape and redraws.
+export function colorSheetSolidColors(key) {
+  const pals = colorSheetEl("div", { class: "pals solid", role: "radiogroup", "aria-label": "Color" });
+  SOLID_COLOR_ORDER.forEach((i) => {
+    const on = i === vectorColors[key];
+    const btn = colorSheetEl("button", {
+      class: `pal${on ? " active" : ""}`, role: "radio", "aria-checked": on, "aria-label": SOLID_COLORS[i].name,
+      title: SOLID_COLORS[i].name, "data-key": `pal-${i}`, style: `background:${solidCss(i)}`,
+    });
+    btn.addEventListener("click", () => { vectorColors[key] = i; updateColorSwatches(); requestRender(); renderColorSheet(); });
+    pals.append(btn);
+  });
+  rovingRadios(pals);
+  return pals;
 }
 // The sliders don't rebuild the sheet while they move; this shows or hides
 // Reset as the settings leave or return to the Default.
@@ -316,6 +338,7 @@ export function colorSheetCustom() {
 export function colorSheetStateKey() {
   return JSON.stringify([
     colorSheetTab, colorSheetStyles(), colorStyle.style, colorStyle.density, colorStyle.offset, colormapIndex, colormapDefaultIndex, currentName,
+    colorSheetSolid, colorSheetSolid && vectorColors[colorSheetSolid],
     COLOR_STYLES.map((s) => styleBlocked(s, mainState) || "").join(","),
   ]);
 }
@@ -340,7 +363,15 @@ export function renderColorSheet() {
   const scrollTop = sheet.scrollTop;
   const done = colorSheetEl("button", { class: "done", "data-key": "done" }, "Done");
   done.addEventListener("click", () => els.colorSheet.classList.remove("open"));
-  if (!colorSheetStyles()) {
+  if (colorSheetSolid) {
+    // A pattern shape: one flat color from a grid, under the same "Color" title and Done as the palette-only sheet.
+    sheet.classList.add("paletteOnly");
+    sheet.replaceChildren(
+      colorSheetEl("div", { class: "head" }, colorSheetEl("p", { class: "title" }, "Color"), done),
+      colorSheetEl("div", { class: "panels" }, colorSheetEl("div", { class: "panel current", role: "group", "aria-label": "Color" },
+        colorSheetPaletteHead(false, "", SOLID_COLORS[vectorColors[colorSheetSolid]].name), colorSheetSolidColors(colorSheetSolid))),
+    );
+  } else if (!colorSheetStyles()) {
     sheet.classList.add("paletteOnly");
     sheet.replaceChildren(
       colorSheetEl("div", { class: "head" }, colorSheetEl("p", { class: "title" }, "Color"), done),
@@ -413,11 +444,20 @@ export function fitColorSegment() {
 // (fitColorSegment is observed from the start of init.)
 
 export function openColorSheet() {
+  colorSheetSolid = null;
   colorSheetTab = colorSheetOpeningTab();
   renderColorSheet();
   els.colorSheet.classList.add("open");
   fitColorSegment();
   warmColorVariants();
+}
+
+// A pattern shape's color button: the sheet with only that shape's flat colors (`key` is its vectorColors key).
+export function openSolidColorSheet(key) {
+  colorSheetSolid = key;
+  renderColorSheet();
+  els.colorSheet.classList.add("open");
+  els.colorSheet.querySelector(".pal.active")?.scrollIntoView({ block: "nearest" });
 }
 
 // Closing: Done, the color button, Escape, or a plain TAP on the fractal. A

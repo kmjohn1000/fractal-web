@@ -1,12 +1,14 @@
 // The ten solid colors of the twelve pattern shapes (1.52.0). SOLID_COLORS is append-only because share links
 // carry the index (`c=`): Green, Autumn, Violet, Ice, Rose, Gold, White stay 0-6, and Blue, Teal and Coral are
-// 7-9. The color menu lists them in hue order (SOLID_COLOR_ORDER), by display only; picking one still sets the
+// 7-9. The Color sheet lists them in hue order (SOLID_COLOR_ORDER), by display only; picking one still sets the
 // stored index. The color button's pill is a miniature of the shape's real ramp for the picked color (a CSS
-// gradient: pillGradient in colormap-picker.js). These checks hold the table and the order, the menu (its
+// gradient: pillGradient in colormap-picker.js). These checks hold the table and the order, the sheet (its
 // order, its picks, the keyboard, and its fit on short screens and at larger text), the pill's stops against the
 // functions the render uses, share links for every index, that every color lights every shape, and contrast
 // floors for the dimmest parts of every ramp. The contrast of what is drawn is checked per shape in
 // shape-finish, tree-hexaflake-palette and koch-generations (they iterate over all ten colors).
+// (Until 1.62.0 the pattern shapes had their own list of ten colors, #colormapMenu; they now share the Color
+// sheet the fractals use, showing one grid of flat colors.)
 import { test, expect } from "@playwright/test";
 
 /* global setMode, fernView, vectorColors, SOLID_COLORS, SOLID_COLOR_ORDER, buildShareHash, parseShareHash, applyShareLink, els, mode,
@@ -29,7 +31,9 @@ const DEFAULTS = { koch: "Ice", tree: "Green", hexaflake: "Gold", dragon: "Autum
 // The color button of each shape's row.
 const BUTTON = (m) => (CURVES.includes(m) ? "#dragonColormapBtn" : IFS.includes(m) ? "#fernColorBtn" : `#${m}ColormapBtn`);
 const PILL = (m) => (CURVES.includes(m) ? "#dragonColorSwatch" : IFS.includes(m) ? "#fernColorSwatch" : `#${m}ColorSwatch`);
-const MENU_ITEMS = '#colormapMenu [role="menuitemradio"]';
+// The Color sheet's grid of flat colors (a radio per color, named for assistive tech).
+const SWATCHES = '#colorSheet .pals.solid [role="radio"]';
+const SWATCH = (name) => `${SWATCHES}[aria-label="${name}"]`;
 
 let pageErrors = [];
 
@@ -63,7 +67,7 @@ async function show(page, m) {
   await frames(page);
 }
 
-const menuNames = (page) => page.locator(MENU_ITEMS).locator(".cmName").allTextContents();
+const swatchNames = (page) => page.locator(SWATCHES).evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")));
 
 test.describe("the table", () => {
   test("indices 0-6 are unchanged (share links carry them), 7-9 are Blue, Teal and Coral", async ({ page }) => {
@@ -87,34 +91,56 @@ test.describe("the table", () => {
   });
 });
 
-test.describe("the color menu", () => {
+test.describe("the color sheet", () => {
   for (const m of ["koch", "tree", "hexaflake", "dragon", "gosper", "fern", "vicsek"]) {
     test(`${m}: lists the ten colors in hue order, with only the current one checked`, async ({ page }) => {
       await show(page, m);
       await page.locator(BUTTON(m)).click();
-      await expect(page.locator("#colormapMenu")).toHaveClass(/open/);
-      expect(await menuNames(page)).toEqual(RAINBOW);
-      const checked = await page.locator(MENU_ITEMS).evaluateAll((els) => els.map((e) => [e.getAttribute("aria-checked"), e.classList.contains("active")]));
+      await expect(page.locator("#colorSheet")).toHaveClass(/open/);
+      expect(await swatchNames(page)).toEqual(RAINBOW);
+      // The Color sheet, with the color's name on the line above and nothing of the fractals' sheet (tabs, sliders).
+      await expect(page.locator("#colorSheet .head .title")).toHaveText("Color");
+      await expect(page.locator("#colorSheet .palHead b")).toHaveText(DEFAULTS[m]);
+      await expect(page.locator('#colorSheet [role="tab"], #colorSheet input')).toHaveCount(0);
+      const checked = await page.locator(SWATCHES).evaluateAll((els) => els.map((e) => [e.getAttribute("aria-checked"), e.classList.contains("active")]));
       const current = RAINBOW.indexOf(DEFAULTS[m]);
       checked.forEach(([aria, active], i) => {
-        expect(aria, `row ${i}`).toBe(String(i === current));
-        expect(active, `row ${i} active`).toBe(i === current);
+        expect(aria, `swatch ${i}`).toBe(String(i === current));
+        expect(active, `swatch ${i} active`).toBe(i === current);
       });
-      // Each row's swatch is the flat color of its own name.
-      const swatches = await page.locator(`${MENU_ITEMS} .cmSwatch`).evaluateAll((els) => els.map((e) => e.style.background));
+      // Each swatch is the flat color of its own name.
+      const swatches = await page.locator(SWATCHES).evaluateAll((els) => els.map((e) => e.style.background));
       const expected = await page.evaluate((names) => names.map((n) => `rgb(${SOLID_COLORS.find((c) => c.name === n).rgb.join(", ")})`), RAINBOW);
       expect(swatches).toEqual(expected);
     });
   }
 
-  // A curve and a dot shape: every swatch sets the INDEX of its color, not its position in the menu.
+  test("the color button opens and closes it, and Done closes it; another shape's button shows that shape's color", async ({ page }) => {
+    await show(page, "dragon");
+    await page.locator("#dragonColormapBtn").click();
+    await expect(page.locator("#colorSheet")).toHaveClass(/open/);
+    await page.locator("#dragonColormapBtn").click();
+    await expect(page.locator("#colorSheet")).not.toHaveClass(/open/);
+    await page.locator("#dragonColormapBtn").click();
+    await page.locator("#colorSheet .done").click();
+    await expect(page.locator("#colorSheet")).not.toHaveClass(/open/);
+    // Switching shape closes it; the next shape's own sheet names its own color.
+    await page.locator("#dragonColormapBtn").click();
+    await show(page, "tree");
+    await expect(page.locator("#colorSheet")).not.toHaveClass(/open/);
+    await page.locator("#treeColormapBtn").click();
+    await expect(page.locator("#colorSheet .palHead b")).toHaveText(DEFAULTS.tree);
+  });
+
+  // A curve and a dot shape: every swatch sets the INDEX of its color, not its position in the sheet.
   for (const m of ["dragon", "levy"]) {
-    test(`${m}: clicking each swatch sets that color's index, closes the menu and moves the pill and the label`, async ({ page }) => {
+    test(`${m}: clicking each swatch sets that color's index, keeps the sheet open and moves the pill and the label`, async ({ page }) => {
       await show(page, m);
+      await page.locator(BUTTON(m)).click();
       for (const name of RAINBOW) {
-        await page.locator(BUTTON(m)).click();
-        await page.locator(MENU_ITEMS, { hasText: name }).click();
-        await expect(page.locator("#colormapMenu")).not.toHaveClass(/open/);
+        await page.locator(SWATCH(name)).click();
+        await expect(page.locator("#colorSheet")).toHaveClass(/open/);
+        await expect(page.locator("#colorSheet .palHead b")).toHaveText(name);
         const r = await page.evaluate(([m, name]) => ({ set: vectorColors[m], want: SOLID_COLORS.findIndex((c) => c.name === name), label: (m === "levy" ? els.fernColorBtn : els.dragonColormapBtn).getAttribute("aria-label"),
           others: Object.entries(vectorColors).filter(([k]) => k !== m).map(([k, v]) => `${k}:${v}`).join() }), [m, name]);
         expect(r.set, `${name} sets index ${r.want}`).toBe(r.want);
@@ -124,9 +150,11 @@ test.describe("the color menu", () => {
         expect(r.others).toBe(expectedOthers);
         await frames(page);
       }
-      // Reopened, the menu checks the last pick (White, the last row) and nothing else.
+      // Done closes it; reopened, the sheet checks the last pick (White, the last swatch) and nothing else.
+      await page.locator("#colorSheet .done").click();
+      await expect(page.locator("#colorSheet")).not.toHaveClass(/open/);
       await page.locator(BUTTON(m)).click();
-      const checked = await page.locator(MENU_ITEMS).evaluateAll((els) => els.map((e) => e.getAttribute("aria-checked")));
+      const checked = await page.locator(SWATCHES).evaluateAll((els) => els.map((e) => e.getAttribute("aria-checked")));
       expect(checked).toEqual([...RAINBOW.slice(0, 9).map(() => "false"), "true"]);
     });
   }
@@ -134,87 +162,82 @@ test.describe("the color menu", () => {
   test("the new colors can be picked on every shape and each draws something", async ({ page }) => {
     for (const m of SHAPES) {
       await show(page, m);
+      await page.locator(BUTTON(m)).click();
       for (const name of ["Blue", "Teal", "Coral"]) {
-        await page.locator(BUTTON(m)).click();
-        await page.locator(MENU_ITEMS, { hasText: name }).click();
+        await page.locator(SWATCH(name)).click();
         expect(await page.evaluate((m) => SOLID_COLORS[vectorColors[m]].name, m), `${m}`).toBe(name);
       }
     }
   });
 
-  // (Not Tab: where WebKit's Tab starts after a click on the opener is its own business. The arrow keys, which
-  // moved the shape behind the open menu before 1.52.0, now step the focus.)
-  test("keyboard: opening focuses the checked row, the arrow keys walk the rows in display order, Enter picks, Escape closes", async ({ page }) => {
+  // (Not Tab: where WebKit's Tab starts after a click on the opener is its own business. The swatches are a radio
+  // group with one tab stop; the arrow keys step the focus, and must not pan the shape behind the open sheet.)
+  test("keyboard: the arrow keys walk the swatches in display order and wrap, Enter picks, Escape closes", async ({ page }) => {
     await show(page, "dragon");
     const viewBefore = await page.evaluate(() => ({ ...VECTOR_VIEWS.dragon[0].view }));
     await page.locator("#dragonColormapBtn").click();
-    const focused = () => page.evaluate(() => document.activeElement?.querySelector?.(".cmName")?.textContent ?? null);
-    expect(await focused(), "the checked row (Autumn) has the focus").toBe("Autumn");
-    await page.keyboard.press("ArrowDown");
-    expect(await focused(), "next row after Autumn").toBe("Gold");
-    await page.keyboard.press("ArrowDown");
+    const focused = () => page.evaluate(() => document.activeElement?.getAttribute?.("aria-label") ?? null);
+    await page.locator(SWATCH("Autumn")).focus();
+    expect(await focused()).toBe("Autumn");
+    await page.keyboard.press("ArrowRight");
+    expect(await focused(), "next after Autumn").toBe("Gold");
+    await page.keyboard.press("ArrowRight");
     expect(await focused()).toBe("Green");
-    await page.keyboard.press("ArrowUp");
-    expect(await focused(), "back one row").toBe("Gold");
-    await page.keyboard.press("End");
-    expect(await focused(), "End: the last row").toBe("White");
-    await page.keyboard.press("ArrowDown");
-    expect(await focused(), "the rows wrap around").toBe("Rose");
-    await page.keyboard.press("ArrowUp");
+    await page.keyboard.press("ArrowLeft");
+    expect(await focused(), "back one").toBe("Gold");
+    await page.locator(SWATCH("White")).focus();
+    await page.keyboard.press("ArrowRight");
+    expect(await focused(), "the swatches wrap around").toBe("Rose");
+    await page.keyboard.press("ArrowLeft");
     expect(await focused(), "wrapping back").toBe("White");
-    await page.keyboard.press("Home");
-    expect(await focused(), "Home: the first row").toBe("Rose");
-    expect(await page.evaluate(() => ({ ...VECTOR_VIEWS.dragon[0].view })), "the arrow keys did not pan the shape behind the menu").toEqual(viewBefore);
-    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("ArrowRight");
+    await page.keyboard.press("ArrowRight");
+    expect(await focused(), "Rose, then Coral").toBe("Coral");
+    expect(await page.evaluate(() => ({ ...VECTOR_VIEWS.dragon[0].view })), "the arrow keys did not pan the shape behind the sheet").toEqual(viewBefore);
     await page.keyboard.press("Enter");
-    await expect(page.locator("#colormapMenu")).not.toHaveClass(/open/);
-    expect(await page.evaluate(() => SOLID_COLORS[vectorColors.dragon].name), "Enter picked the focused row (Coral, the one after Rose)").toBe("Coral");
-    // The focus goes back to the button that opened the menu.
-    expect(await page.evaluate(() => document.activeElement?.id)).toBe("dragonColormapBtn");
+    expect(await page.evaluate(() => SOLID_COLORS[vectorColors.dragon].name), "Enter picked the focused swatch").toBe("Coral");
+    await expect(page.locator("#colorSheet")).toHaveClass(/open/);
     // Escape closes it without picking.
-    await page.locator("#dragonColormapBtn").click();
-    expect(await focused(), "reopened on the checked row").toBe("Coral");
-    await page.keyboard.press("ArrowDown");
+    await page.locator(SWATCH("Coral")).focus();
+    await page.keyboard.press("ArrowRight");
     await page.keyboard.press("Escape");
-    await expect(page.locator("#colormapMenu")).not.toHaveClass(/open/);
+    await expect(page.locator("#colorSheet")).not.toHaveClass(/open/);
     expect(await page.evaluate(() => SOLID_COLORS[vectorColors.dragon].name), "Escape picks nothing").toBe("Coral");
-    expect(await page.evaluate(() => document.activeElement?.id)).toBe("dragonColormapBtn");
   });
 });
 
-// Ten rows are about 540 px: they fit a 393x852 phone and scroll on the shorter screens (the menu's max-height is the
-// space between the safe area's top and its anchor). Whatever the size, the menu stays on screen, never scrolls
-// sideways, opens with the checked row in view, and every row can be reached.
-test.describe("the color menu on short screens and at larger text", () => {
+// Ten swatches are two rows of five, about the height of the palette grid, so the sheet is short: it fits every
+// screen below. Whatever the size, the sheet stays on screen, never scrolls sideways, opens with the checked
+// swatch in view, and every swatch can be reached and picked (the sheet scrolls where it has to).
+test.describe("the color sheet on short screens and at larger text", () => {
   const SIZES = [
-    { w: 393, h: 852, scale: 1, label: "393x852", fits: true },
+    { w: 393, h: 852, scale: 1, label: "393x852" },
     { w: 360, h: 640, scale: 1, label: "360x640" },
-    { w: 852, h: 393, scale: 1, label: "landscape 852x393", scrolls: true },
-    { w: 667, h: 375, scale: 1, label: "landscape 667x375", scrolls: true },
-    // The rows grow little with the text size (their height is a 44 px minimum), so the ten still fit on a tall phone.
+    { w: 852, h: 393, scale: 1, label: "landscape 852x393" },
+    { w: 667, h: 375, scale: 1, label: "landscape 667x375" },
     { w: 393, h: 852, scale: 1.5, label: "393x852 at 1.5x text" },
     { w: 393, h: 852, scale: 2, label: "393x852 at 2x text" },
   ];
   for (const s of SIZES) {
     for (const m of ["dragon", "fern"]) {
-      test(`${s.label}, ${m}: on screen, row reachable, the checked row in view`, async ({ page }) => {
+      test(`${s.label}, ${m}: on screen, every swatch reachable, the checked one in view`, async ({ page }) => {
         await page.setViewportSize({ width: s.w, height: s.h });
         if (s.scale !== 1) await page.evaluate((v) => document.documentElement.style.setProperty("--text-scale", String(v)), s.scale);
         await show(page, m);
         await page.waitForTimeout(250);
-        // White is the last row: the hardest one to have in view when the menu opens.
+        // White is the last swatch: the hardest one to have in view when the sheet opens.
         await page.evaluate((m) => { vectorColors[m] = SOLID_COLORS.findIndex((c) => c.name === "White"); }, m);
         await page.locator(BUTTON(m)).click();
-        await expect(page.locator("#colormapMenu")).toHaveClass(/open/);
+        await expect(page.locator("#colorSheet")).toHaveClass(/open/);
         await page.waitForTimeout(150);
         const geo = () => page.evaluate(() => {
-          const menu = document.getElementById("colormapMenu"), b = menu.getBoundingClientRect();
-          const rows = [...menu.querySelectorAll('[role="menuitemradio"]')].map((e) => {
+          const sheet = document.getElementById("colorSheet"), b = sheet.getBoundingClientRect();
+          const swatches = [...sheet.querySelectorAll('.pals.solid [role="radio"]')].map((e) => {
             const q = e.getBoundingClientRect();
-            return { name: e.querySelector(".cmName").textContent, top: q.top, bottom: q.bottom, inView: q.top >= b.top - 1 && q.bottom <= b.bottom + 1 };
+            return { name: e.getAttribute("aria-label"), width: q.width, height: q.height, inView: q.top >= b.top - 1 && q.bottom <= b.bottom + 1 && q.left >= b.left - 1 && q.right <= b.right + 1 };
           });
-          return { top: b.top, bottom: b.bottom, left: b.left, right: b.right, vw: innerWidth, vh: innerHeight, rows, scrolls: menu.scrollHeight > menu.clientHeight + 1,
-            noSide: menu.scrollWidth <= menu.clientWidth + 1, overflowY: getComputedStyle(menu).overflowY, scrollTop: menu.scrollTop };
+          return { top: b.top, bottom: b.bottom, left: b.left, right: b.right, vw: innerWidth, vh: innerHeight, swatches, scrolls: sheet.scrollHeight > sheet.clientHeight + 1,
+            noSide: sheet.scrollWidth <= sheet.clientWidth + 1 };
         });
         const g = await geo();
         expect(g.top, "top edge on screen").toBeGreaterThanOrEqual(0);
@@ -222,22 +245,15 @@ test.describe("the color menu on short screens and at larger text", () => {
         expect(g.left).toBeGreaterThanOrEqual(0);
         expect(g.right).toBeLessThanOrEqual(g.vw);
         expect(g.noSide, "no sideways scroll").toBe(true);
-        expect(g.rows.find((r) => r.name === "White").inView, "the checked row (White, last) is scrolled into view on open").toBe(true);
-        if (s.fits) expect(g.scrolls, "ten rows fit without scrolling").toBe(false);
-        if (s.scrolls) expect(g.scrolls, "scrolls here").toBe(true);
-        if (g.scrolls) {
-          expect(g.overflowY).toMatch(/auto|scroll/);
-          // Scrolled to the top the first row is in view, and the last row at the bottom.
-          await page.evaluate(() => { document.getElementById("colormapMenu").scrollTop = 0; });
-          expect((await geo()).rows[0].inView, "Rose reachable at the top").toBe(true);
-          await page.evaluate(() => { const m = document.getElementById("colormapMenu"); m.scrollTop = m.scrollHeight; });
-          expect((await geo()).rows[9].inView, "White reachable at the bottom").toBe(true);
-        } else {
-          expect(g.rows.every((r) => r.inView), "every row in view").toBe(true);
+        expect(g.swatches, "ten swatches").toHaveLength(10);
+        expect(g.swatches.find((r) => r.name === "White").inView, "the checked swatch (White, last) is in view on open").toBe(true);
+        expect(Math.min(...g.swatches.map((r) => r.height)), "a 44 px tap target").toBeGreaterThanOrEqual(44);
+        // Every swatch can be scrolled to, and a middle one can still be picked.
+        for (const name of RAINBOW) {
+          await page.locator(SWATCH(name)).scrollIntoViewIfNeeded();
+          expect((await geo()).swatches.find((r) => r.name === name).inView, `${name} reachable`).toBe(true);
         }
-        // A row from the middle can still be picked.
-        await page.evaluate(() => document.querySelectorAll('#colormapMenu [role="menuitemradio"]')[5].scrollIntoView({ block: "nearest" }));
-        await page.locator(MENU_ITEMS, { hasText: "Teal" }).click();
+        await page.locator(SWATCH("Teal")).click();
         expect(await page.evaluate((m) => SOLID_COLORS[vectorColors[m]].name, m)).toBe("Teal");
       });
     }
@@ -332,11 +348,11 @@ test.describe("the color button's pill is a miniature of the shape's ramp", () =
     }
   });
 
-  test("it follows a pick from the menu, and the curve that is shown", async ({ page }) => {
+  test("it follows a pick from the sheet, and the curve that is shown", async ({ page }) => {
     await show(page, "dragon");
     const before = (await pillStops(page, "dragon")).bg;
     await page.locator("#dragonColormapBtn").click();
-    await page.locator(MENU_ITEMS, { hasText: "Blue" }).click();
+    await page.locator(SWATCH("Blue")).click();
     const blue = await pillStops(page, "dragon");
     expect(blue.bg).not.toBe(before);
     const ramp = (await page.evaluate(() => curveRamp(SOLID_COLORS.findIndex((c) => c.name === "Blue")))).map(rgbOf);

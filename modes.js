@@ -3,18 +3,18 @@
 // interaction.js and the later scripts only inside function bodies.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { FRACTAL_CONFIGS } from "./configs.js?v=1.61.1";
-import { LINE_CURVES } from "./dragon.js?v=1.61.1";
-import { ignoresMaxIter, isCurveMode, isIfsMode, suggestedMaxIter, viewFromBounds } from "./fractal-defs.js?v=1.61.1";
-import { TELEPORT_DESTINATIONS } from "./places.js?v=1.61.1";
-import { applyAutoIter, currentName, dragonState, dragonView, dualActive, els, fernView, freshState, juliaHistory, juliaState, kochView, mainCanvasAspect, mainHistory, mainState, mode, setActivePane, setCurrentName, setDualActive, setJuliaHistory, setJuliaState, setMainHistory, setMainState, setModeKey } from "./state.js?v=1.61.1";
-import { applyDefaultColormap } from "./state-colors.js?v=1.61.1";
-import { crosshairFlash, labelColormapButton, layoutCanvasArea, requestRender } from "./render-layout.js?v=1.61.1";
-import { dragonNav, fernNav, fitVectorView, fittedVectorModes } from "./vector-interaction.js?v=1.61.1";
-import { cancelTeleport } from "./teleport.js?v=1.61.1";
-import { stopDepthPlay } from "./pattern-controls.js?v=1.61.1";
-import { updateColorSwatches } from "./colormap-picker.js?v=1.61.1";
-import { applyCornerRule, dealCornerRule } from "./corner-rules.js?v=1.61.1";
+import { FRACTAL_CONFIGS } from "./configs.js?v=1.62.0";
+import { LINE_CURVES } from "./dragon.js?v=1.62.0";
+import { ignoresMaxIter, isCurveMode, isIfsMode, suggestedMaxIter, viewFromBounds } from "./fractal-defs.js?v=1.62.0";
+import { TELEPORT_DESTINATIONS } from "./places.js?v=1.62.0";
+import { applyAutoIter, currentName, dragonState, dragonView, dualActive, els, fernView, freshState, juliaHistory, juliaState, kochView, mainCanvasAspect, mainHistory, mainState, mode, setActivePane, setCurrentName, setDualActive, setJuliaHistory, setJuliaState, setMainHistory, setMainState, setModeKey } from "./state.js?v=1.62.0";
+import { applyDefaultColormap } from "./state-colors.js?v=1.62.0";
+import { crosshairFlash, labelColormapButton, layoutCanvasArea, requestRender } from "./render-layout.js?v=1.62.0";
+import { dragonNav, fernNav, fitVectorView, fittedVectorModes } from "./vector-interaction.js?v=1.62.0";
+import { cancelTeleport } from "./teleport.js?v=1.62.0";
+import { stopDepthPlay } from "./pattern-controls.js?v=1.62.0";
+import { updateColorSwatches } from "./colormap-picker.js?v=1.62.0";
+import { applyCornerRule, dealCornerRule } from "./corner-rules.js?v=1.62.0";
 
 // ---------------------------------------------------------------- fractal-type / mode switching
 
@@ -191,7 +191,6 @@ export function setMode(next) {
   setModeKey(next);
   els.fractalTypeRow.classList.remove("open"); // collapse the picker on any mode switch
   els.shareMenu.classList.remove("open");
-  els.colormapMenu.classList.remove("open");
   els.colorSheet.classList.remove("open");
   els.placesSheet.classList.remove("open");
   els.fractalControls.classList.toggle("hidden", mode !== "fractal");

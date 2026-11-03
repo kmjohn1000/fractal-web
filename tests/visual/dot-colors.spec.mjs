@@ -165,7 +165,7 @@ test.describe("a color per mode", () => {
     expect(starts).toEqual(IFS_MODES.map((m) => DEFAULT_COLORS[m]));
     await show(page, "levy");
     await page.locator("#fernColorBtn").click();
-    await page.locator('#colormapMenu [role="menuitemradio"]', { hasText: "Coral" }).click(); // (no shape starts in it)
+    await page.locator('#colorSheet .pals.solid [aria-label="Coral"]').click(); // (no shape starts in it)
     const after = await page.evaluate((modes) => modes.map((m) => SOLID_COLORS[vectorColors[m]].name), IFS_MODES);
     expect(after).toEqual(["Green", "Violet", "Ice", "Coral", "Gold"]);
   });

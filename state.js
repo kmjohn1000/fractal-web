@@ -6,15 +6,15 @@
 // reads, see rendererHost), so they can depend on this file and it on none of them; state-colors.js
 // holds the functions that do call them.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { SOLID_COLORS } from "./colormaps.js?v=1.61.1";
-import { FRACTAL_CONFIGS } from "./configs.js?v=1.61.1";
-import { LINE_CURVES, createCurveView } from "./dragon.js?v=1.61.1";
-import { createIfsView } from "./fern.js?v=1.61.1";
-import { createHexaflakeView } from "./hexaflake.js?v=1.61.1";
-import { createKochView } from "./koch.js?v=1.61.1";
-import { createPythagorasTreeView } from "./pythagoras.js?v=1.61.1";
-import { ignoresMaxIter, suggestedMaxIter, viewFromBounds } from "./fractal-defs.js?v=1.61.1";
-import { createFractalRenderer } from "./renderer.js?v=1.61.1";
+import { SOLID_COLORS } from "./colormaps.js?v=1.62.0";
+import { FRACTAL_CONFIGS } from "./configs.js?v=1.62.0";
+import { LINE_CURVES, createCurveView } from "./dragon.js?v=1.62.0";
+import { createIfsView } from "./fern.js?v=1.62.0";
+import { createHexaflakeView } from "./hexaflake.js?v=1.62.0";
+import { createKochView } from "./koch.js?v=1.62.0";
+import { createPythagorasTreeView } from "./pythagoras.js?v=1.62.0";
+import { ignoresMaxIter, suggestedMaxIter, viewFromBounds } from "./fractal-defs.js?v=1.62.0";
+import { createFractalRenderer } from "./renderer.js?v=1.62.0";
 
 // ---------------------------------------------------------------- app state
 
@@ -92,7 +92,6 @@ export const els = {
   dragonBackBtn: document.getElementById("dragonBackBtn"),
   fernBackBtn: document.getElementById("fernBackBtn"),
   shareMenu: document.getElementById("shareMenu"),
-  colormapMenu: document.getElementById("colormapMenu"),
   colorSheet: document.getElementById("colorSheet"),
   placesSheet: document.getElementById("placesSheet"),
   shareSaveBtn: document.getElementById("shareSaveBtn"),

@@ -286,7 +286,7 @@ test.describe("color along the curves", () => {
     const [a] = await curveEnds(page, "hilbert", 4);
     const violet = await windowHue(page, "hilbert", a[0], a[1]);
     await page.locator("#dragonColormapBtn").click();
-    await page.locator('#colormapMenu [role="menuitemradio"]', { hasText: "Green" }).click();
+    await page.locator('#colorSheet .pals.solid [aria-label="Green"]').click();
     await frames(page);
     const green = await windowHue(page, "hilbert", a[0], a[1]);
     expect(await page.evaluate(() => SOLID_COLORS[vectorColors.hilbert].name)).toBe("Green");
@@ -400,10 +400,10 @@ test.describe("share links and the color picker", () => {
   test("the color picker still changes a dot shape and a curve, each its own", async ({ page }) => {
     await show(page, "sierpinski");
     await page.locator("#fernColorBtn").click();
-    await page.locator('#colormapMenu [role="menuitemradio"]', { hasText: "Ice" }).click();
+    await page.locator('#colorSheet .pals.solid [aria-label="Ice"]').click();
     await show(page, "arrowhead");
     await page.locator("#dragonColormapBtn").click();
-    await page.locator('#colormapMenu [role="menuitemradio"]', { hasText: "Rose" }).click();
+    await page.locator('#colorSheet .pals.solid [aria-label="Rose"]').click();
     const names = await page.evaluate(() => ["sierpinski", "arrowhead", "dragon", "hilbert", "gosper"].map((m) => SOLID_COLORS[vectorColors[m]].name));
     expect(names).toEqual(["Ice", "Rose", "Autumn", "Violet", "Rose"]);
   });

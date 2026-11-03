@@ -67,7 +67,6 @@ test.describe("the Color sheet", () => {
   test("the color button opens the sheet on Looks, with the current Look checked", async ({ page }) => {
     await page.locator("#colormapBtn").click();
     await expect(page.locator("#colorSheet")).toHaveClass(/open/);
-    await expect(page.locator("#colormapMenu")).not.toHaveClass(/open/);
     await expect(page.locator("#colorSheet")).toHaveAttribute("role", "dialog");
     await expect(page.locator('#colorSheet [role="tab"]')).toHaveText(["Looks", "Custom"]);
     await expect(page.locator('#colorSheet [role="tab"][aria-selected="true"]')).toHaveText("Looks");
@@ -247,7 +246,6 @@ test.describe("the Color sheet", () => {
       await settle(page);
       await page.locator("#colormapBtn").click();
       await expect(page.locator("#colorSheet"), f).toHaveClass(/open/);
-      await expect(page.locator("#colormapMenu"), f).not.toHaveClass(/open/);
       await expect(page.locator('#colorSheet [role="tab"]'), `${f}: no tabs`).toHaveCount(0);
       await expect(page.locator('#colorSheet [aria-label="Style"], #colorSheet [aria-label="Looks"], #colorSheet input'), `${f}: no styles, Looks or sliders`).toHaveCount(0);
       await expect(page.locator('#colorSheet [aria-label="Palette"] [role="radio"]'), f).toHaveCount(await page.evaluate(() => COLORMAPS.length));
