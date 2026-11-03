@@ -570,8 +570,9 @@ export function curveRamp(colorIndex) {
 // keeping each curve's pan/zoom separately.
 export function createCurveView(canvas) {
   const ctx = canvas.getContext("2d");
-  // ox, oy: the exact origin of the Penrose tiling's center (BigInt, see penrose.js); cx, cy are then the offset from it
-  const view = { cx: -0.35, cy: -0.24, halfHeight: 1.0, rotation: 0, ox: 0n, oy: 0n };
+  // While the Penrose tiling is shown the view also has ox, oy: the exact origin of its center (BigInt, see
+  // penrose.js), cx and cy then being the offset from it. The other curves' views have no such fields.
+  const view = { cx: -0.35, cy: -0.24, halfHeight: 1.0, rotation: 0 };
   let dpr = Math.min(window.devicePixelRatio || 1, 2);
   let curve = "dragon";
   const penrose = makePenroseRenderer();
@@ -591,6 +592,7 @@ export function createCurveView(canvas) {
     curve = key;
     const saved = savedViews.get(key);
     if (saved) Object.assign(view, saved);
+    if (key === "penrose") { view.ox ??= 0n; view.oy ??= 0n; } else { delete view.ox; delete view.oy; }
     penrose.level.snap(); // no cross-fade from the depth a mode was left at
     penroseBusy = false;
   }
