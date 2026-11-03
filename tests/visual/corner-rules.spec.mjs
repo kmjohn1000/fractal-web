@@ -43,10 +43,18 @@ test.afterEach(() => {
   expect(pageErrors, "uncaught page errors").toEqual([]);
 });
 
-// Waits for the dot shapes' view to have drawn its points (and two frames after).
+// Waits for the dot shapes' view to have drawn its points: the render the caller asked for has started (two
+// frames), is not refining any more, and the number of points on screen has stopped changing.
 async function settle(page) {
-  await page.waitForFunction(() => !fernView.refining && fernView.accepted > 0, null, { timeout: 60_000 });
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+  await page.waitForFunction(() => !fernView.refining && fernView.accepted > 0, null, { timeout: 60_000 });
+  let last = -1;
+  for (let i = 0; i < 100; i++) {
+    const now = await page.evaluate(() => fernView.accepted);
+    if (now === last) break;
+    last = now;
+    await page.waitForTimeout(120);
+  }
 }
 
 // Rule `id` on screen, framed whole, its points drawn.
