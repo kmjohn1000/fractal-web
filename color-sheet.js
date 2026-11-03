@@ -372,8 +372,9 @@ export function renderColorSheet() {
     }
     sheet.replaceChildren(colorSheetEl("div", { class: "head" }, tabs, done), panels);
   }
-  sheet.scrollTop = scrollTop;
+  // Lay the segments and the Looks out first: the scroll position can only be restored into the final height.
   fitColorSegment();
+  sheet.scrollTop = scrollTop;
   if (focusKey) sheet.querySelector(`[data-key="${focusKey}"]`)?.focus({ preventScroll: true });
 }
 
