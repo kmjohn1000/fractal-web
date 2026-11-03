@@ -2,6 +2,11 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.60.0 — 2026-11-03
+- Added the Halo look: the inside of the set glows from its center out, dim in the middle of each bulb and bright at its rim. It works on the Mandelbrot set, the Tricorn, the cubic Multibrot and the Julia sets; Burning Ship and Celtic keep it greyed out.
+- Added the Paper cut look: flat paper layers, one per band, with soft shadows that fall to the lower right of each raised edge and slide as you pan.
+- The Looks grid and the style row in the Color sheet rearrange so all nine styles fit on a phone (the style row now wraps to two rows, so the sheet is a little taller).
+
 ## 1.59.0 — 2026-11-03
 - Added the Penrose tiling: thick and thin rhombs in a five-fold pattern that never repeats, grown level by level (depth 1 to 9). It sits with the other curves in "Build level by level", plays up level by level, and turns with two fingers.
 
