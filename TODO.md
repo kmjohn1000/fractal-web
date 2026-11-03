@@ -556,6 +556,26 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         c were unclear to it (Lambda is z -> c z (1 - z)).
       - Low priority: Magnet, sine and exponential families, Spider,
         fractional and negative powers (no perturbation, shallow only).
+- [ ] Nova for other powers: Nova², Nova⁴, Nova⁵, Nova⁶ beside the current Nova
+      (user idea 2026-11-02, prompted by a Reddit post giving the general
+      form z -> z - R (z^n - 1)/(n z^(n-1)) + c, z0 = 1, c = the pixel, n from
+      2 to 6, R a complex "relax" value; not approved, not started). The app's
+      Nova is the n = 3, R = 1 case (`renderNova`, `shaders.js` ~556-600: the
+      cube is hard-coded; the Nova config already carries `power: 3`).
+      A CPU mock-up of the same rule (not in the repo) reproduced the app's
+      crescent at n = 3 and showed distinct shapes for the others on a wide
+      view: n = 2 is a vertical crescent with two bulbs, n = 4 to 6 have more
+      lobes and rings around the origin, all mostly empty at the wide view, so
+      each needs its own default view found by exploring. Build: generalize
+      the step to `((n-1) z + (1/z)^(n-1)) / n` by repeated multiplication
+      driven by `u_power`; a config key per power (new `f=` ids, never
+      renamed), a default view, a few places and a thumbnail each; Nova stays
+      float32 only (no deep zoom path, `NOVA_MIN_SCALE` in `deepzoom.js`).
+      Open design questions: four more picker entries, or one Nova entry with
+      a power chooser (the interface is meant to stay small); and a complex
+      Relax value R, which the same rule allows but which adds controls the
+      user was unsure about. Each new entry changes the fractal count in the
+      store listing.
 - [ ] A one-line "what you're looking at" blurb per fractal or place, in
       the info card or picker (idea from the WebSim Fractal Explorer review,
       2026-10-09). Surprise me itself now covers every zoom fractal
