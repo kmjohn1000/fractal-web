@@ -42,7 +42,8 @@
 //             layers[0] is the base picture; each later layer is shot too and blended
 //             over it at `weight` (skipped when weight <= 0.002). A layer may name one of the app's palettes
 //             (`palette: "Classic"`; else the page's current one stays), so a tour can change color, and the
-//             frame may carry `dim` (0..1), a dip to black.
+//             frame may carry `dim` (0..1), a dip to black. A layer may also carry `view: {cx, cy, scale, rotation, offset}`
+//             (any of them) that replaces the frame's camera for that layer: a cross-fade between two places.
 //             Long-form (scripts/shorts/the-burning-ship.mjs): `fadeIn` (seconds, recipe field) fades the pure cut and
 //             its bed in; post may carry `chapters` (lines) and `linkNote`; PW_PORT (env) picks the static-server port.
 //   pageSetup optional JS string run in the page once after the palette (e.g. to override an app global)
@@ -420,13 +421,15 @@ async function renderDiveFrames() {
       const blended = s.layers.slice(1).filter((l) => l.weight > 0.002);
       // The base picture; while a further layer (the Bands look) is still dissolving, a
       // shot of it is blended in over the picture (ImageMagick).
-      await setFrame(page, { ...base, style: s.layers[0].style, density: s.layers[0].density, palette: s.layers[0].palette ?? s.palette }, `frame ${i}`);
+      // A layer may carry its own `view` ({cx, cy, scale, rotation, offset}, any of them) in place of the shared camera,
+      // so two layers can be two places (a cross-fade between locations).
+      await setFrame(page, { ...base, ...s.layers[0].view, style: s.layers[0].style, density: s.layers[0].density, palette: s.layers[0].palette ?? s.palette }, `frame ${i}`);
       await shot(blended.length ? join(tmpDir, "layer0.jpg") : file);
       const it = await page.evaluate("mainState.maxIter");
       if (blended.length) {
         let acc = join(tmpDir, "layer0.jpg");
         for (const [k, l] of blended.entries()) {
-          await setFrame(page, { ...base, style: l.style, density: l.density, palette: l.palette ?? s.palette }, `frame ${i} ${l.style}`);
+          await setFrame(page, { ...base, ...l.view, style: l.style, density: l.density, palette: l.palette ?? s.palette }, `frame ${i} ${l.style}`);
           await shot(join(tmpDir, "layerN.jpg"));
           const r = spawnSync("magick", [acc, join(tmpDir, "layerN.jpg"), "-define", `compose:args=${(l.weight * 100).toFixed(2)}`, "-compose", "blend", "-composite", "-quality", "95", k === blended.length - 1 ? file : join(tmpDir, "acc.jpg")]);
           if (r.status !== 0) throw new Error(`magick failed: ${r.stderr}`);
