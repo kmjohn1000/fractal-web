@@ -2,6 +2,10 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.66.0 — 2026-11-04
+- Added Spider (z → z² + c, then c → z + c/2), a striped, many-armed fractal with a dartboard of rings at its center, with five places. Smooth, Bands, Stripes, Orbs and Rays work on it; zoom stops at a floor that depends on where the view is.
+- A share link deeper than a fractal's zoom floor is now clamped at the link's own center.
+
 ## 1.65.0 — 2026-11-03
 - Release build for the App Store: brings together everything since 1.55.5 (the entries above): deeper zoom on every fractal that zooms, Penrose tiling, Corner Rules, 24 new places, the Halo and Paper cut looks, and the rating prompt in the app.
 
