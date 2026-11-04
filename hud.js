@@ -7,7 +7,7 @@
 import { COLORMAPS } from "./colormaps.js?v=1.67.0";
 import { FRACTAL_CONFIGS, FTYPE, fractalLabel } from "./configs.js?v=1.67.0";
 import { EXTRA_MODES, SHAPE_INFO, apolloFrame, digitFractalDepth, isDigitFractal } from "./fractal-defs.js?v=1.67.0";
-import { DEEP_ZOOM_THRESHOLD, atZoomLimit, deepZoomEligible, newtonDeepEligible, perturbationEligibleType, phoenixDeepEligible } from "./deepzoom.js?v=1.67.0";
+import { DEEP_ZOOM_THRESHOLD, atZoomLimit, deepZoomEligible, isSineType, newtonDeepEligible, perturbationEligibleType, phoenixDeepEligible } from "./deepzoom.js?v=1.67.0";
 import { TELEPORT_DESTINATIONS } from "./places.js?v=1.67.0";
 import { COLOR_STYLES, ESCAPE_TIME_TYPES, colorStyle, styleDrawn } from "./color-styles.js?v=1.67.0";
 import { currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, hexaflakeView, isInteracting, kochState, kochView, mainRenderer, mainState, mode, treeState, treeView } from "./state.js?v=1.67.0";
@@ -123,7 +123,7 @@ export function updateHud(deepPath) {
     if (apollo.steps > 0) precision = "composed inversions (deep zoom)";
   } else if (usesFixedDepth) {
     if (s.scale < DEEP_ZOOM_THRESHOLD) precision = "cell rebasing (deep zoom)";
-  } else if (s.ftype === FTYPE.NOVA || s.ftype === FTYPE.SPIDER || s.ftype === FTYPE.MAGNET) {
+  } else if (s.ftype === FTYPE.NOVA || s.ftype === FTYPE.SPIDER || s.ftype === FTYPE.MAGNET || isSineType(s.ftype)) {
     // Float32 only; limitScale holds the zoom where it stops being sharp.
     precision = atZoomLimit(s) ? "float32 (zoom limit: no deeper without losing detail)" : "float32";
   } else if (isInteracting && deepZoomEligible(mainRenderer, s)) {

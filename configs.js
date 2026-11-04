@@ -9,7 +9,7 @@
 // the region that must be fully visible when the fractal first opens;
 // viewFromBounds fits it to the canvas's aspect ratio (see there).
 
-export const FTYPE = { ESCAPE: 0, SHIP: 1, TRICORN: 2, NEWTON: 3, CARPET: 4, GASKET: 5, PHOENIX: 6, CELTIC: 7, APOLLONIAN: 8, NOVA: 9, SPIDER: 10, MAGNET: 11 };
+export const FTYPE = { ESCAPE: 0, SHIP: 1, TRICORN: 2, NEWTON: 3, CARPET: 4, GASKET: 5, PHOENIX: 6, CELTIC: 7, APOLLONIAN: 8, NOVA: 9, SPIDER: 10, MAGNET: 11, SINE: 12, SINEPLANE: 13 };
 
 // Phoenix's fixed p in z' = z^2 + c + p*z_prev: the classic real -0.5
 // (Ushiki). With c = 0.5667 in Julia mode that gives the well-known twin-lobe
@@ -68,6 +68,11 @@ export const FRACTAL_CONFIGS = {
   // (1 or 2), not an exponent. Float32 only: MAGNET_MIN_SCALE (deepzoom.js) stops the zoom.
   "Magnet I":     { label: "Magnet I", ftype: FTYPE.MAGNET, power: 1, juliaC: null,                    view: [-0.6, 3.35, -2.35, 2.35],   dual: false, category: "zoom", defaultColormap: "Classic" },
   "Magnet II":    { label: "Magnet II", ftype: FTYPE.MAGNET, power: 2, juliaC: null,                   view: [-0.45, 2.6, -1.8, 1.8],   dual: false, category: "zoom", defaultColormap: "Plasma" },
+  // The sine family (renderSineFamily in shaders.js), float32 only: SINE_MIN_SCALE (deepzoom.js) stops the zoom
+  // where float32 gives out. "Sine Julia" is the Julia set of z -> L sin z for the fixed L = juliaC = 1 + 0.4i (a
+  // field of spirals); "Sine plane" is the plane of z -> sin z + cosh(c), started at z = c.
+  "Sine Julia":   { label: "Sine Julia", ftype: FTYPE.SINE, power: 2, juliaC: [1, 0.4],                  view: [-3.2, 3.2, -2.4, 2.4], dual: false, category: "zoom" },
+  "Sine plane":   { label: "Sine plane", ftype: FTYPE.SINEPLANE, power: 2, juliaC: null,                 view: [-5.2, 5.2, -3.9, 3.9], dual: true, category: "zoom" },
   // Digit-test fractals (see FRAG_SRC's renderDigitFractal) — defined on
   // the unit square, so centered there with a little margin. power is
   // unused by these but kept non-null for consistency with the others.

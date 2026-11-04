@@ -17,7 +17,13 @@ import { FTYPE } from "./configs.js?v=1.67.0";
 // Magnet I and II join the list for Smooth and Bands only (like Phoenix): the styles with `types`
 // stay off for them. Their orbits end at the fixed point 1 or escape, which gives the derivative
 // and the stripe and trap averages nothing to show (see renderMagnet in shaders.js).
-export const ESCAPE_TIME_TYPES = [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC, FTYPE.PHOENIX, FTYPE.SPIDER, FTYPE.MAGNET];
+// The sine family (SINE, SINEPLANE) draws Smooth, Bands, Stripes, Orbs and Rays: the four styles lit from the
+// derivative (Edge glow, Relief, Halo, Paper cut) stay off for it. Their distance estimate and gradient shading
+// assume a polynomial's escape rate (|z| grows like a power, the potential is ln|z| / P^n), which an entire function
+// like sin z does not have, and Halo and Paper cut lean on the same assumptions, so they would draw something
+// plausible but wrong. Their `types` lists simply do not name the sine types.
+export const SINE_TYPES = [FTYPE.SINE, FTYPE.SINEPLANE];
+export const ESCAPE_TIME_TYPES = [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC, FTYPE.PHOENIX, FTYPE.SPIDER, FTYPE.MAGNET, ...SINE_TYPES];
 export const COLOR_STYLES = [
   { id: "smooth", glsl: 0, variant: 0, label: "Smooth" },
   { id: "bands", glsl: 1, variant: 0, label: "Bands" },
@@ -25,7 +31,7 @@ export const COLOR_STYLES = [
   // two-term recurrence has no derivative worked out, and its deep path is a
   // separate fixed-point shader.
   { id: "glow", glsl: 2, variant: 1, label: "Edge glow", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
-  { id: "stripes", glsl: 3, variant: 2, label: "Stripes", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC, FTYPE.SPIDER] },
+  { id: "stripes", glsl: 3, variant: 2, label: "Stripes", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC, FTYPE.SPIDER, ...SINE_TYPES] },
   // Orbit traps color by how close the orbit came to a point or a cross. In a
   // deep view every pixel's orbit looks alike, so the distances fall in a
   // narrow band; the renderer stretches the colormap over the view's real
@@ -36,8 +42,8 @@ export const COLOR_STYLES = [
   // Display names are plain words and the same everywhere (tile, segment,
   // note, info card): Orbs is the point trap and Rays the cross trap. The ids
   // (and the share-link codes below) never change.
-  { id: "point", glsl: 4, variant: 3, label: "Orbs", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC, FTYPE.SPIDER] },
-  { id: "cross", glsl: 5, variant: 3, label: "Rays", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC, FTYPE.SPIDER] },
+  { id: "point", glsl: 4, variant: 3, label: "Orbs", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC, FTYPE.SPIDER, ...SINE_TYPES] },
+  { id: "cross", glsl: 5, variant: 3, label: "Rays", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC, FTYPE.SPIDER, ...SINE_TYPES] },
   // Relief is lit from the distance estimate's derivative, so it shares Edge
   // glow's compiled program (variant 1) and its limits.
   { id: "relief", glsl: 6, variant: 1, label: "Relief", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },

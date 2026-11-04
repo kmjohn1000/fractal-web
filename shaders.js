@@ -195,6 +195,8 @@ const int FTYPE_APOLLONIAN = 8;
 const int FTYPE_NOVA    = 9;
 const int FTYPE_SPIDER  = 10;
 const int FTYPE_MAGNET  = 11;
+const int FTYPE_SINE    = 12;
+const int FTYPE_SINEPLANE = 13;
 
 const vec2 NEWTON_ROOT0 = vec2( 1.0,  0.0);
 const vec2 NEWTON_ROOT1 = vec2(-0.5,  0.8660254037844386);
@@ -838,6 +840,121 @@ vec3 renderNewton(vec2 p) {
   return lutColor(t);
 }
 
+// The sine family (float32 only, no deep path). Both maps are entire functions built on the complex sine
+// sin(a + bi) = sin a cosh b + i cos a sinh b:
+//   FTYPE_SINE      z -> L sin z, z0 = the pixel, L = u_juliaC (a Julia set of the map, so u_isJulia is always set);
+//   FTYPE_SINEPLANE z -> sin z + cosh(c), z0 = the pixel; c is the pixel too (the plane, a Mandelbrot-like
+//                   picture), or u_juliaC when u_isJulia (the plane's Julia set for that c).
+// Escape is |z| > 50 (SINE_BAIL), not the 256 of the polynomial maps: sin z grows like e^|Im z|, so one more step
+// from |z| = 50 reaches 1e21 and float32's range ends near 3e38. The real part is reduced modulo 2 pi before sin
+// and cos (sin and cosh are 2 pi periodic in the real part of z and in the imaginary part of c), because float32
+// resolves only about 4e-6 at |Re z| = 50 and a bare sin(50.0) would carry that straight into the orbit; 2 pi is
+// split into two floats so the subtraction keeps its low bits. The imaginary part is clamped to +-80 so
+// exp stays finite however far out a pixel starts.
+const float SINE_BAIL2 = 2500.0;                 // |z|^2 at the bailout, |z| = 50
+const float SINE_LN_BAIL = 3.912023005428146;    // ln 50
+const float SINE_LNLN_BAIL = 1.3640546328884455; // ln ln 50
+const float TWO_PI_HI = 6.28125;                 // 201/32, exact in float32
+const float TWO_PI_LO = 0.001935307179586232;    // 2 pi - 201/32
+const float SINE_COLOR_SCALE = 0.1;              // colormap positions per iteration: one pass every 10 iterations
+
+float reduce2Pi(float x) {
+  float k = floor(x * 0.15915494309189535 + 0.5);
+  return (x - k * TWO_PI_HI) - k * TWO_PI_LO;
+}
+
+// cosh and sinh of a real number together. Past |b| = 0.5 the exponential form is exact to a few ulps; below
+// it (e^b - e^-b) cancels, so sinh comes from its series (error under 1e-8 at 0.5, relative).
+vec2 coshSinh(float b) {
+  b = clamp(b, -80.0, 80.0);
+  float e = exp(b);
+  float ei = 1.0 / e;
+  float sh;
+  if (abs(b) < 0.5) {
+    float b2 = b * b;
+    sh = b * (1.0 + b2 / 6.0 * (1.0 + b2 / 20.0 * (1.0 + b2 / 42.0 * (1.0 + b2 / 72.0))));
+  } else {
+    sh = 0.5 * (e - ei);
+  }
+  return vec2(0.5 * (e + ei), sh);
+}
+
+vec2 cSin(vec2 z) {
+  float a = reduce2Pi(z.x);
+  vec2 chsh = coshSinh(z.y);
+  return vec2(sin(a) * chsh.x, cos(a) * chsh.y);
+}
+
+// cosh(x + iy) = cosh x cos y + i sinh x sin y
+vec2 cCosh(vec2 z) {
+  float y = reduce2Pi(z.y);
+  vec2 chsh = coshSinh(z.x);
+  return vec2(chsh.x * cos(y), chsh.y * sin(y));
+}
+
+// ln |z| for any finite z (a sum of squares past 1.8e19 overflows float32, and z gets to 1e21 on the escaping step).
+float logAbs(vec2 z) {
+  float m = max(abs(z.x), abs(z.y));
+  vec2 w = z / max(m, 1e-30);
+  return log(max(m, 1e-30)) + 0.5 * log(dot(w, w));
+}
+
+// The smooth iteration count: where in the last step the orbit crossed the bailout circle. The step took |z|
+// from p (under 50) to m (over 50); the crossing is placed linearly in ln ln |z|, the right clock for growth
+// that is exponential of exponential (ln|z_(n+1)| is about |Im z_n|): t = (ln ln 50 - ln ln p) / (ln ln m - ln ln p),
+// and the count is i + t for the escape step i. It is continuous across every band edge by construction: a pixel
+// whose |z_i| is just over 50 has t -> 1 (count i + 1), and one just under 50 escapes a step later with t -> 0
+// (count i + 1). The log-log formula the polynomial maps use is NOT: for sin z the size after the escaping step
+// depends on the orbit's direction, so no function of |z_N| alone makes the bands meet. Measured in float64 along
+// fine lines, bisecting each place where the escape iteration changes by one onto the edge: this count jumps by
+// under 0.01 at 76-85% of them (the rest are in filament zones, where one bisection cannot isolate a single
+// edge), the median jump is 0; the log-log count jumps by about 2 iterations at nearly every edge, and the best
+// function of |z_N| alone (ln ln |z| / ln K) still left half an iteration between neighbouring pixels.
+float sineSmoothCount(int i, float lnPrev, float lnNow) {
+  float a = log(max(lnPrev, 0.1));     // ln ln p, p kept above 1.11 so it stays finite
+  float b = log(max(lnNow, SINE_LN_BAIL));
+  return float(i) + clamp((SINE_LNLN_BAIL - a) / max(b - a, 1e-6), 0.0, 1.0);
+}
+
+vec3 renderSineFamily(vec2 p) {
+  vec2 z = p;
+  vec2 c = (u_ftype == FTYPE_SINEPLANE && !u_isJulia) ? p : u_juliaC;
+  vec2 ch = u_ftype == FTYPE_SINEPLANE ? cCosh(c) : vec2(0.0);
+  bool escaped = false;
+  int iter = 0;
+  float prevR2 = dot(z, z);
+#if COLOR_VARIANT == 2
+  vec4 S = stripeStart();
+#elif COLOR_VARIANT == 3
+  vec2 T = trapStart();
+#endif
+  for (int i = 0; i < 2000; i++) {
+    if (i >= u_maxIter) break;
+    prevR2 = dot(z, z);
+    z = u_ftype == FTYPE_SINEPLANE ? cSin(z) + ch : cMul(c, cSin(z));
+    iter = i;
+#if COLOR_VARIANT == 2
+    // The stripe terms depend on the angle only, so a z too big to square is scaled down first.
+    S = stripeStep(S, z / max(max(abs(z.x), abs(z.y)), 1e-30));
+#elif COLOR_VARIANT == 3
+    if (i > 0) T = trapStep(T, z);
+#endif
+    if (dot(z, z) > SINE_BAIL2) { escaped = true; break; }
+  }
+#if COLOR_VARIANT == 3
+  return trapColor(T, escaped);
+#endif
+  if (!escaped) return vec3(0.0);
+  float n = sineSmoothCount(iter, 0.5 * log(max(prevR2, 1.0)), logAbs(z));
+#if COLOR_VARIANT == 2
+  float A = S.w + (S.z - S.w) * (n - floor(n));
+  return styleColor(clamp(0.5 + (A - 0.5) * STRIPE_GAIN, 0.0, 1.0));
+#else
+  if (u_style == STYLE_BANDS) return styleColor(float(iter + 1) * SINE_COLOR_SCALE);
+  return styleColor(n * SINE_COLOR_SCALE);
+#endif
+}
+
 vec3 renderEscapeFast(vec2 p) {
   vec2 z = u_isJulia ? p : vec2(0.0);
   vec2 c = u_isJulia ? u_juliaC : p;
@@ -1123,6 +1240,11 @@ void main() {
 
   if (u_ftype == FTYPE_APOLLONIAN) {
     gl_FragColor = vec4(renderApollonian(uv * 2.0), 1.0);
+    return;
+  }
+
+  if (u_ftype == FTYPE_SINE || u_ftype == FTYPE_SINEPLANE) {
+    gl_FragColor = vec4(renderSineFamily(u_center + uv * u_scale * 2.0), 1.0);
     return;
   }
 

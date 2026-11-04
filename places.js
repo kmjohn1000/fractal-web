@@ -249,6 +249,27 @@ export const TELEPORT_DESTINATIONS = [
   { fractal: "Magnet II", label: "Origin Cusp", re: "-0.02", im: "0", scale: 0.05, rotation: 0 },
   { fractal: "Magnet II", label: "Bead Chain", re: "2.0", im: "0.6", scale: 0.1, rotation: 0 },
   { fractal: "Magnet II", label: "Deep Bubble", re: "1.49", im: "1.1504434926898104", scale: 3e-4, rotation: 0 },
+  // The sine family is float32 only (its zoom stops at SINE_MIN_SCALE = 1e-4), so the deepest place here is 3e-4.
+  // Sine Julia is the Julia set of z -> L sin z for L = 1 + 0.4i: 2 pi periodic left to right, with the repelling fixed
+  // point z = 0 at the eye of the central spiral and its preimages k pi at the eyes of the others. Pale Island is one
+  // of the pale basins (the orbit takes dozens of steps to leave) with spiral arms round it; Origin Spiral is the eye
+  // at z = 0; Fern Cliffs the fronds along the dark rim on the left; Spiral Arms an arm and a basin together;
+  // Pi Whirl the spiral at z = pi, near the zoom limit. Each was checked on a render.
+  { fractal: "Sine Julia", label: "Pale Island", re: "-1", im: "0.2", scale: 0.8 },
+  { fractal: "Sine Julia", label: "Origin Spiral", re: "0", im: "0", scale: 0.2 },
+  { fractal: "Sine Julia", label: "Fern Cliffs", re: "-2.9", im: "0.6", scale: 0.45 },
+  { fractal: "Sine Julia", label: "Spiral Arms", re: "-2.7", im: "-0.4", scale: 0.8 },
+  { fractal: "Sine Julia", label: "Pi Whirl", re: "3.14159265358979", im: "0", scale: 3e-4 },
+  // Sine plane (z -> sin z + cosh c, started at z = c): the black body has the real axis through it (a real orbit never
+  // passes 1 + cosh c, so the axis stays black out to |c| = 4.6, where cosh c reaches 50), with towers growing from its
+  // rim. Black Spires is a field of towers above it; Bead Chain the strip along the real axis, a chain of beads; Coral
+  // Reef a thicket on the upper rim; Crown Tree the first tower on the imaginary axis (the rim there is at
+  // Im c = 1.1713652...); Crown Tip a bud on that rim.
+  { fractal: "Sine plane", label: "Black Spires", re: "1.3", im: "2.6", scale: 0.7 },
+  { fractal: "Sine plane", label: "Bead Chain", re: "3.3", im: "0", scale: 0.4 },
+  { fractal: "Sine plane", label: "Coral Reef", re: "0.8", im: "1.6", scale: 0.3 },
+  { fractal: "Sine plane", label: "Crown Tree", re: "0", im: "1.17", scale: 0.4 },
+  { fractal: "Sine plane", label: "Crown Tip", re: "0", im: "1.1713652610778809", scale: 0.01 },
   // Celtic equals Mandelbrot on the real axis, so Mandelbrot's real-axis
   // landmarks reappear in new shapes: Halo Bell is Mini Mandelbrot's
   // period-55 point. Baby Celtic (period 3, nucleus -1.754877666246693),

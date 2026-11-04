@@ -60,6 +60,20 @@ export const NOVA_MIN_SCALE = 4e-5;
 // Magnet I's opening view.
 export const MAGNET_MIN_SCALE = 2e-4;
 
+// The sine family (renderSineFamily) is float32 only and has no deep path either. Its maps are entire functions
+// that amplify an error in a pixel's coordinate by |L cos z| (up to e^|Im z|) at every step, so they are chaotic
+// from the first few iterations and a float32 orbit drifts from the float64 one in every filament. Measured with a
+// float64 iteration of the same maps against the app's picture (300x300 at device scale 1; the share of pixels
+// more than 20 of 255 gray levels off): at a view centered on 0, where float32 is finest, the Julia set agrees to
+// the smallest scale tried, 1e-5 (under 1%); at pi, the Julia set's worst case (|center| about 3), it is 0.6% at 0.1,
+// 5% at 1e-3, 8% at 1e-4, 20% at 3e-5 and 24% at 1e-5; the plane at a rim point (0, 1.17) is under 1% to 1e-4,
+// 1% at 3e-5 and 4% at 1e-5. Beyond the drift, a pixel is about one float32 step of a center near 3 at a view
+// half-height of 1e-4 on a 2,600 pixel canvas (the Nova floor's rule, 4e-5 at |center| near 1), and the picture
+// goes blocky. So one floor for both entries and every center: 1e-4, about 24,000 times deeper than the Julia
+// opening view. Every way of zooming goes through limitScale, and the info card says so.
+export const SINE_MIN_SCALE = 1e-4;
+export const isSineType = (ftype) => ftype === FTYPE.SINE || ftype === FTYPE.SINEPLANE;
+
 // The zoom floor: how deep each fractal can go before panning stalls and zoom-about-the-cursor drifts. Every
 // way of zooming goes through limitScale, which stops here; the HUD says "As deep as this fractal goes".
 //   - The escape-time family (Mandelbrot, Tricorn, Burning Ship, Celtic, Multibrot^3, and their Julia views) keeps
@@ -98,6 +112,7 @@ export function minScaleFor(state) {
     return Math.max(SPIDER_MIN_SCALE, FLOOR_STEPS * ulp32(Math.max(Math.abs(state.cx), Math.abs(state.cy))) * FLOOR_PIXELS / 2);
   }
   if (state.ftype === FTYPE.MAGNET) return MAGNET_MIN_SCALE;
+  if (isSineType(state.ftype)) return SINE_MIN_SCALE;
   if (perturbationEligibleType(state)) return EXACT_MIN_SCALE;
   // Carpet and Gasket keep an exact BigInt center that grows with the zoom (view-math.js, exactBitsFor) and the
   // cell frame reads their digits from it (digitCellFrame), so a pan follows a pixel at any depth. What is left
