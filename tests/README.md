@@ -241,6 +241,18 @@ too; the opening views and the ten places are baselines in `app.spec.mjs`. The f
 render on a 402x874 @3x screen: sharp to 1.5e-4, ragged by 1e-4, stair-steps by 5e-5. Not in dual view (no Julia-type
 variants).
 
+`sine.spec.mjs` covers the sine family, Sine Julia (z -> L sin z, L = 1 + 0.4i) and Sine plane (z -> sin z + cosh c;
+float32 only, no deep path): both open as full pictures and sit after Nova in the picker with their thumbnails, a share
+link round-trips, the pictures agree with a float64 iteration of the same maps (the test carries its own copy of the
+math, the smooth count included; 8x8 blocks of the canvas against the reference averaged over the app's 16 jittered
+samples, in Grayscale at Repeat 0.25 so a gray is a count; measured block mean 0.5-2.8 of 255, none over 1% of blocks
+more than 20 off), a turned view agrees with float64 turned the same way (the twist wiring; a half turn would not show
+it, since z -> -z maps the Julia set onto itself), the smooth count meets itself at the edges of the iteration bands
+while the polynomial maps' log-log count does not (float64 bisection along lines), the Looks that need a derivative
+(Edge glow, Relief, Halo, Paper cut) draw Smooth on both while Bands, Stripes, Orbs and Rays draw, baselines of the
+styles and of a rotated and a near-limit view, the zoom stops at `SINE_MIN_SCALE` (link, wheel) with the info card
+saying so, and the plane's dual view draws the plane's Julia sets (the Julia pane against float64).
+
 `dot-colors.spec.mjs` covers the coloring of the chaos-game modes (fern, Sierpinski
 triangle, Sierpinski pentagon, Lévy C, Vicsek; 1.47.0): each picture spans several hues around its picked
 color, picking another color moves the whole picture to it, a deep zoom stays tinted
