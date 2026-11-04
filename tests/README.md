@@ -227,6 +227,20 @@ about the real axis), a rotated view keeps its center, two baselines (rotated,
 and deep near its limit), and the zoom stops at `NOVA_MIN_SCALE` however it is
 asked for (link, wheel, box, keys) with the info card saying so; Back and Reset.
 
+`magnet.spec.mjs` covers Magnet I and II (the Mandelbrot-type planes of the rational Magnet maps, float32 only,
+`renderMagnet` in `shaders.js`; an orbit escapes, converges to the fixed point 1, or does neither and is drawn
+black): both open as full, colorful pictures in their own palettes (Classic, Plasma), sit beside Nova in the picker
+with their thumbnails, share links round-trip, the plane is symmetric about the real axis, a rotated view keeps its
+center, and the black pixels (orbits that never end) agree with a float64 reference of the published formulas on a 64 x 64
+grid at the opening view and a zoom (over 97%, which also checks the shader's rewrite onto e = z - 1). Magnet II near the cusp at
+c = 0 is smooth: the textbook formula subtracts terms of size 3 to leave c^2 there, so float32 never converged and drew a
+noisy wash (the check counts rough neighbors). Only Smooth and Bands are offered (the derivative, stripe and trap styles
+draw Smooth), Bands has far fewer major colors than Smooth, and the zoom stops at `MAGNET_MIN_SCALE` (2e-4) by link and
+wheel with the info card saying so. `zoom-floor.spec.mjs`, `styles.spec.mjs` and `palettes.spec.mjs` list the Magnets
+too; the opening views and the ten places are baselines in `app.spec.mjs`. The floor was measured against a float64
+render on a 402x874 @3x screen: sharp to 1.5e-4, ragged by 1e-4, stair-steps by 5e-5. Not in dual view (no Julia-type
+variants).
+
 `dot-colors.spec.mjs` covers the coloring of the chaos-game modes (fern, Sierpinski
 triangle, Sierpinski pentagon, Lévy C, Vicsek; 1.47.0): each picture spans several hues around its picked
 color, picking another color moves the whole picture to it, a deep zoom stays tinted
