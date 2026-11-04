@@ -1069,16 +1069,22 @@ distance estimation → zoom-to-minibrot / AI discovery.
       point) center and stop at their zoom floor; the Apollonian needs a
       second plan, because `apolloFrame` composes inversions and its error
       growth per step has to be measured first (Jacob's Ladder is the test
-      case, now 12.5x above its floor); (b) the 8x8 BigInt reference scan
-      was measured on a Mac only (about 0.3 ms when the center survives, up
-      to 14 ms when it escapes late, maxIter 2000), not on a phone; (c) the
+      case, now 12.5x above its floor); (b) [done 2026-11-03: on the
+      user's iPhone 15 the reference search plus orbit took 8 ms median and
+      11 ms worst in the `#diag` report, first pass 28 ms GPU, refine passes
+      20 ms; the Mac's worst case is 14 ms]; (c) the
       exact pair is dropped when a view zooms out past scale 1e-4 (a wide
       view needs no more than a double), so zooming far out and back in loses
       the sub-double position; Back keeps it; (d) a flight that lands on the
       same double as a stale pair leaves the pair in place (`flyTo` assigns
       the target with Object.assign); under a pixel for every shipped place;
-      (e) a real iPhone check of the deep views (speed, heat, the float32
-      range: denormals may flush earlier on a phone than on the Mac).
+      (e) [done 2026-11-03, user's iPhone 15, Release build 1.63.0: Mandelbrot
+      at 1e-20, 1e-30 and 1e-33 all sharp (1e-33 clamped to the floor), drag
+      and pinch followed the finger at 1e-20, no heat, Carpet and Gasket
+      perfect past 1e15x]. Still unchecked on a phone: scales between 1e-30
+      and the Mac's 1e-36 grain limit are never drawn (the floor stops
+      them), so the denormal question only matters for the deeper-than-1e-30
+      item below.
 - [ ] Deeper than 1e-30 (user question 2026-11-03; not approved). The center
       (192 bits, about 1e-55) and the BigInt orbit are not the limit; the
       GPU's float32 deltas are (measured clean to 1e-33, grainy by 1e-36 on
@@ -1088,17 +1094,13 @@ distance estimation → zoom-to-minibrot / AI discovery.
       slower per pass (unmeasured); a wider `EXACT_FRAC`; and past 2000
       iterations the multi-pass iteration item below. Measure on the phone
       first with `#diag`. See `docs/render-research-2026-10-20.md` section 3.1.
-- [ ] True infinite zoom on the Sierpinski types (user idea 2026-11-03; not
-      approved). Store the view as a digit address plus a small local
-      offset, and renormalize on crossing into a child cell, so the view no
-      longer depends on a float64 center. This removes the ~1e15 cap on the
-      gasket and carpet (see Done, cell rebasing 1.18.6) without touching
-      the rest of the app. Needs a share-link field for the address (a
-      version bump, with old links still opening), `digitCellFrame` fed from
-      the address instead of the float center, and pan/zoom/twist in
-      `attachFractalInteraction` working on the local offset; the same
-      idea may apply to the other digit-addressed IFS modes. Measure the
-      cost first: the digit walk is per frame on the CPU.
+- [ ] Infinite zoom for the other digit-addressed IFS modes (Carpet and
+      Gasket are done, see Done 1.63.0): the same grown-fraction exact
+      center (`state.ef`, `exactBitsFor`, `digitCellFrame`'s `exact`
+      argument) may fit them; check which of them still stall at a float64
+      center, and whether the HUD should show more than 17 decimals of the
+      center at that depth (today the share link is the only way back to a
+      very deep spot).
 - [ ] maxIter past 8000 (the cap planned for Bird's Eye, see Next): one
       draw looping 10⁴–10⁶ times needs multi-pass iteration, saving
       per-pixel state (z, dz, reference index) in float textures between
@@ -1169,6 +1171,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
+- Infinite zoom for Carpet and Gasket (1.63.0, 2026-11-03, user asked for it; built by an agent in a worktree, merged in `d65f9c8` from `651ddc5`): the exact BigInt center now grows with the zoom (`state.ef` fraction bits, `exactBitsFor(scale)`, 192 bits as before until scale 2.9e-39, then 64-bit steps), `digitCellFrame` reads the cell address and holes from its digits (Gasket from the bit strings, Carpet from base-3 digits), no level cap, and the floor is `DIGIT_MIN_SCALE = 1e-300` (levels 628 Carpet, 997 Gasket); links carry `ex`/`ey` at a length set by the link's own `s` (scales above 2.9e-39 are identical to 1.62.x links; older builds open deeper links at the double), Back keeps `ef`. Verified: lint; `digit-infinite.spec.mjs` (28) and `zoom-floor.spec.mjs` updated; a view moved 60 px equals the original 60 px over at 1e-20, 1e-40, 1e-100, 1e-200, 1e-290 (mean 0 to 0.0013; the pre-change code fails at 1e-20 and is flat from 1e-40); the 11 Carpet and Gasket places draw identically through the exact and float64 paths; `default-identity.mjs` zero differing pixels; on main after the merge 611 specs passed (digit-infinite, exact-center, deep-exact, deep-exact-edges, zoom-floor, app, dual, share-menu, info-card, places-sheet) on both projects; on the user's iPhone 15 (Release build, 2026-11-03) Carpet and Gasket were perfect past 1e15x and the phone stayed cool. CPU cost of the frame: 0.005 to 0.045 ms at 1e-290 on the Mac. Not verified: speed and battery during a long live drag at 1e-290 on a phone; `webkit-desktop` and `chromium-iphone15` projects; the whole visual suite.
 - Exact view center and zoom floor (1.62.4 to 1.62.8, 2026-11-03, user chose the expensive fix, Mandelbrot family first): deep views keep their center as a BigInt pair (`ex`/`ey`, 2^-192 units) beside the doubles, moved by offsets in pan, pinch, wheel, box zoom, keys and Back (`ba9c60f`, 1.62.4); share links carry `ex`/`ey` only when the doubles aren't the center, old links open at their doubles, bad pairs are ignored (`0df5b47`, 1.62.5); below scale 1e-13 the reference orbit and the 8x8 reference search run in BigInt (`ade1e90`, 1.62.6); a zoom floor through `limitScale`: escape-time family 1e-30, Apollonian/Newton/Phoenix two last-digit steps, Nova as before, Carpet and Gasket none yet (`d3c6d10`, 1.62.7); the dual button carries the exact center (`21f8498`, 1.62.8). Verified: lint; new specs `exact-center` (14), `deep-exact` (22), `deep-exact-edges` (13), `zoom-floor` (5) on `webkit-iphone15` and `chromium-desktop`; a view moved N pixels equals the original N pixels over (mean 0.002 at 1e-16 to 1e-33, 9.4 with the exact path off), `default-identity.mjs` zero differing pixels; every place above its floor. Float32 deltas were measured clean to 1e-33, grainy by 1e-36 (Mac). Not verified: a real iPhone (speed, heat, denormals), the float64 oracle below 1e-13 (it cannot go that deep), the whole visual suite.
 - Halo and Paper cut Looks (1.60.0, 2026-11-03, user approved after seeing mock-ups and the build's screenshots; branch merged in `fdaefb8`, version in `b9bec8c`): both share Relief's compiled program (style codes `ha` and `pc`; no new program, `warmColorVariants` unchanged); Halo glows the interior from log(1+|D|) over the palette (the cardioid and bulb shortcut is skipped for this style only), with a different formula for Julia sets (D decays and underflows in float32, so the glow comes from the iteration where |D| falls below 1e-3), and is greyed on the Burning Ship and Celtic (their non-escaping regions saturate D and draw flat white); Paper cut layers every 2 iterations of the smooth count, mixed with cream, with a shadow from the gradient of the count gated against the upper-left light. New Looks: Halo on Inferno, Paper cut on Twilight. The Color sheet's Looks grid is 5 plus 4 on phones and the Custom tab's style row wraps to two rows, so the sheet is taller (354 px, 41.5% of an 852 pt screen, up from about 324 px); a sheet-height guard went from 40 to 35 percent. Verified: lint; `default-identity.mjs` zero differing pixels in every state, on the branch and on main; the float64 oracle within its gates on calm views (higher on chaotic and deep views; Halo "fails" on Ship, Celtic and Armada because it draws Smooth there by design); 480 specs passed on main on all four setups after re-recording the two Color sheet baselines (looked at them) and writing the eight new style baselines. Not verified: iPhone cost and battery. Halo's cost: about 99 ms against Relief's 21 ms at the Mandelbrot opening view (the cardioid and bulbs now run to `maxIter`) and about 1,191 ms against 938 ms at deep Seahorse, measured at heavy machine load, so rough. Halo at the deep Rabbit Hole place (1e-3) is one flat orange fill.
 - Coherence pass from the 2026-11-03 design review (1.61.1 `3253f7a`, 1.62.0 `b56ef24`; user asked for the recommendations to be implemented): the pattern shapes' color button opens the same Color sheet as the fractals (`color-sheet.js`: `openSolidColorSheet`, a five-by-two grid of the ten flat colors with Done), so `#colormapMenu` and its code, CSS and element are gone; the sheet's arrow keys no longer pan the view behind it (`rovingRadios` stops propagation, which also fixes the fractals' palette grid); the pattern shapes' info cards no longer show "Browse places" (they have no places), which also lets a description fit on the landscape phones; the info card's technical line breaks between readings instead of inside one; sentence-case "Chaos games" and "Corner rules"; the Places row says "named places to dive into"; the info and dual buttons are named "Info card" and "Dual view"; the palette-only fractals' color button says "Choose palette". Verified: lint; on `webkit-iphone15` and `chromium-desktop`, 552 specs after 1.61.1 and 1103 after 1.62.0 (plus the color specs on the way), the old menu's tests rewritten for the sheet. Looked at the new sheet on a 393 px phone next to the palette-only sheet. Not verified: real iPhone, VoiceOver on the new sheet, landscape by eye (the specs check fit on 852x393 and 667x375). Then 1.62.1 (user chose the corner-brackets icon, option A of seven mocked in the real toolbar, and a rename): the Reset button is now four corner brackets named "Show whole shape" (it was a house named "Reset view"), in all six toolbar rows; 551 specs on two setups. Left open, needs a decision: the fractal picker has no title or Done while the sheets do.
