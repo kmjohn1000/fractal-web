@@ -4,17 +4,17 @@
 // fractal-defs.js; calls into modes, interaction and the later scripts only inside function bodies.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { COLORMAPS, buildLUTBytes } from "./colormaps.js?v=1.64.1";
-import { Diag } from "./diag.js?v=1.64.1";
-import { isCurveMode, isIfsMode } from "./fractal-defs.js?v=1.64.1";
-import { SAMPLE_OFFSETS, deepZoomEligible } from "./deepzoom.js?v=1.64.1";
-import { activePane, adaptLiveResolution, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, hexaflakeView, isInteracting, juliaRenderer, juliaState, kochState, kochView, mainRenderer, mainState, mode, paneHistory, treeState, treeView, vectorColors } from "./state.js?v=1.64.1";
-import { colormapIndex, vectorLite } from "./state-colors.js?v=1.64.1";
-import { dragonNav, fernNav, hexaflakeNav, kochNav, treeNav, vectorFitHalfHeight } from "./vector-interaction.js?v=1.64.1";
-import { flash, prefersReducedMotion, updateCompasses } from "./compass-ui.js?v=1.64.1";
-import { cmGradient, labelColorButton } from "./colormap-picker.js?v=1.64.1";
-import { COLOR_LOOKS, colorSheetStyles, currentLookId } from "./color-sheet.js?v=1.64.1";
-import { updateDragonHud, updateFernHud, updateHexaflakeHud, updateHud, updateJuliaLabel, updateKochHud, updateTreeHud } from "./hud.js?v=1.64.1";
+import { COLORMAPS, buildLUTBytes } from "./colormaps.js?v=1.64.2";
+import { Diag } from "./diag.js?v=1.64.2";
+import { isCurveMode, isIfsMode } from "./fractal-defs.js?v=1.64.2";
+import { SAMPLE_OFFSETS, deepZoomEligible } from "./deepzoom.js?v=1.64.2";
+import { activePane, adaptLiveResolution, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, hexaflakeView, isInteracting, juliaRenderer, juliaState, kochState, kochView, mainRenderer, mainState, mode, paneHistory, treeState, treeView, vectorColors } from "./state.js?v=1.64.2";
+import { colormapIndex, vectorLite } from "./state-colors.js?v=1.64.2";
+import { dragonNav, fernNav, hexaflakeNav, kochNav, treeNav, vectorFitHalfHeight } from "./vector-interaction.js?v=1.64.2";
+import { flash, prefersReducedMotion, updateCompasses } from "./compass-ui.js?v=1.64.2";
+import { cmGradient, labelColorButton } from "./colormap-picker.js?v=1.64.2";
+import { COLOR_LOOKS, colorSheetStyles, currentLookId } from "./color-sheet.js?v=1.64.2";
+import { updateDragonHud, updateFernHud, updateHexaflakeHud, updateHud, updateJuliaLabel, updateKochHud, updateTreeHud } from "./hud.js?v=1.64.2";
 
 // ---------------------------------------------------------------- rendering + layout
 

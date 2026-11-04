@@ -3,13 +3,13 @@
 // (fractal-defs.js), deepzoom.js and color-styles.js. It imports nothing from state.js: state.js
 // calls createFractalRenderer(canvas, host) and passes the two live values a frame needs.
 // An ES module: every top-level declaration is exported (test-hooks.js and state.js rely on it).
-import { FTYPE, PHOENIX_P } from "./configs.js?v=1.64.1";
-import { Diag } from "./diag.js?v=1.64.1";
-import { FRAG_SRC, NEWTON_DEEP_FRAG_SRC, PHOENIX_DEEP_FRAG_SRC, PREVIEW_FRAG_SRC, VERT_SRC, VERT_SRC_300 } from "./shaders.js?v=1.64.1";
-import { DIGIT_MAX_CELL_LEVEL, apolloCapColor, apolloFrame, digitBase, digitCellFrame, digitCellLevel, digitColorCycle, digitFractalDepth, digitSubPixelColor, isDigitFractal } from "./fractal-defs.js?v=1.64.1";
-import { DEEP_ZOOM_THRESHOLD, FIXED_THIRD, PHOENIX_DEEP_SAMPLES, PHOENIX_EXACT_CAP, SAMPLE_OFFSETS, chooseReference, chooseReferenceExact, computeReferenceOrbit, computeReferenceOrbitExact, exactReferencePoint, exactRender, exactRenderEligible, fixedLimbs, newtonDeepEligible, newtonOrbitF64, perturbationEligibleType, phoenixDeepEligible, phoenixEscapeF64, phoenixReference } from "./deepzoom.js?v=1.64.1";
-import { EXACT_FROM, EXACT_ONE, exactCenter, exactFracFor, exactValid, toExact } from "./view-math.js?v=1.64.1";
-import { colorStyle, colorStyleFor, styleDrawn, trapRangeFor } from "./color-styles.js?v=1.64.1";
+import { FTYPE, PHOENIX_P } from "./configs.js?v=1.64.2";
+import { Diag } from "./diag.js?v=1.64.2";
+import { FRAG_SRC, NEWTON_DEEP_FRAG_SRC, PHOENIX_DEEP_FRAG_SRC, PREVIEW_FRAG_SRC, VERT_SRC, VERT_SRC_300 } from "./shaders.js?v=1.64.2";
+import { DIGIT_MAX_CELL_LEVEL, apolloCapColor, apolloFrame, digitBase, digitCellFrame, digitCellLevel, digitColorCycle, digitFractalDepth, digitSubPixelColor, isDigitFractal } from "./fractal-defs.js?v=1.64.2";
+import { DEEP_ZOOM_THRESHOLD, FIXED_THIRD, PHOENIX_DEEP_SAMPLES, PHOENIX_EXACT_CAP, SAMPLE_OFFSETS, chooseReference, chooseReferenceExact, computeReferenceOrbit, computeReferenceOrbitExact, exactReferencePoint, exactRender, exactRenderEligible, fixedLimbs, newtonDeepEligible, newtonOrbitF64, perturbationEligibleType, phoenixDeepEligible, phoenixEscapeF64, phoenixReference } from "./deepzoom.js?v=1.64.2";
+import { EXACT_FROM, EXACT_ONE, exactCenter, exactFracFor, exactValid, toExact } from "./view-math.js?v=1.64.2";
+import { colorStyle, colorStyleFor, styleDrawn, trapRangeFor } from "./color-styles.js?v=1.64.2";
 
 // ---------------------------------------------------------------- WebGL renderer factory
 
@@ -518,6 +518,27 @@ export function createFractalRenderer(canvas, host) {
     return ok >= 0.95 * n * n;
   }
 
+  // A test hook (the Phoenix depth check, tests/visual/phoenix-depth.spec.mjs): what the Phoenix deep shader returns
+  // for an n x n probe of `view`, as { used, escaped } per pixel (row 0 is the bottom row, as phoenixDeepSelfTest
+  // reads it), or null when Phoenix deep zoom is unavailable. view needs cx, cy, scale, maxIter, isJulia, juliaC.
+  function phoenixDeepProbe(view, n) {
+    if (!phoenixDeepProgram()) return null;
+    setPhoenixDeepUniforms({ rotation: 0, ...view }, n, n, [0, 0]);
+    gl.uniform1i(phoenixDeep.u.testMode, 1);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, n, n);
+    gl.disable(gl.BLEND);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    const px = new Uint8Array(n * n * 4);
+    gl.readPixels(0, 0, n, n, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    gl.uniform1i(phoenixDeep.u.testMode, 0);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    phoenixRefKey = ""; // the probe's reference isn't the real view's
+    const used = [], escaped = [];
+    for (let i = 0; i < n * n; i++) { used.push(px[i * 4] + 256 * px[i * 4 + 1]); escaped.push(px[i * 4 + 2] === 1); }
+    return { used, escaped };
+  }
+
   // sampleIndex selects the sub-pixel offset from SAMPLE_OFFSETS; see there
   // and drawToCanvas for how successive samples accumulate.
   // The view the canvas's current accurate frame was drawn for, and whether
@@ -766,7 +787,7 @@ export function createFractalRenderer(canvas, host) {
   }
 
   return {
-    canvas, render, renderPreview, setLUT, resize, perturbationSupported,
+    canvas, render, renderPreview, setLUT, resize, perturbationSupported, phoenixDeepProbe,
     setLiveDivisor(d) { liveDiv = d; },
     warmVariant,
     primeVariant,

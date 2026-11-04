@@ -33,9 +33,10 @@ test("each family's floor", async ({ page }) => {
     return {
       mandelbrot: at(FTYPE.ESCAPE, 0.3, 0.5), ship: at(FTYPE.SHIP, -1.7, -0.03), tricorn: at(FTYPE.TRICORN, 0, 0), celtic: at(FTYPE.CELTIC, 0.1, 0.1),
       apollonian: at(FTYPE.APOLLONIAN, 0.4472135954957291, 0.8944271910020332), apollonianNearZero: at(FTYPE.APOLLONIAN, 1e-6, 0),
-      newton: at(FTYPE.NEWTON, 1, 0), phoenix: at(FTYPE.PHOENIX, 0.5, 0.5), nova: at(FTYPE.NOVA, 1, 1),
+      newton: at(FTYPE.NEWTON, 1, 0), phoenix: at(FTYPE.PHOENIX, 0.5, 0.5), phoenixNearZero: at(FTYPE.PHOENIX, 1e-3, 0), nova: at(FTYPE.NOVA, 1, 1),
       carpet: at(FTYPE.CARPET, 0.5, 0.5), gasket: at(FTYPE.GASKET, 0.5, 0.5),
       steps: FLOOR_STEPS, pixels: FLOOR_PIXELS, ulp1: ulp64(0.8944271910020332),
+      phoenixWant: FLOOR_STEPS * ulp64(0.5) * FLOOR_PIXELS / 2,
     };
   });
   expect(r.mandelbrot).toBe(1e-30);
@@ -50,7 +51,10 @@ test("each family's floor", async ({ page }) => {
   expect(r.apollonian).toBe(1e-100);
   expect(r.apollonianNearZero).toBe(1e-100);
   expect(r.newton, "Newton at |c| = 1 is on the fixed-point grid, 2^-48").toBe(r.steps * 2 ** -48 * r.pixels / 2);
-  expect(r.phoenix).toBe(r.steps * 2 ** -48 * r.pixels / 2);
+  // Phoenix: the double-center formula (a pan needs a few steps of the center's last digit) at |c| = 0.5, and never
+  // deeper than 1e-13 (where its Julia views start to lose pixels, tests/visual/phoenix-depth.spec.mjs).
+  expect(r.phoenix).toBe(r.phoenixWant);
+  expect(r.phoenixNearZero).toBe(1e-13);
 });
 
 test("limitScale stops at the floor and leaves everything above it alone", async ({ page }) => {

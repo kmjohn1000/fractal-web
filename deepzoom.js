@@ -2,8 +2,8 @@
 // offsets. No DOM references (no document, els, window or canvas): pure math on numbers and arrays.
 // Needs FTYPE and PHOENIX_P from configs.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { FTYPE, PHOENIX_P } from "./configs.js?v=1.64.1";
-import { EXACT_FRAC, EXACT_ONE, exactCenter, toExact } from "./view-math.js?v=1.64.1";
+import { FTYPE, PHOENIX_P } from "./configs.js?v=1.64.2";
+import { EXACT_FRAC, EXACT_ONE, exactCenter, toExact } from "./view-math.js?v=1.64.2";
 
 // ---------------------------------------------------------------- Phase 3: deep zoom
 // Below this scale, plain float32 starts losing pixels to precision collapse
@@ -66,6 +66,8 @@ export const EXACT_MIN_SCALE = 1e-30;
 export const DIGIT_MIN_SCALE = 1e-300;
 // The Apollonian gasket: a choice, not a limit (see minScaleFor).
 export const APOLLO_MIN_SCALE = 1e-100;
+// Phoenix: where its Julia views start to lose pixels (see minScaleFor).
+export const PHOENIX_MIN_SCALE = 1e-13;
 export const FLOOR_STEPS = 2;
 export const FLOOR_PIXELS = 2000;
 export const FIXED_STEP = 2 ** -48;
@@ -83,9 +85,14 @@ export function minScaleFor(state) {
   // floor is a choice, not a limit: 1e-100, a few hundred chain steps, checked in tests/visual/apollo-exact.spec.mjs.
   if (state.ftype === FTYPE.APOLLONIAN) return APOLLO_MIN_SCALE;
   const r = Math.max(Math.abs(state.cx), Math.abs(state.cy));
+  // Phoenix: the view's center is the double (the reference orbit and every pixel's offset come from it), so a pan is
+  // limited like any double center; the 2^-48 fixed-point grid only places the exact fallback for glitched pixels.
+  // Measured (tests/visual/phoenix-depth.spec.mjs, a 16x16 probe of the deep shader against a BigInt iteration at a
+  // boundary point): parameter space agrees at 100% to 1e-15; Julia agrees at 89-100% to 1e-13, then 73-87% at 1e-14
+  // and 14-71% at 1e-15. So the floor is the double formula, and never deeper than PHOENIX_MIN_SCALE (Julia's limit).
+  if (state.ftype === FTYPE.PHOENIX) return Math.max(PHOENIX_MIN_SCALE, FLOOR_STEPS * ulp64(r) * FLOOR_PIXELS / 2);
   let step;
   if (state.ftype === FTYPE.NEWTON) step = Math.min(r * 2 ** -23, FIXED_STEP); // float32 near 0, else fixed point
-  else if (state.ftype === FTYPE.PHOENIX) step = FIXED_STEP;
   else step = ulp64(r);
   return Math.max(EXACT_MIN_SCALE, FLOOR_STEPS * step * FLOOR_PIXELS / 2);
 }

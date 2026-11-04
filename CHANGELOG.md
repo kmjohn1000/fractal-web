@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.64.2 — 2026-11-03
+- Phoenix zooms deeper: its floor moves from about 7e-12 to about 1e-13 to 4e-13 (up to 70 times deeper, depending on where the view is), where the picture is still right.
+
 ## 1.64.1 — 2026-11-03
 - Golden Glide and Golden Dive (the Apollonian gasket's self-similar point) now land on their exact center, written to 160 digits, so you can keep zooming from either place by hand, down to the floor, and the view stays on the point instead of sliding off a double's rounding.
 
