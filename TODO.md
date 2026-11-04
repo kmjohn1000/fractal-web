@@ -544,8 +544,13 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         fractals, and odd ones (trice, Catseye, Beryl, Octo). Spider and
         Manowar looked good in the agent's reading; Lambda's roles for z0 and
         c were unclear to it (Lambda is z -> c z (1 - z)).
-      - Low priority: Magnet, sine and exponential families, Spider,
-        fractional and negative powers (no perturbation, shallow only).
+      - Magnet, the sine family and Spider were chosen by the user on
+        2026-11-04 after seeing CPU mock-ups (not in the repo) and have their
+        own items below, with Lyapunov. Manowar (a five-armed star when
+        zoomed at 0, 0) was not chosen and stays here. Still low priority: the
+        exponential family (the mock-ups were mostly flat color fields, only
+        0.5 e^z showed structure), fractional and negative powers (no
+        perturbation, shallow only).
 - [ ] Nova for other powers: Nova², Nova⁴, Nova⁵, Nova⁶ beside the current Nova
       (user idea 2026-11-02, prompted by a Reddit post giving the general
       form z -> z - R (z^n - 1)/(n z^(n-1)) + c, z0 = 1, c = the pixel, n from
@@ -605,6 +610,58 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       the conjugate handled in the perturbation step (unverified). Could
       start shallow-only. New `f=` ids (never renamed), a default view, a
       thumbnail and a few places each.
+- [ ] Four new fractals chosen by the user on 2026-11-04 after seeing CPU
+      mock-ups (a throwaway script, not in the repo; 320 px panels, plain
+      iteration-count colors): Lyapunov, Spider, Magnet and the sine family.
+      None approved to build, none started. The maths is standard and was
+      checked against the formulas in a local copy of an archive of Fractint
+      formula files (read for the definitions only, nothing copied). Each
+      needs, per the feature conventions: two-finger twist (free for WebGL
+      types), a picker thumbnail (`render_thumbs.mjs`), a row in the local
+      `docs/learn-more-links.md`, new `f=` ids (never renamed), a default view
+      and a few places. Suggested order by size, a guess: Spider, Magnet,
+      sine, Lyapunov. All four are float32 only (no perturbation), so each
+      gets a zoom floor like the other non-Mandelbrot families.
+      - Spider (z -> z^2 + c, then c -> z + c/2, starting from z = c = the
+        pixel; bailout |z| > 4). Mock-up: the parameter plane is a black body
+        with rainbow stripes, and a zoom at (-0.2, 0.9) width 1.2 is the most
+        striking of the set. The state includes c, which changes each step,
+        so the derivative Looks (Edge glow, Relief, Halo, Paper cut) would
+        need their own branch or stay off (the Looks list is per type in
+        `color-styles.js`); Smooth, Bands, Stripes and the traps need only z.
+      - Magnet I and II. I: z -> ((z^2 + c - 1) / (2z + c - 2))^2; II: z ->
+        ((z^3 + 3(c-1) z + (c-1)(c-2)) / (3 z^2 + 3(c-2) z + (c-1)(c-2) + 1))^2.
+        Mandelbrot-type (z = 0, c = the pixel) and Julia-type (z = the pixel,
+        c fixed). Each pixel ends one of two ways, escaping (|z| > 100) or
+        converging to 1 (|z - 1| < about 1e-4 to 3e-5), so the shader needs
+        a second terminal state and both get a color. Mock-up: the plane at
+        width 3.8 centered (1.4, 0) is black bulbs in a cyan field with pink
+        bubbles; Magnet I Julia sets at c = 2, 2 + 0.5i and 2.5 + 0.3i are
+        dense circle-packing patterns, while c = 1.5 + 0.5i is speckled noise
+        (partly the mock-up's cyclic palette on fast escapes, partly the
+        set). Open: whether the dual view (Mandelbrot beside its Julia set)
+        works for it.
+      - Sine family: Julia sets of z -> L sin z with the complex sine from
+        sin(a + bi) = sin a cosh b + i cos a sinh b; escape at |z| > 50.
+        Mock-up: L = 1 + 0.4i is a field of spirals, L = 0.6 + i a
+        snowflake-like dendrite; L = 1 + 0.4i with cosh is noisier. The
+        plane z -> sin z + cosh(pixel), starting at z = the pixel, is a
+        Mandelbrot-like picture with a fractal border. Needs complex sin and
+        cosh helpers in GLSL; float32 accuracy of sin at |Re z| near 50 is
+        worth checking (reduce Re z modulo 2 pi first). Open: presets for L
+        per picker entry or a draggable parameter.
+      - Lyapunov fractals: the logistic map x -> r x (1 - x) with r taken
+        from a sequence of A and B (A = the x axis value, B = the y axis
+        value), exponent = the mean of log |r (1 - 2x)| after a warm-up (the
+        mock-up used 60 warm-up and 150 steps, x0 = 0.5), colored by the
+        exponent (negative: warm palette; positive: dark). A different class
+        from the escape-time fractals, a per-pixel loop with a log in it, so
+        the cost on a phone is not verified. Mock-up on [2, 4] x [2, 4]:
+        sequences AB, AABAB and BBBBBBAAAAAA are lava-like flowing structure
+        with bright cross-shaped hot spots; the last two are the best. The
+        Looks (orbit traps and so on) do not apply, palette only. Open: how
+        to offer the sequences (presets as picker entries, or one entry with
+        a sequence chooser) and which window each opens on.
 - [ ] A one-line "what you're looking at" blurb per fractal or place, in
       the info card or picker (idea from the WebSim Fractal Explorer review,
       2026-10-09). Surprise me itself now covers every zoom fractal
