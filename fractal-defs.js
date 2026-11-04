@@ -3,9 +3,10 @@
 // lsystem.js/koch.js (IFS_SYSTEMS, LINE_CURVES), which only its function bodies use.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it;
 // tests/cases.mjs reads this file's text and accepts the `export`).
-import { FTYPE } from "./configs.js?v=1.63.0";
-import { LINE_CURVES } from "./dragon.js?v=1.63.0";
-import { IFS_SYSTEMS } from "./ifs.js?v=1.63.0";
+import { FTYPE } from "./configs.js?v=1.64.0";
+import { LINE_CURVES } from "./dragon.js?v=1.64.0";
+import { IFS_SYSTEMS } from "./ifs.js?v=1.64.0";
+import { fromExact } from "./view-math.js?v=1.64.0";
 
 // The fractal picker's layout, in display order: sections with a title, each
 // split into titled groups of tiles. Display only: a key is a FRACTAL_CONFIGS
@@ -383,7 +384,63 @@ export function apolloCenterCurvature(cx, cy) {
 // Returns w0, K, L (complex, as [re, im]), flip (conjugate u first) and
 // steps, the inversion count the shader adds to its own.
 export const APOLLO_VIEW_STEPS = 100000;
-export function apolloFrame(cx, cy, scale, aspect) {
+
+// apolloFrame for a view with an exact center: the same chain, with w0 (the center's image, the one value that
+// carries the center's digits through every inversion) held as a BigInt with `exact.bits` fraction bits, and K, L
+// and the choice of dual disk in doubles (K and L are derivative-like and need only relative accuracy; the choice
+// only needs the disks' rough positions). Measured on Golden Dive's exact point: the chain takes 46 steps at 1e-20,
+// 118 at 1e-50 and 370 at 1e-200, and w0 is right to the last double with log2(1/scale) plus a few dozen bits, so
+// exactBitsFor(scale) is enough. `exact` = { ex, ey, bits }. Returns the same shape as apolloFrame, w0 as doubles.
+export function apolloFrameExact(exact, scale, aspect) {
+  const F = BigInt(exact.bits), one = 1n << F, two2F = 1n << (2n * F);
+  const quarter = one >> 2n;
+  // The four dual disks as exact fixed-point centers and r^2 = rn / rd (APOLLO_DUAL's are 0, 1 and 1/4 over 4).
+  const dual = APOLLO_DUAL.map((c) => ({
+    ox: BigInt(Math.round(c.x * 4)) * quarter, oy: BigInt(Math.round(c.y * 4)) * quarter,
+    rd: c.r > 0 ? BigInt(Math.round(1 / (c.r * c.r))) : 1n,
+  }));
+  let w0r = exact.ex, w0i = exact.ey, kr = 1, ki = 0, lr = 0, li = 0;
+  let flip = false, steps = 0;
+  const R = scale * Math.hypot(1, aspect);
+  for (; steps < APOLLO_VIEW_STEPS; steps++) {
+    const wr = fromExact(w0r, exact.bits), wi = fromExact(w0i, exact.bits);
+    const a = 1 - R * R * (lr * lr + li * li);
+    if (a <= 0) break;
+    const mr = wr - (R * R / a) * (kr * lr + ki * li);
+    const mi = wi - (R * R / a) * (ki * lr - kr * li);
+    const rho = Math.hypot(kr, ki) * R / a;
+    const j = APOLLO_DUAL.findIndex((c) => {
+      if (c.r === 0) return mi + rho < 0;
+      const d = Math.hypot(mr - c.x, mi - c.y);
+      return d + rho < c.r && d > 2 * rho;
+    });
+    if (j < 0) break;
+    const c = APOLLO_DUAL[j], e = dual[j];
+    if (c.r === 0) {
+      w0i = -w0i; ki = -ki; li = -li;
+    } else {
+      // The same inversion as apolloFrame: p = conj(w0 - o); w0' = o + r^2 / p.
+      const pr = w0r - e.ox, pi = -(w0i - e.oy);
+      const p2 = pr * pr + pi * pi; // 2^-2F units
+      if (p2 === 0n) break; // the center is the disk's own center: no image, as in float64
+      w0r = e.ox + (pr * two2F) / (e.rd * p2);
+      w0i = e.oy - (pi * two2F) / (e.rd * p2);
+      const prd = fromExact(pr, exact.bits), pid = fromExact(pi, exact.bits), p2d = prd * prd + pid * pid, r2 = c.r * c.r;
+      const qr = (prd * prd - pid * pid) / (p2d * p2d), qi = (-2 * prd * pid) / (p2d * p2d);
+      const nkr = -r2 * (kr * qr + ki * qi), nki = -r2 * (kr * qi - ki * qr);
+      const sr = (kr * prd - ki * pid) / p2d, si = (-ki * prd - kr * pid) / p2d;
+      lr = lr + sr;
+      li = -li + si;
+      kr = nkr;
+      ki = nki;
+    }
+    flip = !flip;
+  }
+  return { w0: [fromExact(w0r, exact.bits), fromExact(w0i, exact.bits)], k: [kr, ki], l: [lr, li], flip, steps };
+}
+
+export function apolloFrame(cx, cy, scale, aspect, exact = null) {
+  if (exact) return apolloFrameExact(exact, scale, aspect);
   let w0r = cx, w0i = cy, kr = 1, ki = 0, lr = 0, li = 0;
   let flip = false, steps = 0;
   const R = scale * Math.hypot(1, aspect);

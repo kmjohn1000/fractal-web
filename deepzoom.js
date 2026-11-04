@@ -2,8 +2,8 @@
 // offsets. No DOM references (no document, els, window or canvas): pure math on numbers and arrays.
 // Needs FTYPE and PHOENIX_P from configs.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { FTYPE, PHOENIX_P } from "./configs.js?v=1.63.0";
-import { EXACT_FRAC, EXACT_ONE, exactCenter, toExact } from "./view-math.js?v=1.63.0";
+import { FTYPE, PHOENIX_P } from "./configs.js?v=1.64.0";
+import { EXACT_FRAC, EXACT_ONE, exactCenter, toExact } from "./view-math.js?v=1.64.0";
 
 // ---------------------------------------------------------------- Phase 3: deep zoom
 // Below this scale, plain float32 starts losing pixels to precision collapse
@@ -64,6 +64,8 @@ export const EXACT_MIN_SCALE = 1e-30;
 // Carpet and Gasket: a zoom of 1e300 on the opening view. Not the center's limit (it grows with the zoom) but the
 // scale's: a double is normal down to 2.2e-308, and base^level as a double (digitCellFrame) stays finite here.
 export const DIGIT_MIN_SCALE = 1e-300;
+// The Apollonian gasket: a choice, not a limit (see minScaleFor).
+export const APOLLO_MIN_SCALE = 1e-100;
 export const FLOOR_STEPS = 2;
 export const FLOOR_PIXELS = 2000;
 export const FIXED_STEP = 2 ** -48;
@@ -76,6 +78,10 @@ export function minScaleFor(state) {
   // cell frame reads their digits from it (digitCellFrame), so a pan follows a pixel at any depth. What is left
   // is the double that holds the scale itself, which stops being a normal number near 1e-308.
   if (state.ftype === FTYPE.CARPET || state.ftype === FTYPE.GASKET) return DIGIT_MIN_SCALE;
+  // The Apollonian gasket's chain of inversions runs from the exact center too (apolloFrameExact), measured right to
+  // the last double with log2(1/scale) plus a few dozen bits, and the shader gets K * scale (u_apoRescale), so its
+  // floor is a choice, not a limit: 1e-100, a few hundred chain steps, checked in tests/visual/apollo-exact.spec.mjs.
+  if (state.ftype === FTYPE.APOLLONIAN) return APOLLO_MIN_SCALE;
   const r = Math.max(Math.abs(state.cx), Math.abs(state.cy));
   let step;
   if (state.ftype === FTYPE.NEWTON) step = Math.min(r * 2 ** -23, FIXED_STEP); // float32 near 0, else fixed point
@@ -323,9 +329,11 @@ export function chooseReference(state, widthPx, heightPx) {
 // in BigInt fixed point, 2^-192 units like the center itself. Only the reference is exact; the GPU's per-pixel
 // deltas are offsets from the reference and never needed the center (see renderEscapePerturbation in shaders.js).
 // Above it the float64 path above is unchanged, so every opening view and place keeps its picture.
-// An object so a test can move the limit (to draw a shallow place through the exact path and compare it with the
-// float64 path); nothing else changes it.
-export const exactRender = { below: 1e-13 };
+// An object so a test can move the limits (to draw a shallow place through the exact path and compare it with the
+// float64 path); nothing else changes them. below: the escape-time family's reference orbit; apollo: the Apollonian
+// gasket's chain of inversions (apolloFrameExact, also used whenever the view has an exact pair); apolloRescale:
+// where the shader gets K * scale and L * scale instead of K and L.
+export const exactRender = { below: 1e-13, apollo: 1e-13, apolloRescale: 1e-15 };
 export const exactRenderEligible = (state) => state.scale < exactRender.below;
 // Candidates per side for the exact reference search: 64 orbits of up to maxIter BigInt steps (about 20 ms on an
 // M-series Mac for 2000 steps each), against the float64 search's 1024 cheap ones.

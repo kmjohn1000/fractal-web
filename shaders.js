@@ -159,6 +159,7 @@ uniform vec2  u_apoW0;         // the view's composed inversions: w0 + K u / (1 
 uniform vec2  u_apoK;
 uniform vec2  u_apoL;
 uniform bool  u_apoFlip;       // odd step count: apply to conj(u)
+uniform bool  u_apoRescale;    // K and L arrive multiplied by the scale; apply them to uv * 2 (see renderApollonian)
 uniform float u_apoSteps;      // inversions the CPU already applied
 uniform vec3  u_apoCapColor;   // color past APOLLO_MAX_STEPS (apolloCapColor)
 // Sub-pixel sample offset in pixels, (0,0) = pixel center. Supersampling
@@ -645,7 +646,12 @@ const int APOLLO_MAX_STEPS = 500;
 const float APOLLO_CYCLE = 24.0;
 const float APOLLO_OFFSET = 6.0;
 
-vec3 renderApollonian(vec2 u) {
+// v is the pixel's offset from the center in units of the view's half-height (uv * 2). Normally u = v * u_scale and
+// K, L are the Mobius map's own; past a scale of ~1e-15 K and L (about 1/scale) approach float32's top, so the CPU
+// passes K * scale and L * scale and the map is applied to v itself (u_apoRescale): the same value, in range at
+// any depth, and no float32 scale in it at all.
+vec3 renderApollonian(vec2 v) {
+  vec2 u = u_apoRescale ? v : v * u_scale;
   if (u_apoFlip) u.y = -u.y;
   vec2 z = u_apoW0 + cDiv(cMul(u_apoK, u), vec2(1.0, 0.0) + cMul(u_apoL, u));
   float n = u_apoSteps;
@@ -1017,7 +1023,7 @@ void main() {
   }
 
   if (u_ftype == FTYPE_APOLLONIAN) {
-    gl_FragColor = vec4(renderApollonian(uv * u_scale * 2.0), 1.0);
+    gl_FragColor = vec4(renderApollonian(uv * 2.0), 1.0);
     return;
   }
 

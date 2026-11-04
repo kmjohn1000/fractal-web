@@ -3,13 +3,13 @@
 // (fractal-defs.js), deepzoom.js and color-styles.js. It imports nothing from state.js: state.js
 // calls createFractalRenderer(canvas, host) and passes the two live values a frame needs.
 // An ES module: every top-level declaration is exported (test-hooks.js and state.js rely on it).
-import { FTYPE, PHOENIX_P } from "./configs.js?v=1.63.0";
-import { Diag } from "./diag.js?v=1.63.0";
-import { FRAG_SRC, NEWTON_DEEP_FRAG_SRC, PHOENIX_DEEP_FRAG_SRC, PREVIEW_FRAG_SRC, VERT_SRC, VERT_SRC_300 } from "./shaders.js?v=1.63.0";
-import { DIGIT_MAX_CELL_LEVEL, apolloCapColor, apolloFrame, digitBase, digitCellFrame, digitCellLevel, digitColorCycle, digitFractalDepth, digitSubPixelColor, isDigitFractal } from "./fractal-defs.js?v=1.63.0";
-import { DEEP_ZOOM_THRESHOLD, FIXED_THIRD, PHOENIX_DEEP_SAMPLES, PHOENIX_EXACT_CAP, SAMPLE_OFFSETS, chooseReference, chooseReferenceExact, computeReferenceOrbit, computeReferenceOrbitExact, exactReferencePoint, exactRenderEligible, fixedLimbs, newtonDeepEligible, newtonOrbitF64, perturbationEligibleType, phoenixDeepEligible, phoenixEscapeF64, phoenixReference } from "./deepzoom.js?v=1.63.0";
-import { EXACT_FROM, EXACT_ONE, exactCenter, exactFracFor, exactValid, toExact } from "./view-math.js?v=1.63.0";
-import { colorStyle, colorStyleFor, styleDrawn, trapRangeFor } from "./color-styles.js?v=1.63.0";
+import { FTYPE, PHOENIX_P } from "./configs.js?v=1.64.0";
+import { Diag } from "./diag.js?v=1.64.0";
+import { FRAG_SRC, NEWTON_DEEP_FRAG_SRC, PHOENIX_DEEP_FRAG_SRC, PREVIEW_FRAG_SRC, VERT_SRC, VERT_SRC_300 } from "./shaders.js?v=1.64.0";
+import { DIGIT_MAX_CELL_LEVEL, apolloCapColor, apolloFrame, digitBase, digitCellFrame, digitCellLevel, digitColorCycle, digitFractalDepth, digitSubPixelColor, isDigitFractal } from "./fractal-defs.js?v=1.64.0";
+import { DEEP_ZOOM_THRESHOLD, FIXED_THIRD, PHOENIX_DEEP_SAMPLES, PHOENIX_EXACT_CAP, SAMPLE_OFFSETS, chooseReference, chooseReferenceExact, computeReferenceOrbit, computeReferenceOrbitExact, exactReferencePoint, exactRender, exactRenderEligible, fixedLimbs, newtonDeepEligible, newtonOrbitF64, perturbationEligibleType, phoenixDeepEligible, phoenixEscapeF64, phoenixReference } from "./deepzoom.js?v=1.64.0";
+import { EXACT_FROM, EXACT_ONE, exactCenter, exactFracFor, exactValid, toExact } from "./view-math.js?v=1.64.0";
+import { colorStyle, colorStyleFor, styleDrawn, trapRangeFor } from "./color-styles.js?v=1.64.0";
 
 // ---------------------------------------------------------------- WebGL renderer factory
 
@@ -63,7 +63,7 @@ export function createFractalRenderer(canvas, host) {
   const programs = new Map();
   const UNIFORMS = ["resolution", "center", "scale", "rotCos", "rotSin", "flipY", "maxIter", "ftype", "power", "isJulia",
     "juliaC", "phoenixP", "lut", "style", "density", "offset", "pixelSize", "trapCenter", "digitDepth", "digitLevel",
-    "digitCenter", "digitScale", "cellHole", "digitCycle", "subPixelColor", "apoW0", "apoK", "apoL", "apoFlip",
+    "digitCenter", "digitScale", "cellHole", "digitCycle", "subPixelColor", "apoW0", "apoK", "apoL", "apoFlip", "apoRescale",
     "apoSteps", "apoCapColor", "jitter", "usePerturbation", "refOrbitTex", "refOrbitLen", "critOffset",
     "critLen", "refTexWidth", "refOffset", "trapLo", "trapHi", "trapProbe"];
   function fractalEntry(variant, p) {
@@ -616,10 +616,22 @@ export function createFractalRenderer(canvas, host) {
       gl.uniform1fv(u.cellHole, frame.holes);
     }
     if (sampleIndex === 0 && state.ftype === FTYPE.APOLLONIAN) {
-      const frame = apolloFrame(state.cx, state.cy, state.scale, canvas.width / canvas.height);
+      // From the exact center when the view has one, or is deep enough (exactRender.apollo) that its double no
+      // longer places the chain; shallower views keep the float64 chain they always had.
+      let exact = null;
+      if (exactValid(state) || state.scale < exactRender.apollo) {
+        const bits = exactFracFor(state);
+        exact = { ...exactCenter(state, bits), bits };
+      }
+      const frame = apolloFrame(state.cx, state.cy, state.scale, canvas.width / canvas.height, exact);
+      // Past exactRender.apolloRescale K and L (about 1/scale) would overflow float32: hand the shader K * scale
+      // and L * scale and have it apply them to uv * 2 (u_apoRescale in renderApollonian).
+      const rescale = state.scale < exactRender.apolloRescale;
+      const kl = rescale ? state.scale : 1;
+      gl.uniform1i(u.apoRescale, rescale ? 1 : 0);
       gl.uniform2f(u.apoW0, frame.w0[0], frame.w0[1]);
-      gl.uniform2f(u.apoK, frame.k[0], frame.k[1]);
-      gl.uniform2f(u.apoL, frame.l[0], frame.l[1]);
+      gl.uniform2f(u.apoK, frame.k[0] * kl, frame.k[1] * kl);
+      gl.uniform2f(u.apoL, frame.l[0] * kl, frame.l[1] * kl);
       gl.uniform1i(u.apoFlip, frame.flip ? 1 : 0);
       gl.uniform1f(u.apoSteps, frame.steps);
       gl.uniform3fv(u.apoCapColor, apolloCapColor(lutBytes));

@@ -45,10 +45,10 @@ test("each family's floor", async ({ page }) => {
   expect(r.nova).toBe(4e-5);
   expect(r.carpet).toBe(1e-300);
   expect(r.gasket).toBe(1e-300);
-  // Apollonian at a center of magnitude 0.89: FLOOR_STEPS last-digit steps for each of FLOOR_PIXELS/2 pixels of half-height.
-  expect(r.apollonian).toBe(r.steps * r.ulp1 * r.pixels / 2);
-  expect(r.apollonian, "Jacob's Ladder (2.8e-12) is above it").toBeLessThan(2.7838699774672232e-12);
-  expect(r.apollonianNearZero, "a center near 0 has finer digits").toBeLessThan(r.apollonian);
+  // The Apollonian gasket runs its chain of inversions from the exact center, so its floor is a choice (1e-100), the
+  // same wherever the center is.
+  expect(r.apollonian).toBe(1e-100);
+  expect(r.apollonianNearZero).toBe(1e-100);
   expect(r.newton, "Newton at |c| = 1 is on the fixed-point grid, 2^-48").toBe(r.steps * 2 ** -48 * r.pixels / 2);
   expect(r.phoenix).toBe(r.steps * 2 ** -48 * r.pixels / 2);
 });
@@ -60,7 +60,7 @@ test("limitScale stops at the floor and leaves everything above it alone", async
     const c = { ftype: FTYPE.CARPET, power: 2, cx: 0.5, cy: 0.5 };
     return {
       mandelbrotBelow: limitScale(m, 1e-40), mandelbrotAbove: limitScale(m, 1e-20),
-      apolloBelow: limitScale(a, 1e-20), apolloAbove: limitScale(a, 1e-9), apolloFloor: minScaleFor(a),
+      apolloBelow: limitScale(a, 1e-120), apolloAbove: limitScale(a, 1e-9), apolloFloor: minScaleFor(a),
       carpetDeep: limitScale(c, 1e-20), gasketBelow: limitScale({ ftype: FTYPE.GASKET, power: 2, cx: 0.5, cy: 0.5 }, 1e-310),
     };
   });
