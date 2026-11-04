@@ -20,7 +20,7 @@ import { PNG } from "pngjs";
 const root = new URL("..", import.meta.url).pathname;
 const DIR = join(root, "tests/baselines/identity");
 const DRIVER = join(root, "tests/driver.js");
-const PORT = 8747;
+const PORT = Number(process.env.PW_PORT || 8747); // PW_PORT, like the visual suite: several checkouts can run this at once
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Page-context snippets, run through the in-page tests/driver.js helpers.

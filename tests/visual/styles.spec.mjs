@@ -92,17 +92,17 @@ test.describe("the style API", () => {
   test("a view draws Smooth when its fractal can't do the chosen style", async ({ page }) => {
     const r = await page.evaluate(() => {
       const drawn = (fractal) => { window["__vt"].fractal(fractal); setColorStyle({ style: "bands" }); return colorStyleFor(mainState).glsl; };
-      return { mandelbrot: drawn("Mandelbrot"), phoenix: drawn("Phoenix"), newton: drawn("Newton z³"), carpet: drawn("Carpet") };
+      return { mandelbrot: drawn("Mandelbrot"), phoenix: drawn("Phoenix"), spider: drawn("Spider"), newton: drawn("Newton z³"), carpet: drawn("Carpet") };
     });
-    // Newton and Carpet color by their own schemes; Phoenix has Smooth and Bands.
-    expect(r).toEqual({ mandelbrot: 1, phoenix: 1, newton: 0, carpet: 0 });
+    // Newton and Carpet color by their own schemes; Phoenix has Smooth and Bands; Spider those and more (spider.spec.mjs).
+    expect(r).toEqual({ mandelbrot: 1, phoenix: 1, spider: 1, newton: 0, carpet: 0 });
   });
 
   test("Glow is offered on the types with a derivative and drawn as Smooth elsewhere", async ({ page }) => {
     const r = await page.evaluate(() => {
       const drawn = (fractal) => { window["__vt"].fractal(fractal); setColorStyle({ style: "glow" }); return colorStyleFor(mainState); };
       const out = {};
-      for (const f of ["Mandelbrot", "Burn. Ship", "Tricorn", "Celtic", "Multibrot³", "Julia:Rabbit", "Phoenix", "Julia:Phoenix", "Newton z³", "Nova", "Carpet", "Gasket", "Apollonian"]) {
+      for (const f of ["Mandelbrot", "Burn. Ship", "Tricorn", "Celtic", "Multibrot³", "Julia:Rabbit", "Phoenix", "Julia:Phoenix", "Spider", "Newton z³", "Nova", "Carpet", "Gasket", "Apollonian"]) {
         const c = drawn(f);
         out[f] = `${c.glsl}/${c.variant}`;
       }
@@ -110,7 +110,7 @@ test.describe("the style API", () => {
     });
     // glsl 2 / variant 1 is Glow; 0/0 is Smooth.
     expect(r).toEqual({ "Mandelbrot": "2/1", "Burn. Ship": "2/1", "Tricorn": "2/1", "Celtic": "2/1", "Multibrot³": "2/1",
-      "Julia:Rabbit": "2/1", "Phoenix": "0/0", "Julia:Phoenix": "0/0", "Newton z³": "0/0", "Nova": "0/0", "Carpet": "0/0", "Gasket": "0/0",
+      "Julia:Rabbit": "2/1", "Phoenix": "0/0", "Julia:Phoenix": "0/0", "Spider": "0/0", "Newton z³": "0/0", "Nova": "0/0", "Carpet": "0/0", "Gasket": "0/0",
       "Apollonian": "0/0" });
   });
 });
@@ -180,7 +180,7 @@ test.describe("Relief", () => {
   test("is Glow's compiled program with its own style number, on the same fractal types", async ({ page }) => {
     const r = await page.evaluate(() => {
       const out = {};
-      for (const f of ["Mandelbrot", "Burn. Ship", "Tricorn", "Celtic", "Multibrot³", "Julia:Rabbit", "Phoenix", "Newton z³", "Carpet"]) {
+      for (const f of ["Mandelbrot", "Burn. Ship", "Tricorn", "Celtic", "Multibrot³", "Julia:Rabbit", "Phoenix", "Spider", "Newton z³", "Carpet"]) {
         window["__vt"].fractal(f); setColorStyle({ style: "relief" });
         const c = colorStyleFor(mainState);
         out[f] = `${c.glsl}/${c.variant}`;
@@ -188,7 +188,7 @@ test.describe("Relief", () => {
       return out;
     });
     expect(r).toEqual({ "Mandelbrot": "6/1", "Burn. Ship": "6/1", "Tricorn": "6/1", "Celtic": "6/1", "Multibrot³": "6/1",
-      "Julia:Rabbit": "6/1", "Phoenix": "0/0", "Newton z³": "0/0", "Carpet": "0/0" });
+      "Julia:Rabbit": "6/1", "Phoenix": "0/0", "Spider": "0/0", "Newton z³": "0/0", "Carpet": "0/0" });
   });
 
   for (const [name, fractal] of [["mandelbrot", "Mandelbrot"], ["ship", "Burn. Ship"], ["tricorn", "Tricorn"], ["celtic", "Celtic"],
@@ -249,7 +249,7 @@ test.describe("Halo", () => {
   test("shares Relief's compiled program, on the Mandelbrot family and Julia sets only", async ({ page }) => {
     const r = await page.evaluate(() => {
       const out = {};
-      for (const f of ["Mandelbrot", "Tricorn", "Multibrot³", "Julia:Rabbit", "Burn. Ship", "Celtic", "Phoenix", "Newton z³", "Carpet"]) {
+      for (const f of ["Mandelbrot", "Tricorn", "Multibrot³", "Julia:Rabbit", "Burn. Ship", "Celtic", "Phoenix", "Spider", "Newton z³", "Carpet"]) {
         window["__vt"].fractal(f); setColorStyle({ style: "halo" });
         const c = colorStyleFor(mainState);
         out[f] = `${c.glsl}/${c.variant}`;
@@ -257,7 +257,7 @@ test.describe("Halo", () => {
       return out;
     });
     expect(r).toEqual({ "Mandelbrot": "7/1", "Tricorn": "7/1", "Multibrot³": "7/1", "Julia:Rabbit": "7/1", "Burn. Ship": "0/0", "Celtic": "0/0",
-      "Phoenix": "0/0", "Newton z³": "0/0", "Carpet": "0/0" });
+      "Phoenix": "0/0", "Spider": "0/0", "Newton z³": "0/0", "Carpet": "0/0" });
   });
 
   for (const [name, fractal] of [["mandelbrot", "Mandelbrot"], ["tricorn", "Tricorn"], ["julia-rabbit", "Julia:Rabbit"]]) {
@@ -311,7 +311,7 @@ test.describe("Paper cut", () => {
   test("shares Relief's compiled program, on the same fractal types", async ({ page }) => {
     const r = await page.evaluate(() => {
       const out = {};
-      for (const f of ["Mandelbrot", "Burn. Ship", "Tricorn", "Celtic", "Multibrot³", "Julia:Rabbit", "Phoenix", "Newton z³", "Carpet"]) {
+      for (const f of ["Mandelbrot", "Burn. Ship", "Tricorn", "Celtic", "Multibrot³", "Julia:Rabbit", "Phoenix", "Spider", "Newton z³", "Carpet"]) {
         window["__vt"].fractal(f); setColorStyle({ style: "paper" });
         const c = colorStyleFor(mainState);
         out[f] = `${c.glsl}/${c.variant}`;
@@ -319,7 +319,7 @@ test.describe("Paper cut", () => {
       return out;
     });
     expect(r).toEqual({ "Mandelbrot": "8/1", "Burn. Ship": "8/1", "Tricorn": "8/1", "Celtic": "8/1", "Multibrot³": "8/1",
-      "Julia:Rabbit": "8/1", "Phoenix": "0/0", "Newton z³": "0/0", "Carpet": "0/0" });
+      "Julia:Rabbit": "8/1", "Phoenix": "0/0", "Spider": "0/0", "Newton z³": "0/0", "Carpet": "0/0" });
   });
 
   for (const [name, fractal] of [["mandelbrot", "Mandelbrot"], ["ship", "Burn. Ship"], ["julia-rabbit", "Julia:Rabbit"]]) {

@@ -32,7 +32,7 @@ const ORACLE = join(root, "scripts/oracle/oracle.py");
 // The oracle needs numpy and Pillow: the project's .venv (requirements.txt) when it exists, else the system python3.
 const PYTHON = existsSync(join(root, ".venv/bin/python")) ? join(root, ".venv/bin/python") : "python3";
 const DRIVER = join(root, "tests/driver.js");
-const PORT = 8749;
+const PORT = Number(process.env.PW_PORT || 8749); // PW_PORT, like the visual suite: several checkouts can run this at once
 const TILE = 360;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -40,7 +40,7 @@ const args = process.argv.slice(2);
 const opt = (name, fallback) => { const i = args.indexOf(`--${name}`); return i < 0 ? fallback : args[i + 1]; };
 const oracleViews = JSON.parse(spawnSync(PYTHON, ["-I", ORACLE, "views"], { encoding: "utf8" }).stdout);
 const GATE_VIEWS = ["mandelbrot", "valley", "ship", "armada", "elephant", "rabbit", "tricorn", "celtic", "multibrot",
-  "seahorse", "minibrot", "twinships"];
+  "seahorse", "minibrot", "twinships", "spider", "spiderfans"];
 const views = opt("views", GATE_VIEWS.join(",")).split(",");
 const styles = opt("styles", "smooth").split(",");
 const cmap = opt("cmap", "Inferno");
@@ -144,7 +144,7 @@ const BLUR_GATE = 3; // of 255; Smooth measures 0.16-1.60 over the gate views (s
 // Views whose orbits stay low (no chaotic filament zones at this size), so
 // a per-pixel comparison means something there; the rest are judged on the
 // blocked average and the black masks only.
-const CALM_VIEWS = new Set(["mandelbrot", "ship", "rabbit", "tricorn", "celtic", "multibrot"]);
+const CALM_VIEWS = new Set(["mandelbrot", "ship", "rabbit", "tricorn", "celtic", "multibrot", "spider", "spiderfans"]);
 function blockedDiff(a, b) {
   let sum = 0, count = 0;
   for (let by = 0; by + BLOCK <= a.height; by += BLOCK) {

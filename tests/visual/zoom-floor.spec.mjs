@@ -1,12 +1,12 @@
 // The zoom floor (deepzoom.js, minScaleFor): every way of zooming stops where a view's center can no longer follow a
 // one-pixel pan. The escape-time family stops at 1e-30 (its exact BigInt center, float32 deltas); Apollonian, Newton and
-// Phoenix stop a few steps of their center's last digit; Nova keeps its own limit; Carpet and Gasket have an exact center that grows with the zoom, so their floor is only the scale's own
+// Phoenix stop a few steps of their center's last digit; Nova keeps its own limit and Spider stops two float32 steps of its center per pixel; Carpet and Gasket have an exact center that grows with the zoom, so their floor is only the scale's own
 // double, 1e-300 (tests/visual/digit-infinite.spec.mjs).
 // Plain behavior checks, no screenshot baselines.
 import { test, expect } from "@playwright/test";
 
 /* global mainState, setCenter, minScaleFor, limitScale, atZoomLimit, selectFractal, updateHud, showHud, els, TELEPORT_DESTINATIONS,
-   FRACTAL_CONFIGS, FTYPE, ulp64, FLOOR_STEPS, FLOOR_PIXELS */
+   FRACTAL_CONFIGS, FTYPE, ulp64, ulp32, FLOOR_STEPS, FLOOR_PIXELS */
 
 let pageErrors = [];
 
@@ -34,6 +34,10 @@ test("each family's floor", async ({ page }) => {
       mandelbrot: at(FTYPE.ESCAPE, 0.3, 0.5), ship: at(FTYPE.SHIP, -1.7, -0.03), tricorn: at(FTYPE.TRICORN, 0, 0), celtic: at(FTYPE.CELTIC, 0.1, 0.1),
       apollonian: at(FTYPE.APOLLONIAN, 0.4472135954957291, 0.8944271910020332), apollonianNearZero: at(FTYPE.APOLLONIAN, 1e-6, 0),
       newton: at(FTYPE.NEWTON, 1, 0), phoenix: at(FTYPE.PHOENIX, 0.5, 0.5), phoenixNearZero: at(FTYPE.PHOENIX, 1e-3, 0), nova: at(FTYPE.NOVA, 1, 1),
+      // Spider: two float32 steps per pixel at the nominal canvas, never under 2e-5 (see SPIDER_MIN_SCALE)
+      spiderNearZero: at(FTYPE.SPIDER, 0, 0), spiderNear03: at(FTYPE.SPIDER, 0.3, 0.1), spiderNear05: at(FTYPE.SPIDER, -0.5, 0.2),
+      spiderNear12: at(FTYPE.SPIDER, -0.3371, 1.1738), spiderFar: at(FTYPE.SPIDER, 1.4, 0),
+      spiderWant: [0.3, 0.5, 1.1738, 1.4].map((r) => FLOOR_STEPS * ulp32(r) * FLOOR_PIXELS / 2),
       carpet: at(FTYPE.CARPET, 0.5, 0.5), gasket: at(FTYPE.GASKET, 0.5, 0.5),
       steps: FLOOR_STEPS, pixels: FLOOR_PIXELS, ulp1: ulp64(0.8944271910020332),
       phoenixWant: FLOOR_STEPS * ulp64(0.5) * FLOOR_PIXELS / 2,
@@ -44,6 +48,13 @@ test("each family's floor", async ({ page }) => {
   expect(r.tricorn).toBe(1e-30);
   expect(r.celtic).toBe(1e-30);
   expect(r.nova).toBe(4e-5);
+  // Spider (float32 only): two float32 steps of the larger coordinate per pixel at the nominal canvas, never under 2e-5.
+  expect(r.spiderNearZero).toBe(2e-5);
+  expect(r.spiderNear03).toBe(r.spiderWant[0]);
+  expect(r.spiderNear05).toBe(r.spiderWant[1]);
+  expect(r.spiderNear12).toBe(r.spiderWant[2]);
+  expect(r.spiderFar).toBe(r.spiderWant[3]);
+  expect(r.spiderNear12, "deeper in the view's center, the floor rises").toBeGreaterThan(r.spiderNear05);
   expect(r.carpet).toBe(1e-300);
   expect(r.gasket).toBe(1e-300);
   // The Apollonian gasket runs its chain of inversions from the exact center, so its floor is a choice (1e-100), the

@@ -81,12 +81,16 @@ VIEWS = {
     "tricorn": dict(fractal="Tricorn", ftype="tricorn", c=(-0.475, 0.0), s=1.7, it=300, trap=(0.0, 0.0)),
     "celtic": dict(fractal="Celtic", ftype="celtic", c=(-0.775, 0.0), s=1.85, it=300, trap=(-0.5, 0.0)),
     "multibrot": dict(fractal="Multibrot³", ftype="mandel3", c=(0.0, 0.0), s=1.45, it=300, trap=(0.0, 0.0)),
+    # Spider: z <- z^2 + c, then c <- z + c/2, from z = c = the pixel. Smooth, Bands, Stripes and the traps only (the
+    # derivative styles are off for it in the app), so the D this script tracks is not meaningful for it.
+    "spider": dict(fractal="Spider", ftype="spider", c=(-0.59, 0.0), s=1.3, it=300, trap=(0.0, 0.0)),
+    "spiderfans": dict(fractal="Spider", ftype="spider", c=(-0.2, 0.9), s=0.6, it=370, trap=(0.0, 0.0)),
 }
 
 
 def jacobian(ftype, x, y):
     """f(z) and its 2x2 Jacobian (p q / r s) for the Mandelbrot-family maps."""
-    if ftype == "mandel":
+    if ftype in ("mandel", "spider"):   # (the plain step; Spider's c-update is in render_fields)
         return x * x - y * y, 2 * x * y, 2 * x, -2 * y, 2 * y, 2 * x
     if ftype == "mandel3":
         # z^3 = (x^3 - 3xy^2, 3x^2y - y^3); derivative 3z^2 as a rotation-scaling matrix
@@ -125,6 +129,8 @@ def render_fields(name, tile=360, ss=2):
     else:
         cx, cy = px, py
         zx = np.zeros(N); zy = np.zeros(N)
+        if v["ftype"] == "spider":   # z = c = the pixel
+            zx, zy = px.copy(), py.copy()
         da = np.zeros(N); db = np.zeros(N); dc_ = np.zeros(N); dd = np.zeros(N)
         add = 1.0
     tx, ty = v["trap"]
@@ -156,6 +162,8 @@ def render_fields(name, tile=360, ss=2):
                 hcross = np.where(hit, (it - 1) + frac, hcross)
                 hprev = dnh
             zx = fx + cx; zy = fy + cy
+            if v["ftype"] == "spider":   # c <- z + c/2 with the new z
+                cx = zx + 0.5 * cx; cy = zy + 0.5 * cy
             a = 0.5 + 0.5 * np.sin(STRIPE_K * np.arctan2(zy, zx))
             # sin(4 theta) from x and y alone: 2 * sin(2t) * cos(2t)
             r2 = np.maximum(zx * zx + zy * zy, 1e-30)
