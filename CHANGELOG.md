@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.65.0 — 2026-11-03
+- Release build for the App Store: brings together everything since 1.55.5 (the entries above): deeper zoom on every fractal that zooms, Penrose tiling, Corner Rules, 24 new places, the Halo and Paper cut looks, and the rating prompt in the app.
+
 ## 1.64.2 — 2026-11-03
 - Phoenix zooms deeper: its floor moves from about 7e-12 to about 1e-13 to 4e-13 (up to 70 times deeper, depending on where the view is), where the picture is still right.
 
