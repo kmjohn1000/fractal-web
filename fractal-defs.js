@@ -15,7 +15,7 @@ import { fromExact } from "./view-math.js?v=1.65.0";
 // the zoom-only buttons (box zoom, Surprise me) do, not where a tile sits.
 export const PICKER_LAYOUT = [
   { label: "Zoom forever", groups: [
-    { label: "Mandelbrot family", keys: ["Mandelbrot", "Burn. Ship", "Tricorn", "Celtic", "Multibrot³", "Phoenix"] },
+    { label: "Mandelbrot family", keys: ["Mandelbrot", "Burn. Ship", "Tricorn", "Celtic", "Multibrot³", "Phoenix", "Spider"] },
     { label: "Julia sets", keys: ["Julia:Spiral", "Julia:Rabbit", "Julia:Dragon", "Julia:Phoenix"] },
     { label: "More to zoom into", keys: ["Newton z³", "Nova", "Apollonian", "Carpet", "Gasket"] },
   ] },

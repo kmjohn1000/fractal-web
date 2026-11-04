@@ -14,7 +14,7 @@ import { FTYPE } from "./configs.js?v=1.65.0";
 // which compiled version of the escape-time program draws it (COLOR_VARIANT
 // in FRAG_SRC: 0 needs no per-iteration work), `types` the fractal types it
 // works on (the escape-time types when left out).
-export const ESCAPE_TIME_TYPES = [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC, FTYPE.PHOENIX];
+export const ESCAPE_TIME_TYPES = [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC, FTYPE.PHOENIX, FTYPE.SPIDER];
 export const COLOR_STYLES = [
   { id: "smooth", glsl: 0, variant: 0, label: "Smooth" },
   { id: "bands", glsl: 1, variant: 0, label: "Bands" },
@@ -22,7 +22,7 @@ export const COLOR_STYLES = [
   // two-term recurrence has no derivative worked out, and its deep path is a
   // separate fixed-point shader.
   { id: "glow", glsl: 2, variant: 1, label: "Edge glow", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
-  { id: "stripes", glsl: 3, variant: 2, label: "Stripes", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
+  { id: "stripes", glsl: 3, variant: 2, label: "Stripes", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC, FTYPE.SPIDER] },
   // Orbit traps color by how close the orbit came to a point or a cross. In a
   // deep view every pixel's orbit looks alike, so the distances fall in a
   // narrow band; the renderer stretches the colormap over the view's real
@@ -33,8 +33,8 @@ export const COLOR_STYLES = [
   // Display names are plain words and the same everywhere (tile, segment,
   // note, info card): Orbs is the point trap and Rays the cross trap. The ids
   // (and the share-link codes below) never change.
-  { id: "point", glsl: 4, variant: 3, label: "Orbs", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
-  { id: "cross", glsl: 5, variant: 3, label: "Rays", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },
+  { id: "point", glsl: 4, variant: 3, label: "Orbs", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC, FTYPE.SPIDER] },
+  { id: "cross", glsl: 5, variant: 3, label: "Rays", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC, FTYPE.SPIDER] },
   // Relief is lit from the distance estimate's derivative, so it shares Edge
   // glow's compiled program (variant 1) and its limits.
   { id: "relief", glsl: 6, variant: 1, label: "Relief", types: [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC] },

@@ -9,7 +9,7 @@
 // the region that must be fully visible when the fractal first opens;
 // viewFromBounds fits it to the canvas's aspect ratio (see there).
 
-export const FTYPE = { ESCAPE: 0, SHIP: 1, TRICORN: 2, NEWTON: 3, CARPET: 4, GASKET: 5, PHOENIX: 6, CELTIC: 7, APOLLONIAN: 8, NOVA: 9 };
+export const FTYPE = { ESCAPE: 0, SHIP: 1, TRICORN: 2, NEWTON: 3, CARPET: 4, GASKET: 5, PHOENIX: 6, CELTIC: 7, APOLLONIAN: 8, NOVA: 9, SPIDER: 10 };
 
 // Phoenix's fixed p in z' = z^2 + c + p*z_prev: the classic real -0.5
 // (Ushiki). With c = 0.5667 in Julia mode that gives the well-known twin-lobe
@@ -60,6 +60,9 @@ export const FRACTAL_CONFIGS = {
   // renderNova). Float32 only, no deep zoom: NOVA_MIN_SCALE (deepzoom.js)
   // stops the zoom where float32 gives out.
   "Nova":         { label: "Nova", ftype: FTYPE.NOVA, power: 3, juliaC: null,                          view: [-1.5349683626594732, 0.7651604068431261, -1.103032752613002, 1.1970960168895974],   dual: false, category: "zoom", defaultColormap: "Classic" },
+  // z <- z^2 + c, then c <- z + c/2, from z = c = the pixel (see renderEscapeFast). Float32 only, no deep zoom:
+  // SPIDER_MIN_SCALE (deepzoom.js) stops the zoom where float32 gives out.
+  "Spider":       { label: "Spider", ftype: FTYPE.SPIDER, power: 2, juliaC: null,                       view: [-1.62, 0.44, -1.3, 1.3], dual: false, category: "zoom", defaultColormap: "Turbo" },
   // Digit-test fractals (see FRAG_SRC's renderDigitFractal) — defined on
   // the unit square, so centered there with a little margin. power is
   // unused by these but kept non-null for consistency with the others.

@@ -193,6 +193,7 @@ const int FTYPE_PHOENIX = 6;
 const int FTYPE_CELTIC  = 7;
 const int FTYPE_APOLLONIAN = 8;
 const int FTYPE_NOVA    = 9;
+const int FTYPE_SPIDER  = 10;
 
 const vec2 NEWTON_ROOT0 = vec2( 1.0,  0.0);
 const vec2 NEWTON_ROOT1 = vec2(-0.5,  0.8660254037844386);
@@ -754,6 +755,8 @@ vec3 renderNewton(vec2 p) {
 vec3 renderEscapeFast(vec2 p) {
   vec2 z = u_isJulia ? p : vec2(0.0);
   vec2 c = u_isJulia ? u_juliaC : p;
+  // Spider starts from z = c = the pixel, and c changes every step (below).
+  if (u_ftype == FTYPE_SPIDER) z = p;
 
   // Cardioid / period-2 bulb analytic skip — only for plain power-2
   // Mandelbrot in parameter-space (non-Julia) mode, same test as the
@@ -819,6 +822,11 @@ vec3 renderEscapeFast(vec2 p) {
       zNext += cMul(u_phoenixP, zPrev);
       zPrev = z;
     }
+    // Spider: z <- z^2 + c, then c <- z + c/2 with the new z (the plain z^2
+    // above is the same step). c is the pixel to begin with and moves with
+    // the orbit, so there is no derivative worked out and no perturbation
+    // path; the styles that need one are off for this type (color-styles.js).
+    if (u_ftype == FTYPE_SPIDER) c = zNext + 0.5 * c;
     z = zNext;
     iter = i;
 #if COLOR_VARIANT == 2

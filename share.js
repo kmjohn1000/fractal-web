@@ -233,7 +233,9 @@ export function applyShareState(st) {
     setColorStyle({ style: st.color.style, density: st.color.density, offset: st.color.offset });
     if (dualActive) exitDual();
     selectFractal(st.name, { fresh: true });
-    Object.assign(mainState, { scale: limitScale(mainState, st.scale), rotation: st.rotation, flipY: st.flipY,
+    // (the floor of a fractal whose zoom limit follows its center, Spider's, is worked out at the link's center,
+    // which is set just below, not at the opening view's)
+    Object.assign(mainState, { scale: limitScale({ ...mainState, cx: st.cx, cy: st.cy }, st.scale), rotation: st.rotation, flipY: st.flipY,
       maxIter: st.maxIter, iterAutoLocked: st.iterAutoLocked });
     // The center goes through setCenter, which also clears any exact pair left by the previous view; a link
     // without ex/ey (every link made before 1.62.5) takes its doubles as the exact center.

@@ -218,6 +218,17 @@ export const TELEPORT_DESTINATIONS = [
   { fractal: "Nova", label: "Pearl Chain", re: "-0.48047", im: "0.43159", scale: 8e-4, rotation: -0.36 },
   { fractal: "Nova", label: "Web Hub", re: "-0.7605177785", im: "0", scale: 4e-4, rotation: 0 },
   { fractal: "Nova", label: "Seahorse Cove", re: "-0.66576", im: "0.0016304", scale: 8e-5, rotation: 0 },
+  // Spider is float32 only (its zoom stops at SPIDER_MIN_SCALE = 2e-5, or two float32 steps of the
+  // view's center per pixel where that is deeper: about 2.4e-4 near |center| 1.2), so none of these
+  // goes deeper than 0.02. Each was found by looking at renders, and its frame on a portrait phone was
+  // compared with a float64 render (under 2% of the non-interior pixels differ). Rainbow Fans is the
+  // region the user picked from the first mock-ups. Dartboard is the origin, where the picture repeats
+  // at every scale, so a deeper view of it looks the same; Spiral Eye is a hub on the upper arm.
+  { fractal: "Spider", label: "Rainbow Fans", re: "-0.2", im: "0.9", scale: 0.65, rotation: 0 },
+  { fractal: "Spider", label: "Dartboard", re: "0", im: "0", scale: 0.2, rotation: 0 },
+  { fractal: "Spider", label: "Spiral Eye", re: "-0.3371", im: "1.1738", scale: 0.02, rotation: 0 },
+  { fractal: "Spider", label: "Pinch Point", re: "-1.1976", im: "0", scale: 0.1, rotation: 0 },
+  { fractal: "Spider", label: "Little Spiders", re: "0.212", im: "0.852", scale: 0.03, rotation: 0 },
   // Celtic equals Mandelbrot on the real axis, so Mandelbrot's real-axis
   // landmarks reappear in new shapes: Halo Bell is Mini Mandelbrot's
   // period-55 point. Baby Celtic (period 3, nucleus -1.754877666246693),

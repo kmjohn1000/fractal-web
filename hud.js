@@ -123,7 +123,7 @@ export function updateHud(deepPath) {
     if (apollo.steps > 0) precision = "composed inversions (deep zoom)";
   } else if (usesFixedDepth) {
     if (s.scale < DEEP_ZOOM_THRESHOLD) precision = "cell rebasing (deep zoom)";
-  } else if (s.ftype === FTYPE.NOVA) {
+  } else if (s.ftype === FTYPE.NOVA || s.ftype === FTYPE.SPIDER) {
     // Float32 only; limitScale holds the zoom where it stops being sharp.
     precision = atZoomLimit(s) ? "float32 (zoom limit: no deeper without losing detail)" : "float32";
   } else if (isInteracting && deepZoomEligible(mainRenderer, s)) {

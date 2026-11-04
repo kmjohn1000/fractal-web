@@ -89,6 +89,7 @@ const APP_SHELL = [
   "./icons/thumbs/pentagon.webp",
   "./icons/thumbs/phoenix.webp",
   "./icons/thumbs/sierpinski.webp",
+  "./icons/thumbs/spider.webp",
   "./icons/thumbs/tree.webp",
   "./icons/thumbs/tricorn.webp",
   "./icons/thumbs/vicsek.webp",

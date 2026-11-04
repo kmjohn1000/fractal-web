@@ -68,13 +68,26 @@ export const DIGIT_MIN_SCALE = 1e-300;
 export const APOLLO_MIN_SCALE = 1e-100;
 // Phoenix: where its Julia views start to lose pixels (see minScaleFor).
 export const PHOENIX_MIN_SCALE = 1e-13;
+// Spider: float32 only (its c changes every step, so there is no orbit to rebase onto). The shader forms each
+// pixel's position as a float32, so a pixel narrower than one float32 step of the view's center repeats the same
+// position and the picture goes blocky: measured with a float32 emulation of the shader against float64 on a
+// 2622-pixel-tall canvas (a phone at 3x), the positions repeat once a pixel is under a step (at 1e-4 near
+// |center| 1.4, at 4e-5 near 0.9, below 2e-5 near 0.3) and the escape counts drift from the float64 ones
+// (about 1% of the boundary's pixels at 1e-3, 5% at 1e-4, 12% at 1e-5). So the floor is two float32 steps per
+// pixel (the same FLOOR_STEPS and nominal canvas as the others, see minScaleFor), never under 2e-5.
+export const SPIDER_MIN_SCALE = 2e-5;
 export const FLOOR_STEPS = 2;
 export const FLOOR_PIXELS = 2000;
 export const FIXED_STEP = 2 ** -48;
 // The size of the last digit of a float64 near |r|.
 export const ulp64 = (r) => (r > 0 ? 2 ** (Math.floor(Math.log2(r)) - 52) : 0);
+// The same for a float32.
+export const ulp32 = (r) => (r > 0 ? 2 ** (Math.floor(Math.log2(r)) - 23) : 0);
 export function minScaleFor(state) {
   if (state.ftype === FTYPE.NOVA) return NOVA_MIN_SCALE;
+  if (state.ftype === FTYPE.SPIDER) {
+    return Math.max(SPIDER_MIN_SCALE, FLOOR_STEPS * ulp32(Math.max(Math.abs(state.cx), Math.abs(state.cy))) * FLOOR_PIXELS / 2);
+  }
   if (perturbationEligibleType(state)) return EXACT_MIN_SCALE;
   // Carpet and Gasket keep an exact BigInt center that grows with the zoom (view-math.js, exactBitsFor) and the
   // cell frame reads their digits from it (digitCellFrame), so a pan follows a pixel at any depth. What is left
