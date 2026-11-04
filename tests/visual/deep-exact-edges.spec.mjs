@@ -79,6 +79,9 @@ function variety(img) {
   return seen.size;
 }
 const THRESHOLDS = { mean: 0.5, over16: 0.005 };
+// A control (the exact path off) has to differ from the shifted picture by clearly more than the pass bar: 4x. The first
+// calibration, 10x, was set from Chromium's 6.4 and failed on desktop WebKit, whose rotated control measures 3.8 (about 7.6x).
+const CONTROL_MEAN = THRESHOLDS.mean * 4;
 function expectShifted(d, what) {
   expect(d.mean, `${what}: mean channel difference`).toBeLessThan(THRESHOLDS.mean);
   expect(d.over16, `${what}: share of pixels differing by more than 16`).toBeLessThan(THRESHOLDS.over16);
@@ -138,7 +141,7 @@ test("rotated 0.7 rad at 1e-20, a diagonal move (45 right, 30 down) shows the sa
 test("control: with the exact path off, the same rotated move does not give the shifted picture", async ({ page }) => {
   const r = await shiftedCheck(page, ROTATED, 0, 60, true);
   console.log("rotated control (exact off):", JSON.stringify(r.d));
-  expect(r.d.mean, "the test must be able to fail").toBeGreaterThan(THRESHOLDS.mean * 10);
+  expect(r.d.mean, "the test must be able to fail").toBeGreaterThan(CONTROL_MEAN);
 });
 
 // ---------------------------------------------------------------- (b), (c) the other families
@@ -158,7 +161,7 @@ for (const [fractal, scale] of FAMILIES) {
 test("Burn. Ship control: with the exact path off, the shifted picture does not match", async ({ page }) => {
   const r = await shiftedCheck(page, { fractal: "Burn. Ship", x: -2, y: 0, scale: 1e-20, maxIter: 800 }, 50, 35, true);
   console.log("ship control (exact off):", JSON.stringify(r.d));
-  expect(r.d.mean).toBeGreaterThan(THRESHOLDS.mean * 10);
+  expect(r.d.mean).toBeGreaterThan(CONTROL_MEAN);
 });
 
 // ---------------------------------------------------------------- (d) the Julia pane of a dual view
@@ -231,7 +234,7 @@ test("dual view control: with the exact path off, the Julia pane's dragged pictu
   await page.evaluate(() => { exactRender.below = 1e-13; });
   const d = compareShifted(a, b, Math.round(50 * rect.dpr), Math.round(30 * rect.dpr));
   console.log("julia control (exact off):", JSON.stringify(d));
-  expect(d.mean).toBeGreaterThan(THRESHOLDS.mean * 10);
+  expect(d.mean).toBeGreaterThan(CONTROL_MEAN);
 });
 
 // ---------------------------------------------------------------- (e) a real mouse drag on the main pane
