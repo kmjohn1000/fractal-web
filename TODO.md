@@ -581,6 +581,30 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       along the negative real axis, the branch cut). They need a polar power
       in the shader (log, exp, atan) instead of repeated multiplication. More
       interesting as a slow morph animation than as separate entries.
+- [ ] Newton for other polynomials (user asked 2026-11-04 to make sure this
+      is tracked; it was not, only "Nova for other powers" above is; not
+      approved, not started). The picker has Newton z³ only (`FTYPE.NEWTON`).
+      Candidates: z^n - 1 for n = 4, 5 and 6 (more basins, n-fold symmetry),
+      and z³ - 2z + 2, Newton's own example, whose step has the 2-cycle
+      0 <-> 1 (checked by hand: N(0) = 1, N(1) = 0). Build: generalize the
+      cube in the Newton shader to a repeated multiply driven by a power
+      uniform, or to a small coefficient list for non-binomials; check how
+      the three roots are colored today and what the basin coloring needs for
+      n roots; Newton's deep path is exact 16.48 fixed point (1.33.0), so
+      each polynomial needs its own check of the floor. Open design question,
+      as for Nova: more picker entries, or one Newton entry with a
+      polynomial chooser (the interface is meant to stay small).
+- [ ] Higher-degree Multibrot and Multicorn (user, 2026-11-04: "record as a
+      possible todo"; not approved, not started). Multibrot z^n + c and
+      Multicorn conj(z)^n + c for n = 4, 5, 6 and up. Tricorn is the n = 2
+      Multicorn and Multibrot³ is n = 3 today. The power is hard-coded to 2 or
+      3 in the shader, so this needs the repeated-multiply loop and the
+      binomial perturbation step already described in "More escape-time
+      formulas" above (Multibrot to the 4th and 5th power); Multicorn is the
+      Tricorn branch with the same generalization, and its deep zoom needs
+      the conjugate handled in the perturbation step (unverified). Could
+      start shallow-only. New `f=` ids (never renamed), a default view, a
+      thumbnail and a few places each.
 - [ ] A one-line "what you're looking at" blurb per fractal or place, in
       the info card or picker (idea from the WebSim Fractal Explorer review,
       2026-10-09). Surprise me itself now covers every zoom fractal
