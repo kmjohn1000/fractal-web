@@ -50,6 +50,15 @@ export function newtonDeepEligible(state) {
 // 4e-5, and the info card says so. About 37,000 times deeper than the opening
 // view on a phone.
 export const NOVA_MIN_SCALE = 4e-5;
+// Magnet I and II: no deep zoom path either (the map is a rational function, whose poles have no
+// perturbation step worked out here), so the depth is float32's. The interesting part of the plane
+// is at c = 0 to 3.4, where a float32 step is 1.2e-7 to 2.4e-7, so the floor is higher than Nova's.
+// Measured at the boundary between the escaping bubbles and the field that converges to 1, on a
+// 402x874 @3x screen (a pixel is 2 * scale / 2622) against a float64 render: sharp to a view
+// half-height of 1.5e-4 (Magnet I at c = 2.98 + 0.8i, Magnet II at c = 1.49 + 1.15i), ragged
+// edges by 1e-4, stair-steps by 5e-5, so the zoom stops at 2e-4. About 12,000 times deeper than
+// Magnet I's opening view.
+export const MAGNET_MIN_SCALE = 2e-4;
 
 // The zoom floor: how deep each fractal can go before panning stalls and zoom-about-the-cursor drifts. Every
 // way of zooming goes through limitScale, which stops here; the HUD says "As deep as this fractal goes".
@@ -88,6 +97,7 @@ export function minScaleFor(state) {
   if (state.ftype === FTYPE.SPIDER) {
     return Math.max(SPIDER_MIN_SCALE, FLOOR_STEPS * ulp32(Math.max(Math.abs(state.cx), Math.abs(state.cy))) * FLOOR_PIXELS / 2);
   }
+  if (state.ftype === FTYPE.MAGNET) return MAGNET_MIN_SCALE;
   if (perturbationEligibleType(state)) return EXACT_MIN_SCALE;
   // Carpet and Gasket keep an exact BigInt center that grows with the zoom (view-math.js, exactBitsFor) and the
   // cell frame reads their digits from it (digitCellFrame), so a pan follows a pixel at any depth. What is left

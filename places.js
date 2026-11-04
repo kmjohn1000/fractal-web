@@ -229,6 +229,26 @@ export const TELEPORT_DESTINATIONS = [
   { fractal: "Spider", label: "Spiral Eye", re: "-0.3371", im: "1.1738", scale: 0.02, rotation: 0 },
   { fractal: "Spider", label: "Pinch Point", re: "-1.1976", im: "0", scale: 0.1, rotation: 0 },
   { fractal: "Spider", label: "Little Spiders", re: "0.212", im: "0.852", scale: 0.03, rotation: 0 },
+  // Magnet I and II are float32 only (their zoom stops at MAGNET_MIN_SCALE = 2e-4), so the deepest
+  // place here is 3e-4. Each was found by looking at renders, and the foam places sit on the
+  // boundary between an escaping bubble and the field that converges to 1, found by bisection and
+  // checked against a float64 render. The names are our own. Needle Cusp is the tip at c = 0 where
+  // the two big discs meet; Cameo a small copy of a Mandelbrot-like body (a disc with a bud) in gray
+  // lace; Foam Edge and Bubble Foam bubbles of every size along a boundary; Deep Foam the same
+  // boundary near the zoom limit. For Magnet II, Bow Tie is the black two-lobed shape on the real
+  // axis with its pair of ovals, Origin Cusp the tip at c = 0, Feather Fan black feathers at the
+  // edge of a lace field, Bead Chain a chain of bubbles with a tiny cameo in it, and Deep Bubble
+  // the bubble edge near the zoom limit.
+  { fractal: "Magnet I", label: "Needle Cusp", re: "-0.03", im: "0", scale: 0.08, rotation: 0 },
+  { fractal: "Magnet I", label: "Cameo", re: "0.98", im: "1.15", scale: 0.12, rotation: 0 },
+  { fractal: "Magnet I", label: "Bubble Foam", re: "2.98006002550346", im: "0.8", scale: 0.01, rotation: 0 },
+  { fractal: "Magnet I", label: "Foam Edge", re: "1.5", im: "1.8748884094216862", scale: 3e-3, rotation: 0 },
+  { fractal: "Magnet I", label: "Deep Foam", re: "2.98006002550346", im: "0.8", scale: 3e-4, rotation: 0 },
+  { fractal: "Magnet II", label: "Bow Tie", re: "1.65", im: "0", scale: 0.35, rotation: 0 },
+  { fractal: "Magnet II", label: "Feather Fan", re: "0.9", im: "1.25", scale: 0.15, rotation: 0 },
+  { fractal: "Magnet II", label: "Origin Cusp", re: "-0.02", im: "0", scale: 0.05, rotation: 0 },
+  { fractal: "Magnet II", label: "Bead Chain", re: "2.0", im: "0.6", scale: 0.1, rotation: 0 },
+  { fractal: "Magnet II", label: "Deep Bubble", re: "1.49", im: "1.1504434926898104", scale: 3e-4, rotation: 0 },
   // Celtic equals Mandelbrot on the real axis, so Mandelbrot's real-axis
   // landmarks reappear in new shapes: Halo Bell is Mini Mandelbrot's
   // period-55 point. Baby Celtic (period 3, nucleus -1.754877666246693),

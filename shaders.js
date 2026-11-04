@@ -194,6 +194,7 @@ const int FTYPE_CELTIC  = 7;
 const int FTYPE_APOLLONIAN = 8;
 const int FTYPE_NOVA    = 9;
 const int FTYPE_SPIDER  = 10;
+const int FTYPE_MAGNET  = 11;
 
 const vec2 NEWTON_ROOT0 = vec2( 1.0,  0.0);
 const vec2 NEWTON_ROOT1 = vec2(-0.5,  0.8660254037844386);
@@ -724,6 +725,91 @@ vec3 renderNova(vec2 c) {
   return vec3(0.0);
 }
 
+// Magnet I and II (the plane: z starts at 0 and c is the pixel). The map is a
+// rational function squared; u_power is the Magnet's number, 1 or 2:
+//   I:  z -> ((z^2 + c - 1) / (2z + c - 2))^2
+//   II: z -> ((z^3 + 3(c-1)z + (c-1)(c-2)) / (3z^2 + 3(c-2)z + (c-1)(c-2) + 1))^2
+// An orbit ends one of three ways: it escapes (|z| > MAGNET_ESCAPE), it converges
+// to the superattracting fixed point z = 1, or it does neither within u_maxIter
+// (another attractor, a cycle: drawn black). The converging side is the plane's
+// far field and most of its area, the escaping side the bubbles inside the set.
+// Both ends are smoothed, so the colormap flows across each.
+//
+// The iteration runs on e = z - 1, not on z. The maps are the same, but near the
+// fixed point the formulas above subtract terms of size 1 to leave a result of
+// size c^2 (Magnet II) or c (Magnet I): next to c = 0 that loses every digit
+// float32 has, and the orbit stalls a few 1e-5 from 1 and never converges (a
+// noisy wash at the left tip of Magnet II). With z = 1 + e the quotient is
+//   I:  w = 1 + e^2 / (c + 2e)
+//   II: w = 1 + e^3 / (c^2 + 3ce + 3e^2)
+// (checked by expanding the two numerators and denominators in e), so the small
+// quantity is computed directly and keeps all its digits, and the next e is
+// (1 + u)^2 - 1 = 2u + u^2 for u = w - 1. Away from 1 nothing changes.
+//
+// Far out the map is z^2/4 (I) or z^2/9 (II), so |z|/q squares each step and the
+// escape count is i + 1 - log2(log(|z|/q) / log(R/q)). Next to 1 the error
+// squares (I) or cubes (II) each step, e -> K e^2 or K e^3 with K = 2/|c| or
+// 2/|c|^2, so s = (K e)^(1/(d-1)) (d = 2 or 3) is s -> s^d and the count is
+// i + 1 - log_d(log s / log S) where S is the s at which it counts as converged:
+// the same smoothing, with no jump between iterations. Float32 only, no deep zoom
+// path (MAGNET_MIN_SCALE in deepzoom.js).
+const float MAGNET_ESCAPE = 100.0;     // |z| past this ends the orbit
+const float MAGNET_S2 = 1e-4;          // S squared, S = 0.01: converged at |s| < S
+const float MAGNET_ESCAPE_CYCLE = 10.0;  // iterations per pass through the colormap, escaped side
+const float MAGNET_CONVERGE_CYCLE = 6.0;
+
+// A count's position in the colormap, run back down it on alternate passes (as
+// digitColor does) so a count that climbs toward the set never jumps from the
+// colormap's end to its start.
+float magnetFold(float t) {
+  return 1.0 - abs(1.0 - mod(t, 2.0));
+}
+
+// u = w - 1 for the error e = z - 1 and the pixel c (see above).
+vec2 magnetU(vec2 e, vec2 c) {
+  vec2 e2 = cMul(e, e);
+  vec2 num, den;
+  if (u_power < 1.5) {
+    num = e2;
+    den = c + 2.0 * e;
+  } else {
+    num = cMul(e2, e);
+    den = cMul(c, c) + 3.0 * cMul(c, e) + 3.0 * e2;
+  }
+  // A pole (den = 0) sends the orbit to infinity: a huge finite value, not a divide by zero
+  // (the clamps keep the next dot() inside float32 too).
+  float d = max(dot(den, den), 1e-24);
+  vec2 u = vec2(num.x * den.x + num.y * den.y, num.y * den.x - num.x * den.y) / d;
+  return clamp(u, -1e9, 1e9);
+}
+
+vec3 renderMagnet(vec2 c) {
+  vec2 e = vec2(-1.0, 0.0);               // z = 0
+  float q = u_power < 1.5 ? 4.0 : 9.0;    // far out, z -> z^2 / q
+  float kScale = (u_power < 1.5 ? 2.0 : 1.4142135) / max(length(c), 1e-8);   // s = kScale * |e|
+  float kScale2 = kScale * kScale;
+  float logD = u_power < 1.5 ? 1.0 : 1.5849625;   // log2 of the order of convergence (2 or 3)
+  for (int i = 0; i < 2000; i++) {
+    if (i >= u_maxIter) break;
+    vec2 u = magnetU(e, c);
+    vec2 w = u + vec2(1.0, 0.0);
+    float wm = dot(w, w);                 // |z_next|
+    if (wm > MAGNET_ESCAPE) {
+      float n = u_style == STYLE_BANDS ? float(i) + 1.0
+        : max(float(i) + 1.0 - log2(log(wm / q) / log(MAGNET_ESCAPE / q)), 0.0);
+      return styleColor(magnetFold(0.45 + n / MAGNET_ESCAPE_CYCLE));
+    }
+    e = 2.0 * u + cMul(u, u);             // (1 + u)^2 - 1
+    float s2 = dot(e, e) * kScale2;
+    if (s2 < MAGNET_S2) {
+      float k = u_style == STYLE_BANDS ? float(i) + 1.0
+        : float(i) + 1.0 - log2(max(log(max(s2, 1e-36)) / log(MAGNET_S2), 1.0)) / logD;
+      return styleColor(magnetFold(max(k, 0.0) / MAGNET_CONVERGE_CYCLE));
+    }
+  }
+  return vec3(0.0);
+}
+
 vec3 renderNewton(vec2 p) {
   // Matches _newton_chunk: z starts at the grid point itself.
   vec2 z = p;
@@ -1020,6 +1106,11 @@ void main() {
 
   if (u_ftype == FTYPE_NOVA) {
     gl_FragColor = vec4(renderNova(u_center + uv * u_scale * 2.0), 1.0);
+    return;
+  }
+
+  if (u_ftype == FTYPE_MAGNET) {
+    gl_FragColor = vec4(renderMagnet(u_center + uv * u_scale * 2.0), 1.0);
     return;
   }
 

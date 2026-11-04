@@ -9,7 +9,7 @@
 // the region that must be fully visible when the fractal first opens;
 // viewFromBounds fits it to the canvas's aspect ratio (see there).
 
-export const FTYPE = { ESCAPE: 0, SHIP: 1, TRICORN: 2, NEWTON: 3, CARPET: 4, GASKET: 5, PHOENIX: 6, CELTIC: 7, APOLLONIAN: 8, NOVA: 9, SPIDER: 10 };
+export const FTYPE = { ESCAPE: 0, SHIP: 1, TRICORN: 2, NEWTON: 3, CARPET: 4, GASKET: 5, PHOENIX: 6, CELTIC: 7, APOLLONIAN: 8, NOVA: 9, SPIDER: 10, MAGNET: 11 };
 
 // Phoenix's fixed p in z' = z^2 + c + p*z_prev: the classic real -0.5
 // (Ushiki). With c = 0.5667 in Julia mode that gives the well-known twin-lobe
@@ -63,6 +63,11 @@ export const FRACTAL_CONFIGS = {
   // z <- z^2 + c, then c <- z + c/2, from z = c = the pixel (see renderEscapeFast). Float32 only, no deep zoom:
   // SPIDER_MIN_SCALE (deepzoom.js) stops the zoom where float32 gives out.
   "Spider":       { label: "Spider", ftype: FTYPE.SPIDER, power: 2, juliaC: null,                       view: [-1.62, 0.44, -1.3, 1.3], dual: false, category: "zoom", defaultColormap: "Turbo" },
+  // Magnet I and II (see renderMagnet): Mandelbrot-type planes of a rational map,
+  // z starting at 0 and c the pixel. For this type `power` is the Magnet's number
+  // (1 or 2), not an exponent. Float32 only: MAGNET_MIN_SCALE (deepzoom.js) stops the zoom.
+  "Magnet I":     { label: "Magnet I", ftype: FTYPE.MAGNET, power: 1, juliaC: null,                    view: [-0.6, 3.35, -2.35, 2.35],   dual: false, category: "zoom", defaultColormap: "Classic" },
+  "Magnet II":    { label: "Magnet II", ftype: FTYPE.MAGNET, power: 2, juliaC: null,                   view: [-0.45, 2.6, -1.8, 1.8],   dual: false, category: "zoom", defaultColormap: "Plasma" },
   // Digit-test fractals (see FRAG_SRC's renderDigitFractal) — defined on
   // the unit square, so centered there with a little margin. power is
   // unused by these but kept non-null for consistency with the others.

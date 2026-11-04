@@ -92,17 +92,18 @@ test.describe("the style API", () => {
   test("a view draws Smooth when its fractal can't do the chosen style", async ({ page }) => {
     const r = await page.evaluate(() => {
       const drawn = (fractal) => { window["__vt"].fractal(fractal); setColorStyle({ style: "bands" }); return colorStyleFor(mainState).glsl; };
-      return { mandelbrot: drawn("Mandelbrot"), phoenix: drawn("Phoenix"), spider: drawn("Spider"), newton: drawn("Newton z³"), carpet: drawn("Carpet") };
+      return { mandelbrot: drawn("Mandelbrot"), phoenix: drawn("Phoenix"), spider: drawn("Spider"), magnet1: drawn("Magnet I"), magnet2: drawn("Magnet II"),
+        newton: drawn("Newton z³"), carpet: drawn("Carpet") };
     });
-    // Newton and Carpet color by their own schemes; Phoenix has Smooth and Bands; Spider those and more (spider.spec.mjs).
-    expect(r).toEqual({ mandelbrot: 1, phoenix: 1, spider: 1, newton: 0, carpet: 0 });
+    // Newton and Carpet color by their own schemes; Phoenix and the Magnets have Smooth and Bands; Spider those and more (spider.spec.mjs).
+    expect(r).toEqual({ mandelbrot: 1, phoenix: 1, spider: 1, magnet1: 1, magnet2: 1, newton: 0, carpet: 0 });
   });
 
   test("Glow is offered on the types with a derivative and drawn as Smooth elsewhere", async ({ page }) => {
     const r = await page.evaluate(() => {
       const drawn = (fractal) => { window["__vt"].fractal(fractal); setColorStyle({ style: "glow" }); return colorStyleFor(mainState); };
       const out = {};
-      for (const f of ["Mandelbrot", "Burn. Ship", "Tricorn", "Celtic", "Multibrot³", "Julia:Rabbit", "Phoenix", "Julia:Phoenix", "Spider", "Newton z³", "Nova", "Carpet", "Gasket", "Apollonian"]) {
+      for (const f of ["Mandelbrot", "Burn. Ship", "Tricorn", "Celtic", "Multibrot³", "Julia:Rabbit", "Phoenix", "Julia:Phoenix", "Spider", "Newton z³", "Nova", "Magnet I", "Magnet II", "Carpet", "Gasket", "Apollonian"]) {
         const c = drawn(f);
         out[f] = `${c.glsl}/${c.variant}`;
       }
@@ -110,7 +111,7 @@ test.describe("the style API", () => {
     });
     // glsl 2 / variant 1 is Glow; 0/0 is Smooth.
     expect(r).toEqual({ "Mandelbrot": "2/1", "Burn. Ship": "2/1", "Tricorn": "2/1", "Celtic": "2/1", "Multibrot³": "2/1",
-      "Julia:Rabbit": "2/1", "Phoenix": "0/0", "Julia:Phoenix": "0/0", "Spider": "0/0", "Newton z³": "0/0", "Nova": "0/0", "Carpet": "0/0", "Gasket": "0/0",
+      "Julia:Rabbit": "2/1", "Phoenix": "0/0", "Julia:Phoenix": "0/0", "Spider": "0/0", "Newton z³": "0/0", "Nova": "0/0", "Magnet I": "0/0", "Magnet II": "0/0", "Carpet": "0/0", "Gasket": "0/0",
       "Apollonian": "0/0" });
   });
 });

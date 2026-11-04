@@ -14,7 +14,10 @@ import { FTYPE } from "./configs.js?v=1.66.0";
 // which compiled version of the escape-time program draws it (COLOR_VARIANT
 // in FRAG_SRC: 0 needs no per-iteration work), `types` the fractal types it
 // works on (the escape-time types when left out).
-export const ESCAPE_TIME_TYPES = [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC, FTYPE.PHOENIX, FTYPE.SPIDER];
+// Magnet I and II join the list for Smooth and Bands only (like Phoenix): the styles with `types`
+// stay off for them. Their orbits end at the fixed point 1 or escape, which gives the derivative
+// and the stripe and trap averages nothing to show (see renderMagnet in shaders.js).
+export const ESCAPE_TIME_TYPES = [FTYPE.ESCAPE, FTYPE.SHIP, FTYPE.TRICORN, FTYPE.CELTIC, FTYPE.PHOENIX, FTYPE.SPIDER, FTYPE.MAGNET];
 export const COLOR_STYLES = [
   { id: "smooth", glsl: 0, variant: 0, label: "Smooth" },
   { id: "bands", glsl: 1, variant: 0, label: "Bands" },
