@@ -205,7 +205,9 @@ function reference(num, cr, ci, maxIter) {
 for (const [name, , , num] of MAGNETS) {
   test(`${name}: the pixels the app draws black are the ones that never end in a float64 reference`, async ({ page }) => {
     // Viridis has no pure black, so a black pixel is an orbit that neither escaped nor converged.
-    for (const view of [{}, { cx: 1.0, cy: 1.2, scale: 0.4 }]) {
+    // (the second view is the black two-lobed shape of Magnet II on the real axis, with the edge of Magnet I's big discs;
+    // a view of the dusty lace gives float32 and float64 genuinely different orbits at many pixels, so it isn't compared)
+    for (const view of [{}, { cx: 1.65, cy: 0, scale: 0.35 }]) {
       await showMagnet(page, name, { ...view, maxIter: 300 }, "Viridis");
       const png = await canvasPng(page);
       const { geom } = await page.evaluate(() => {
