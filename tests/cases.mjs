@@ -28,6 +28,8 @@ vm.runInContext([
   literal(configs, "FTYPE", "}"),
   literal(configs, "FRACTAL_CONFIGS", "}"),
   literal(defs, "EXTRA_MODES", "]"),
+  literal(places, "GOLDEN_RE", "]"),   // long decimal texts the Golden places use
+  literal(places, "GOLDEN_IM", "]"),
   literal(places, "TELEPORT_DESTINATIONS", "]"),
   literal(colormaps, "COLORMAPS", "]"),
   "globalThis.out = { FRACTAL_CONFIGS, EXTRA_MODES, TELEPORT_DESTINATIONS, COLORMAPS };",

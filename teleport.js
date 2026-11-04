@@ -4,15 +4,15 @@
 // showHud); the scripts before and after it call cancelTeleport etc.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { FRACTAL_CONFIGS } from "./configs.js?v=1.64.0";
-import { viewFromBounds } from "./fractal-defs.js?v=1.64.0";
-import { TELEPORT_DESTINATIONS } from "./places.js?v=1.64.0";
-import { applyAutoIter, currentName, dualActive, els, mainCanvasAspect, mainState, mode, pushHistory, setActivePane } from "./state.js?v=1.64.0";
-import { applyDefaultColormap, markInteracting } from "./state-colors.js?v=1.64.0";
-import { renderAll } from "./render-layout.js?v=1.64.0";
-import { normalizeAngle } from "./view-math.js?v=1.64.0";
-import { selectFractal } from "./modes.js?v=1.64.0";
-import { prefersReducedMotion, showHud } from "./compass-ui.js?v=1.64.0";
+import { FRACTAL_CONFIGS } from "./configs.js?v=1.64.1";
+import { viewFromBounds } from "./fractal-defs.js?v=1.64.1";
+import { TELEPORT_DESTINATIONS } from "./places.js?v=1.64.1";
+import { applyAutoIter, currentName, dualActive, els, mainCanvasAspect, mainState, mode, pushHistory, setActivePane } from "./state.js?v=1.64.1";
+import { applyDefaultColormap, markInteracting } from "./state-colors.js?v=1.64.1";
+import { renderAll } from "./render-layout.js?v=1.64.1";
+import { exactFromPlace, normalizeAngle, setCenter } from "./view-math.js?v=1.64.1";
+import { selectFractal } from "./modes.js?v=1.64.1";
+import { prefersReducedMotion, showHud } from "./compass-ui.js?v=1.64.1";
 
 // ---------------------------------------------------------------- teleport ("Surprise me")
 
@@ -187,6 +187,11 @@ export function flyTo(st, d, target, landingIndex, spinSign) {
       // Exact landing: the path's last point can be a few ulps off, which
       // matters at 1e-12 scales.
       Object.assign(st, target);
+      // A place whose text has more digits than a double (Golden Dive) lands on its exact center, so a deeper
+      // zoom from here stays on the point; any other landing clears the previous view's exact pair.
+      const exact = landingIndex >= 0 ? exactFromPlace(d) : null;
+      if (exact) setCenter(st, exact.cx, exact.cy, exact.ex, exact.ey, exact.bits);
+      else setCenter(st, st.cx, st.cy);
       // A slider-locked maxIter can be far too low for the new place (a
       // lock at 300 lands Seahorse Valley all black), so landing hands
       // maxIter back to auto mode; the settle's applyAutoIter sets it. A

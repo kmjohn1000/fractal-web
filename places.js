@@ -20,6 +20,15 @@
 // Three-Way Branch is a Misiurewicz point where three arms meet; Antenna
 // Minibrot is the period-4 minibrot (nucleus -0.156520166834 +
 // 1.032247108923i), shifted onto its body's visual center.
+//
+// A place's re and im are decimal text. Most carry as many digits as a double holds; Golden Glide and Golden Dive
+// carry 160, because their center is a self-similar point, (1/sqrt5, 2/sqrt5), where a zoom never runs out of
+// structure and a double's rounding (about 1e-16 off) would slide the view away from it. Landing on a place with
+// more digits than a double sets the exact center from all of them (view-math.js exactFromPlace, teleport.js
+// flyTo), so zooming on from the place by hand stays on the point. 1/sqrt5 and 2/sqrt5 truncated at 160 digits,
+// computed in integers and checked (2 * re = im exactly; 5 * re^2 within 1e-160 of 1).
+export const GOLDEN_RE = "0.4472135954999579392818347337462552470881236719223051448541794490821041851275609798828828816757564549939016352301547567008506535448894147727172720243066905417733";
+export const GOLDEN_IM = "0.8944271909999158785636694674925104941762473438446102897083588981642083702551219597657657633515129099878032704603095134017013070897788295454345440486133810835466";
 export const TELEPORT_DESTINATIONS = [
   { fractal: "Mandelbrot", label: "Seahorse Valley", re: "-0.743643887037151", im: "0.131825904205330", scale: 4e-10 },
   { fractal: "Mandelbrot", label: "Elephant Valley", re: "0.2825", im: "0.0105", scale: 1.2e-2, rotation: Math.PI },
@@ -154,8 +163,8 @@ export const TELEPORT_DESTINATIONS = [
   // mirrored, every 9 + 4 sqrt(5) = phi^6 ~ 17.94x of zoom. Golden Dive is
   // Golden Glide's view 17.94^8 x deeper.
   { fractal: "Apollonian", label: "Circle Fifteen", re: "0", im: "0.215", scale: 0.2 },
-  { fractal: "Apollonian", label: "Golden Glide", re: String(1 / Math.sqrt(5)), im: String(2 / Math.sqrt(5)), scale: 5e-2 },
-  { fractal: "Apollonian", label: "Golden Dive", re: String(1 / Math.sqrt(5)), im: String(2 / Math.sqrt(5)), scale: 5e-2 / (9 + 4 * Math.sqrt(5)) ** 8, rotation: 0, spiral: true },
+  { fractal: "Apollonian", label: "Golden Glide", re: GOLDEN_RE, im: GOLDEN_IM, scale: 5e-2 },
+  { fractal: "Apollonian", label: "Golden Dive", re: GOLDEN_RE, im: GOLDEN_IM, scale: 5e-2 / (9 + 4 * Math.sqrt(5)) ** 8, rotation: 0, spiral: true },
   // Jacob's Ladder: the user's own find (a share link), a view near Golden Dive's fixed point and about 1.7x deeper,
   // turned 1.0119 rad. Its digits are the link's, not 1/sqrt(5): the center sits a view-width or two off the fixed point.
   { fractal: "Apollonian", label: "Jacob's Ladder", re: "0.4472135954957291", im: "0.8944271910020332", scale: 2.7838699774672232e-12, rotation: 1.011881497742925 },

@@ -162,6 +162,37 @@ export function exactFromLink(params, kx, ky, x, y, scale) {
   return ex !== null && ey !== null && fromExact(ex, F) === x && fromExact(ey, F) === y ? [ex, ey, F] : null;
 }
 
+// ---------------------------------------------------------------- long-decimal places
+// A place (places.js) names its center as decimal text, re and im. A double holds 15-17 of its digits; a place that
+// is a self-similar point (Golden Dive) can carry many more, and landing on it then sets the exact center from all
+// of them, so a deeper zoom stays on the structure instead of sliding off the double's rounding.
+export const LONG_DECIMAL_DIGITS = 18;  // significant digits past which a place's text is longer than a double
+
+// A plain decimal ("-0.447213...", digits and at most one point, no exponent) as a fixed-point BigInt with F
+// fraction bits, rounded to nearest; null for anything else.
+export function exactFromDecimal(str, F) {
+  const m = typeof str === "string" ? /^(-?)(\d*)\.?(\d*)$/.exec(str) : null;
+  if (!m || (m[2] === "" && m[3] === "")) return null;
+  const den = 10n ** BigInt(m[3].length);
+  const v = ((BigInt(m[2] + m[3]) << BigInt(F)) * 2n + den) / (2n * den);
+  return m[1] ? -v : v;
+}
+// How many significant digits a decimal's text carries (0 if it is not a plain decimal).
+export function decimalDigits(str) {
+  const m = typeof str === "string" ? /^-?(\d*)\.?(\d*)$/.exec(str) : null;
+  return m ? (m[1] + m[2]).replace(/^0+/, "").length : 0;
+}
+// The exact center a place's text names, or null when neither coordinate has more digits than a double holds
+// (the doubles are then the center, as always). The fraction length covers the text's own digits (they are the
+// precision there is) and what the place's scale needs, in the 64-bit steps exactBitsFor uses.
+export function exactFromPlace(place) {
+  const digits = Math.max(decimalDigits(place.re), decimalDigits(place.im));
+  if (digits < LONG_DECIMAL_DIGITS) return null;
+  const bits = Math.max(exactBitsFor(place.scale), 64 * Math.ceil((digits * Math.log2(10) + 8) / 64));
+  const ex = exactFromDecimal(place.re, bits), ey = exactFromDecimal(place.im, bits);
+  return ex === null || ey === null ? null : { ex, ey, bits, cx: fromExact(ex, bits), cy: fromExact(ey, bits) };
+}
+
 // Sets the center outright. ex and ey (BigInt, ef fraction bits) are optional; without them the doubles are the
 // exact center.
 export function setCenter(state, cx, cy, ex = null, ey = null, ef = EXACT_BITS) {

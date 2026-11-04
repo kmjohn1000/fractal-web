@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.64.1 — 2026-11-03
+- Golden Glide and Golden Dive (the Apollonian gasket's self-similar point) now land on their exact center, written to 160 digits, so you can keep zooming from either place by hand, down to the floor, and the view stays on the point instead of sliding off a double's rounding.
+
 ## 1.64.0 — 2026-11-03
 - The Apollonian gasket now zooms to a hundred-quintillion-quintillion-quintillion-quintillion-quintillion times (1e100) with a pan and a pinch that follow your finger at every depth; it stopped near 1e12 times before. Share links into a deep Apollonian view carry its exact center and reopen on the same spot; older links open as before.
 

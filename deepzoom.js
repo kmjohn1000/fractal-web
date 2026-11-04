@@ -2,8 +2,8 @@
 // offsets. No DOM references (no document, els, window or canvas): pure math on numbers and arrays.
 // Needs FTYPE and PHOENIX_P from configs.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { FTYPE, PHOENIX_P } from "./configs.js?v=1.64.0";
-import { EXACT_FRAC, EXACT_ONE, exactCenter, toExact } from "./view-math.js?v=1.64.0";
+import { FTYPE, PHOENIX_P } from "./configs.js?v=1.64.1";
+import { EXACT_FRAC, EXACT_ONE, exactCenter, toExact } from "./view-math.js?v=1.64.1";
 
 // ---------------------------------------------------------------- Phase 3: deep zoom
 // Below this scale, plain float32 starts losing pixels to precision collapse
