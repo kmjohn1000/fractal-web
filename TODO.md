@@ -284,8 +284,15 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       refresh (it needs the regrouped picker from 1.44.1, see Done, too).
       The regrouping shipped first, on its own; the rows go into
       `PICKER_LAYOUT`'s loop in `compass-ui.js`.
-- [ ] Picker grouping and order (user question 2026-11-05; proposal, not
-      approved, not started). Display only, in `PICKER_LAYOUT`
+- [ ] Picker grouping and order (user question 2026-11-05). DONE 2026-11-05
+      (`7e45413`, 1.68.1; 538 tests passed on webkit-iphone15 and
+      chromium-desktop across the app, places-sheet, sine, magnet, spider and
+      cold-open specs): Magnet I and II and Sine plane moved into the
+      Mandelbrot family, Sine Julia into the Julia sets, family ordered
+      classic first then by departure. STILL OPEN, not approved: splitting
+      "More to zoom into" (Newton and Nova; Apollonian, Carpet and Gasket)
+      into two titled groups, and the blurb wording for picker cards variant
+      B. The proposal as first written: display only, in `PICKER_LAYOUT`
       (`fractal-defs.js`): Sine Julia is a single Julia set, so it belongs
       under "Julia sets"; Sine plane is the parameter map those sets come
       from (dual view on), so it belongs with the Mandelbrot family, as
