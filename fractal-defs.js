@@ -3,10 +3,10 @@
 // lsystem.js/koch.js (IFS_SYSTEMS, LINE_CURVES), which only its function bodies use.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it;
 // tests/cases.mjs reads this file's text and accepts the `export`).
-import { FTYPE } from "./configs.js?v=1.68.0";
-import { LINE_CURVES } from "./dragon.js?v=1.68.0";
-import { IFS_SYSTEMS } from "./ifs.js?v=1.68.0";
-import { fromExact } from "./view-math.js?v=1.68.0";
+import { FTYPE } from "./configs.js?v=1.68.1";
+import { LINE_CURVES } from "./dragon.js?v=1.68.1";
+import { IFS_SYSTEMS } from "./ifs.js?v=1.68.1";
+import { fromExact } from "./view-math.js?v=1.68.1";
 
 // The fractal picker's layout, in display order: sections with a title, each
 // split into titled groups of tiles. Display only: a key is a FRACTAL_CONFIGS
@@ -15,9 +15,11 @@ import { fromExact } from "./view-math.js?v=1.68.0";
 // the zoom-only buttons (box zoom, Surprise me) do, not where a tile sits.
 export const PICKER_LAYOUT = [
   { label: "Zoom forever", groups: [
-    { label: "Mandelbrot family", keys: ["Mandelbrot", "Burn. Ship", "Tricorn", "Celtic", "Multibrot³", "Phoenix", "Spider"] },
-    { label: "Julia sets", keys: ["Julia:Spiral", "Julia:Rabbit", "Julia:Dragon", "Julia:Phoenix"] },
-    { label: "More to zoom into", keys: ["Newton z³", "Nova", "Magnet I", "Magnet II", "Sine Julia", "Sine plane", "Apollonian", "Carpet", "Gasket"] },
+    // Parameter maps (c is the pixel): the classic first, then variants by how far the formula departs from it
+    // (the power, folds and conjugates, a memory term, other maps, the newest last).
+    { label: "Mandelbrot family", keys: ["Mandelbrot", "Multibrot³", "Burn. Ship", "Tricorn", "Celtic", "Phoenix", "Spider", "Magnet I", "Magnet II", "Sine plane"] },
+    { label: "Julia sets", keys: ["Julia:Spiral", "Julia:Rabbit", "Julia:Dragon", "Julia:Phoenix", "Sine Julia"] },
+    { label: "More to zoom into", keys: ["Newton z³", "Nova", "Apollonian", "Carpet", "Gasket"] },
   ] },
   { label: "Watch it grow", groups: [
     { label: "Build level by level", keys: ["koch", "tree", "hexaflake", "dragon", "hilbert", "gosper", "arrowhead", "penrose"] },

@@ -107,16 +107,17 @@ for (const [name, slug, palette, , edge] of MAGNETS) {
     expect(v.s).toBe(v.b);
   });
 
-  test(`the picker lists ${name} beside Nova, with its thumbnail`, async ({ page }) => {
+  test(`the picker lists ${name} with the Mandelbrot family, with its thumbnail`, async ({ page }) => {
     const r = await page.evaluate(async (n) => {
       const group = PICKER_LAYOUT.flatMap((s) => s.groups).find((g) => g.keys.includes(n));
       const tile = document.querySelector(`#fractalTypeRow button[data-name="${n}"]`);
       const img = tile.querySelector("img");
       img.loading = "eager";
       await img.decode();
-      return { keys: group.keys, text: tile.textContent.trim(), w: img.naturalWidth, h: img.naturalHeight, src: img.getAttribute("src") };
+      return { group: group.label, keys: group.keys, text: tile.textContent.trim(), w: img.naturalWidth, h: img.naturalHeight, src: img.getAttribute("src") };
     }, name);
-    expect(r.keys).toContain("Nova");
+    expect(r.group).toBe("Mandelbrot family");
+    expect(r.keys).toContain("Spider");
     expect(r.text).toBe(name);
     expect(r.src).toBe(`icons/thumbs/${slug}.webp`);
     expect(r.w).toBeGreaterThan(0);

@@ -162,10 +162,11 @@ test("both open as full, colorful pictures in the Inferno palette, whole box on 
   }
 });
 
-test("the picker lists both after the Magnets, with their thumbnails", async ({ page }) => {
+test("the picker lists Sine Julia with the Julia sets and Sine plane after the Magnets, with their thumbnails", async ({ page }) => {
   const r = await page.evaluate(async () => {
-    const group = PICKER_LAYOUT.flatMap((s) => s.groups).find((g) => g.keys.includes("Sine Julia"));
-    const out = { keys: group.keys, tiles: [] };
+    const groups = PICKER_LAYOUT.flatMap((s) => s.groups);
+    const julia = groups.find((g) => g.keys.includes("Sine Julia")), plane = groups.find((g) => g.keys.includes("Sine plane"));
+    const out = { juliaGroup: julia.label, juliaKeys: julia.keys, planeGroup: plane.label, keys: plane.keys, tiles: [] };
     for (const name of ["Sine Julia", "Sine plane"]) {
       const tile = document.querySelector(`#fractalTypeRow button[data-name="${name}"]`);
       const img = tile.querySelector("img");
@@ -175,8 +176,10 @@ test("the picker lists both after the Magnets, with their thumbnails", async ({ 
     }
     return out;
   });
-  expect(r.keys.indexOf("Sine Julia")).toBe(r.keys.indexOf("Magnet II") + 1);
-  expect(r.keys.indexOf("Sine plane")).toBe(r.keys.indexOf("Magnet II") + 2);
+  expect(r.juliaGroup).toBe("Julia sets");
+  expect(r.juliaKeys).toContain("Julia:Rabbit");
+  expect(r.planeGroup).toBe("Mandelbrot family");
+  expect(r.keys.indexOf("Sine plane")).toBe(r.keys.indexOf("Magnet II") + 1);
   expect(r.tiles.map((t) => t.text)).toEqual(["Sine Julia", "Sine plane"]);
   expect(r.tiles.map((t) => t.src)).toEqual(["icons/thumbs/sine-julia.webp", "icons/thumbs/sine-plane.webp"]);
   for (const t of r.tiles) { expect(t.w).toBeGreaterThan(0); expect(t.w).toBe(t.h); }

@@ -31,5 +31,5 @@
     "@capacitor/share": "^8.0.2",
     "@capacitor/splash-screen": "^8.0.2"
   },
-  "version": "1.68.0"
+  "version": "1.68.1"
 }

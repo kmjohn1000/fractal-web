@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.68.1 — 2026-11-05
+- The picker groups the parameter maps together: Magnet I, Magnet II and Sine plane join the Mandelbrot family, Sine Julia joins the Julia sets, and the family runs from the classic through variants by how far the formula departs from it (Multibrot³ next, then Burning Ship, Tricorn, Celtic, Phoenix, Spider). The Places sheet follows the new order.
+
 ## 1.68.0 — 2026-11-04
 - Added Sine Julia (the Julia set of z → L sin z, L = 1 + 0.4i, a field of spirals) and Sine plane (z → sin z + cosh c), with five places each. The plane has a dual view that shows its Julia sets. Smooth, Bands, Stripes, Orbs and Rays work on both; zoom stops at 1e-4.
 
