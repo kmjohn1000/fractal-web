@@ -65,12 +65,15 @@ git-ignored file.
          WebKit's helpers and Chrome's crash handlers have it in a live
          run, so browsers are swept only when no other Playwright run is
          alive, crash handlers are never killed, and only this run's own
-         test-server port is swept; see `tests/README.md`). Still open: a smoke check that runs each store, preview and
-         thumbnail script against a scratch output folder (the conversion
-         broke `render_thumbs.mjs` silently once); a lint check that two
-         modules never export the same name (today that only throws under
-         the test hook); add `espree` to `package.json` (lint relies on
-         eslint pulling it in; a lockfile change, so ask first).
+         test-server port is swept; see `tests/README.md`). DONE 2026-11-05: a
+         lint check that two modules never export the same name
+         (`scripts/check-duplicate-exports.mjs`, in `npm run lint`); a smoke
+         check that runs eight store, preview and thumbnail scripts against a
+         scratch `SCRIPT_OUT_DIR` (`npm run smoke:scripts`, about 2 minutes,
+         8 of 8 ok on `main` after the merge; see `tests/README.md`;
+         `release-ios.mjs` and the video scripts are not covered); `espree`
+         added to `package.json` (`a6fe188`). Merged from branch
+         `worktree-agent-aec28fc67cf62b97b`.
       5. DONE 2026-11-02: 1.55.5 (build 455) released: full suite 2963 of
          2963 on the tree before the tag, tag `v1.55.5` pushed after the
          pre-push suite passed on its second attempt (the first failed two
