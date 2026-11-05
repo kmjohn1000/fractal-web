@@ -7,16 +7,19 @@
 //
 //   node scripts/render_look_thumbs.mjs
 //
+// Set SCRIPT_OUT_DIR=<folder> to write <folder>/icons/looks/ instead of the
+// project's icons/looks/ (what `npm run smoke:scripts` does).
+//
 // The Looks are read from color-sheet.js, so a new Look gets a swatch without
 // editing this file.
 import { chromium } from "@playwright/test";
 import { spawn } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import vm from "node:vm";
 
 const root = new URL("..", import.meta.url).pathname;
-const outDir = join(root, "icons/looks");
+const outDir = join(process.env.SCRIPT_OUT_DIR ? resolve(process.env.SCRIPT_OUT_DIR) : root, "icons/looks");
 const PORT = 8750;
 const SIZE = 192; // px per swatch: 3x the 64 px swatch the sheet shows, so it's sharp on a 3x phone
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

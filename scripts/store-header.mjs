@@ -19,11 +19,12 @@
 // listing/<version>/search-results-3840x2560.png, beside the version's
 // listing-<version>.md (git-ignored), keeping an existing file of the same
 // name as ...png.bak. Fails on a page error, the error banner or a lost WebGL
-// context.
+// context. Set SCRIPT_OUT_DIR=<folder> to use <folder>/listing/<version>/ instead
+// (the search form reads 2-picker.png from there too; `npm run smoke:scripts`).
 import { webkit } from "@playwright/test";
 import { spawn } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { PNG } from "pngjs";
 
 const args = process.argv.slice(2);
@@ -36,7 +37,7 @@ if (!/^\d+\.\d+\.\d+$/.test(shotVersion || "")) {
 
 const root = new URL("..", import.meta.url).pathname;
 // Both images go in the version's listing folder, beside listing-<version>.md.
-const OUT_DIR = join(root, "listing", shotVersion);
+const OUT_DIR = join(process.env.SCRIPT_OUT_DIR ? resolve(process.env.SCRIPT_OUT_DIR) : root, "listing", shotVersion);
 const OUT = join(OUT_DIR, SEARCH ? "search-results-3840x2560.png" : "product-page-header-3840x1646.png");
 const PORT = 8746;
 const DRIVER = join(root, "tests/driver.js");

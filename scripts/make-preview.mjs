@@ -22,12 +22,15 @@
 // frames folder must not exist yet: move it to the Trash first to re-render.
 // --quick renders a tenth of the frames, to check the storyboard (and copies
 // nothing).
+// Set SCRIPT_OUT_DIR=<folder> to write under <folder>/store-assets/ and
+// <folder>/listing/ instead of the project's (what `npm run smoke:scripts` does).
 import { webkit } from "@playwright/test";
 import { spawn, spawnSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 const root = new URL("..", import.meta.url).pathname;
+const outRoot = process.env.SCRIPT_OUT_DIR ? resolve(process.env.SCRIPT_OUT_DIR) : root;
 const PORT = 8746;
 const FPS = 30;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -50,7 +53,7 @@ if (!version || !T) {
   process.exit(1);
 }
 
-const outDir = join(root, "store-assets/preview", version, target);
+const outDir = join(outRoot, "store-assets/preview", version, target);
 const framesDir = join(outDir, quick ? "frames-quick" : "frames");
 if (existsSync(framesDir)) {
   console.error(`${framesDir} already exists: move it to the Trash first`);
@@ -306,7 +309,7 @@ writeFileSync(join(outDir, "README.txt"), `Rendered by scripts/make-preview.mjs 
 // previews live there too); the frames stay behind in store-assets, which is
 // the throwaway folder.
 if (!quick) {
-  const previews = join(root, "listing", version, "previews");
+  const previews = join(outRoot, "listing", version, "previews");
   mkdirSync(previews, { recursive: true });
   copyFileSync(mp4, join(previews, T.out));
   console.log(`copied to ${join(previews, T.out)}`);
