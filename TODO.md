@@ -259,6 +259,22 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       refresh (it needs the regrouped picker from 1.44.1, see Done, too).
       The regrouping shipped first, on its own; the rows go into
       `PICKER_LAYOUT`'s loop in `compass-ui.js`.
+- [ ] Picker grouping and order (user question 2026-11-05; proposal, not
+      approved, not started). Display only, in `PICKER_LAYOUT`
+      (`fractal-defs.js`): Sine Julia is a single Julia set, so it belongs
+      under "Julia sets"; Sine plane is the parameter map those sets come
+      from (dual view on), so it belongs with the Mandelbrot family, as
+      would Magnet I and II (parameter maps too; unverified whether the user
+      wants that long a family). Within a group the order is hand-placed with
+      newer fractals appended (no per-fractal usage data exists in the repo),
+      so a rule would be: the classic first, then variants by how far the
+      formula departs (power, folds and conjugates, memory, then the newest).
+      "More to zoom into" is a grab bag (Newton and Nova; Apollonian, Carpet
+      and Gasket) that could split into two titled groups. Check first what
+      `group: "julia"` and `dualParent` drive besides the picker, and that the
+      Places sheet (sections follow picker order) and `app.spec.mjs` (each key
+      appears once) still hold. Tier 2; patch bump. Do it together with
+      picker cards variant B (above), whose blurb file is keyed by group.
 - [ ] Peano curve, shaded by component with the colormaps (user idea
       2026-10-23): the 3x3 space-filling curve (nine sub-squares per level,
       snaking through them), colored along its length so each component
