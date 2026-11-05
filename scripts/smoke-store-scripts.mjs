@@ -14,7 +14,7 @@
 // other browser. Not part of `npm run lint`; not part of the visual suite.
 //
 // Left out: release-ios.mjs (needs Xcode and the simulators), make-short.mjs and
-// make-relief-video.mjs (long renders into the external drive), style-bench.mjs,
+// make-relief-video.mjs (long video renders, not read for this check), style-bench.mjs,
 // oracle-compare.mjs and default-identity.mjs (measurement tools, not output scripts).
 // The ports the scripts use are fixed (9334 render_thumbs, 8745 store-screenshots, 8746
 // store-header and make-preview, 8750 render_look_thumbs), so don't run this beside another
