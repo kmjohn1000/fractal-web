@@ -505,6 +505,35 @@ run the specs that cover what you changed (`npx playwright test
 tests/visual/<file>.spec.mjs`). Failures leave diffs in
 `test-results/report/index.html`.
 
+## Checks outside the visual suite
+
+Two safety nets for the ES-module layout; neither needs a browser or the suite.
+
+- `npm run lint` also runs `scripts/check-duplicate-exports.mjs`: it fails when two
+  of the modules `app.js` lists in `exposeForTests` export the same name (a
+  declaration, an `export { a, b as c }` list, or a re-export `export { x } from`; a
+  re-export counts as an export of the re-exporting file, as the hook counts it).
+  `test-hooks.js` throws on the same thing, but only under automation, so without this
+  check a duplicate first shows up as a page error in a spec run. It parses with
+  espree, which eslint pulls in (not a direct dependency of this repo).
+- `npm run smoke:scripts` (`scripts/smoke-store-scripts.mjs`, not part of lint, about
+  two minutes) runs the build, thumbnail, store and preview scripts headless against
+  a scratch folder and checks each exits 0 and wrote files of the right size:
+  `build-www`, `render_thumbs` (a WebGL tile and an IFS tile), `render_place_thumbs`
+  (two places), `render_look_thumbs`, `store-screenshots` (three shots, iPhone slot),
+  `store-header` (both forms) and `make-preview --quick`. The scripts write there
+  because they honor `SCRIPT_OUT_DIR=<folder>` (`icons/...`, `listing/`,
+  `store-assets/`, `www/` and `ios/version.xcconfig` move under it), and the check
+  fails if any of those real paths changed during the run. A step that times out has
+  its own process group killed, nothing else. `-- --only=thumbs,store-header` runs
+  some steps, `-- --keep` keeps the scratch folder. Left out: `release-ios.mjs`
+  (needs Xcode and the simulators), `make-short.mjs` and `make-relief-video.mjs`
+  (long video renders, not read for this check), and the measurement tools (`style-bench`,
+  `oracle-compare`, `default-identity`). The scripts use fixed ports (9334, 8745,
+  8746, 8750), so don't run it beside another session's run of the same scripts.
+  Run it after a change to how modules load or are named (an export a script reads),
+  to the store scripts, or to `tests/driver.js`.
+
 ## Baselines
 
 The baselines are about 200 MB of PNGs, so they're git-ignored and stay

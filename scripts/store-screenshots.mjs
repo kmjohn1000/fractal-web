@@ -17,17 +17,21 @@
 // each version's folders are complete). The previous version is the newest
 // earlier folder with renders/; without one, everything is new.
 //
+// Set SCRIPT_OUT_DIR=<folder> to write <folder>/listing/<version>/ instead of the
+// project's listing/<version>/ (what `npm run smoke:scripts` does); the previous
+// version is then looked up there too.
+//
 // Each shot puts the app in its state the way tests/driver.js does (no
 // Surprise-me flight), then waits for the frame to finish refining. Fails on
 // a wrong pixel size, a page error, the error banner or a lost WebGL context.
 import { webkit } from "@playwright/test";
 import { spawn } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { PNG } from "pngjs";
 
 const root = new URL("..", import.meta.url).pathname;
-const LISTING = join(root, "listing");
+const LISTING = join(process.env.SCRIPT_OUT_DIR ? resolve(process.env.SCRIPT_OUT_DIR) : root, "listing");
 const PORT = 8745;
 const DRIVER = join(root, "tests/driver.js");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -145,7 +149,7 @@ function changedBlocks(a, b) {
 function previousVersion(version) {
   const parse = (v) => v.split(".").map(Number);
   const older = (a, b) => { const [x, y] = [parse(a), parse(b)]; return x[0] - y[0] || x[1] - y[1] || x[2] - y[2]; };
-  return readdirSync(LISTING)
+  return (existsSync(LISTING) ? readdirSync(LISTING) : [])
     .filter((d) => /^\d+\.\d+\.\d+$/.test(d) && older(d, version) < 0 && existsSync(join(LISTING, d, "renders")))
     .sort(older).pop() || null;
 }

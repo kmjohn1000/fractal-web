@@ -5,9 +5,12 @@
 // default view or colormap:
 //
 //   node scripts/render_thumbs.mjs
+//   node scripts/render_thumbs.mjs --only=mandelbrot,fern   just those tiles (file names without .webp)
 //
 // No dependencies: a built-in static server plus the Chrome DevTools
 // protocol. Set CHROME=/path/to/chrome if Chrome isn't in /Applications.
+// Set SCRIPT_OUT_DIR=<folder> to write <folder>/icons/thumbs/ instead of the
+// project's icons/thumbs/ (what `npm run smoke:scripts` does).
 // Prints one "file  N.N KB" line per tile and a final count; exits non-zero
 // with a message if no picker tiles appear, a tile has no img, or a
 // screenshot is empty.
@@ -15,10 +18,12 @@ import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { extname, join, normalize } from "node:path";
+import { extname, join, normalize, resolve } from "node:path";
 
 const root = new URL("..", import.meta.url).pathname;
-const outDir = join(root, "icons/thumbs");
+const outDir = join(process.env.SCRIPT_OUT_DIR ? resolve(process.env.SCRIPT_OUT_DIR) : root, "icons/thumbs");
+const onlyArg = process.argv.slice(2).find((a) => a.startsWith("--only="));
+const only = onlyArg ? onlyArg.slice(7).split(",").filter(Boolean) : null;
 const SIZE = 192; // px: 2x a ~96px tile
 const CHROME = process.env.CHROME || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const DEBUG_PORT = 9334;
@@ -107,10 +112,12 @@ try {
   if (!Array.isArray(tiles) || !tiles.length) throw new Error("tile query returned no tiles");
   const noImg = tiles.filter((t) => !t.file);
   if (noImg.length) throw new Error(`${noImg.length} tile(s) have no img src: ${noImg.map((t) => t.selector).join(", ")}`);
+  const todo = only ? tiles.filter((t) => only.includes(t.file.replace(/\.webp$/, ""))) : tiles;
+  if (only && todo.length !== only.length) throw new Error(`--only names ${only.length} tile(s), the picker has ${todo.length} of them`);
   mkdirSync(outDir, { recursive: true });
 
   let written = 0;
-  for (const t of tiles) {
+  for (const t of todo) {
     await evaluate(`document.querySelector('#fractalTypeRow ${t.selector}').click()`);
     await sleep(300);
     // Make the visible canvas square (toolbar height varies by mode), then
@@ -140,6 +147,7 @@ try {
     console.log(`${t.file}  ${(png.length / 1024).toFixed(1)} KB`);
   }
   console.log(`${written} of ${tiles.length} thumbnails written to ${outDir}`);
+  if (!written) throw new Error("no thumbnail was written");
 } catch (err) {
   console.error(`render_thumbs failed: ${err?.message || err}`);
   process.exitCode = 1;

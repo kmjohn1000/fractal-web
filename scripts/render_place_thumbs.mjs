@@ -6,18 +6,21 @@
 //   node scripts/render_place_thumbs.mjs            all places
 //   node scripts/render_place_thumbs.mjs --missing  only places without a file yet
 //   node scripts/render_place_thumbs.mjs "Nova"     places whose id contains the text
+//   node scripts/render_place_thumbs.mjs --limit=2  only the first two of those
 //
 // Headless Chromium from Playwright (no downloads), four pages at a time. Exits non-zero if
-// any place fails to settle or comes out blank.
+// any place fails to settle or comes out blank. Set SCRIPT_OUT_DIR=<folder> to write
+// <folder>/icons/places/ instead of the project's icons/places/ (what `npm run smoke:scripts`
+// does).
 
 /* global document, window, requestAnimationFrame, TELEPORT_DESTINATIONS, placeId */
 import { createServer } from "node:http";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { extname, join, normalize } from "node:path";
+import { extname, join, normalize, resolve } from "node:path";
 import { chromium } from "@playwright/test";
 
 const root = new URL("..", import.meta.url).pathname;
-const outDir = join(root, "icons/places");
+const outDir = join(process.env.SCRIPT_OUT_DIR ? resolve(process.env.SCRIPT_OUT_DIR) : root, "icons/places");
 const SIZE = 160; // px: 2x a 64 pt tile, plus a little
 const PAGES = 4;
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".png": "image/png", ".webp": "image/webp", ".webmanifest": "application/manifest+json" };
@@ -25,6 +28,7 @@ const TYPES = { ".html": "text/html", ".js": "text/javascript", ".png": "image/p
 const args = process.argv.slice(2);
 const missingOnly = args.includes("--missing");
 const filter = args.find((a) => !a.startsWith("--"));
+const limit = Number(args.find((a) => a.startsWith("--limit="))?.slice(8)) || Infinity;
 
 const server = createServer((req, res) => {
   const path = normalize(decodeURIComponent(new URL(req.url, "http://x").pathname)).replace(/^\/+/, "") || "index.html";
@@ -47,7 +51,7 @@ try {
   await probe.goto(appUrl);
   const places = await probe.evaluate(() => TELEPORT_DESTINATIONS.map((d, i) => ({ i, id: placeId(d), label: d.label })));
   await probe.close();
-  const todo = places.filter((p) => (!filter || p.id.includes(filter.toLowerCase())) && (!missingOnly || !existsSync(join(outDir, `${p.id}.webp`))));
+  const todo = places.filter((p) => (!filter || p.id.includes(filter.toLowerCase())) && (!missingOnly || !existsSync(join(outDir, `${p.id}.webp`)))).slice(0, limit);
   const ids = new Set(places.map((p) => p.id));
   if (ids.size !== places.length) throw new Error("two places share an id (placeId): rename one");
   console.log(`${todo.length} of ${places.length} places to render`);

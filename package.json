@@ -3,7 +3,8 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "lint": "eslint . && node scripts/check-test-globals.mjs",
+    "lint": "eslint . && node scripts/check-test-globals.mjs && node scripts/check-duplicate-exports.mjs",
+    "smoke:scripts": "node scripts/smoke-store-scripts.mjs",
     "build:www": "node scripts/build-www.mjs",
     "ios:sync": "npm run build:www && cap sync ios",
     "ios:open": "cap open ios",
