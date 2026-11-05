@@ -339,6 +339,32 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         pressure (context loss); `chooseReference` must pick from the
         larger area, or margin pixels may glitch.
       - Size: ~80–120 lines in the renderer.
+      - SPIKE DONE 2026-11-05 (branch `worktree-agent-a323f50456ab9e0ff`,
+        `b74b631`, not merged; opt-in flag `#margin=N`, off by default; the
+        figures are the spike agent's report, run on a Mac GPU in headless
+        Chromium, not re-run by me). Result: it works. After a deep view's
+        last visible pass a 25% ring is drawn into an offscreen RGBA8
+        texture, one strip per frame, cancelled by a new gesture, a new view
+        or a hidden tab. A 22% drag then shows image (0% gray) and the
+        revealed strip's error against a full re-render equals the
+        snapshot's own error (Seahorse 4e-10: mean about 4, p99 about 49)
+        when the ring has the visible frame's sample count; a 1-sample ring
+        is grainy at the seam (mean 16, p99 161). The default output is
+        pixel-identical (`default-identity.mjs`, 30 states) and so is a Save
+        with it on. Cost: the ring is about 1.2-2.4 visible passes per
+        sample, about 1.4-1.8x the visible frame's time at matched samples;
+        the fill never ran before the last visible pass. Memory: one full
+        1.5Wx1.5H texture is 8-14 MB on iPhone and about 51 MB on iPad.
+        Before shipping: four strip textures (1.25x instead of 2.25x) or the
+        snapshot as the ring's center; cap the ring on iPad; reuse the
+        visible reference orbit or compute the larger one off the first
+        frame (about 55-65 ms CPU in one frame); match sample counts (the
+        cost and battery need a decision, 4 samples is the cheaper option);
+        free the ring outside deep zoom; context loss; the Phoenix
+        reference key. Real size is about 180-250 lines plus a spec, not
+        80-120. NOT VERIFIED: phone GPU time, battery and memory, a real
+        two-finger gesture, a real hidden tab, context loss, WebKit, and
+        the full visual suite.
 
 - [ ] Code-review leftovers (2026-10-16; bugs 1-2, the info card and
       Phoenix's threshold were fixed in 1.35.1):
