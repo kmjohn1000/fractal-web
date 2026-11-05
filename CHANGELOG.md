@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.68.0 — 2026-11-04
+- Added Sine Julia (the Julia set of z → L sin z, L = 1 + 0.4i, a field of spirals) and Sine plane (z → sin z + cosh c), with five places each. The plane has a dual view that shows its Julia sets. Smooth, Bands, Stripes, Orbs and Rays work on both; zoom stops at 1e-4.
+
 ## 1.67.0 — 2026-11-04
 - Added Magnet I and Magnet II, the two Magnet fractals: black bulbs in a field that settles to a single point, with bubbles of escaping orbits inside the set, five places each. Smooth and Bands work on them; zoom stops at 2e-4.
 
