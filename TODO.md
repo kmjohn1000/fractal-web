@@ -157,6 +157,31 @@ Help people find beautiful places, and give them more ways to see them.
 Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-minibrot.
 
 
+- [ ] Turning Vicsek ("Vicsek clock", user idea 2026-11-05; not approved, not
+      started). Inspired by a short r/fractals animation of the Vicsek cross
+      (about 8.7 s, thin multicolored strokes on black, the whole pattern
+      turning through an upright plus, a 45-degree X and in-between frames
+      where the small crosses sit at a different angle from the cross they
+      belong to). Source post could not be opened from here (reddit.com is
+      blocked for every tool this session has); this reading is from eight
+      frames of the saved clip only. UNVERIFIED: whether each level turns at
+      its own rate (hour, minute and second hands) or all levels share one
+      angle, and what the colors encode. Sketch: a level-by-level Canvas2D
+      mode in the style of `hexaflake.js` / `pythagoras.js` (exact crosses,
+      only what the viewport needs; 5^6 = 15,625 crosses at depth 6 is cheap
+      enough to redraw every frame), not the chaos game in `fern.js`, which
+      needs far too many random points to redraw at 60 fps. Each child cross
+      is its parent turned by an extra angle theta, so level k sits at k*theta;
+      a Turn slider and a play button animate theta (the pattern repeats every
+      90 degrees, the cross's own symmetry) beside the existing depth slider.
+      Twist, share link (`m=` key plus theta), picker thumbnail and
+      learn-more row follow the conventions in CLAUDE.md. Open questions:
+      a new mode next to the dot-shape Vicsek, or a Turn control on the
+      existing one (the dots would need re-sampling each frame, so probably
+      not); whether the cropped, drifting framing in the clip is part of the
+      effect. Also check whether theta-turned children overlap at the
+      default angles.
+
 - [ ] Ambient auto-zoom mode (user idea 2026-11-03; not approved). A
       hands-off slow zoom toward a curated destination, Mandelbrot only to
       start; any touch stops it. To make it endless, loop a Misiurewicz point
