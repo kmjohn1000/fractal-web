@@ -2,7 +2,7 @@
 // Renders the web build in headless WebKit (the engine of the iOS app's
 // WKWebView) at each App Store Connect slot's exact pixel size.
 //
-//   node scripts/store-screenshots.mjs <version> [shotName ...]
+//   node scripts/store-screenshots.mjs <version> [--slot=<slot> ...] [shotName ...]
 //
 // Writes, under listing/<version>/:
 //   renders/<slot>/<shot>.png  this run's bare renders, plus captions.json:
@@ -42,6 +42,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const SLOTS = [
   { slot: "iphone-6.3", width: 402, height: 874, dpr: 3, upload: true, promo: { captionPx: 380, bottomPx: 85, fontPx: 96, radius: 66 } },
   { slot: "ipad-13", width: 1032, height: 1376, dpr: 2, upload: true, promo: { captionPx: 330, bottomPx: 80, fontPx: 104, radius: 50 } },
+  // iPhone Duo (iPhone19,4), open position: its wider, larger screen, 2007x2853
+  // at 3x (669x951 pt; the closed position is 1398x2034, 466x678 pt). App Store
+  // Connect's screenshot area lists 2034x1398, 1398x2034, 2853x2007 and
+  // 2007x2853 (seen 2026-11-05). The promo layout scales the iPhone's to this width.
+  { slot: "iphone-duo", width: 669, height: 951, dpr: 3, upload: true, promo: { captionPx: 440, bottomPx: 100, fontPx: 160, radius: 110 } },
 ];
 
 // In-page helpers, added as a classic <script> after tests/driver.js so they
@@ -235,9 +240,12 @@ async function composite(browser, size, png, caption) {
   }
 }
 
-const [version, ...only] = process.argv.slice(2);
-if (!/^\d+\.\d+\.\d+$/.test(version || "")) {
-  console.error("usage: node scripts/store-screenshots.mjs <version> [shotName ...]");
+const args = process.argv.slice(2);
+const slotArgs = args.filter((a) => a.startsWith("--slot=")).map((a) => a.slice(7));
+const [version, ...only] = args.filter((a) => !a.startsWith("--slot="));
+if (!/^\d+\.\d+\.\d+$/.test(version || "") || slotArgs.some((s) => !SLOTS.some((z) => z.slot === s))) {
+  console.error("usage: node scripts/store-screenshots.mjs <version> [--slot=<slot> ...] [shotName ...]");
+  console.error(`slots: ${SLOTS.map((z) => z.slot).join(", ")}`);
   process.exit(2);
 }
 const dir = (...parts) => join(LISTING, ...parts);
@@ -254,7 +262,7 @@ const browser = await webkit.launch();
 let failed = 0;
 const changed = [];
 try {
-  for (const size of SLOTS) {
+  for (const size of SLOTS.filter((z) => !slotArgs.length || slotArgs.includes(z.slot))) {
     for (const sub of ["renders", "app", "promo"]) {
       if (sub !== "app" || size.upload) mkdirSync(dir(version, sub, size.slot), { recursive: true });
     }
