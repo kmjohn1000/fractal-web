@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.67.0 — 2026-11-04
+- Added Magnet I and Magnet II, the two Magnet fractals: black bulbs in a field that settles to a single point, with bubbles of escaping orbits inside the set, five places each. Smooth and Bands work on them; zoom stops at 2e-4.
+
 ## 1.66.0 — 2026-11-04
 - Added Spider (z → z² + c, then c → z + c/2), a striped, many-armed fractal with a dartboard of rings at its center, with five places. Smooth, Bands, Stripes, Orbs and Rays work on it; zoom stops at a floor that depends on where the view is.
 - A share link deeper than a fractal's zoom floor is now clamped at the link's own center.

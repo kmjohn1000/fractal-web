@@ -1,6 +1,6 @@
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { SOLID_COLORS, hueTurned, solidCss } from "./colormaps.js?v=1.66.0";
-import { VECTOR_CULL_MARGIN, paintBackdrop, vectorAffine } from "./vectorgeom.js?v=1.66.0";
+import { SOLID_COLORS, hueTurned, solidCss } from "./colormaps.js?v=1.67.0";
+import { VECTOR_CULL_MARGIN, paintBackdrop, vectorAffine } from "./vectorgeom.js?v=1.67.0";
 
 // Classic (symmetric, 45-degree) Pythagoras tree: each square's top edge is
 // split by a right-triangle apex into two child squares scaled by cos/sin of
