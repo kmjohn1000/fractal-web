@@ -242,7 +242,7 @@ render on a 402x874 @3x screen: sharp to 1.5e-4, ragged by 1e-4, stair-steps by 
 variants).
 
 `sine.spec.mjs` covers the sine family, Sine Julia (z -> L sin z, L = 1 + 0.4i) and Sine plane (z -> sin z + cosh c;
-float32 only, no deep path): both open as full pictures and sit after Nova in the picker with their thumbnails, a share
+float32 only, no deep path): both open as full pictures and sit after the Magnets in the picker with their thumbnails, a share
 link round-trips, the pictures agree with a float64 iteration of the same maps (the test carries its own copy of the
 math, the smooth count included; 8x8 blocks of the canvas against the reference averaged over the app's 16 jittered
 samples, in Grayscale at Repeat 0.25 so a gray is a count; measured block mean 0.5-2.8 of 255, none over 1% of blocks

@@ -162,7 +162,7 @@ test("both open as full, colorful pictures in the Inferno palette, whole box on 
   }
 });
 
-test("the picker lists both after Nova, with their thumbnails", async ({ page }) => {
+test("the picker lists both after the Magnets, with their thumbnails", async ({ page }) => {
   const r = await page.evaluate(async () => {
     const group = PICKER_LAYOUT.flatMap((s) => s.groups).find((g) => g.keys.includes("Sine Julia"));
     const out = { keys: group.keys, tiles: [] };
@@ -175,8 +175,8 @@ test("the picker lists both after Nova, with their thumbnails", async ({ page })
     }
     return out;
   });
-  expect(r.keys.indexOf("Sine Julia")).toBe(r.keys.indexOf("Nova") + 1);
-  expect(r.keys.indexOf("Sine plane")).toBe(r.keys.indexOf("Nova") + 2);
+  expect(r.keys.indexOf("Sine Julia")).toBe(r.keys.indexOf("Magnet II") + 1);
+  expect(r.keys.indexOf("Sine plane")).toBe(r.keys.indexOf("Magnet II") + 2);
   expect(r.tiles.map((t) => t.text)).toEqual(["Sine Julia", "Sine plane"]);
   expect(r.tiles.map((t) => t.src)).toEqual(["icons/thumbs/sine-julia.webp", "icons/thumbs/sine-plane.webp"]);
   for (const t of r.tiles) { expect(t.w).toBeGreaterThan(0); expect(t.w).toBe(t.h); }
