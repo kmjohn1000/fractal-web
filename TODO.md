@@ -324,8 +324,10 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       into two titled groups, and the blurb wording for picker cards variant
       B. The proposal as first written: display only, in `PICKER_LAYOUT`
       (`fractal-defs.js`): Sine Julia is a single Julia set, so it belongs
-      under "Julia sets"; Sine plane is the parameter map those sets come
-      from (dual view on), so it belongs with the Mandelbrot family, as
+      under "Julia sets"; Sine plane is a Mandelbrot-style map (dual view
+      on) but of a different formula (z -> sin z + cosh c, not Sine Julia's
+      z -> L sin z; see the item above), so it belongs with the Mandelbrot
+      family, as
       would Magnet I and II (parameter maps too; unverified whether the user
       wants that long a family). Within a group the order is hand-placed with
       newer fractals appended (no per-fractal usage data exists in the repo),
