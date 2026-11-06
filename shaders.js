@@ -842,7 +842,8 @@ vec3 renderNewton(vec2 p) {
 
 // The sine family (float32 only, no deep path). Both maps are entire functions built on the complex sine
 // sin(a + bi) = sin a cosh b + i cos a sinh b:
-//   FTYPE_SINE      z -> L sin z, z0 = the pixel, L = u_juliaC (a Julia set of the map, so u_isJulia is always set);
+//   FTYPE_SINE      z -> L sin z. With u_isJulia (Sine Julia, and the Julia pane of the L-plane): z0 = the pixel and
+//                   L = u_juliaC. Without it, the L-plane: L = the pixel and z0 = pi/2 (see renderSineFamily);
 //   FTYPE_SINEPLANE z -> sin z + cosh(c), z0 = the pixel; c is the pixel too (the plane, a Mandelbrot-like
 //                   picture), or u_juliaC when u_isJulia (the plane's Julia set for that c).
 // Escape is |z| > 50 (SINE_BAIL), not the 256 of the polynomial maps: sin z grows like e^|Im z|, so one more step
@@ -856,7 +857,8 @@ const float SINE_LN_BAIL = 3.912023005428146;    // ln 50
 const float SINE_LNLN_BAIL = 1.3640546328884455; // ln ln 50
 const float TWO_PI_HI = 6.28125;                 // 201/32, exact in float32
 const float TWO_PI_LO = 0.001935307179586232;    // 2 pi - 201/32
-const float SINE_COLOR_SCALE = 0.1;              // colormap positions per iteration: one pass every 10 iterations
+const float SINE_CRITICAL = 1.5707963267948966;  // pi/2, where the L-plane's orbit starts
+const float SINE_COLOR_SCALE = 0.1;             // colormap positions per iteration: one pass every 10 iterations
 
 float reduce2Pi(float x) {
   float k = floor(x * 0.15915494309189535 + 0.5);
@@ -917,8 +919,12 @@ float sineSmoothCount(int i, float lnPrev, float lnNow) {
 }
 
 vec3 renderSineFamily(vec2 p) {
-  vec2 z = p;
-  vec2 c = (u_ftype == FTYPE_SINEPLANE && !u_isJulia) ? p : u_juliaC;
+  // The L-plane (FTYPE_SINE without u_isJulia): L = the pixel, z0 = pi/2, the critical point of L sin z (the others,
+  // pi/2 + k pi, give the same orbit up to sign, and 0 is a fixed point for every L, so it says nothing). Where that
+  // orbit stays bounded L has attracting cycles, and where it escapes the Julia set at L has none.
+  bool lPlane = u_ftype == FTYPE_SINE && !u_isJulia;
+  vec2 z = lPlane ? vec2(SINE_CRITICAL, 0.0) : p;
+  vec2 c = !u_isJulia ? p : u_juliaC;
   vec2 ch = u_ftype == FTYPE_SINEPLANE ? cCosh(c) : vec2(0.0);
   bool escaped = false;
   int iter = 0;

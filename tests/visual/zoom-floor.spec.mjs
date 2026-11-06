@@ -1,6 +1,6 @@
 // The zoom floor (deepzoom.js, minScaleFor): every way of zooming stops where a view's center can no longer follow a
 // one-pixel pan. The escape-time family stops at 1e-30 (its exact BigInt center, float32 deltas); Apollonian, Newton and
-// Phoenix stop a few steps of their center's last digit; Nova, the Magnets and the sine family keep their own limits and Spider stops two float32 steps of its center per pixel; Carpet and Gasket have an exact center that grows with the zoom, so their floor is only the scale's own
+// Phoenix stop a few steps of their center's last digit; Nova, the Magnets and the sine family keep their own limits and Spider and the sine L-plane stop two float32 steps of their center per pixel; Carpet and Gasket have an exact center that grows with the zoom, so their floor is only the scale's own
 // double, 1e-300 (tests/visual/digit-infinite.spec.mjs).
 // Plain behavior checks, no screenshot baselines.
 import { test, expect } from "@playwright/test";
@@ -34,7 +34,11 @@ test("each family's floor", async ({ page }) => {
       mandelbrot: at(FTYPE.ESCAPE, 0.3, 0.5), ship: at(FTYPE.SHIP, -1.7, -0.03), tricorn: at(FTYPE.TRICORN, 0, 0), celtic: at(FTYPE.CELTIC, 0.1, 0.1),
       apollonian: at(FTYPE.APOLLONIAN, 0.4472135954957291, 0.8944271910020332), apollonianNearZero: at(FTYPE.APOLLONIAN, 1e-6, 0),
       newton: at(FTYPE.NEWTON, 1, 0), phoenix: at(FTYPE.PHOENIX, 0.5, 0.5), phoenixNearZero: at(FTYPE.PHOENIX, 1e-3, 0), nova: at(FTYPE.NOVA, 1, 1), magnet: at(FTYPE.MAGNET, 2.5, 0.5, 1),
-      sineJulia: at(FTYPE.SINE, 3.1, 0), sinePlane: at(FTYPE.SINEPLANE, 0, 1.17),
+      sineJulia: minScaleFor({ ftype: FTYPE.SINE, power: 2, isJulia: true, cx: 3.1, cy: 0, scale: 1e-20 }), sinePlane: at(FTYPE.SINEPLANE, 0, 1.17),
+      // The L-plane (FTYPE.SINE, not a Julia view): the family's 1e-4, or two float32 steps of the center per pixel
+      lPlaneNearZero: at(FTYPE.SINE, 0.2, 0.1), lPlaneAt08: at(FTYPE.SINE, 0.3, 0.8), lPlaneAt13: at(FTYPE.SINE, 1.2, 0.49), lPlaneAt24: at(FTYPE.SINE, 2.4, 0.18),
+      lPlaneAt5: at(FTYPE.SINE, 5.0, 0.085),
+      lPlaneWant: [0.8, 1.3, 2.4, 5.0].map((r) => FLOOR_STEPS * ulp32(r) * FLOOR_PIXELS / 2),
       // Spider: two float32 steps per pixel at the nominal canvas, never under 2e-5 (see SPIDER_MIN_SCALE)
       spiderNearZero: at(FTYPE.SPIDER, 0, 0), spiderNear03: at(FTYPE.SPIDER, 0.3, 0.1), spiderNear05: at(FTYPE.SPIDER, -0.5, 0.2),
       spiderNear12: at(FTYPE.SPIDER, -0.3371, 1.1738), spiderFar: at(FTYPE.SPIDER, 1.4, 0),
@@ -60,6 +64,15 @@ test("each family's floor", async ({ page }) => {
   // The sine family is float32 only too, with one floor (SINE_MIN_SCALE) wherever the view is.
   expect(r.sineJulia).toBe(1e-4);
   expect(r.sinePlane).toBe(1e-4);
+  // The L-plane's floor follows its center like Spider's (the pixel is the parameter): two float32 steps per pixel at the
+  // nominal canvas where that is above the family's 1e-4, so 1.2e-4, 2.4e-4, 4.8e-4 and 9.5e-4 at |L| 0.8, 1.3, 2.4, 5.
+  expect(r.lPlaneNearZero).toBe(1e-4);
+  expect(r.lPlaneAt08).toBe(Math.max(1e-4, r.lPlaneWant[0]));
+  expect(r.lPlaneAt13).toBe(r.lPlaneWant[1]);
+  expect(r.lPlaneAt24).toBe(r.lPlaneWant[2]);
+  expect(r.lPlaneAt5).toBe(r.lPlaneWant[3]);
+  expect(r.lPlaneAt13, "the floor rises with |L|").toBeGreaterThan(r.lPlaneAt08);
+  expect(r.lPlaneAt5).toBeGreaterThan(r.lPlaneAt24);
   expect(r.carpet).toBe(1e-300);
   expect(r.gasket).toBe(1e-300);
   // The Apollonian gasket runs its chain of inversions from the exact center, so its floor is a choice (1e-100), the
@@ -97,7 +110,8 @@ test("every place is above the floor of its own view, so no place is cut short",
     const below = [];
     for (const d of TELEPORT_DESTINATIONS) {
       const cfg = FRACTAL_CONFIGS[d.fractal];
-      const f = minScaleFor({ ftype: cfg.ftype, power: cfg.power, cx: Number(d.re), cy: Number(d.im), scale: d.scale });
+      // isJulia as freshState sets it: the sine family's floor depends on it (the L-plane's follows its center)
+      const f = minScaleFor({ ftype: cfg.ftype, power: cfg.power, isJulia: cfg.juliaC !== null, cx: Number(d.re), cy: Number(d.im), scale: d.scale });
       if (d.scale < f) below.push(`${d.fractal} | ${d.label}`);
     }
     return { below, count: TELEPORT_DESTINATIONS.length };

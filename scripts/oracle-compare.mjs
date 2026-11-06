@@ -40,7 +40,7 @@ const args = process.argv.slice(2);
 const opt = (name, fallback) => { const i = args.indexOf(`--${name}`); return i < 0 ? fallback : args[i + 1]; };
 const oracleViews = JSON.parse(spawnSync(PYTHON, ["-I", ORACLE, "views"], { encoding: "utf8" }).stdout);
 const GATE_VIEWS = ["mandelbrot", "valley", "ship", "armada", "elephant", "rabbit", "tricorn", "celtic", "multibrot",
-  "seahorse", "minibrot", "twinships", "spider", "spiderfans"];
+  "seahorse", "minibrot", "twinships", "spider", "spiderfans", "lplane", "lplane-fans", "lplane-rim", "sinejulia"];
 const views = opt("views", GATE_VIEWS.join(",")).split(",");
 const styles = opt("styles", "smooth").split(",");
 const cmap = opt("cmap", "Inferno");

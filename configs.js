@@ -71,8 +71,12 @@ export const FRACTAL_CONFIGS = {
   // The sine family (renderSineFamily in shaders.js), float32 only: SINE_MIN_SCALE (deepzoom.js) stops the zoom
   // where float32 gives out. "Sine Julia" is the Julia set of z -> L sin z for the fixed L = juliaC = 1 + 0.4i (a
   // field of spirals); "Sine plane" is the plane of z -> sin z + cosh(c), started at z = c.
-  "Sine Julia":   { label: "Sine Julia", ftype: FTYPE.SINE, power: 2, juliaC: [1, 0.4],                  view: [-3.2, 3.2, -2.4, 2.4], dual: false, category: "zoom" },
+  // The L-plane is the same FTYPE.SINE without a juliaC, as Mandelbrot is to Julia:Rabbit (both FTYPE.ESCAPE): the pixel is
+  // L in z -> L sin z, started at the critical point pi/2. Sine Julia is its Julia preset (dualParent) and its dual view's
+  // Julia pane is Sine Julia at L = the plane's center. (The Sine plane below is a different formula.)
+  "Sine Julia":   { label: "Sine Julia", ftype: FTYPE.SINE, power: 2, juliaC: [1, 0.4],                  view: [-3.2, 3.2, -2.4, 2.4], dual: false, dualParent: "Sine L plane", category: "zoom" },
   "Sine plane":   { label: "Sine plane", ftype: FTYPE.SINEPLANE, power: 2, juliaC: null,                 view: [-5.2, 5.2, -3.9, 3.9], dual: true, category: "zoom" },
+  "Sine L plane": { label: "Sine L-plane", ftype: FTYPE.SINE, power: 2, juliaC: null,                    view: [-3.7, 6.7, -3.9, 3.9], dual: true, category: "zoom" },
   // Digit-test fractals (see FRAG_SRC's renderDigitFractal) — defined on
   // the unit square, so centered there with a little margin. power is
   // unused by these but kept non-null for consistency with the others.

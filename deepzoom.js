@@ -73,6 +73,17 @@ export const MAGNET_MIN_SCALE = 2e-4;
 // opening view. Every way of zooming goes through limitScale, and the info card says so.
 export const SINE_MIN_SCALE = 1e-4;
 export const isSineType = (ftype) => ftype === FTYPE.SINE || ftype === FTYPE.SINEPLANE;
+// The L-plane (FTYPE.SINE without isJulia: z -> L sin z with L the pixel, started at pi/2) has the Julia sets' floor and,
+// where |L| is large, a higher one that follows its center, like Spider's. The pixel IS the parameter, so its float32
+// position is the parameter of the map being iterated, and a pixel narrower than one float32 step of the center repeats
+// the same L. Measured against a float64 iteration of the same map at boundary points (1500x1500 canvas at device scale
+// 1, the share of pixels more than 20 of 255 gray levels off, centers |L| 1.0, 1.3, 2.4, 4.6 and 5.0, at half-heights
+// 1e-3, 3e-4, 1e-4 and below): at 1.0 and 1.3, 3% at 1e-3, 1% at 3e-4 and 0% from 1e-4 down; at 2.4, 6% at 1e-3 and
+// 3e-4 and 5% at 1e-4; at 4.6 and 5.0 (where a float32 step is 4.8e-7 and the orbits are amplified the most) 4-10% at
+// 1e-3, 7-14% at 3e-4 and 11-15% at 1e-4, 21% at 2e-5. So the floor is the family's 1e-4, and never under two float32
+// steps of the center per pixel on the nominal canvas (minScaleFor): 1.2e-4 at |L| 0.5 to 1, 2.4e-4 at 1 to 2, 4.8e-4
+// at 2 to 4 and 9.5e-4 at 4 to 8, which keeps the measured disagreement near 5% or under at every center.
+export const isSineLPlane = (state) => state.ftype === FTYPE.SINE && !state.isJulia;
 
 // The zoom floor: how deep each fractal can go before panning stalls and zoom-about-the-cursor drifts. Every
 // way of zooming goes through limitScale, which stops here; the HUD says "As deep as this fractal goes".
@@ -112,6 +123,9 @@ export function minScaleFor(state) {
     return Math.max(SPIDER_MIN_SCALE, FLOOR_STEPS * ulp32(Math.max(Math.abs(state.cx), Math.abs(state.cy))) * FLOOR_PIXELS / 2);
   }
   if (state.ftype === FTYPE.MAGNET) return MAGNET_MIN_SCALE;
+  if (isSineLPlane(state)) {
+    return Math.max(SINE_MIN_SCALE, FLOOR_STEPS * ulp32(Math.max(Math.abs(state.cx), Math.abs(state.cy))) * FLOOR_PIXELS / 2);
+  }
   if (isSineType(state.ftype)) return SINE_MIN_SCALE;
   if (perturbationEligibleType(state)) return EXACT_MIN_SCALE;
   // Carpet and Gasket keep an exact BigInt center that grows with the zoom (view-math.js, exactBitsFor) and the
