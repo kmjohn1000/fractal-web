@@ -296,6 +296,24 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       refresh (it needs the regrouped picker from 1.44.1, see Done, too).
       The regrouping shipped first, on its own; the rows go into
       `PICKER_LAYOUT`'s loop in `compass-ui.js`.
+- [ ] A parameter plane for Sine Julia (user question 2026-11-05; not approved,
+      not started). Sine Julia has no plane to go with it: the Julia presets
+      of the Mandelbrot and Phoenix open in their parent's dual view
+      (`dualParent`), but Sine Julia iterates z -> L sin z with a fixed L,
+      while Sine plane iterates z -> sin z + cosh c, a different family, so
+      Sine plane's dual view shows Julia sets of that other formula (code:
+      `shaders.js` around `FTYPE_SINEPLANE`). The matching plane would be
+      the L-plane: z -> L sin z started at a critical point z0 = pi/2, with L
+      the pixel, and Sine Julia as its dual view's Julia pane
+      (`dualParent`). UNVERIFIED: that z0 = pi/2 is the right start for the
+      whole plane (from memory; the critical points of L sin z are pi/2 +
+      k pi, and the orbits of the others are related by sin(z + pi) = -sin z,
+      to be confirmed against a published source and a float64 render before
+      building). A new fractal: the checklist (twist, thumbnail, learn-more
+      row, places, float64 oracle) and a bigger fractal count in the
+      listing. Cheaper alternative: reword the Sine plane blurb ("A map of
+      sine Julia sets" suggests Sine Julia's own sets) and leave the plane
+      out.
 - [ ] Picker grouping and order (user question 2026-11-05). DONE 2026-11-05
       (`7e45413`, 1.68.1; 538 tests passed on webkit-iphone15 and
       chromium-desktop across the app, places-sheet, sine, magnet, spider and
