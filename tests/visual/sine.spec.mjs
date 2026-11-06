@@ -333,9 +333,9 @@ test("the zoom stops at the limit however it is asked for: link and wheel; the i
   const r = await page.evaluate(() => {
     const out = { limit: SINE_MIN_SCALE };
     out.mandelbrot = limitScale({ ftype: FTYPE.ESCAPE }, 1e-12);
-    out.julia = limitScale({ ftype: FTYPE.SINE }, 1e-12);
+    out.julia = limitScale({ ftype: FTYPE.SINE, isJulia: true }, 1e-12);
     out.plane = limitScale({ ftype: FTYPE.SINEPLANE }, 1e-12);
-    out.fine = limitScale({ ftype: FTYPE.SINE }, 0.5);
+    out.fine = limitScale({ ftype: FTYPE.SINE, isJulia: true }, 0.5);
     window["__vt"].fractal("Sine Julia");
     const hash = buildShareHash().replace(/([&#])s=[^&]*/, "$1s=1e-9");
     applyShareLink("https://example.test/" + hash);

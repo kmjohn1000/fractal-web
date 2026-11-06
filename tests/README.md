@@ -253,6 +253,29 @@ while the polynomial maps' log-log count does not (float64 bisection along lines
 styles and of a rotated and a near-limit view, the zoom stops at `SINE_MIN_SCALE` (link, wheel) with the info card
 saying so, and the plane's dual view draws the plane's Julia sets (the Julia pane against float64).
 
+`sine-lplane.spec.mjs` covers the sine L-plane ("Sine L plane", label "Sine L-plane"; z -> L sin z with L the pixel,
+started at the critical point pi/2), the parameter plane that goes with Sine Julia. It is `FTYPE.SINE` without a
+`juliaC`, as Mandelbrot is to Julia:Rabbit, and Sine Julia is its Julia preset (`dualParent`; Sine Julia keeps no
+`group: "julia"`, so its label stays "Sine Julia"). First the mathematics, in float64 with no page: the orbits of pi/2,
+3 pi/2, -pi/2 and 5 pi/2 escape on the same iteration at (all but rounding) every pixel of a 160x120 grid, an orbit started at
+z0 = L escapes one iteration earlier than the plane's (it is the same orbit one step on), z0 = 0 never escapes (a
+fixed point for every L, so it says nothing), z0 = 1 is not the plane; and where the critical orbit is bounded the Julia
+set at L has points that never leave, where it escapes quickly it has none. Then it opens as a full picture, sits in the
+Mandelbrot family right after Sine plane with its thumbnail and a blurb that ends in a period, a share link (and a dual
+link) round-trips, the pictures and the Julia pane agree with a float64 iteration (8x8 blocks, as the sine spec does;
+measured block mean 0.3-2 of 255), a turned view agrees with float64 turned the same way, Smooth, Bands, Stripes, Orbs and
+Rays draw and the derivative Looks fall back to Smooth with the Color sheet's note, baselines of the styles and of a
+rotated and a near-floor view, the floor follows the center (2 float32 steps per pixel on the nominal canvas, never under
+`SINE_MIN_SCALE`; the Julia views of the same type keep 1e-4) and stops link and wheel with the info card saying so, its
+five places are above that floor at their own center and have thumbnails, and Sine Julia's own Dual button opens the plane
+centered on L = 1 + 0.4i with Sine Julia in the second pane (and closes back to it). The floor was measured against a float64
+iteration at boundary points (1500x1500 canvas): 0-3% off by more than 20 gray levels at |L| 1 to 1.3 from 1e-3 down, 5-6% at
+2.4, and 4-15% at |L| 4.6 to 5, growing to 21% by 2e-5. `zoom-floor.spec.mjs` and `styles.spec.mjs` list the L-plane too; the
+opening view and the five places are baselines in `app.spec.mjs`. The float64 oracle has views for it and for Sine Julia
+(`lplane`, `lplane-fans`, `lplane-rim`, `sinejulia`; `node scripts/oracle-compare.mjs --views lplane,lplane-fans,lplane-rim,sinejulia
+--styles smooth,bands,stripes,point,cross`): all within the gates, blurred difference 0.2-1.5 (Smooth 0.49 / 1.48 / 1.11 / 1.33).
+`default-identity.mjs` does not list the sine family or the Magnets (it guards the fractals that existed before the styles work).
+
 `dot-colors.spec.mjs` covers the coloring of the chaos-game modes (fern, Sierpinski
 triangle, Sierpinski pentagon, Lévy C, Vicsek; 1.47.0): each picture spans several hues around its picked
 color, picking another color moves the whole picture to it, a deep zoom stays tinted

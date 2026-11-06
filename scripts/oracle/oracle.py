@@ -17,6 +17,9 @@ bands 1 and shift 0 is what the app draws.
 The style constants below (DE_RANGE, STRIPE_*, TRAP_*, HALO_*, PAPER_*) are mirrored in
 shaders.js (the COLOR_*, HALO_* and PAPER_* constants); change both together.
 
+The sine family (the L-plane and Sine Julia, ftype "sine") has its own iteration, render_fields_sine, with the
+bailout |z| > 50, its smooth count (sineSmoothCount) and its colormap scale (0.1 per iteration).
+
 Needs python3 with numpy and Pillow (`python3 -c "import numpy, PIL"`).
 
   oracle.py views                          the views as JSON (for oracle-compare.mjs)
@@ -85,7 +88,19 @@ VIEWS = {
     # derivative styles are off for it in the app), so the D this script tracks is not meaningful for it.
     "spider": dict(fractal="Spider", ftype="spider", c=(-0.59, 0.0), s=1.3, it=300, trap=(0.0, 0.0)),
     "spiderfans": dict(fractal="Spider", ftype="spider", c=(-0.2, 0.9), s=0.6, it=370, trap=(0.0, 0.0)),
+    # The sine family's L-plane and its Julia set (FTYPE.SINE): z <- L sin z, escape |z| > 50. The plane takes L = the
+    # pixel and starts at the critical point pi/2; the Julia set takes a fixed L (the "julia" key) and starts at the
+    # pixel. Smooth, Bands, Stripes and the traps only (the derivative styles are off for the sine types).
+    "lplane": dict(fractal="Sine L plane", ftype="sine", c=(1.5, 0.0), s=3.9, it=120, trap=(0.0, 0.0)),
+    "lplane-fans": dict(fractal="Sine L plane", ftype="sine", c=(5.008356546, 0.08547486), s=0.01, it=200, trap=(5.0, 0.085)),
+    "lplane-rim": dict(fractal="Sine L plane", ftype="sine", c=(2.4, 0.17553971307238725), s=0.02, it=150, trap=(2.4, 0.18)),
+    "sinejulia": dict(fractal="Sine Julia", ftype="sine", julia=(1.0, 0.4), c=(0.0, 0.0), s=2.4, it=100, trap=(0.0, 0.0)),
 }
+
+SINE_BAIL_SQ = 2500.0   # |z| > 50, the sine family's escape (SINE_BAIL2 in shaders.js)
+SINE_LN_BAIL = np.log(50.0)
+SINE_LNLN_BAIL = np.log(SINE_LN_BAIL)
+SINE_COLOR_SCALE = 0.1  # colormap positions per iteration (the other types use 0.025)
 
 
 def jacobian(ftype, x, y):
@@ -110,10 +125,84 @@ def jacobian(ftype, x, y):
     raise ValueError(ftype)
 
 
+def render_fields_sine(name, tile=360, ss=2):
+    """render_fields for the sine family (shaders.js renderSineFamily): z <- L sin z in float64 (numpy's own sin and
+    cosh, so no range reduction), escape |z| > 50. Keeps the fields the styles read; the derivative fields stay zero
+    because the app does not draw the styles that read them for this family. "lnprev" and "lnnow" are ln|z| before and
+    after the escaping step (the smooth count's inputs, see smooth_n)."""
+    v = VIEWS[name]
+    H = W = tile * ss
+    julia = v.get("julia")
+    xs = ((np.arange(W) + 0.5) / W * 2 - 1)
+    ys = (np.arange(H) + 0.5) / H * 2 - 1
+    px = np.broadcast_to(v["c"][0] + xs[None, :] * v["s"], (H, W)).ravel().copy()
+    py = np.broadcast_to(v["c"][1] - ys[:, None] * v["s"], (H, W)).ravel().copy()
+    N = W * H
+    if julia:   # L fixed, z starts at the pixel
+        cx = np.full(N, julia[0]); cy = np.full(N, julia[1])
+        zx, zy = px.copy(), py.copy()
+    else:       # L is the pixel, z starts at the critical point pi/2
+        cx, cy = px, py
+        zx = np.full(N, np.pi / 2); zy = np.zeros(N)
+    names = ("steps", "zabs", "logD", "E", "Eprev", "Ea", "Eaprev", "pt", "cross", "escaped", "gx", "gy", "Dn", "hcross",
+             "lnprev", "lnnow")
+    out = {k: np.zeros(N) for k in names}
+    out["pt"][:] = 1e9; out["cross"][:] = 1e9
+    out["hcross"][:] = -1.0
+    idx = np.arange(N)
+    E = np.zeros(N); Eprev = np.zeros(N); Ea = np.zeros(N); Eaprev = np.zeros(N)
+    pt = np.full(N, 1e9); cr = np.full(N, 1e9)
+    lam = STRIPE_LAM
+    tx, ty = v["trap"]
+    t0 = time.time()
+    with np.errstate(all="ignore"):
+        for it in range(1, v["it"] + 1):
+            prev2 = zx * zx + zy * zy
+            sx = np.sin(zx) * np.cosh(zy)
+            sy = np.cos(zx) * np.sinh(zy)
+            zx, zy = cx * sx - cy * sy, cx * sy + cy * sx
+            a = 0.5 + 0.5 * np.sin(STRIPE_K * np.arctan2(zy, zx))
+            r2 = np.maximum(zx * zx + zy * zy, 1e-30)
+            aa = 0.5 + 0.5 * (2 * (2 * zx * zy / r2) * ((zx * zx - zy * zy) / r2))
+            Eprev = E
+            E = (lam * Eprev * (1 - lam ** (it - 1)) + (1 - lam) * a) / (1 - lam ** it)
+            Eaprev = Ea
+            Ea = (lam * Eaprev * (1 - lam ** (it - 1)) + (1 - lam) * aa) / (1 - lam ** it)
+            if it >= 2:   # z1 sits at the pixel (the plane) or one step from it: not trapped, as in the shader
+                dxp = zx - tx; dyp = zy - ty
+                pt = np.minimum(pt, np.hypot(dxp, dyp))
+                cr = np.minimum(cr, np.minimum(np.abs(dxp), np.abs(dyp)))
+            esc = zx * zx + zy * zy > SINE_BAIL_SQ
+            if esc.any():
+                e = idx[esc]
+                out["steps"][e] = it
+                out["zabs"][e] = np.hypot(zx[esc], zy[esc])
+                out["lnprev"][e] = 0.5 * np.log(np.maximum(prev2[esc], 1.0))
+                out["lnnow"][e] = np.log(np.hypot(zx[esc], zy[esc]))
+                for k, arr in (("E", E), ("Eprev", Eprev), ("Ea", Ea), ("Eaprev", Eaprev), ("pt", pt), ("cross", cr)):
+                    out[k][e] = arr[esc]
+                out["escaped"][e] = 1
+                k = ~esc
+                idx = idx[k]
+                zx, zy, cx, cy = zx[k], zy[k], cx[k], cy[k]
+                pt, cr, E, Eprev, Ea, Eaprev = pt[k], cr[k], E[k], Eprev[k], Ea[k], Eaprev[k]
+                if idx.size == 0:
+                    break
+        if idx.size:  # never escaped: the trap minima still color it
+            out["pt"][idx] = pt; out["cross"][idx] = cr
+    print(f"{name}: iterated in {time.time() - t0:.1f}s, escaped {out['escaped'].mean() * 100:.1f}%",
+          file=sys.stderr, flush=True)
+    meta = dict(tile=tile, ss=ss, ps_out=2 * v["s"] / tile, maxit=v["it"], trap=list(v["trap"]), power=2,
+                julia=bool(julia), sine=True, max_log10_D=0.0, frac_D_over_float32=0.0)
+    return {k: a.reshape(H, W) for k, a in out.items()}, meta
+
+
 def render_fields(name, tile=360, ss=2):
     """Iterate a square view of tile x tile output pixels (ss x ss samples
     each) once; returns the per-pixel fields and the metadata."""
     v = VIEWS[name]
+    if v["ftype"] == "sine":
+        return render_fields_sine(name, tile, ss)
     H = W = tile * ss
     julia = v.get("julia")
     xs = ((np.arange(W) + 0.5) / W * 2 - 1)
@@ -258,6 +347,12 @@ def lut_color(lut, t):
 
 
 def smooth_n(F, P):
+    if P.get("sine"):
+        # sineSmoothCount in shaders.js: the escape step i (0-based, so steps - 1) plus where in that step the orbit
+        # crossed |z| = 50, placed linearly in ln ln |z|
+        a = np.log(np.maximum(F["lnprev"], 0.1))
+        b = np.log(np.maximum(F["lnnow"], SINE_LN_BAIL))
+        return F["steps"] - 1 + np.clip((SINE_LNLN_BAIL - a) / np.maximum(b - a, 1e-6), 0.0, 1.0)
     # each iteration raises |z| to the map's power: log base 3 for Multibrot^3 (escapeColor's logBase)
     log_base = np.log2(3.0) if P.get("power", 2) == 3 else 1.0
     return np.maximum(F["steps"] - np.log2(np.log2(np.maximum(F["zabs"], 2.0))) / log_base, 0.0)
@@ -266,12 +361,13 @@ def smooth_n(F, P):
 def style_t(F, P, style):
     """The colormap coordinate (before bands and shift) and which pixels are colored."""
     esc = F["escaped"] > 0
+    k = SINE_COLOR_SCALE if P.get("sine") else 0.025   # colormap positions per iteration
     if style == "smooth":
-        return smooth_n(F, P) * 0.025, esc
+        return smooth_n(F, P) * k, esc
     if style == "bands":
-        return np.floor(F["steps"]) * 0.025, esc
+        return np.floor(F["steps"]) * k, esc
     if style == "relief":  # the smooth color; relief_shade() multiplies it
-        return smooth_n(F, P) * 0.025, esc
+        return smooth_n(F, P) * k, esc
     if style == "glow":
         with np.errstate(all="ignore"):
             b = 2 * F["zabs"] * np.log(F["zabs"]) / (10.0 ** F["logD"])

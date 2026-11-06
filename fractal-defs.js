@@ -17,7 +17,7 @@ export const PICKER_LAYOUT = [
   { label: "Zoom forever", groups: [
     // Parameter maps (c is the pixel): the classic first, then variants by how far the formula departs from it
     // (the power, folds and conjugates, a memory term, other maps, the newest last).
-    { label: "Mandelbrot family", keys: ["Mandelbrot", "Multibrot³", "Burn. Ship", "Tricorn", "Celtic", "Phoenix", "Spider", "Magnet I", "Magnet II", "Sine plane"] },
+    { label: "Mandelbrot family", keys: ["Mandelbrot", "Multibrot³", "Burn. Ship", "Tricorn", "Celtic", "Phoenix", "Spider", "Magnet I", "Magnet II", "Sine plane", "Sine L plane"] },
     { label: "Julia sets", keys: ["Julia:Spiral", "Julia:Rabbit", "Julia:Dragon", "Julia:Phoenix", "Sine Julia"] },
     { label: "More to zoom into", keys: ["Newton z³", "Nova", "Apollonian", "Carpet", "Gasket"] },
   ] },
@@ -41,6 +41,7 @@ export const PICKER_BLURBS = {
   "Magnet I": "Born in magnet physics: black bulbs in a smooth field.",
   "Magnet II": "Magnet I’s sibling, with bubbles inside the set.",
   "Sine plane": "A Mandelbrot-style map of a sine formula; open Dual view for its Julia sets.",
+  "Sine L plane": "The map behind Sine Julia: open Dual view to see its sets.",
   "Julia:Spiral": "A Julia set that winds into spirals.",
   "Julia:Rabbit": "Ears on ears on ears: the famous rabbit.",
   "Julia:Dragon": "Two spiral eyes joined by frilly, branching arms.",
