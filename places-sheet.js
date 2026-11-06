@@ -22,6 +22,28 @@ import { colorSheetEl } from "./color-sheet.js?v=1.69.1";
 
 // ---------------------------------------------------------------- places sheet
 
+// The Places icon, a map pin over a ripple, in the toolbar's style (24 px grid, outline, current
+// color). The one definition of it: the picker's row, the sheet's title and the info card's button
+// (a static button in index.html, given its icon below) all build it here. Decorative: aria-hidden,
+// so no control's accessible name changes. Size and color come from the CSS of where it sits.
+export function placesIcon() {
+  const NS = "http://www.w3.org/2000/svg";
+  const make = (tag, attrs) => {
+    const el = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+    return el;
+  };
+  const svg = make("svg", {
+    class: "placesIcon", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "2",
+    "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true", focusable: "false",
+  });
+  svg.append(
+    make("path", { d: "M12 18.2c-1.3-1.3-5-4.9-5-8.8a5 5 0 1 1 10 0c0 3.9-3.7 7.5-5 8.8z" }),
+    make("circle", { cx: "12", cy: "9.4", r: "1.8", fill: "currentColor", stroke: "none" }),
+    make("ellipse", { cx: "12", cy: "20.6", rx: "5.8", ry: "1.7" }));
+  return svg;
+}
+
 // Thumbnails are icons/places/<id>.webp (scripts/render_place_thumbs.mjs). They are not in the
 // service worker's APP_SHELL: the sheet fetches them when it first scrolls them into view.
 export const placeId = (d) => `${slugify(d.fractal)}-${slugify(d.label)}`;
@@ -126,7 +148,7 @@ export function renderPlacesSheet() {
   }, { passive: true });
 
   sheet.replaceChildren(
-    colorSheetEl("div", { class: "head" }, colorSheetEl("p", { class: "title" }, "Places"), done),
+    colorSheetEl("div", { class: "head" }, colorSheetEl("p", { class: "title" }, placesIcon(), "Places"), done),
     chips, scroller);
   scroller.scrollTop = scrollTop;
 }
@@ -178,12 +200,15 @@ export function flyToPlaceFrom(i) {
 
 // The picker's first row, and the info card's button (index.html).
 export const placesRow = colorSheetEl("button", { class: "placesRow", "aria-haspopup": "true", "data-opens-places": "" },
+  placesIcon(),
   colorSheetEl("span", { class: "placesRowTitle" }, "Places"),
   colorSheetEl("span", { class: "placesRowSub" }, `${TELEPORT_DESTINATIONS.length} named places to dive into`),
   colorSheetEl("span", { class: "placesRowGo", "aria-hidden": "true" }, "›"));
 els.fractalTypeRow.prepend(placesRow);
 
 for (const btn of document.querySelectorAll("[data-opens-places]")) {
+  // The info card's button is static HTML (index.html); it gets the same icon, before its text.
+  if (!btn.querySelector(".placesIcon")) btn.prepend(placesIcon());
   btn.addEventListener("click", (e) => {
     e.stopPropagation(); // don't let the outside-tap closer below fire on this same tap
     if (els.placesSheet.classList.contains("open")) closePlacesSheet();
