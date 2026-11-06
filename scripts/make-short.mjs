@@ -56,6 +56,7 @@
 // renderer "capture": frame-by-frame capture of an app animation, then a compositor
 //   scenes    { id: { driver: "replay", shape, color, count, seed, size: [cssW, cssH],
 //             dsf, frame: {zoom, dx, dy}, speed: [[videoSecond, speed], ...] } }.
+//             `rule: 1..7` (shape "corners" only) puts that Corner Rules rule on screen (corner-rules.js CORNER_RULES ids).
 //             `replay: {slowJumps, gapFirst, gapLast, seq, trail, liveFade, cap, pentagonRatio}` (optional) stretches
 //             the replay's schedule: more jumps shown one at a time, a longer connected trail; pentagonRatio sets
 //             the pentagon's jump size for that scene only (see patchReplay below).
@@ -491,6 +492,10 @@ function speedProfile(knots) {
 async function startScene(page, sc) {
   await page.evaluate((m) => setMode(m), sc.shape);
   await page.waitForFunction((m) => fernView.system === m && !fernView.refining && fernView.accepted > 0, sc.shape, { timeout: 90_000 });
+  if (sc.rule) { // Corner Rules: a scene names the rule it plays (the app deals them in shuffled order; modes.js setCornerRule puts one on screen)
+    await page.evaluate(`setCornerRule(${Number(sc.rule)})`);
+    await page.waitForFunction((m) => fernView.system === m && !fernView.refining && fernView.accepted > 0, sc.shape, { timeout: 90_000 });
+  }
   const info = await page.evaluate(({ shape, color, count, seed, frame }) => {
     vectorColors[shape] = SOLID_COLORS.findIndex((c) => c.name === color);
     fernState.count = count;
