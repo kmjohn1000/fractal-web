@@ -38,7 +38,8 @@
 //
 // renderer "dive": the WebGL escape-time renderer, one deep-zoom path, frame by frame
 //   fractal   the app fractal ("Mandelbrot"), palette {name, stops} added to the app's list
-//   path(seconds)  -> (t) => { t, scale, cx, cy, offset, rotation (radians, default 0), layers: [{style, density, weight?}, ...], ... }
+//   path(seconds)  -> (t) => { t, scale, cx, cy, offset, rotation (radians, default 0), fractal (optional: the app fractal this
+//             frame is shot in, when a Short goes from one fractal to another; default the recipe's), layers: [{style, density, weight?}, ...], ... }
 //             layers[0] is the base picture; each later layer is shot too and blended
 //             over it at `weight` (skipped when weight <= 0.002). A layer may name one of the app's palettes
 //             (`palette: "Classic"`; else the page's current one stays), so a tour can change color, and the
@@ -345,7 +346,7 @@ async function openApp({ width, height, dsf = 1, passCount = 16, url = "index.ht
 async function startPage(width, height, passCount) {
   const dsf = R.dsf ?? 1;
   const app = await openApp({ width: width / dsf, height: height / dsf, dsf, passCount });
-  await app.page.evaluate(`__vt.fractal(${JSON.stringify(R.fractal || "Mandelbrot")}); window.dispatchEvent(new Event('resize'))`);
+  await app.page.evaluate(`__vt.fractal(${JSON.stringify(R.fractal || "Mandelbrot")}); window.__curFractal = ${JSON.stringify(R.fractal || "Mandelbrot")}; window.dispatchEvent(new Event('resize'))`);
   // The palette joins the page's list (the app is not changed), then is picked as a user pick.
   if (R.palette) await app.page.evaluate(`(() => { COLORMAPS.push(${JSON.stringify(R.palette)}); pickColormap(COLORMAPS.length - 1); })()`);
   if (R.pageSetup) await app.page.evaluate(R.pageSetup);
@@ -359,6 +360,8 @@ async function setFrame(page, v, label) {
   // (a frame or layer may name one of the app's palettes (v.palette): a tour that changes color between chapters)
   await page.evaluate(`(() => {
     const v = ${JSON.stringify(v)};
+    // (a frame may name its fractal: a Short that goes from one fractal to another; the page is told once, on a change)
+    if (v.fractal && v.fractal !== window.__curFractal) { __vt.fractal(v.fractal); window.__curFractal = v.fractal; window.dispatchEvent(new Event('resize')); }
     if (v.palette) {
       const k = COLORMAPS.findIndex((c) => c.name === v.palette);
       if (k < 0) throw new Error("no palette " + v.palette);
@@ -391,7 +394,7 @@ if (command === "stills") {
       const t0 = Date.now();
       if (j.palette && j.palette !== R.palette?.name) await page.evaluate(`pickColormap(Math.max(0, COLORMAPS.findIndex((c) => c.name === ${JSON.stringify(j.palette)})))`);
       else if (R.palette) await page.evaluate(`pickColormap(COLORMAPS.findIndex((c) => c.name === ${JSON.stringify(R.palette.name)}))`);
-      await setFrame(page, { cx: Number(j.cx), cy: Number(j.cy), scale: j.scale, style: j.style || "relief", density: j.density ?? 1, offset: j.offset ?? 0, maxIter: j.maxIter, rotation: j.rotation }, j.name);
+      await setFrame(page, { cx: Number(j.cx), cy: Number(j.cy), scale: j.scale, style: j.style || "relief", density: j.density ?? 1, offset: j.offset ?? 0, maxIter: j.maxIter, rotation: j.rotation, fractal: j.fractal }, j.name);
       await page.screenshot({ path: join(stillsDir, `${j.name}.png`), type: "png" });
       console.log(`${j.name}  ${Date.now() - t0} ms  maxIter ${await page.evaluate("mainState.maxIter")}`);
     }
@@ -417,7 +420,7 @@ async function renderDiveFrames() {
       const file = join(framesDir, `${pad(i)}.jpg`);
       if (resume && existsSync(file)) continue;
       const s = path(i / FPS);
-      const base = { cx: s.cx, cy: s.cy, scale: s.scale, offset: s.offset, rotation: s.rotation };
+      const base = { cx: s.cx, cy: s.cy, scale: s.scale, offset: s.offset, rotation: s.rotation, fractal: s.fractal };
       const blended = s.layers.slice(1).filter((l) => l.weight > 0.002);
       // The base picture; while a further layer (the Bands look) is still dissolving, a
       // shot of it is blended in over the picture (ImageMagick).
