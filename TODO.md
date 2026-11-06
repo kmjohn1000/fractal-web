@@ -274,7 +274,16 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         I didn't know that". Write it down in this file's workflow notes
         rather than CLAUDE.md unless decided otherwise. Small.
 
-- [ ] Picker cards: variant B, rows with a one-line descriptor (user choice
+- [x] DONE 2026-11-05 (`de700d4`, 1.69.0; picker, cold-open and places-sheet
+      specs passed on webkit-iphone15 and chromium-desktop, and the picker
+      looked at on a phone and a desktop width): rows with a 64 px thumbnail,
+      name and blurb (`PICKER_BLURBS` in `fractal-defs.js`, wording by the
+      user; one column, two from 640 px), `aria-current` on the active row,
+      the active row keeps its blurb, the button's name is its label with
+      the blurb as its description, and `ariaLabel: "Phoenix Julia set"` on
+      Julia:Phoenix. Left: re-render the store "2-picker" shot at the next
+      listing refresh. Not verified: a real iPhone, VoiceOver. Was: Picker
+      cards: variant B, rows with a one-line descriptor (user choice
       2026-10-24, after the evaluation of three mockups; not started). One
       row per fractal (about 76 px, a 64 px thumbnail, a bold name and a
       one-line blurb; two columns from 640 px up), scoped to
