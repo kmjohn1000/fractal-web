@@ -3,10 +3,10 @@
 // lsystem.js/koch.js (IFS_SYSTEMS, LINE_CURVES), which only its function bodies use.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it;
 // tests/cases.mjs reads this file's text and accepts the `export`).
-import { FTYPE } from "./configs.js?v=1.69.0";
-import { LINE_CURVES } from "./dragon.js?v=1.69.0";
-import { IFS_SYSTEMS } from "./ifs.js?v=1.69.0";
-import { fromExact } from "./view-math.js?v=1.69.0";
+import { FTYPE } from "./configs.js?v=1.69.1";
+import { LINE_CURVES } from "./dragon.js?v=1.69.1";
+import { IFS_SYSTEMS } from "./ifs.js?v=1.69.1";
+import { fromExact } from "./view-math.js?v=1.69.1";
 
 // The fractal picker's layout, in display order: sections with a title, each
 // split into titled groups of tiles. Display only: a key is a FRACTAL_CONFIGS
@@ -40,7 +40,7 @@ export const PICKER_BLURBS = {
   "Spider": "Many-armed stripes around a dartboard of rings.",
   "Magnet I": "Born in magnet physics: black bulbs in a smooth field.",
   "Magnet II": "Magnet I’s sibling, with bubbles inside the set.",
-  "Sine plane": "A map of sine Julia sets; open Dual view for one.",
+  "Sine plane": "A Mandelbrot-style map of a sine formula; open Dual view for its Julia sets.",
   "Julia:Spiral": "A Julia set that winds into spirals.",
   "Julia:Rabbit": "Ears on ears on ears: the famous rabbit.",
   "Julia:Dragon": "Two spiral eyes joined by frilly, branching arms.",
