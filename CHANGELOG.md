@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.70.1 — 2026-11-06
+- Internal: moved the Carpet/Gasket digit helpers and the Apollonian gasket's CPU math out of `fractal-defs.js` into `digit-fractals.js` and `apollonian.js` (no change to what is drawn).
+
 ## 1.70.0 — 2026-11-05
 - Added the Sine L-plane, the map behind Sine Julia: the plane of z → L sin z, where each pixel is the L, with five places. Its Dual view shows Sine Julia's sets for the L at the center, and Sine Julia's Dual button now opens it. Smooth, Bands, Stripes, Orbs and Rays work on it; zoom stops where the picture stays right, which depends on how far the view is from the center.
 

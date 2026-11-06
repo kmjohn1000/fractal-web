@@ -1,7 +1,7 @@
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { SOLID_COLORS, hueTurned, solidCss, strokeWidthFor } from "./colormaps.js?v=1.70.0";
-import { KOCH_SNOWFLAKE, lsystemPolylines } from "./lsystem.js?v=1.70.0";
-import { VECTOR_CULL_MARGIN, paintBackdrop, vectorAffine } from "./vectorgeom.js?v=1.70.0";
+import { SOLID_COLORS, hueTurned, solidCss, strokeWidthFor } from "./colormaps.js?v=1.70.1";
+import { KOCH_SNOWFLAKE, lsystemPolylines } from "./lsystem.js?v=1.70.1";
+import { VECTOR_CULL_MARGIN, paintBackdrop, vectorAffine } from "./vectorgeom.js?v=1.70.1";
 
 // Koch snowflake: a Canvas2D view with the same pan/zoom/animate/fill/
 // colormap feature set as the original koch.py port -- pure vector
