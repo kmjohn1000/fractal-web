@@ -3,18 +3,18 @@
 // calls teleport.js (cancelTeleport) only inside event handlers.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { Platform } from "./platform.js?v=1.68.1";
-import { FRACTAL_CONFIGS, slugify } from "./configs.js?v=1.68.1";
-import { EXTRA_MODES, PICKER_LAYOUT } from "./fractal-defs.js?v=1.68.1";
-import { limitScale } from "./deepzoom.js?v=1.68.1";
-import { activePane, currentName, dualActive, els, juliaState, mainState, mode, paneRenderer, paneState, pushHistory, setActivePane, shownPane } from "./state.js?v=1.68.1";
-import { markInteracting, popHistory } from "./state-colors.js?v=1.68.1";
-import { renderAll, requestRender } from "./render-layout.js?v=1.68.1";
-import { moveCenter, normalizeAngle, screenToComplex } from "./view-math.js?v=1.68.1";
-import { closeDual, dealCornerRules, enterDual, openPresetInDual, selectFractal, setMode, updateMenuActiveState } from "./modes.js?v=1.68.1";
-import { KEY_PAN_FRACTION, keyAction } from "./interaction.js?v=1.68.1";
-import { activeVectorTarget } from "./vector-interaction.js?v=1.68.1";
-import { cancelTeleport } from "./teleport.js?v=1.68.1";
+import { Platform } from "./platform.js?v=1.69.0";
+import { FRACTAL_CONFIGS, slugify } from "./configs.js?v=1.69.0";
+import { EXTRA_MODES, PICKER_BLURBS, PICKER_LAYOUT } from "./fractal-defs.js?v=1.69.0";
+import { limitScale } from "./deepzoom.js?v=1.69.0";
+import { activePane, currentName, dualActive, els, juliaState, mainState, mode, paneRenderer, paneState, pushHistory, setActivePane, shownPane } from "./state.js?v=1.69.0";
+import { markInteracting, popHistory } from "./state-colors.js?v=1.69.0";
+import { renderAll, requestRender } from "./render-layout.js?v=1.69.0";
+import { moveCenter, normalizeAngle, screenToComplex } from "./view-math.js?v=1.69.0";
+import { closeDual, dealCornerRules, enterDual, openPresetInDual, selectFractal, setMode, updateMenuActiveState } from "./modes.js?v=1.69.0";
+import { KEY_PAN_FRACTION, keyAction } from "./interaction.js?v=1.69.0";
+import { activeVectorTarget } from "./vector-interaction.js?v=1.69.0";
+import { cancelTeleport } from "./teleport.js?v=1.69.0";
 
 // ---------------------------------------------------------------- compass
 
@@ -235,28 +235,43 @@ els.welcomeClose.addEventListener("click", () => {
 
 // ---------------------------------------------------------------- UI wiring
 
-// Picker: a grid of tiles, each a pre-rendered thumbnail plus the name
-// (thumbnails come from scripts/render_thumbs.mjs; re-run it after adding a
-// fractal or changing a default view). Sections and groups come from
-// PICKER_LAYOUT in fractal-defs.js.
+// Picker: a list of rows, each a pre-rendered thumbnail plus the name and a one-line blurb
+// (thumbnails come from scripts/render_thumbs.mjs; re-run it after adding a fractal or changing a
+// default view). Sections and groups come from PICKER_LAYOUT in fractal-defs.js, the blurbs from
+// PICKER_BLURBS beside it. The button's accessible name is the label (or `ariaLabel`, for the two
+// tiles that share a label) and the blurb is its description, so a screen reader doesn't read both
+// as one long name.
 export function addPickerHeader(text, isSub = false) {
   const header = document.createElement("div");
   header.className = isSub ? "menuSectionHeader sub" : "menuSectionHeader";
   header.textContent = text;
   els.fractalTypeRow.appendChild(header);
 }
-export function addPickerTile(label, slug, onPick, data) {
+export function addPickerTile(label, slug, onPick, data, blurb, ariaLabel = label) {
   const btn = document.createElement("button");
   btn.className = "pickTile";
   Object.assign(btn.dataset, data);
+  btn.setAttribute("aria-label", ariaLabel);
   const img = document.createElement("img");
   img.src = `icons/thumbs/${slug}.webp`;
   img.alt = "";
   img.decoding = "async";
   img.loading = "lazy"; // fetched when the picker first opens, not at startup
   const name = document.createElement("span");
+  name.className = "pickName";
   name.textContent = label;
-  btn.append(img, name);
+  const text = document.createElement("span");
+  text.className = "pickText";
+  text.append(name);
+  if (blurb) {
+    const desc = document.createElement("span");
+    desc.className = "pickBlurb";
+    desc.id = `pickBlurb-${slug}`;
+    desc.textContent = blurb;
+    btn.setAttribute("aria-describedby", desc.id);
+    text.append(desc);
+  }
+  btn.append(img, text);
   btn.addEventListener("click", onPick);
   els.fractalTypeRow.appendChild(btn);
 }
@@ -267,11 +282,11 @@ PICKER_LAYOUT.forEach((section) => {
     group.keys.forEach((key) => {
       const config = FRACTAL_CONFIGS[key];
       if (config) {
-        addPickerTile(config.label, slugify(key), () => selectFractal(key), { name: key });
+        addPickerTile(config.label, slugify(key), () => selectFractal(key), { name: key }, PICKER_BLURBS[key], config.ariaLabel);
       } else {
         const mode = EXTRA_MODES.find((m) => m.key === key);
         // Corner Rules deals a rule each time it is picked, also when it is already open
-        addPickerTile(mode.label, mode.key, mode.key === "corners" ? dealCornerRules : () => setMode(mode.key), { mode: mode.key });
+        addPickerTile(mode.label, mode.key, mode.key === "corners" ? dealCornerRules : () => setMode(mode.key), { mode: mode.key }, PICKER_BLURBS[key]);
       }
     });
   });

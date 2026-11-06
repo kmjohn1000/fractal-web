@@ -172,7 +172,7 @@ test("the picker lists Sine Julia with the Julia sets and Sine plane after the M
       const img = tile.querySelector("img");
       img.loading = "eager";
       await img.decode();
-      out.tiles.push({ text: tile.textContent.trim(), w: img.naturalWidth, h: img.naturalHeight, src: img.getAttribute("src") });
+      out.tiles.push({ text: tile.querySelector(".pickName").textContent.trim(), w: img.naturalWidth, h: img.naturalHeight, src: img.getAttribute("src") });
     }
     return out;
   });

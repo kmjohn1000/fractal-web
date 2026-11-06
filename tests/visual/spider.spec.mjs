@@ -125,7 +125,7 @@ test("the picker lists Spider with the Mandelbrot family, with its thumbnail", a
     const img = tile.querySelector("img");
     img.loading = "eager";
     await img.decode();
-    return { group: group.label, keys: group.keys, text: tile.textContent.trim(), w: img.naturalWidth, h: img.naturalHeight, src: img.getAttribute("src") };
+    return { group: group.label, keys: group.keys, text: tile.querySelector(".pickName").textContent.trim(), w: img.naturalWidth, h: img.naturalHeight, src: img.getAttribute("src") };
   });
   expect(r.group).toBe("Mandelbrot family");
   expect(r.keys).toContain("Phoenix");

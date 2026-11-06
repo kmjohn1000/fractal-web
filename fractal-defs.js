@@ -3,10 +3,10 @@
 // lsystem.js/koch.js (IFS_SYSTEMS, LINE_CURVES), which only its function bodies use.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it;
 // tests/cases.mjs reads this file's text and accepts the `export`).
-import { FTYPE } from "./configs.js?v=1.68.1";
-import { LINE_CURVES } from "./dragon.js?v=1.68.1";
-import { IFS_SYSTEMS } from "./ifs.js?v=1.68.1";
-import { fromExact } from "./view-math.js?v=1.68.1";
+import { FTYPE } from "./configs.js?v=1.69.0";
+import { LINE_CURVES } from "./dragon.js?v=1.69.0";
+import { IFS_SYSTEMS } from "./ifs.js?v=1.69.0";
+import { fromExact } from "./view-math.js?v=1.69.0";
 
 // The fractal picker's layout, in display order: sections with a title, each
 // split into titled groups of tiles. Display only: a key is a FRACTAL_CONFIGS
@@ -26,6 +26,46 @@ export const PICKER_LAYOUT = [
     { label: "Chaos games", keys: ["fern", "pentagon", "sierpinski", "levy", "vicsek", "corners"] },
   ] },
 ];
+
+// The one-line blurb under each picker row, keyed like PICKER_LAYOUT (a FRACTAL_CONFIGS name or an
+// EXTRA_MODES key). Every key in the layout needs one, and each ends with a period (app.spec.mjs checks).
+// Wording written and checked by the user (2026-11-05); a new fractal adds its line here.
+export const PICKER_BLURBS = {
+  "Mandelbrot": "The classic: a black bulb ringed by endless detail.",
+  "Multibrot³": "Mandelbrot cubed, not squared: two bulbs back to back.",
+  "Burn. Ship": "Jagged masts and flames, with tiny ships to find.",
+  "Tricorn": "Mandelbrot, flipped at every step: three corners.",
+  "Celtic": "Mandelbrot with a folded, horn-like edge.",
+  "Phoenix": "Mandelbrot with memory: each step looks back one.",
+  "Spider": "Many-armed stripes around a dartboard of rings.",
+  "Magnet I": "Born in magnet physics: black bulbs in a smooth field.",
+  "Magnet II": "Magnet I’s sibling, with bubbles inside the set.",
+  "Sine plane": "A map of sine Julia sets; open Dual view for one.",
+  "Julia:Spiral": "A Julia set that winds into spirals.",
+  "Julia:Rabbit": "Ears on ears on ears: the famous rabbit.",
+  "Julia:Dragon": "Two spiral eyes joined by frilly, branching arms.",
+  "Julia:Phoenix": "The Phoenix’s Julia set: two feathered lobes.",
+  "Sine Julia": "A field of spirals from the sine function.",
+  "Newton z³": "Three roots, three colors, a tangle where they meet.",
+  "Nova": "Newton’s method plus a constant: a frilly crescent.",
+  "Apollonian": "Circles packed into every gap, forever.",
+  "Carpet": "A square with ever-smaller square holes.",
+  "Gasket": "A triangle with a triangle cut from every triangle.",
+  "koch": "A snowflake whose edge never stops growing.",
+  "tree": "Squares and right triangles that branch like a tree.",
+  "hexaflake": "Hexagons inside hexagons, one level at a time.",
+  "dragon": "Fold a strip in half again and again, then open it.",
+  "hilbert": "One line that visits every square.",
+  "gosper": "A hexagonal line that fills an island.",
+  "arrowhead": "One curve that draws a Sierpinski triangle.",
+  "penrose": "Tiles that fill the plane with no repeating pattern.",
+  "fern": "Random dots that grow into a fern.",
+  "pentagon": "Dots jumping toward five corners.",
+  "sierpinski": "Three corners, random jumps, a triangle full of holes.",
+  "levy": "A lacy C built from two smaller copies of itself.",
+  "vicsek": "Crosses made of crosses.",
+  "corners": "A new rule each time: see what the dots draw.",
+};
 
 // Menu entries that switch the whole app mode (Canvas2D vector views, not a
 // WebGL shader ftype) rather than selecting a FRACTAL_CONFIGS entry. All are

@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.69.0 — 2026-11-05
+- The fractal picker is now a list of rows: a thumbnail, the name and a one-line description of what you will see, in one column on a phone and two from 640 px wide. The current fractal keeps its blue ring and a faint tint. The two Phoenix rows now have different names for screen readers (Phoenix and Phoenix Julia set), and each description is read as a description rather than as part of the name.
+
 ## 1.68.1 — 2026-11-05
 - The picker groups the parameter maps together: Magnet I, Magnet II and Sine plane join the Mandelbrot family, Sine Julia joins the Julia sets, and the family runs from the classic through variants by how far the formula departs from it (Multibrot³ next, then Burning Ship, Tricorn, Celtic, Phoenix, Spider). The Places sheet follows the new order.
 

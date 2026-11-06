@@ -88,7 +88,7 @@ test("the picker lists Nova beside Newton's method, with its thumbnail", async (
     const img = tile.querySelector("img");
     img.loading = "eager";
     await img.decode();
-    return { group: group.label, keys: group.keys, text: tile.textContent.trim(), w: img.naturalWidth, h: img.naturalHeight, src: img.getAttribute("src") };
+    return { group: group.label, keys: group.keys, text: tile.querySelector(".pickName").textContent.trim(), w: img.naturalWidth, h: img.naturalHeight, src: img.getAttribute("src") };
   });
   expect(r.keys).toContain("Newton z³");
   expect(r.text).toBe("Nova");

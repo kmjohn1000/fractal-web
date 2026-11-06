@@ -474,7 +474,7 @@ test.describe("picker, info card and link", () => {
       group: PICKER_LAYOUT.flatMap((s) => s.groups).find((g) => g.keys.includes("penrose")).keys,
       modes: EXTRA_MODES.filter((m) => m.key === "penrose"),
       tiles: [...document.querySelectorAll("#fractalTypeRow .pickTile")].filter((t) => t.dataset.mode === "penrose").map((t) => ({
-        text: t.textContent.trim(), src: t.querySelector("img")?.getAttribute("src"),
+        text: t.querySelector(".pickName").textContent.trim(), src: t.querySelector("img")?.getAttribute("src"),
       })),
     }));
     expect(r.layout).toBe(1);

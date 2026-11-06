@@ -54,7 +54,7 @@ export const FRACTAL_CONFIGS = {
   "Julia:Rabbit": { label: "Douady rabbit", group: "julia", ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.12256, 0.74486], view: [-1.42, 1.42, -1.2, 1.2], dual: false, dualParent: "Mandelbrot", category: "zoom" },
   "Julia:Dragon": { label: "Dragon", group: "julia", ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.4, 0.6],         view: [-1.5, 1.5, -1.1, 1.1],   dual: false, dualParent: "Mandelbrot", category: "zoom" },
   "Julia:Spiral": { label: "Spiral", group: "julia", ftype: FTYPE.ESCAPE,  power: 2, juliaC: [0.285, 0.01],       view: [-0.95, 0.95, -1.2, 1.2], dual: false, dualParent: "Mandelbrot", category: "zoom" },
-  "Julia:Phoenix": { label: "Phoenix", group: "julia", ftype: FTYPE.PHOENIX, power: 2, juliaC: [0.5667, 0],        view: [-0.8, 0.88, -1.38, 1.38], dual: false, dualParent: "Phoenix", category: "zoom", defaultColormap: "Hot" },
+  "Julia:Phoenix": { label: "Phoenix", ariaLabel: "Phoenix Julia set", group: "julia", ftype: FTYPE.PHOENIX, power: 2, juliaC: [0.5667, 0],        view: [-0.8, 0.88, -1.38, 1.38], dual: false, dualParent: "Phoenix", category: "zoom", defaultColormap: "Hot" },
   "Newton z³": { label: "Newton's method", ftype: FTYPE.NEWTON, power: 3, juliaC: null,              view: [-2.0, 2.0, -1.5, 1.5],   dual: false, category: "zoom" },
   // Newton's method for z^3 - 1 plus the pixel's c, started at z = 1 (see
   // renderNova). Float32 only, no deep zoom: NOVA_MIN_SCALE (deepzoom.js)

@@ -1,7 +1,7 @@
 // Renders every fractal/mode, colormap and Surprise-me place, checks the
 // frame and layout, and compares a screenshot against its baseline in
 // tests/baselines/<project>/. Run through `npm run test:visual`.
-/* global FRACTAL_NAMES, EXTRA_MODES, PICKER_LAYOUT */
+/* global FRACTAL_NAMES, EXTRA_MODES, PICKER_LAYOUT, PICKER_BLURBS */
 import { test, expect } from "@playwright/test";
 import { PNG } from "pngjs";
 import { COLORMAP_NAMES, FRACTALS, MODES, PLACES, slug } from "../cases.mjs";
@@ -114,6 +114,37 @@ test("the picker lists every fractal and mode exactly once, in PICKER_LAYOUT ord
   expect([...shown].sort()).toEqual(expected);
   const layout = await page.evaluate(() => PICKER_LAYOUT.flatMap((s) => s.groups.flatMap((g) => g.keys)));
   expect(shown).toEqual(layout);
+});
+
+test("every picker row has a one-line blurb ending in a period, named and described apart, the active one included", async ({ page }) => {
+  const r = await page.evaluate(() => {
+    document.getElementById("fractalTypeRow").classList.add("open");
+    const rows = [...document.querySelectorAll("#fractalTypeRow .pickTile")].map((b) => {
+      const key = b.dataset.name || b.dataset.mode;
+      const desc = document.getElementById(b.getAttribute("aria-describedby") || "");
+      const blurb = b.querySelector(".pickBlurb");
+      const box = blurb && blurb.getBoundingClientRect();
+      return {
+        key, label: b.querySelector(".pickName").textContent, aria: b.getAttribute("aria-label"), blurb: blurb && blurb.textContent,
+        described: desc === blurb, shown: !!box && box.width > 0 && box.height > 0, active: b.classList.contains("active"), current: b.getAttribute("aria-current"),
+        want: PICKER_BLURBS[key],
+      };
+    });
+    return { rows, layout: PICKER_LAYOUT.flatMap((s) => s.groups.flatMap((g) => g.keys)), blurbKeys: Object.keys(PICKER_BLURBS) };
+  });
+  expect([...r.blurbKeys].sort(), "a blurb for every key in the layout, and none for anything else").toEqual([...r.layout].sort());
+  for (const row of r.rows) {
+    expect(row.blurb, row.key).toBe(row.want);
+    expect(row.want, `${row.key} ends with a period`).toMatch(/\.$/);
+    expect(row.described, `${row.key} is described by its blurb`).toBe(true);
+    expect(row.shown, `${row.key} shows its blurb`).toBe(true);
+    expect(row.aria, row.key).toBe(row.key === "Julia:Phoenix" ? "Phoenix Julia set" : row.label);
+  }
+  expect(new Set(r.rows.map((x) => x.aria)).size, "every row has its own accessible name").toBe(r.rows.length);
+  const active = r.rows.filter((x) => x.active);
+  expect(active.length).toBe(1);
+  expect(active[0].shown, "the active row keeps its blurb").toBe(true);
+  expect(r.rows.filter((x) => x.current === "true").map((x) => x.key), "aria-current marks the active row only").toEqual([active[0].key]);
 });
 
 // The checks themselves: each must fire on a frame that really is broken.
