@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.70.2 — 2026-11-06
+- Internal: moved the toolbar's ARIA and focus handling out of `app.js` into `toolbar-a11y.js` (no change in behavior).
+
 ## 1.70.1 — 2026-11-06
 - Internal: moved the Carpet/Gasket digit helpers and the Apollonian gasket's CPU math out of `fractal-defs.js` into `digit-fractals.js` and `apollonian.js` (no change to what is drawn).
 

@@ -4,24 +4,24 @@
 // updateHud taking the main pane's last deep-zoom path as an argument), which calls the updaters after each
 // frame; this file imports nothing from render-layout.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { COLORMAPS } from "./colormaps.js?v=1.70.1";
-import { FRACTAL_CONFIGS, FTYPE, fractalLabel } from "./configs.js?v=1.70.1";
-import { EXTRA_MODES, SHAPE_INFO } from "./fractal-defs.js?v=1.70.1";
-import { apolloFrame } from "./apollonian.js?v=1.70.1";
-import { digitFractalDepth, isDigitFractal } from "./digit-fractals.js?v=1.70.1";
-import { DEEP_ZOOM_THRESHOLD, atZoomLimit, deepZoomEligible, isSineType, newtonDeepEligible, perturbationEligibleType, phoenixDeepEligible } from "./deepzoom.js?v=1.70.1";
-import { TELEPORT_DESTINATIONS } from "./places.js?v=1.70.1";
-import { COLOR_STYLES, ESCAPE_TIME_TYPES, colorStyle, styleDrawn } from "./color-styles.js?v=1.70.1";
-import { currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, hexaflakeView, isInteracting, kochState, kochView, mainRenderer, mainState, mode, treeState, treeView } from "./state.js?v=1.70.1";
-import { colormapIndex } from "./state-colors.js?v=1.70.1";
-import { dualPresetName } from "./modes.js?v=1.70.1";
-import { teleportLandingIndex } from "./teleport.js?v=1.70.1";
-import { hudVisible } from "./compass-ui.js?v=1.70.1";
-import { COLOR_LOOKS, bandsText, lookPalette, shiftText } from "./color-sheet.js?v=1.70.1";
-import { apolloCurvatureText, capitalize, formatHudCoords, rotationHudText, scaleBar, unitsPerCssPx, zoomPhrase } from "./hud-format.js?v=1.70.1";
-import { normalizeAngle } from "./view-math.js?v=1.70.1";
-import { runHudParts, updateRunChip } from "./chaos-run.js?v=1.70.1";
-import { cornerAbout, currentCornerRule } from "./corner-rules.js?v=1.70.1";
+import { COLORMAPS } from "./colormaps.js?v=1.70.2";
+import { FRACTAL_CONFIGS, FTYPE, fractalLabel } from "./configs.js?v=1.70.2";
+import { EXTRA_MODES, SHAPE_INFO } from "./fractal-defs.js?v=1.70.2";
+import { apolloFrame } from "./apollonian.js?v=1.70.2";
+import { digitFractalDepth, isDigitFractal } from "./digit-fractals.js?v=1.70.2";
+import { DEEP_ZOOM_THRESHOLD, atZoomLimit, deepZoomEligible, isSineType, newtonDeepEligible, perturbationEligibleType, phoenixDeepEligible } from "./deepzoom.js?v=1.70.2";
+import { TELEPORT_DESTINATIONS } from "./places.js?v=1.70.2";
+import { COLOR_STYLES, ESCAPE_TIME_TYPES, colorStyle, styleDrawn } from "./color-styles.js?v=1.70.2";
+import { currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, hexaflakeView, isInteracting, kochState, kochView, mainRenderer, mainState, mode, treeState, treeView } from "./state.js?v=1.70.2";
+import { colormapIndex } from "./state-colors.js?v=1.70.2";
+import { dualPresetName } from "./modes.js?v=1.70.2";
+import { teleportLandingIndex } from "./teleport.js?v=1.70.2";
+import { hudVisible } from "./compass-ui.js?v=1.70.2";
+import { COLOR_LOOKS, bandsText, lookPalette, shiftText } from "./color-sheet.js?v=1.70.2";
+import { apolloCurvatureText, capitalize, formatHudCoords, rotationHudText, scaleBar, unitsPerCssPx, zoomPhrase } from "./hud-format.js?v=1.70.2";
+import { normalizeAngle } from "./view-math.js?v=1.70.2";
+import { runHudParts, updateRunChip } from "./chaos-run.js?v=1.70.2";
+import { cornerAbout, currentCornerRule } from "./corner-rules.js?v=1.70.2";
 
 // Info overlay (see #hud in index.html): the title (a place name, or the
 // fractal or pattern), a plain-language line (how deep, rotation), a scale
