@@ -312,7 +312,7 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       merged; it replaces the user's wording), a Wikipedia learn-more link
       (the local file has no rows for Spider, Magnets, Sine Julia, Sine plane
       or this one), the "Touching Discs" place thumbnail is mostly black,
-      the label name is a placeholder, the store listing counts (35 picker
+      the label "Sine L-plane" is final (user, 2026-11-05), the store listing counts (35 picker
       tiles, 161 places). Not verified: a real iPhone, phone cost. Was: A parameter plane for Sine Julia (user question 2026-11-05; not approved,
       not started). Sine Julia has no plane to go with it: the Julia presets
       of the Mandelbrot and Phoenix open in their parent's dual view
