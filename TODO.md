@@ -350,7 +350,16 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       read as a gradient. Needs the new-fractal checklist: twist gesture,
       a picker thumbnail (`node scripts/render_thumbs.mjs`), and a row in
       `docs/learn-more-links.md` (Wikipedia "Peano curve").
-- [ ] Render past the screen edges so a drag reveals image, not blank
+- [x] PARKED 2026-11-05, not building: the user tried the spike on an
+      iPhone (the dev server on the LAN, `#margin=25`): the revealed strip
+      was as sharp as the rest, but the gain is small, because moving or
+      zooming out already fills the undrawn margins in very little time; the
+      spike's cost (about 1.4-1.8x a visible frame's render time per deep
+      view, 8-14 MB on iPhone) is not worth it, and a useful version would
+      need much more rendering. The prototype is kept on branch
+      `worktree-agent-a323f50456ab9e0ff` (`b74b631`, not merged). Reopen only
+      if blank edges become a reported problem. Render past the screen edges
+      so a drag reveals image, not blank
       (user idea 2026-10-15). Where it matters: only deep zoom (scale <
       1e-3, perturbation). Shallower views already re-render live every
       drag frame. At depth a drag moves a snapshot of the last frame
