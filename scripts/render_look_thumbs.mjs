@@ -33,7 +33,7 @@ const VIEW = { cx: -0.743643887037151, cy: 0.131825904205330, scale: 6e-3, maxIt
 const ANTENNA = { cx: -0.1586, cy: 1.0331, scale: 2e-2, maxIter: 600 };
 const VIEWS = { halo: ANTENNA, "paper-cut": ANTENNA };
 
-const src = readFileSync(join(root, "color-sheet.js"), "utf8");
+const src = readFileSync(join(root, "src/ui/color-sheet.js"), "utf8");
 const m = src.match(/^(?:export )?const COLOR_LOOKS = \[[\s\S]*?\n\];/m); // color-sheet.js is an ES module: `export` is optional here
 if (!m) throw new Error("render_look_thumbs: couldn't find COLOR_LOOKS in color-sheet.js");
 const ctx = vm.createContext({});

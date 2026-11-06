@@ -26,6 +26,7 @@ for (const name of readdirSync(root)) {
   if (SKIP.has(name)) continue;
   if (/\.(html|js|webmanifest)$/.test(name)) cpSync(join(root, name), join(out, name));
 }
+cpSync(join(root, "src"), join(out, "src"), { recursive: true });
 cpSync(join(root, "icons"), join(out, "icons"), { recursive: true });
 // Capacitor's registerPlugin(), loaded by platform.js only inside the app.
 cpSync(join(root, "node_modules/@capacitor/core/dist/capacitor.js"), join(out, "capacitor.js"));

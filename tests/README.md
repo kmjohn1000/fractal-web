@@ -1,5 +1,7 @@
 # Visual regression suite
 
+App files named in this README are under `src/` (`core`, `render`, `fractals`, `ui`; `src/app.js` is the entry), referred to by basename, which is unique. See `CLAUDE.md`, "Source layout".
+
 ```
 npm run test:visual                                   # everything, ~3.5 min
 npm run test:quick                                    # the quick tier: iPhone WebKit + desktop Chromium

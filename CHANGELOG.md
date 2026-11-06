@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.70.5 — 2026-11-06
+- Internal: moved the 47 app modules from the repo root into `src/` (`core`, `render`, `fractals`, `ui`, with `app.js` at `src/app.js`). `index.html`, `sw.js`, the manifest and the legal pages stay at the root. No change in behavior.
+
 ## 1.70.4 — 2026-11-06
 - Internal: split `dragon.js` into three files: `dragon.js` (the curve definitions and the dragon's walk), `lcurves.js` (the Hilbert, Gosper and arrowhead walk) and `curve-view.js` (the Canvas2D view, stroking and colors). No change in behavior.
 

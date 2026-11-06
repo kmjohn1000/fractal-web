@@ -16,7 +16,7 @@ const read = (f) => readFileSync(join(root, f), "utf8");
 const errors = [];
 
 const modules = new Set(moduleFiles());
-const EXEMPT = new Set(["app.js", "test-hooks.js"]);
+const EXEMPT = new Set(["src/app.js", "src/core/test-hooks.js"]);
 
 function patternNames(p) {
   if (!p) return [];
@@ -61,7 +61,7 @@ for (const file of appShellFiles().filter((f) => f.endsWith(".js") && f !== "sw.
 for (const m of read("index.html").matchAll(/<script>([\s\S]*?)<\/script>/g)) topLevel(m[1], false).names.forEach((n) => appNames.add(n));
 
 // ---- 2
-const listed = new Set([...read("app.js").matchAll(/exposeForTests\(\{([\s\S]*?)\}\)/g)].flatMap((m) => [...m[1].matchAll(/"([^"]+\.js)"\s*:/g)].map((k) => k[1])));
+const listed = new Set([...read("src/app.js").matchAll(/exposeForTests\(\{([\s\S]*?)\}\)/g)].flatMap((m) => [...m[1].matchAll(/"([^"]+\.js)"\s*:/g)].map((k) => k[1])));
 for (const f of modules) if (!EXEMPT.has(f) && !listed.has(f)) errors.push(`${f} is a module but is not listed in app.js's exposeForTests call`);
 for (const f of listed) if (!modules.has(f)) errors.push(`app.js's exposeForTests lists "${f}", which is not an imported module`);
 

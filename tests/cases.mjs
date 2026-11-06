@@ -9,10 +9,10 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
 const root = new URL("..", import.meta.url).pathname;
-const configs = readFileSync(root + "configs.js", "utf8");       // FTYPE, FRACTAL_CONFIGS
-const defs = readFileSync(root + "fractal-defs.js", "utf8");     // EXTRA_MODES
-const places = readFileSync(root + "places.js", "utf8");         // TELEPORT_DESTINATIONS
-const colormaps = readFileSync(root + "colormaps.js", "utf8");
+const configs = readFileSync(root + "src/core/configs.js", "utf8");       // FTYPE, FRACTAL_CONFIGS
+const defs = readFileSync(root + "src/fractals/fractal-defs.js", "utf8");     // EXTRA_MODES
+const places = readFileSync(root + "src/fractals/places.js", "utf8");         // TELEPORT_DESTINATIONS
+const colormaps = readFileSync(root + "src/render/colormaps.js", "utf8");
 
 // A top-level `const NAME = ...;` declaration (with or without `export`): on one line, or ending at
 // the first unindented closing bracket. Returned without the `export`, which vm can't run.

@@ -55,7 +55,7 @@ function exportedNames(file, seen = new Set()) {
 
 // The files app.js hands to exposeForTests ("file.js": namespace entries).
 function exposedFiles() {
-  return [...read("app.js").matchAll(/exposeForTests\(\{([\s\S]*?)\}\)/g)]
+  return [...read("src/app.js").matchAll(/exposeForTests\(\{([\s\S]*?)\}\)/g)]
     .flatMap((m) => [...m[1].matchAll(/"([^"]+\.js)"\s*:/g)].map((k) => k[1]));
 }
 

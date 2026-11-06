@@ -69,7 +69,7 @@ const sized = (scratch, rel, want) => {
 const L = `listing/${VERSION}`;
 const STEPS = [
   { name: "build-www", script: "build-www.mjs", args: [], timeout: 60_000,
-    check: (s) => { exists(s, "www/index.html", 1000); exists(s, "www/app.js", 1000); exists(s, "www/capacitor.js", 1000);
+    check: (s) => { exists(s, "www/index.html", 1000); exists(s, "www/src/app.js", 1000); exists(s, "www/capacitor.js", 1000);
       if (!/MARKETING_VERSION = \d+\.\d+\.\d+/.test(readFileSync(join(s, "ios/version.xcconfig"), "utf8"))) throw new Error("ios/version.xcconfig has no version"); } },
   // mandelbrot is a WebGL tile, fern an IFS one (it waits on fernView, a different path in the script).
   { name: "thumbs", script: "render_thumbs.mjs", args: ["--only=mandelbrot,fern"], timeout: 180_000,

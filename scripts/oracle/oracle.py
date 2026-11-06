@@ -314,7 +314,7 @@ def cached_fields(name, tile, ss):
 
 
 def load_colormaps():
-    src = (ROOT / "colormaps.js").read_text().split("const SOLID_COLORS")[0]
+    src = (ROOT / "src/render/colormaps.js").read_text().split("const SOLID_COLORS")[0]
     maps = {}
     for block in src.split('{ name: "')[1:]:
         name = block.split('"')[0]
