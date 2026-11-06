@@ -60,7 +60,16 @@ git-ignored file.
          reads it as text); `toolbar-a11y.js` from `app.js` (`2c98194`, 1.70.2;
          the last import in `app.js`); `fractal-picker.js` from `compass-ui.js`
          (`c8c0258`, 1.70.3); `dragon.js` into `dragon.js` (definitions and the
-         dragon walk), `lcurves.js` and `curve-view.js` (`f5ba282`, 1.70.4). Not worth splitting: `shaders.js`, `renderer.js`,
+         dragon walk), `lcurves.js` and `curve-view.js` (`f5ba282`, 1.70.4).
+         Then the folder restructure, DONE 2026-11-06 (user: "move to a more structured
+         folder structure", `2772e2f`, 1.70.5): the 47 modules moved by `git mv` into
+         `src/core`, `src/render`, `src/fractals`, `src/ui` (`src/app.js` the entry);
+         layout and rules are in `CLAUDE.md` ("Source layout"). Import paths were
+         edited one file at a time (no `sed`). Checked with lint, stamp, 1178 specs
+         on webkit-iphone15 and chromium-desktop across 12 spec files, and
+         `npm run smoke:scripts` (8 of 8, with a `www/` build); NOT checked: the full
+         four-project suite, the deployed service worker, the iOS app build and the
+         real iPhone, all for the next release. Not worth splitting: `shaders.js`, `renderer.js`,
          the view factories, `configs.js`, `places.js`, `colormaps.js`.
       4. Safety nets: `scripts/test-visual.mjs` no longer kills another
          session's run: DONE 2026-11-02 (`9c9fdf0`, only orphaned processes)
