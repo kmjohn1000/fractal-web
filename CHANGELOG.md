@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.69.2 — 2026-11-05
+- Added a pin icon to the Places row in the picker, the Browse places button on the info card, and the Places sheet's title.
+
 ## 1.69.1 — 2026-11-05
 - The Sine plane's picker description no longer suggests its Julia sets are Sine Julia's own (they belong to a different sine formula).
 
