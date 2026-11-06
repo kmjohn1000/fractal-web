@@ -2,8 +2,8 @@
 // coordinates and the Apollonian curvature line. Pure functions of numbers; imports only deepzoom.js and
 // fractal-defs.js. Split from render-layout.js (a pure move), which builds the card from these.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { DEEP_ZOOM_THRESHOLD } from "./deepzoom.js?v=1.70.3";
-import { apolloCenterCurvature } from "./apollonian.js?v=1.70.3";
+import { DEEP_ZOOM_THRESHOLD } from "./deepzoom.js?v=1.70.4";
+import { apolloCenterCurvature } from "./apollonian.js?v=1.70.4";
 
 // Only shown when non-zero. Shared by every mode's HUD (WebGL fractal + all four Canvas2D vector
 // views) since they all support the same twist gesture.

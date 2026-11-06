@@ -4,13 +4,13 @@
 // scripts (cancelTeleport, glideMainTo, ...) only inside function bodies.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { applyAutoIter, dualActive, els, isInteracting, juliaRenderer, juliaState, mainRenderer, mainState, pushHistory, setActivePane } from "./state.js?v=1.70.3";
-import { limitScale } from "./deepzoom.js?v=1.70.3";
-import { cancelSettle, markInteracting } from "./state-colors.js?v=1.70.3";
-import { renderAll, requestRender } from "./render-layout.js?v=1.70.3";
-import { EXACT_FROM, centerForAnchor, exactValid, moveCenter, normalizeAngle, screenToComplex } from "./view-math.js?v=1.70.3";
-import { cancelTeleport, glideMainTo } from "./teleport.js?v=1.70.3";
-import { colorSheetTapJustClosed } from "./color-sheet.js?v=1.70.3";
+import { applyAutoIter, dualActive, els, isInteracting, juliaRenderer, juliaState, mainRenderer, mainState, pushHistory, setActivePane } from "./state.js?v=1.70.4";
+import { limitScale } from "./deepzoom.js?v=1.70.4";
+import { cancelSettle, markInteracting } from "./state-colors.js?v=1.70.4";
+import { renderAll, requestRender } from "./render-layout.js?v=1.70.4";
+import { EXACT_FROM, centerForAnchor, exactValid, moveCenter, normalizeAngle, screenToComplex } from "./view-math.js?v=1.70.4";
+import { cancelTeleport, glideMainTo } from "./teleport.js?v=1.70.4";
+import { colorSheetTapJustClosed } from "./color-sheet.js?v=1.70.4";
 
 // ---------------------------------------------------------------- box zoom
 

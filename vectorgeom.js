@@ -1,6 +1,6 @@
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
 
-// Shared by the Canvas2D pattern views (koch.js, pythagoras.js, dragon.js):
+// Shared by the Canvas2D pattern views (koch.js, pythagoras.js, curve-view.js):
 // the view's world-to-canvas map as plain numbers, so a render loop can
 // transform thousands of points without allocating, and the visibility test
 // that lets a recursion skip whatever is off screen.

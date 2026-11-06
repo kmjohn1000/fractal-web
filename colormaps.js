@@ -156,7 +156,7 @@ export const isGreyColor = ([r, g, b]) => Math.max(r, g, b) - Math.min(r, g, b) 
 // lost 40% of its chroma by +38 degrees). A turned color outside the sRGB
 // gamut gives up chroma, not lightness or hue, until it fits. Channels are
 // 0-255, not rounded. Used where a picked SOLID_COLORS color is spread into a
-// family of tints (ifs.js's address colors, dragon.js's color along a curve,
+// family of tints (ifs.js's address colors, curve-view.js's color along a curve,
 // the Koch snowflake, the tree and the hexaflake).
 export function hueTurned([r, g, b], deg) {
   const lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
