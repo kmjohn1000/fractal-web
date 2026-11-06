@@ -296,7 +296,24 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       refresh (it needs the regrouped picker from 1.44.1, see Done, too).
       The regrouping shipped first, on its own; the rows go into
       `PICKER_LAYOUT`'s loop in `compass-ui.js`.
-- [ ] A parameter plane for Sine Julia (user question 2026-11-05; not approved,
+- [x] DONE 2026-11-05 (`26293d1` merged in `13bedd4`, stamped `9c30123`,
+      1.70.0): the Sine L-plane (key `Sine L plane`, label `Sine L-plane`, a
+      Mandelbrot-family tile after Sine plane). z0 = pi/2 confirmed against a
+      float64 reference (identical to 3 pi/2 and -pi/2; z0 = L is one step
+      later). No new ftype: `FTYPE.SINE` with `juliaC: null`, one shader
+      branch; Sine Julia is its `dualParent` preset. Float32 only, floor
+      follows the center (1.2e-4 to 9.5e-4, measured at about 5% pixel
+      disagreement at worst). Five places. On main: lint, 295 specs on
+      webkit-iphone15 and chromium-desktop (sine-lplane, sine, zoom-floor,
+      styles, palettes, sw, dual, cold-open), 18 app specs for the new
+      fractal and places, default-identity (0 differing pixels), the oracle
+      comparison (all within the gates). Open: the agent's proposed new Sine
+      Julia blurb (`ddc86bc`, on branch `worktree-agent-a11df06c397ca5a39`, not
+      merged; it replaces the user's wording), a Wikipedia learn-more link
+      (the local file has no rows for Spider, Magnets, Sine Julia, Sine plane
+      or this one), the "Touching Discs" place thumbnail is mostly black,
+      the label name is a placeholder, the store listing counts (35 picker
+      tiles, 161 places). Not verified: a real iPhone, phone cost. Was: A parameter plane for Sine Julia (user question 2026-11-05; not approved,
       not started). Sine Julia has no plane to go with it: the Julia presets
       of the Mandelbrot and Phoenix open in their parent's dual view
       (`dualParent`), but Sine Julia iterates z -> L sin z with a fixed L,
