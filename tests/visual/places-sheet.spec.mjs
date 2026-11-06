@@ -237,6 +237,76 @@ test.describe("flying to a place", () => {
   });
 });
 
+test.describe("the Places icon", () => {
+  // One decorative pin-with-ripple icon on the picker's row, the info card's button and the sheet's
+  // title; it adds no name or text to any of them and shrinks no tap target.
+  for (const size of [{ width: 393, height: 852 }, { width: 1280, height: 800 }]) {
+    test(`is in the row, the info card button and the sheet title, decorative, at ${size.width}px`, async ({ page }) => {
+      await page.setViewportSize(size);
+      await load(page);
+      const probe = (sel) => page.evaluate((s) => {
+        const el = document.querySelector(s);
+        const icons = el.querySelectorAll("svg.placesIcon");
+        const icon = icons[0];
+        const r = icon?.getBoundingClientRect();
+        return {
+          count: icons.length,
+          ariaHidden: icon?.getAttribute("aria-hidden"),
+          shapes: icon ? [...icon.children].map((c) => c.tagName) : [],
+          color: icon && getComputedStyle(icon).color,
+          w: r?.width, h: r?.height,
+          text: el.textContent.trim().replace(/\s+/g, " "),
+          label: el.getAttribute("aria-label"),
+          height: el.getBoundingClientRect().height,
+        };
+      }, sel);
+      const shapes = ["path", "circle", "ellipse"];
+
+      // The picker's row.
+      await page.locator(".fractalMenuBtn:visible").first().click();
+      const picker = await probe("#fractalTypeRow .placesRow");
+      expect(picker.count).toBe(1);
+      expect(picker.ariaHidden).toBe("true");
+      expect(picker.shapes).toEqual(shapes);
+      expect(picker.color).toBe("rgb(102, 204, 255)");
+      expect([picker.w, picker.h]).toEqual([20, 20]);
+      // (The spans have no spaces between them in the markup; the icon adds no text.)
+      expect(picker.text).toBe(`Places${await page.evaluate(() => TELEPORT_DESTINATIONS.length)} named places to dive into›`);
+      expect(picker.label).toBeNull();
+      expect(picker.height, "the row stays a comfortable tap target").toBeGreaterThanOrEqual(44);
+      await page.keyboard.press("Escape");
+      await expect(page.locator("#fractalTypeRow")).not.toHaveClass(/open/);
+
+      // The info card's button.
+      await page.locator("#hudBtn").click();
+      await expect(page.locator("#hud .hudPlaces")).toBeVisible();
+      const card = await probe("#hud .hudPlaces");
+      expect(card.count).toBe(1);
+      expect(card.ariaHidden).toBe("true");
+      expect(card.shapes).toEqual(shapes);
+      expect(card.color).toBe("rgb(102, 204, 255)");
+      expect(card.w).toBeGreaterThanOrEqual(16);
+      expect(card.text).toBe("Browse places");
+      expect(card.height, "the button stays a comfortable tap target").toBeGreaterThanOrEqual(44);
+      await expect(page.getByRole("button", { name: "Browse places", exact: true })).toBeVisible();
+
+      // The sheet's title; the dialog is still named "Places".
+      await page.locator("#hud .hudPlaces").click();
+      await expect(page.locator("#placesSheet")).toHaveClass(/open/);
+      const title = await probe("#placesSheet .head .title");
+      expect(title.count).toBe(1);
+      expect(title.ariaHidden).toBe("true");
+      expect(title.shapes).toEqual(shapes);
+      expect(title.text).toBe("Places");
+      expect(title.w).toBeGreaterThanOrEqual(16);
+      await expect(page.locator("#placesSheet")).toHaveAttribute("aria-label", "Places");
+      expect(pageErrors).toEqual([]);
+      // Three icons in all: one per control, none doubled.
+      expect(await page.evaluate(() => document.querySelectorAll("svg.placesIcon").length)).toBe(3);
+    });
+  }
+});
+
 test.describe("layout", () => {
   test("a phone gets one column and a desktop two, with no sideways scroll and the sheet clear of the toolbar", async ({ page }) => {
     for (const [size, columns] of [[{ width: 393, height: 852 }, 1], [{ width: 1280, height: 800 }, 2]]) {
