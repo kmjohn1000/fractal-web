@@ -355,8 +355,9 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       was as sharp as the rest, but the gain is small, because moving or
       zooming out already fills the undrawn margins in very little time; the
       spike's cost (about 1.4-1.8x a visible frame's render time per deep
-      view, 8-14 MB on iPhone) is not worth it, and a useful version would
-      need much more rendering. The prototype is kept on branch
+      view, 8-14 MB on iPhone) is not worth it: the spike proved it can be
+      done, but the margin would need to be much bigger than 25% to matter,
+      and the cost grows with the area drawn. The prototype is kept on branch
       `worktree-agent-a323f50456ab9e0ff` (`b74b631`, not merged). Reopen only
       if blank edges become a reported problem. Render past the screen edges
       so a drag reveals image, not blank
