@@ -2,7 +2,7 @@
 // (float64 and exact BigInt), and the CPU twins of the shader's colors. Split from fractal-defs.js (a pure
 // move). Pure definitions, no DOM. Needs configs.js (FTYPE).
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { FTYPE } from "./configs.js?v=1.70.2";
+import { FTYPE } from "./configs.js?v=1.70.3";
 
 // Carpet and Gasket: the digit-test fractals (renderDigitFractal in
 // shaders.js), which use a zoom-derived depth instead of maxIter and cell

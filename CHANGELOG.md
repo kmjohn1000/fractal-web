@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.70.3 — 2026-11-06
+- Internal: moved the fractal picker (its tiles, the hamburger buttons and the tap-outside dismissal) out of `compass-ui.js` into `fractal-picker.js` (no change in behavior).
+
 ## 1.70.2 — 2026-11-06
 - Internal: moved the toolbar's ARIA and focus handling out of `app.js` into `toolbar-a11y.js` (no change in behavior).
 
