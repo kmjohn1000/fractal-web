@@ -52,12 +52,15 @@ git-ignored file.
          tests passed on webkit-iphone15 and chromium-desktop; `fern.js` 851
          lines, `ifs.js` 262; `make-short.mjs` patches `PENTAGON_RATIO` in
          `ifs.js` through its own route and now checks that the patched
-         values reached the page). Still open, optional: `digit-fractals.js` and `apollonian.js` from
-         `fractal-defs.js` (`EXTRA_MODES` must stay where it is: `tests/cases.mjs`
-         reads it as text); `ifs.js` from `fern.js` (the replay constants and
-         `createIfsView` stay: `scripts/make-short.mjs` patches that text);
-         the dragon split into three files; `fractal-picker.js`,
-         `toolbar-a11y.js`. Not worth splitting: `shaders.js`, `renderer.js`,
+         values reached the page). The rest DONE 2026-11-06 (user: "finish the
+         splits"; each a pure move, diffed against HEAD, lint, stamp, the covering
+         specs on webkit-iphone15 and chromium-desktop, one patch bump with an
+         "Internal" line): `digit-fractals.js` and `apollonian.js` from
+         `fractal-defs.js` (`88359a3`, 1.70.1; `EXTRA_MODES` stayed: `tests/cases.mjs`
+         reads it as text); `toolbar-a11y.js` from `app.js` (`2c98194`, 1.70.2;
+         the last import in `app.js`); `fractal-picker.js` from `compass-ui.js`
+         (`c8c0258`, 1.70.3); `dragon.js` into `dragon.js` (definitions and the
+         dragon walk), `lcurves.js` and `curve-view.js` (`f5ba282`, 1.70.4). Not worth splitting: `shaders.js`, `renderer.js`,
          the view factories, `configs.js`, `places.js`, `colormaps.js`.
       4. Safety nets: `scripts/test-visual.mjs` no longer kills another
          session's run: DONE 2026-11-02 (`9c9fdf0`, only orphaned processes)
