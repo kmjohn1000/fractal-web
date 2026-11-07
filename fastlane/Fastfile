@@ -9,7 +9,10 @@
 #   1. App Store Connect > Users and Access > Integrations > Keys: create an
 #      API key with the App Manager role and download the .p8 once.
 #   2. Keep the .p8 outside this repo (e.g. ~/.appstoreconnect/AuthKey_XXXX.p8).
-#   3. Export ASC_KEY_ID, ASC_ISSUER_ID and ASC_KEY_PATH in your shell profile.
+#   3. In a Terminal window, only when releasing, export ASC_KEY_ID (the ID in
+#      the AuthKey_<ID>.p8 filename), ASC_ISSUER_ID (Team Keys page) and
+#      ASC_KEY_PATH. Keep them out of your shell profile and fastlane/.env so
+#      Claude Code's shell doesn't inherit them.
 #
 #   fastlane check
 #       Read-only: proves the API key works and compares the latest build
