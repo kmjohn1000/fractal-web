@@ -21,10 +21,14 @@
 #   fastlane upload [ipa:path/to/App.ipa]
 #       Uploads the newest store-assets/*/ipa/*.ipa (or the one given).
 #
-#   node scripts/listing-to-fastlane.mjs listing/<v>/listing-<v>.md
-#   fastlane listing version:<v> [screenshots:<dir>]
-#       Pushes the listing text for every language to the editable version.
-#       Screenshots are skipped unless given (see the note on that lane).
+#   fastlane listing version:<v> [screenshots:true]
+#       Pushes the listing text for every language to the editable version
+#       (the version must already exist in App Store Connect). With
+#       screenshots:true it also replaces the screenshots of every locale with
+#       the staged set, after a second confirmation. Neither input is made by
+#       hand: /release step 8 writes fastlane/metadata/ from listing-<v>.md
+#       (node scripts/listing-to-fastlane.mjs) and fastlane/screenshots/ from
+#       the listing/<version>/app/ folders (node scripts/stage-screenshots.mjs).
 
 opt_out_usage
 default_platform(:ios)
@@ -77,24 +81,35 @@ platform :ios do
     )
   end
 
-  desc "Push listing text (and optionally screenshots) to the editable App Store version"
+  desc "Push listing text (and, with screenshots:true, the screenshot set) to the editable App Store version"
   lane :listing do |options|
     unless Dir["metadata/*/name.txt"].any?
-      UI.user_error!("No metadata. Run: node scripts/listing-to-fastlane.mjs listing/<v>/listing-<v>.md")
+      UI.user_error!("No metadata. /release step 8 writes it, or run: node scripts/listing-to-fastlane.mjs listing/<v>/listing-<v>.md")
     end
-    # Screenshots: deliver wants <dir>/<locale>/*.png and tells the device slot
-    # from each image's pixel size. /release's layout is <v>/app/<slot>/, so
-    # a staging folder is needed first; this path is untested. Pass nothing to
-    # leave screenshots alone. deliver adds to existing screenshots and does
-    # not replace them here.
-    shots = options[:screenshots] && File.expand_path(options[:screenshots], REPO_ROOT)
+    # Screenshots (screenshots:true): deliver reads fastlane/screenshots/<locale>/*.png
+    # and tells the device slot from each image's pixel size. That folder is
+    # staged by `node scripts/stage-screenshots.mjs` (/release step 8 runs it).
+    # The set replaces what is on the version for these locales: overwrite_screenshots
+    # deletes each locale's existing screenshots first, so it asks before sending.
+    with_shots = options[:screenshots].to_s == "true"
+    if with_shots
+      staged = Dir["screenshots/*/*.png"]
+      locales = staged.map { |f| File.basename(File.dirname(f)) }.uniq
+      if staged.empty?
+        UI.user_error!("No staged screenshots. Run: node scripts/stage-screenshots.mjs")
+      end
+      UI.important("#{staged.size} screenshots staged for #{locales.size} locales (#{locales.sort.join(', ')}).")
+      UI.important("This DELETES the existing screenshots of those locales on the editable version, then uploads these.")
+      UI.user_error!("Cancelled") unless UI.confirm("Replace the screenshots on version #{options[:version]}?")
+    end
     upload_to_app_store(
       api_key: asc_key,
       app_version: options[:version],
       metadata_path: "metadata",
       skip_binary_upload: true,
-      skip_screenshots: shots.nil?,
-      screenshots_path: shots || "screenshots",
+      skip_screenshots: !with_shots,
+      screenshots_path: "screenshots",
+      overwrite_screenshots: with_shots,
       submit_for_review: false,
       automatic_release: false,
       run_precheck_before_submit: false
