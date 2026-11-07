@@ -11,6 +11,10 @@
 #   2. Keep the .p8 outside this repo (e.g. ~/.appstoreconnect/AuthKey_XXXX.p8).
 #   3. Export ASC_KEY_ID, ASC_ISSUER_ID and ASC_KEY_PATH in your shell profile.
 #
+#   fastlane check
+#       Read-only: proves the API key works and compares the latest build
+#       number on App Store Connect with the next one (git commit count).
+#
 #   fastlane upload [ipa:path/to/App.ipa]
 #       Uploads the newest store-assets/*/ipa/*.ipa (or the one given).
 #
@@ -38,6 +42,21 @@ def asc_key
 end
 
 platform :ios do
+  desc "Read-only: check the API key and compare build numbers with App Store Connect"
+  lane :check do
+    latest = latest_testflight_build_number(api_key: asc_key, initial_build_number: 0)
+    # /release stamps the build number as the git commit count (npm run ios:sync).
+    local = sh("git rev-list --count HEAD", log: false).strip.to_i
+    UI.success("API key works.")
+    UI.message("Latest build on App Store Connect: #{latest}")
+    UI.message("Next build from this checkout (commit count): #{local}")
+    if local > latest.to_i
+      UI.success("Next build number is higher, so an upload will be accepted.")
+    else
+      UI.important("Next build number is NOT higher than the latest upload; Apple will reject it.")
+    end
+  end
+
   desc "Upload an exported IPA to App Store Connect (no review submission)"
   lane :upload do |options|
     ipa = if options[:ipa]
