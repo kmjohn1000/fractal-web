@@ -30,3 +30,10 @@ store-assets/
 ExportOptions.plist
 # Golden screenshots for the visual suite (~200 MB): local only, see tests/README.md.
 tests/baselines/
+# fastlane: listing text generated from listing/ (never commit listing copy),
+# staged screenshots, run reports and the local API-key settings.
+fastlane/metadata/
+fastlane/screenshots/
+fastlane/report.xml
+fastlane/README.md
+fastlane/.env*
