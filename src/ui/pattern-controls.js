@@ -6,15 +6,15 @@
 // fern.js, chaos-run.js and teleport.js (cancelTeleport, inside startDotRun only).
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { KOCH_GROW_MS, KOCH_GROW_STEP_SHARE } from "../fractals/koch.js?v=1.80.4";
-import { isCurveMode } from "../fractals/fractal-defs.js?v=1.80.4";
-import { dragonState, els, fernState, fernView, hexaflakeState, kochState, kochView, mode, treeState } from "../core/state.js?v=1.80.4";
-import { fernRenderOpts, requestRender } from "../render/render-layout.js?v=1.80.4";
-import { dragonNav, fernNav, fitVectorView, hexaflakeNav, kochNav, treeNav, vectorViewIsFitted } from "./vector-interaction.js?v=1.80.4";
-import { prefersReducedMotion, syncSliderFill } from "./compass-ui.js?v=1.80.4";
-import { REPLAY_LONG, replayStopPoints, seededRandom } from "../fractals/fern.js?v=1.80.4";
-import { announceRunDone, newRunSeed, rememberRun, updateRunChip } from "../fractals/chaos-run.js?v=1.80.4";
-import { cancelTeleport } from "./teleport.js?v=1.80.4";
+import { KOCH_GROW_MS, KOCH_GROW_STEP_SHARE } from "../fractals/koch.js?v=1.80.0";
+import { isCurveMode } from "../fractals/fractal-defs.js?v=1.80.0";
+import { dragonState, els, fernState, fernView, hexaflakeState, kochState, kochView, mode, treeState } from "../core/state.js?v=1.80.0";
+import { fernRenderOpts, requestRender } from "../render/render-layout.js?v=1.80.0";
+import { dragonNav, fernNav, fitVectorView, hexaflakeNav, kochNav, treeNav, vectorViewIsFitted } from "./vector-interaction.js?v=1.80.0";
+import { prefersReducedMotion, syncSliderFill } from "./compass-ui.js?v=1.80.0";
+import { REPLAY_LONG, replayStopPoints, seededRandom } from "../fractals/fern.js?v=1.80.0";
+import { announceRunDone, newRunSeed, rememberRun, updateRunChip } from "../fractals/chaos-run.js?v=1.80.0";
+import { cancelTeleport } from "./teleport.js?v=1.80.0";
 
 els.kochDepthSlider.addEventListener("input", () => {
   syncSliderFill(els.kochDepthSlider);

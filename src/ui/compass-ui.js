@@ -3,17 +3,17 @@
 // calls teleport.js (cancelTeleport) only inside event handlers.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { Platform } from "../core/platform.js?v=1.80.4";
-import { FRACTAL_CONFIGS } from "../core/configs.js?v=1.80.4";
-import { limitScale } from "../core/deepzoom.js?v=1.80.4";
-import { activePane, currentName, dualActive, els, juliaState, mainState, mode, paneRenderer, paneState, pushHistory, setActivePane, shownPane } from "../core/state.js?v=1.80.4";
-import { markInteracting, popHistory } from "../core/state-colors.js?v=1.80.4";
-import { renderAll, requestRender } from "../render/render-layout.js?v=1.80.4";
-import { moveCenter, normalizeAngle, screenToComplex } from "../core/view-math.js?v=1.80.4";
-import { closeDual, enterDual, openPresetInDual } from "./modes.js?v=1.80.4";
-import { KEY_PAN_FRACTION, keyAction } from "./interaction.js?v=1.80.4";
-import { activeVectorTarget } from "./vector-interaction.js?v=1.80.4";
-import { cancelTeleport, teleportGeneration } from "./teleport.js?v=1.80.4";
+import { Platform } from "../core/platform.js?v=1.80.0";
+import { FRACTAL_CONFIGS } from "../core/configs.js?v=1.80.0";
+import { limitScale } from "../core/deepzoom.js?v=1.80.0";
+import { activePane, currentName, dualActive, els, juliaState, mainState, mode, paneRenderer, paneState, pushHistory, setActivePane, shownPane } from "../core/state.js?v=1.80.0";
+import { markInteracting, popHistory } from "../core/state-colors.js?v=1.80.0";
+import { renderAll, requestRender } from "../render/render-layout.js?v=1.80.0";
+import { moveCenter, normalizeAngle, screenToComplex } from "../core/view-math.js?v=1.80.0";
+import { closeDual, enterDual, openPresetInDual } from "./modes.js?v=1.80.0";
+import { KEY_PAN_FRACTION, keyAction } from "./interaction.js?v=1.80.0";
+import { activeVectorTarget } from "./vector-interaction.js?v=1.80.0";
+import { cancelTeleport, teleportGeneration } from "./teleport.js?v=1.80.0";
 
 // ---------------------------------------------------------------- compass
 

@@ -3,8 +3,8 @@
 // (a pure move); the curve definitions (LINE_CURVES) and the dragon's own walk are in dragon.js, the Canvas2D
 // view in curve-view.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { LINE_CURVES } from "./dragon.js?v=1.80.4";
-import { VECTOR_CULL_MARGIN } from "../render/vectorgeom.js?v=1.80.4";
+import { LINE_CURVES } from "./dragon.js?v=1.80.0";
+import { VECTOR_CULL_MARGIN } from "../render/vectorgeom.js?v=1.80.0";
 
 // ---------------------------------------------------------------- Hilbert, Gosper and the arrowhead from the viewport
 

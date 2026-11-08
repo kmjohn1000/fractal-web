@@ -4,15 +4,15 @@
 // showHud); the scripts before and after it call cancelTeleport etc.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { FRACTAL_CONFIGS } from "../core/configs.js?v=1.80.4";
-import { viewFromBounds } from "../fractals/fractal-defs.js?v=1.80.4";
-import { TELEPORT_DESTINATIONS } from "../fractals/places.js?v=1.80.4";
-import { applyAutoIter, currentName, dualActive, els, mainCanvasAspect, mainState, mode, pushHistory, setActivePane } from "../core/state.js?v=1.80.4";
-import { applyDefaultColormap, markInteracting } from "../core/state-colors.js?v=1.80.4";
-import { renderAll } from "../render/render-layout.js?v=1.80.4";
-import { exactFromPlace, normalizeAngle, setCenter } from "../core/view-math.js?v=1.80.4";
-import { selectFractal } from "./modes.js?v=1.80.4";
-import { prefersReducedMotion, showHud } from "./compass-ui.js?v=1.80.4";
+import { FRACTAL_CONFIGS } from "../core/configs.js?v=1.80.0";
+import { viewFromBounds } from "../fractals/fractal-defs.js?v=1.80.0";
+import { TELEPORT_DESTINATIONS } from "../fractals/places.js?v=1.80.0";
+import { applyAutoIter, currentName, dualActive, els, mainCanvasAspect, mainState, mode, pushHistory, setActivePane } from "../core/state.js?v=1.80.0";
+import { applyDefaultColormap, markInteracting } from "../core/state-colors.js?v=1.80.0";
+import { renderAll } from "../render/render-layout.js?v=1.80.0";
+import { exactFromPlace, normalizeAngle, setCenter } from "../core/view-math.js?v=1.80.0";
+import { selectFractal } from "./modes.js?v=1.80.0";
+import { prefersReducedMotion, showHud } from "./compass-ui.js?v=1.80.0";
 
 // ---------------------------------------------------------------- teleport ("Surprise me")
 

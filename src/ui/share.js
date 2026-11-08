@@ -3,26 +3,26 @@
 // colormap-picker.js; applyShareHashFromUrl and applyShareLink are called from init in app.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { Platform } from "../core/platform.js?v=1.80.4";
-import { COLORMAPS, SOLID_COLORS } from "../render/colormaps.js?v=1.80.4";
-import { FRACTAL_CONFIGS } from "../core/configs.js?v=1.80.4";
-import { LINE_CURVES } from "../fractals/dragon.js?v=1.80.4";
-import { Diag } from "../core/diag.js?v=1.80.4";
-import { EXTRA_MODES, isCurveMode, isIfsMode } from "../fractals/fractal-defs.js?v=1.80.4";
-import { limitScale } from "../core/deepzoom.js?v=1.80.4";
-import { COLOR_BANDS_RANGE, STYLE_LINK_CODES, colorStyle } from "../render/color-styles.js?v=1.80.4";
-import { HEXAFLAKE_DEFAULT_DEPTH, HEXAFLAKE_MAX_DEPTH, currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, juliaState, kochState, mainState, mode, treeState, vectorColors } from "../core/state.js?v=1.80.4";
-import { colormapIndex, colormapIndexNamed, defaultColormapName, setColorStyle, setColormapIndex, setColormapPicked } from "../core/state-colors.js?v=1.80.4";
-import { requestRender, updateLUT } from "../render/render-layout.js?v=1.80.4";
-import { exactFromLink, exactLinkFields, normalizeAngle, setCenter } from "../core/view-math.js?v=1.80.4";
-import { enterDual, exitDual, selectFractal, setCornerRule, setMode } from "./modes.js?v=1.80.4";
-import { VECTOR_VIEWS, dragonNav, fernNav, fitVectorView, fittedVectorModes } from "./vector-interaction.js?v=1.80.4";
-import { PENROSE_HH_MAX, PENROSE_HH_MIN, penroseCenterFields, penroseClampHalfHeight, penroseParseExact } from "../fractals/penrose.js?v=1.80.4";
-import { cancelTeleport } from "./teleport.js?v=1.80.4";
-import { scheduleSharedRun } from "./pattern-controls.js?v=1.80.4";
-import { currentRunSeed, parseRunSeed } from "../fractals/chaos-run.js?v=1.80.4";
-import { cornerDeal, parseCornerRule } from "../fractals/corner-rules.js?v=1.80.4";
-import { setFernColor, updateColorSwatches } from "./colormap-picker.js?v=1.80.4";
+import { Platform } from "../core/platform.js?v=1.80.0";
+import { COLORMAPS, SOLID_COLORS } from "../render/colormaps.js?v=1.80.0";
+import { FRACTAL_CONFIGS } from "../core/configs.js?v=1.80.0";
+import { LINE_CURVES } from "../fractals/dragon.js?v=1.80.0";
+import { Diag } from "../core/diag.js?v=1.80.0";
+import { EXTRA_MODES, isCurveMode, isIfsMode } from "../fractals/fractal-defs.js?v=1.80.0";
+import { limitScale } from "../core/deepzoom.js?v=1.80.0";
+import { COLOR_BANDS_RANGE, STYLE_LINK_CODES, colorStyle } from "../render/color-styles.js?v=1.80.0";
+import { HEXAFLAKE_DEFAULT_DEPTH, HEXAFLAKE_MAX_DEPTH, currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, juliaState, kochState, mainState, mode, treeState, vectorColors } from "../core/state.js?v=1.80.0";
+import { colormapIndex, colormapIndexNamed, defaultColormapName, setColorStyle, setColormapIndex, setColormapPicked } from "../core/state-colors.js?v=1.80.0";
+import { requestRender, updateLUT } from "../render/render-layout.js?v=1.80.0";
+import { exactFromLink, exactLinkFields, normalizeAngle, setCenter } from "../core/view-math.js?v=1.80.0";
+import { enterDual, exitDual, selectFractal, setCornerRule, setMode } from "./modes.js?v=1.80.0";
+import { VECTOR_VIEWS, dragonNav, fernNav, fitVectorView, fittedVectorModes } from "./vector-interaction.js?v=1.80.0";
+import { PENROSE_HH_MAX, PENROSE_HH_MIN, penroseCenterFields, penroseClampHalfHeight, penroseParseExact } from "../fractals/penrose.js?v=1.80.0";
+import { cancelTeleport } from "./teleport.js?v=1.80.0";
+import { scheduleSharedRun } from "./pattern-controls.js?v=1.80.0";
+import { currentRunSeed, parseRunSeed } from "../fractals/chaos-run.js?v=1.80.0";
+import { cornerDeal, parseCornerRule } from "../fractals/corner-rules.js?v=1.80.0";
+import { setFernColor, updateColorSwatches } from "./colormap-picker.js?v=1.80.0";
 
 // ---------------------------------------------------------------- share: links
 
