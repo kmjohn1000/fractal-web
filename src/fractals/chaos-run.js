@@ -3,9 +3,9 @@
 // numbers on the info card) and the few lines a screen reader hears. The engine itself is fern.js
 // (startReplay, fernView.runStats); teleport.js starts the runs and render-layout.js calls in here.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { fernView, mode } from "../core/state.js?v=1.80.3";
-import { formatPointCount } from "../ui/hud-format.js?v=1.80.3";
-import { cornerDeal } from "./corner-rules.js?v=1.80.3";
+import { fernView, mode } from "../core/state.js?v=1.80.4";
+import { formatPointCount } from "../ui/hud-format.js?v=1.80.4";
+import { cornerDeal } from "./corner-rules.js?v=1.80.4";
 
 // ---------------------------------------------------------------- the seed
 
@@ -23,7 +23,7 @@ export function parseRunSeed(raw) {
 // The run last played: its seed, the shape and the view it was played on. The seed belongs to the
 // picture only while all of that is as it was (a pan or zoom, another shape: it is not that run's
 // picture any more), so the share link and the info card ask currentRunSeed.
-export const chaosRun = { seed: 0, system: "", rule: 0, view: null, announced: 0, lastPoints: 0 };
+export const chaosRun = { seed: 0, system: "", rule: 0, view: null, announced: 0, lastPoints: 0, clearTimer: 0 };
 // Corner Rules: the run belongs to the rule it was played under too (0 for the shapes without rules)
 export const runRule = () => (fernView.system === "corners" ? cornerDeal.id : 0);
 export function rememberRun(seed) {
@@ -69,9 +69,16 @@ export function updateRunChip() {
 
 // One polite live region, and only the milestones: each time the points reach a power of ten
 // ("100 points", "1,000 points", "10 thousand points", ...) and when the run is done.
+// How long a line stays in the live region. A screen reader reads a change as it happens, so emptying the region
+// afterwards says nothing more; left full, the last line ("Done. 2,000 points, 99% filled.") sat at the top left
+// corner for good, where VoiceOver could land on it in any other fractal and draw its focus box there.
+export const ANNOUNCE_CLEAR_MS = 4000;
 export function announce(text) {
   const region = document.getElementById("runAnnounce");
-  if (region) region.textContent = text;
+  if (!region) return;
+  region.textContent = text;
+  clearTimeout(chaosRun.clearTimer);
+  chaosRun.clearTimer = setTimeout(() => { region.textContent = ""; }, ANNOUNCE_CLEAR_MS);
 }
 export function announceMilestones(stats) {
   if (stats.points < chaosRun.lastPoints) chaosRun.announced = 0; // a new run began

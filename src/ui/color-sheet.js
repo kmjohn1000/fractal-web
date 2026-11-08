@@ -3,16 +3,16 @@
 // colormap-picker.js (cmGradient). app.js's init schedules prepareColorSheet and fitColorSegment.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { COLORMAPS, SOLID_COLORS, SOLID_COLOR_ORDER, solidCss } from "../render/colormaps.js?v=1.80.3";
-import { FRACTAL_CONFIGS, fractalLabel } from "../core/configs.js?v=1.80.3";
-import { COLOR_BANDS_RANGE, COLOR_STYLES, ESCAPE_TIME_TYPES, colorStyle, styleBlocked, styleDrawn } from "../render/color-styles.js?v=1.80.3";
-import { currentName, els, isInteracting, juliaRenderer, mainRenderer, mainState, mode, vectorColors } from "../core/state.js?v=1.80.3";
-import { colormapDefaultIndex, colormapIndex, pickColormap, releaseColormapPick, setColorStyle } from "../core/state-colors.js?v=1.80.3";
-import { zoomPhrase } from "./hud-format.js?v=1.80.3";
-import { requestRender } from "../render/render-layout.js?v=1.80.3";
-import { fernNav, fitVectorView } from "./vector-interaction.js?v=1.80.3";
-import { syncSliderFill } from "./compass-ui.js?v=1.80.3";
-import { cmGradient, updateColorSwatches } from "./colormap-picker.js?v=1.80.3";
+import { COLORMAPS, SOLID_COLORS, SOLID_COLOR_ORDER, solidCss } from "../render/colormaps.js?v=1.80.4";
+import { FRACTAL_CONFIGS, fractalLabel } from "../core/configs.js?v=1.80.4";
+import { COLOR_BANDS_RANGE, COLOR_STYLES, ESCAPE_TIME_TYPES, colorStyle, styleBlocked, styleDrawn } from "../render/color-styles.js?v=1.80.4";
+import { currentName, els, isInteracting, juliaRenderer, mainRenderer, mainState, mode, vectorColors } from "../core/state.js?v=1.80.4";
+import { colormapDefaultIndex, colormapIndex, pickColormap, releaseColormapPick, setColorStyle } from "../core/state-colors.js?v=1.80.4";
+import { zoomPhrase } from "./hud-format.js?v=1.80.4";
+import { requestRender } from "../render/render-layout.js?v=1.80.4";
+import { fernNav, fitVectorView } from "./vector-interaction.js?v=1.80.4";
+import { syncSliderFill } from "./compass-ui.js?v=1.80.4";
+import { cmGradient, updateColorSwatches } from "./colormap-picker.js?v=1.80.4";
 
 // ---------------------------------------------------------------- color sheet
 

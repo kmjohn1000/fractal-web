@@ -2,6 +2,10 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.80.4 — 2026-11-08
+- Fixed: the info card no longer shows the "preview (full detail once you stop)" line that 1.80.3 added while dragging Phoenix; the drag preview itself stays.
+- Fixed: after a chaos-game run, no invisible "Done. N points, N% filled" line stays in the top left corner for VoiceOver to land on in other fractals; the screen-reader line is cleared a few seconds after it is read.
+
 ## 1.80.3 — 2026-11-08
 - Fixed: dragging or pinching Phoenix (and its Julia set) no longer lags at any zoom: the gesture moves the last frame and draws the sharp one when you stop, as the deep views already did.
 

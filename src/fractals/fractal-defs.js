@@ -3,8 +3,8 @@
 // digit helpers are in digit-fractals.js and the Apollonian gasket's CPU math in apollonian.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it;
 // tests/cases.mjs reads this file's text and accepts the `export`).
-import { LINE_CURVES } from "./dragon.js?v=1.80.3";
-import { IFS_SYSTEMS } from "./ifs.js?v=1.80.3";
+import { LINE_CURVES } from "./dragon.js?v=1.80.4";
+import { IFS_SYSTEMS } from "./ifs.js?v=1.80.4";
 
 // The fractal picker's layout, in display order: sections with a title, each
 // split into titled groups of tiles. Display only: a key is a FRACTAL_CONFIGS
