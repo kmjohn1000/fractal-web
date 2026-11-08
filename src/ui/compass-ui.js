@@ -3,17 +3,17 @@
 // calls teleport.js (cancelTeleport) only inside event handlers.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { Platform } from "../core/platform.js?v=1.80.0";
-import { FRACTAL_CONFIGS } from "../core/configs.js?v=1.80.0";
-import { limitScale } from "../core/deepzoom.js?v=1.80.0";
-import { activePane, currentName, dualActive, els, juliaState, mainState, mode, paneRenderer, paneState, pushHistory, setActivePane, shownPane } from "../core/state.js?v=1.80.0";
-import { markInteracting, popHistory } from "../core/state-colors.js?v=1.80.0";
-import { renderAll, requestRender } from "../render/render-layout.js?v=1.80.0";
-import { moveCenter, normalizeAngle, screenToComplex } from "../core/view-math.js?v=1.80.0";
-import { closeDual, enterDual, openPresetInDual } from "./modes.js?v=1.80.0";
-import { KEY_PAN_FRACTION, keyAction } from "./interaction.js?v=1.80.0";
-import { activeVectorTarget } from "./vector-interaction.js?v=1.80.0";
-import { cancelTeleport } from "./teleport.js?v=1.80.0";
+import { Platform } from "../core/platform.js?v=1.80.3";
+import { FRACTAL_CONFIGS } from "../core/configs.js?v=1.80.3";
+import { limitScale } from "../core/deepzoom.js?v=1.80.3";
+import { activePane, currentName, dualActive, els, juliaState, mainState, mode, paneRenderer, paneState, pushHistory, setActivePane, shownPane } from "../core/state.js?v=1.80.3";
+import { markInteracting, popHistory } from "../core/state-colors.js?v=1.80.3";
+import { renderAll, requestRender } from "../render/render-layout.js?v=1.80.3";
+import { moveCenter, normalizeAngle, screenToComplex } from "../core/view-math.js?v=1.80.3";
+import { closeDual, enterDual, openPresetInDual } from "./modes.js?v=1.80.3";
+import { KEY_PAN_FRACTION, keyAction } from "./interaction.js?v=1.80.3";
+import { activeVectorTarget } from "./vector-interaction.js?v=1.80.3";
+import { cancelTeleport, teleportGeneration } from "./teleport.js?v=1.80.3";
 
 // ---------------------------------------------------------------- compass
 
@@ -119,8 +119,12 @@ export function resetRotation(key) {
   const st = p.st;
   const from = normalizeAngle(st.rotation || 0);
   if (from === 0) return;
+  // A flight in progress would fight this reset frame by frame, so it ends
+  // first. The generation is read after this call, so the reset's own cancel
+  // doesn't stop it; a later pointer-down, flight or other cancel does.
+  cancelTeleport();
+  const gen = teleportGeneration;
   if (p.fractalPane) {
-    cancelTeleport();
     pushHistory(p.fractalPane);
     setActivePane(p.fractalPane);
   } else {
@@ -133,6 +137,9 @@ export function resetRotation(key) {
   // the cheap preview until the last frame, then the settle timer renders
   // for real. Rotation turns about the view center, so cx/cy stay put.
   const step = (now) => {
+    // Stop when a pointer-down (a twist), a flight or another cancel took over:
+    // this loop would otherwise overwrite their rotation every frame.
+    if (gen !== teleportGeneration) return;
     const cur = rotatablePanes().find((q) => q.key === key);
     if (!cur || cur.st !== st) return; // mode/fractal changed mid-animation
     const t = durationMs ? Math.min(1, (now - t0) / durationMs) : 1;

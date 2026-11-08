@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Fractal Atlas&trade;</title>
 
-<link rel="manifest" href="manifest.webmanifest?v=1.80.0">
+<link rel="manifest" href="manifest.webmanifest?v=1.80.3">
 <meta name="theme-color" content="#111111">
-<link rel="icon" href="icons/favicon-32.png?v=1.80.0" sizes="32x32" type="image/png">
+<link rel="icon" href="icons/favicon-32.png?v=1.80.3" sizes="32x32" type="image/png">
 
 <!-- iOS Safari ignores the manifest entirely for install/homescreen purposes
      and needs its own meta tags + a dedicated (non-transparent) icon. -->
@@ -15,7 +15,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fractal Atlas">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.80.0">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.80.3">
 
 <!-- Smart App Banner: Safari on iPhone/iPad offers the App Store app.
      Ignored everywhere else, including the app's own web view. -->
@@ -603,6 +603,9 @@
      (its default flash looks janky over the app's dark chrome). */
   button:active { transform: scale(0.95); background: #3a3a3a; }
   button.active:active { background: #2f5a86; }
+  /* A double-tap (VoiceOver's activate gesture included) must act on the control, not select its text:
+     the toolbar's labels and buttons are not text to select. Sliders and inputs are unaffected. */
+  button, label.field, .control-row { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 
   /* Icon-only buttons: fixed square (still the same 44px touch target),
      no text padding, SVG centered via flex. currentColor on the SVG
@@ -1085,6 +1088,6 @@
   </div>
 </div>
 
-<script type="module" src="src/app.js?v=1.80.0"></script>
+<script type="module" src="src/app.js?v=1.80.3"></script>
 </body>
 </html>

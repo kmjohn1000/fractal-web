@@ -3,14 +3,14 @@
 // calls color-sheet.js (openColorSheet, openSolidColorSheet, colorSheetApplies) only inside event handlers.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { SOLID_COLORS } from "../render/colormaps.js?v=1.80.0";
-import { curveRamp } from "../fractals/curve-view.js?v=1.80.0";
-import { IFS_SYSTEMS, ifsTransformColors } from "../fractals/ifs.js?v=1.80.0";
-import { kochShade } from "../fractals/koch.js?v=1.80.0";
-import { treeSwatchStops } from "../fractals/pythagoras.js?v=1.80.0";
-import { hexaflakeShade } from "../fractals/hexaflake.js?v=1.80.0";
-import { dragonView, els, fernView, vectorColors } from "../core/state.js?v=1.80.0";
-import { colorSheetApplies, colorSheetSolid, openColorSheet, openSolidColorSheet } from "./color-sheet.js?v=1.80.0";
+import { SOLID_COLORS } from "../render/colormaps.js?v=1.80.3";
+import { curveRamp } from "../fractals/curve-view.js?v=1.80.3";
+import { IFS_SYSTEMS, ifsTransformColors } from "../fractals/ifs.js?v=1.80.3";
+import { kochShade } from "../fractals/koch.js?v=1.80.3";
+import { treeSwatchStops } from "../fractals/pythagoras.js?v=1.80.3";
+import { hexaflakeShade } from "../fractals/hexaflake.js?v=1.80.3";
+import { dragonView, els, fernView, vectorColors } from "../core/state.js?v=1.80.3";
+import { colorSheetApplies, colorSheetSolid, openColorSheet, openSolidColorSheet } from "./color-sheet.js?v=1.80.3";
 
 // ---------------------------------------------------------------- color buttons
 

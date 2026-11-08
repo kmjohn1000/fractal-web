@@ -2,6 +2,15 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.80.3 — 2026-11-08
+- Fixed: dragging or pinching Phoenix (and its Julia set) no longer lags at any zoom: the gesture moves the last frame and draws the sharp one when you stop, as the deep views already did.
+
+## 1.80.2 — 2026-11-08
+- Fixed: a double-tap on the toolbar no longer selects the "detail" label or the button text.
+
+## 1.80.1 — 2026-11-08
+- Fixed: a compass reset no longer overwrites a twist or a flight that starts while it is turning the view back to upright.
+
 ## 1.80.0 — 2026-11-08
 - Release build for the App Store: brings together 1.66.0 to 1.70.5 (Spider, Magnet I and II, the sine family and the Sine L-plane, the picker rows, the places pin). Nothing new on top of those entries.
 

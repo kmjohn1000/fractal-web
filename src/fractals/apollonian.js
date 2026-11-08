@@ -2,7 +2,7 @@
 // (float64 and exact BigInt) and the cap color. Split from fractal-defs.js (a pure move). Pure definitions,
 // no DOM. Needs view-math.js (fromExact).
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { fromExact } from "../core/view-math.js?v=1.80.0";
+import { fromExact } from "../core/view-math.js?v=1.80.3";
 
 // Apollonian gasket: the (-1, 2, 2, 3) packing -- the unit circle, circles
 // of radius 1/2 at -1/2 and 1/2, and circles of radius 1/3 at +-2i/3 --

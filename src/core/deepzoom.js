@@ -2,8 +2,8 @@
 // offsets. No DOM references (no document, els, window or canvas): pure math on numbers and arrays.
 // Needs FTYPE and PHOENIX_P from configs.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { FTYPE, PHOENIX_P } from "./configs.js?v=1.80.0";
-import { EXACT_FRAC, EXACT_ONE, exactCenter, toExact } from "./view-math.js?v=1.80.0";
+import { FTYPE, PHOENIX_P } from "./configs.js?v=1.80.3";
+import { EXACT_FRAC, EXACT_ONE, exactCenter, toExact } from "./view-math.js?v=1.80.3";
 
 // ---------------------------------------------------------------- Phase 3: deep zoom
 // Below this scale, plain float32 starts losing pixels to precision collapse
@@ -533,5 +533,14 @@ export function deepZoomEligible(renderer, state) {
     && state.scale < DEEP_ZOOM_THRESHOLD)
     || (renderer.newtonDeepSupported && newtonDeepEligible(state))
     || (renderer.phoenixDeepSupported && phoenixDeepEligible(state));
+}
+
+// Whether a gesture frame of the main pane is the moving last-frame preview instead of a live render. The deep
+// views always are (deepZoomEligible); Phoenix is at every depth too (1.80.3): its float32 frame costs more than
+// a 60 fps frame on a phone (about 20 ms live, 40 to 60 ms a pass) and was drawn inside the touch handler, so a
+// drag stuttered and held up the other controls. A dual Julia pane keeps deepZoomEligible: it must follow the
+// main pane's center live, which a stale preview cannot do.
+export function gesturePreviewEligible(renderer, state) {
+  return deepZoomEligible(renderer, state) || state.ftype === FTYPE.PHOENIX;
 }
 

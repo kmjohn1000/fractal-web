@@ -3,14 +3,14 @@
 // (fractal-defs.js), deepzoom.js and color-styles.js. It imports nothing from state.js: state.js
 // calls createFractalRenderer(canvas, host) and passes the two live values a frame needs.
 // An ES module: every top-level declaration is exported (test-hooks.js and state.js rely on it).
-import { FTYPE, PHOENIX_P } from "../core/configs.js?v=1.80.0";
-import { Diag } from "../core/diag.js?v=1.80.0";
-import { FRAG_SRC, NEWTON_DEEP_FRAG_SRC, PHOENIX_DEEP_FRAG_SRC, PREVIEW_FRAG_SRC, VERT_SRC, VERT_SRC_300 } from "./shaders.js?v=1.80.0";
-import { apolloCapColor, apolloFrame } from "../fractals/apollonian.js?v=1.80.0";
-import { DIGIT_MAX_CELL_LEVEL, digitBase, digitCellFrame, digitCellLevel, digitColorCycle, digitFractalDepth, digitSubPixelColor, isDigitFractal } from "../fractals/digit-fractals.js?v=1.80.0";
-import { DEEP_ZOOM_THRESHOLD, FIXED_THIRD, PHOENIX_DEEP_SAMPLES, PHOENIX_EXACT_CAP, SAMPLE_OFFSETS, chooseReference, chooseReferenceExact, computeReferenceOrbit, computeReferenceOrbitExact, exactReferencePoint, exactRender, exactRenderEligible, fixedLimbs, newtonDeepEligible, newtonOrbitF64, perturbationEligibleType, phoenixDeepEligible, phoenixEscapeF64, phoenixReference } from "../core/deepzoom.js?v=1.80.0";
-import { EXACT_FROM, EXACT_ONE, exactCenter, exactFracFor, exactValid, toExact } from "../core/view-math.js?v=1.80.0";
-import { colorStyle, colorStyleFor, styleDrawn, trapRangeFor } from "./color-styles.js?v=1.80.0";
+import { FTYPE, PHOENIX_P } from "../core/configs.js?v=1.80.3";
+import { Diag } from "../core/diag.js?v=1.80.3";
+import { FRAG_SRC, NEWTON_DEEP_FRAG_SRC, PHOENIX_DEEP_FRAG_SRC, PREVIEW_FRAG_SRC, VERT_SRC, VERT_SRC_300 } from "./shaders.js?v=1.80.3";
+import { apolloCapColor, apolloFrame } from "../fractals/apollonian.js?v=1.80.3";
+import { DIGIT_MAX_CELL_LEVEL, digitBase, digitCellFrame, digitCellLevel, digitColorCycle, digitFractalDepth, digitSubPixelColor, isDigitFractal } from "../fractals/digit-fractals.js?v=1.80.3";
+import { DEEP_ZOOM_THRESHOLD, FIXED_THIRD, PHOENIX_DEEP_SAMPLES, PHOENIX_EXACT_CAP, SAMPLE_OFFSETS, chooseReference, chooseReferenceExact, computeReferenceOrbit, computeReferenceOrbitExact, exactReferencePoint, exactRender, exactRenderEligible, fixedLimbs, newtonDeepEligible, newtonOrbitF64, perturbationEligibleType, phoenixDeepEligible, phoenixEscapeF64, phoenixReference } from "../core/deepzoom.js?v=1.80.3";
+import { EXACT_FROM, EXACT_ONE, exactCenter, exactFracFor, exactValid, toExact } from "../core/view-math.js?v=1.80.3";
+import { colorStyle, colorStyleFor, styleDrawn, trapRangeFor } from "./color-styles.js?v=1.80.3";
 
 // ---------------------------------------------------------------- WebGL renderer factory
 

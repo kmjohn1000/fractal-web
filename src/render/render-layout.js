@@ -4,17 +4,17 @@
 // fractal-defs.js; calls into modes, interaction and the later scripts only inside function bodies.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { COLORMAPS, buildLUTBytes } from "./colormaps.js?v=1.80.0";
-import { Diag } from "../core/diag.js?v=1.80.0";
-import { isCurveMode, isIfsMode } from "../fractals/fractal-defs.js?v=1.80.0";
-import { SAMPLE_OFFSETS, deepZoomEligible } from "../core/deepzoom.js?v=1.80.0";
-import { activePane, adaptLiveResolution, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, hexaflakeView, isInteracting, juliaRenderer, juliaState, kochState, kochView, mainRenderer, mainState, mode, paneHistory, treeState, treeView, vectorColors } from "../core/state.js?v=1.80.0";
-import { colormapIndex, vectorLite } from "../core/state-colors.js?v=1.80.0";
-import { dragonNav, fernNav, hexaflakeNav, kochNav, treeNav, vectorFitHalfHeight } from "../ui/vector-interaction.js?v=1.80.0";
-import { flash, prefersReducedMotion, updateCompasses } from "../ui/compass-ui.js?v=1.80.0";
-import { cmGradient, labelColorButton } from "../ui/colormap-picker.js?v=1.80.0";
-import { COLOR_LOOKS, colorSheetStyles, currentLookId } from "../ui/color-sheet.js?v=1.80.0";
-import { updateDragonHud, updateFernHud, updateHexaflakeHud, updateHud, updateJuliaLabel, updateKochHud, updateTreeHud } from "../ui/hud.js?v=1.80.0";
+import { COLORMAPS, buildLUTBytes } from "./colormaps.js?v=1.80.3";
+import { Diag } from "../core/diag.js?v=1.80.3";
+import { isCurveMode, isIfsMode } from "../fractals/fractal-defs.js?v=1.80.3";
+import { SAMPLE_OFFSETS, deepZoomEligible, gesturePreviewEligible } from "../core/deepzoom.js?v=1.80.3";
+import { activePane, adaptLiveResolution, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, hexaflakeView, isInteracting, juliaRenderer, juliaState, kochState, kochView, mainRenderer, mainState, mode, paneHistory, treeState, treeView, vectorColors } from "../core/state.js?v=1.80.3";
+import { colormapIndex, vectorLite } from "../core/state-colors.js?v=1.80.3";
+import { dragonNav, fernNav, hexaflakeNav, kochNav, treeNav, vectorFitHalfHeight } from "../ui/vector-interaction.js?v=1.80.3";
+import { flash, prefersReducedMotion, updateCompasses } from "../ui/compass-ui.js?v=1.80.3";
+import { cmGradient, labelColorButton } from "../ui/colormap-picker.js?v=1.80.3";
+import { COLOR_LOOKS, colorSheetStyles, currentLookId } from "../ui/color-sheet.js?v=1.80.3";
+import { updateDragonHud, updateFernHud, updateHexaflakeHud, updateHud, updateJuliaLabel, updateKochHud, updateTreeHud } from "../ui/hud.js?v=1.80.3";
 
 // ---------------------------------------------------------------- rendering + layout
 
@@ -61,7 +61,7 @@ export function renderAll() {
   updateBackButtons();
   if (mode === "fractal") {
     if (isInteracting) adaptLiveResolution();
-    if (isInteracting && deepZoomEligible(mainRenderer, mainState)) {
+    if (isInteracting && gesturePreviewEligible(mainRenderer, mainState)) {
       mainRenderer.renderPreview(mainState);
     } else {
       lastMainDeepPath = mainRenderer.render(mainState);
