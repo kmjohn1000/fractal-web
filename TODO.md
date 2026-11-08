@@ -4,27 +4,52 @@ Now / Next / Later. Adding an item here isn't approval to build it (see CLAUDE.m
 Codebase work only; product and strategy notes are kept in a local,
 git-ignored file.
 
+## Priorities (proposed 2026-11-08; not approved)
+
+Ranked by what reaches App Store users first, then cost and risk. The
+2026-10-23 "no new fractal types" pause is still the rule for new modes:
+each one changes the listing count, so fixes and polish come first.
+
+1. Real-iPhone check of 1.80.0 (the user's; nothing else on this list
+   is verified on a phone until it is done). A development build of 1.80.0
+   (build 598, the same code) is already on the phone, so it can start now.
+2. Test reliability: most `dot-replay` tests already run on the manual
+   clock. Left: two fixed waits near lines 1377 and 1387 of
+   `tests/visual/dot-replay.spec.mjs` that assert that no run starts. They
+   are probably not the 1.55.5 failure (that one raced a run against the
+   test's own steps), so check that failure's test name before changing them. The real-Play test near line 1590 is on the
+   real clock on purpose.
+3. Newton orbits near 0 still finish in float32 (see Code-review
+   leftovers). The compass reset race is fixed, pending commit.
+4. Accessibility pass: `role="img"` label on the canvas, announcements,
+   Color sheet focus, VoiceOver zoom (App Store reach and review risk).
+5. Flashing check on Bands and Stripes flights (a safety question; Reduce
+   Motion crossfade if it fails).
+6. Sharper picker thumbnails (384 px; cheap, visible on every phone).
+7. Open the Mandelbrot family rotated on portrait phones (cheap, visible).
+8. Small UI polish: accent color from the colormap, first-launch gesture
+   hint, Haptics at key moments, Copy image in the share menu.
+9. Surprise-me additions: rare "golden" places, place of the day (small,
+   retention).
+10. Places captions and themed groups (small; uses the sheet that exists).
+11. Minimap (medium; helps keep bearings on deep zooms).
+12. Learn-more links (medium; needs an in-app browser through
+    `platform.js` and a privacy wording check).
+13. Saved places (medium; design is in `docs/saved-places/`).
+14. Shake to roll the dice (medium; app-only, needs a Settings toggle).
+
+Later, once the pause ends: Buffalo and Lambda (small each), Nova powers,
+Newton polynomials, higher Multibrot, the L-curves (Terdragon, Peano,
+Moore), then Spider, Magnet, sine and Lyapunov (larger; one listing count
+each). Big bets, not scheduled: WebGPU renderer, AirPlay TV mode, native
+tvOS, 3D fractals (first resolve the conflict with Deferred), deeper than
+1e-30, tilted 3D terrain, auto-dive. Held: AI-curated discovery, because
+it needs an external service and a privacy-label change.
+
 ## Now
 
-- [ ] Code structure after the ES-module conversion (2026-11-01, updated
-      2026-11-02; the split plan comes from two read-only reviews; steps are
-      approved one at a time, none of the open ones is started). Every app
-      file is a module; the first splits and state clean-ups are in Done.
-      Status 2026-11-02: a release is planned for 2026-11-03 (step 5 below);
-      steps 1 and 2 are ON HOLD until another session's "longer chaos-game
-      run" merge lands on `main` (it touches `share.js`, `teleport.js`,
-      `interaction.js`, `hud.js`, `app.js`, `index.html` and `fern.js`, and
-      adds `chaos-run.js`; it was built on `a070fbd`, so it already follows
-      the `share-menu.js` and `hud.js` moves; rebase onto the then-current
-      `main` before starting). Method per step: one commit, a patch bump
-      with an "Internal" CHANGELOG line, `npm run stamp`, lint, and the specs
-      that cover what moved, with `npm run test:quick` (webkit-iphone15 and
-      chromium-desktop, about half the time) between releases and all four
-      projects only for a release. For a move, write the new file, delete
-      the block with one Edit, and diff it against `git show HEAD:<old
-      file>`; add the file to `app.js` (import and `exposeForTests`) and
-      `sw.js` `APP_SHELL`.
-      Open steps, in the order to take them:
+- [x] DONE 2026-11-06 (the code-structure plan, see the Done entry; all steps
+      are done, the two notes at the end of the old list are kept there).
       1. DONE 2026-11-02 (`702f1b0`, 1.55.3; 534 tests passed on
          webkit-iphone15 and chromium-desktop; the block diffed identical to
          the old lines; `teleport.js` is now 270 lines, `pattern-controls.js`
@@ -112,7 +137,9 @@ git-ignored file.
       with many callers (the three leaf files `colormaps.js`, `configs.js`
       and `vectorgeom.js` checked clean once annotated and found no bugs).
 - [ ] Proposed order of work (a suggestion the user pasted 2026-10-23;
-      not approved, not started; reorder freely). Existing items it
+      status 2026-11-08: step 2 and step 3's Places sheet are DONE; the
+      "no new fractal types" freeze of step 1 was not kept (1.59 to 1.70 added
+      modes), so treat steps 4 to 6 as the live part; reorder freely). Existing items it
       touches: Minimap, Auto-dive/flyover, deep flights (reverted in
       1.40.3), the WebGL context-loss note, the Sierpinski/gasket pair.
       1. Stabilize: no new fractal types for about a month, weekly
@@ -169,7 +196,7 @@ git-ignored file.
 
 ## Next — discovery and delight
 Help people find beautiful places, and give them more ways to see them.
-Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-minibrot.
+Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation before zoom-to-minibrot.
 
 
 - [ ] Turning Vicsek ("Vicsek clock", user idea 2026-11-05; not approved, not
@@ -221,7 +248,8 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
   is a read-only agent's reading of the XaoS source, not checked line by line
   by me; the formulas especially must be confirmed from the published maths
   before anything is built.
-  - [ ] Ambient drift with a pixel-probe target picker: XaoS's autopilot looks
+  - [ ] Ambient drift with a pixel-probe target picker (same goal as "Auto-dive
+        mode" and "Ambient auto-zoom mode" below: decide once, not three times): XaoS's autopilot looks
         at the image it just drew, tries random small windows (about 5x5
         pixels) and picks one that mixes inside and outside pixels (or, for
         fractals with no inside, a noisy window), keeps zooming toward it,
@@ -286,63 +314,6 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
         I didn't know that". Write it down in this file's workflow notes
         rather than CLAUDE.md unless decided otherwise. Small.
 
-- [x] DONE 2026-11-05 (`de700d4`, 1.69.0; picker, cold-open and places-sheet
-      specs passed on webkit-iphone15 and chromium-desktop, and the picker
-      looked at on a phone and a desktop width): rows with a 64 px thumbnail,
-      name and blurb (`PICKER_BLURBS` in `fractal-defs.js`, wording by the
-      user; one column, two from 640 px), `aria-current` on the active row,
-      the active row keeps its blurb, the button's name is its label with
-      the blurb as its description, and `ariaLabel: "Phoenix Julia set"` on
-      Julia:Phoenix. Left: re-render the store "2-picker" shot at the next
-      listing refresh. Not verified: a real iPhone, VoiceOver. Was: Picker
-      cards: variant B, rows with a one-line descriptor (user choice
-      2026-10-24, after the evaluation of three mockups; not started). One
-      row per fractal (about 76 px, a 64 px thumbnail, a bold name and a
-      one-line blurb; two columns from 640 px up), scoped to
-      `#fractalTypeRow`. The user wants to edit the blurb wording and see it
-      on a phone first. Needs a `blurb` field per fractal (not keys), the
-      `.pickTile` / `button[data-name]` / `button[data-mode]` selectors
-      kept (cold-open spec and store scripts use them), `aria-current` on
-      the active tile, and a unique accessible name for the Julia Phoenix
-      tile. Re-render the store "2-picker" shot at the next listing
-      refresh (it needs the regrouped picker from 1.44.1, see Done, too).
-      The regrouping shipped first, on its own; the rows go into
-      `PICKER_LAYOUT`'s loop in `compass-ui.js`.
-- [x] DONE 2026-11-05 (`26293d1` merged in `13bedd4`, stamped `9c30123`,
-      1.70.0): the Sine L-plane (key `Sine L plane`, label `Sine L-plane`, a
-      Mandelbrot-family tile after Sine plane). z0 = pi/2 confirmed against a
-      float64 reference (identical to 3 pi/2 and -pi/2; z0 = L is one step
-      later). No new ftype: `FTYPE.SINE` with `juliaC: null`, one shader
-      branch; Sine Julia is its `dualParent` preset. Float32 only, floor
-      follows the center (1.2e-4 to 9.5e-4, measured at about 5% pixel
-      disagreement at worst). Five places. On main: lint, 295 specs on
-      webkit-iphone15 and chromium-desktop (sine-lplane, sine, zoom-floor,
-      styles, palettes, sw, dual, cold-open), 18 app specs for the new
-      fractal and places, default-identity (0 differing pixels), the oracle
-      comparison (all within the gates). Open: the agent's proposed new Sine
-      Julia blurb (`ddc86bc`, on branch `worktree-agent-a11df06c397ca5a39`, not
-      merged; it replaces the user's wording), a Wikipedia learn-more link
-      (the local file has no rows for Spider, Magnets, Sine Julia, Sine plane
-      or this one), the "Touching Discs" place thumbnail was checked and kept (user, 2026-11-05),
-      the label "Sine L-plane" is final (user, 2026-11-05), the store listing counts (35 picker
-      tiles, 161 places). Not verified: a real iPhone, phone cost. Was: A parameter plane for Sine Julia (user question 2026-11-05; not approved,
-      not started). Sine Julia has no plane to go with it: the Julia presets
-      of the Mandelbrot and Phoenix open in their parent's dual view
-      (`dualParent`), but Sine Julia iterates z -> L sin z with a fixed L,
-      while Sine plane iterates z -> sin z + cosh c, a different family, so
-      Sine plane's dual view shows Julia sets of that other formula (code:
-      `shaders.js` around `FTYPE_SINEPLANE`). The matching plane would be
-      the L-plane: z -> L sin z started at a critical point z0 = pi/2, with L
-      the pixel, and Sine Julia as its dual view's Julia pane
-      (`dualParent`). UNVERIFIED: that z0 = pi/2 is the right start for the
-      whole plane (from memory; the critical points of L sin z are pi/2 +
-      k pi, and the orbits of the others are related by sin(z + pi) = -sin z,
-      to be confirmed against a published source and a float64 render before
-      building). A new fractal: the checklist (twist, thumbnail, learn-more
-      row, places, float64 oracle) and a bigger fractal count in the
-      listing. Cheaper alternative: reword the Sine plane blurb ("A map of
-      sine Julia sets" suggests Sine Julia's own sets) and leave the plane
-      out.
 - [ ] Picker grouping and order (user question 2026-11-05). DONE 2026-11-05
       (`7e45413`, 1.68.1; 538 tests passed on webkit-iphone15 and
       chromium-desktop across the app, places-sheet, sine, magnet, spider and
@@ -366,8 +337,8 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       and Gasket) that could split into two titled groups. Check first what
       `group: "julia"` and `dualParent` drive besides the picker, and that the
       Places sheet (sections follow picker order) and `app.spec.mjs` (each key
-      appears once) still hold. Tier 2; patch bump. Do it together with
-      picker cards variant B (above), whose blurb file is keyed by group.
+      appears once) still hold. Tier 2; patch bump. The blurbs are keyed by
+      fractal, so a split needs no blurb change (variant B shipped 1.69.0).
 - [ ] Peano curve, shaded by component with the colormaps (user idea
       2026-10-23): the 3x3 space-filling curve (nine sub-squares per level,
       snaking through them), colored along its length so each component
@@ -439,9 +410,10 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
 
 - [ ] Code-review leftovers (2026-10-16; bugs 1-2, the info card and
       Phoenix's threshold were fixed in 1.35.1):
-      - Compass reset (`resetRotation`) ignores `teleportGeneration` and
-        pointerdown, so a twist or Surprise-me flight started during its
-        350 ms fights it frame by frame (from reading; not reproduced)
+      - Compass reset race: DONE 2026-11-08, pending commit as 1.80.1. The
+        reset now stops on a pointer-down, a flight or any other cancel;
+        reproduced on the old code (a press-free write was overwritten within
+        one frame), fixed-build checks in the 1.80.1 CHANGELOG entry
       - Newton orbits passing within ~1e-4 of 0 still finish in float32,
         so the deepest views right beside a star copy can still blur
       - `teleport()`'s one-place branch is unused now that every fractal
@@ -1024,6 +996,17 @@ Celtic/Buffalo/Lambda first (quick win); distance estimation before zoom-to-mini
       into the web app
 - [ ] Copy image (and Save to Files) in the share menu, beside Save to
       Photos and Copy link; `@capacitor/filesystem` is already installed
+- [ ] Toolbar touch targets at phone width (found 2026-11-08 on an iPhone 15
+      with VoiceOver; the double-tap on "Choose fractal type" landed on the
+      "detail" slider and the "Choose colors" button). Measured in headless
+      Chromium at 393 x 852 pt: the fractal-type and colour buttons are 40 x
+      44 pt (Apple's minimum is 44 pt), 3 pt apart (`#fractalControls`), and
+      the "detail" slider's 44 pt-tall box (y 760 to 804) overlaps the
+      triangle button's top-right corner (y 801 on). In landscape (852 x 393)
+      the buttons are 44 pt and the gap is wider. Fix: 44 pt buttons at phone
+      width, a wider gap, and a slider box that stops above the button row.
+      Check on the phone with VoiceOver: double-tap each button; a layout
+      change, so tier 2 with a patch bump. Related: the accessibility pass below.
 - [ ] Accessibility pass: the buttons have aria-labels, but the fractal
       canvas gives VoiceOver nothing. Items below; after them, run
       VoiceOver and Voice Control over the app
@@ -1405,6 +1388,10 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
+- DONE 2026-11-08 (1.80.1, pending commit): compass reset race. `resetRotation()` stops on a pointer-down, a flight or any other cancel, and a press on a vector view now cancels a flight or reset too. Reproduced on the old code in headless Chromium (a write during the reset was overwritten within one frame); on the fixed build a press then a write held, the no-press control finished at 0, and a flight froze the reset. Specs `app`, `vector`, `dual`: 590 passed on webkit-iphone15 and chromium-desktop. Not verified: a real two-finger twist on the phone.
+- DONE 2026-11-05 (`de700d4`, 1.69.0): picker rows with a 64 px thumbnail, name and blurb (`PICKER_BLURBS` in `fractal-defs.js`, one column, two from 640 px), `aria-current` on the active row, the button's name is its label with the blurb as its description, and `ariaLabel: "Phoenix Julia set"` on Julia:Phoenix. Open: re-render the store "2-picker" shot at the next listing refresh; not verified on a real iPhone or with VoiceOver.
+- DONE 2026-11-05 (`26293d1` merged in `13bedd4`, stamped `9c30123`, 1.70.0): the Sine L-plane (key `Sine L plane`, label `Sine L-plane`), a Mandelbrot-family tile after Sine plane. z0 = pi/2 checked against a float64 reference. No new ftype: `FTYPE.SINE` with `juliaC: null`; Sine Julia is its `dualParent` preset. Float32 only, five places; default-identity 0 differing pixels; the oracle within its gates. Open: the agent's Sine Julia blurb (`ddc86bc`, branch `worktree-agent-a11df06c397ca5a39`, not merged; it would replace the user's wording); `docs/learn-more-links.md` has a row for the L-plane saying "None" (checked 2026-11-08), and no rows for Spider, Magnet I and II, Sine Julia or Sine plane; "Sine L-plane" label is final (user, 2026-11-05); not verified on a real iPhone.
+- DONE 2026-11-06 (the code-structure plan from the ES-module conversion, moved here by the 2026-11-08 backlog grooming): every step is done. Splits: `pattern-controls.js` (1.55.3, `702f1b0`), `vector-interaction.js` (1.55.4, `ff8a408`), `ifs.js` (1.55.5, `3fcad80`), then `digit-fractals.js` and `apollonian.js` (`88359a3`), `toolbar-a11y.js` (`2c98194`), `fractal-picker.js` (`c8c0258`), `dragon.js`/`lcurves.js`/`curve-view.js` (`f5ba282`), and the folder restructure into `src/` (`2772e2f`, 1.70.5). Safety nets: `check-duplicate-exports.mjs` in lint, `npm run smoke:scripts`, and the test-visual process-kill fix (`9c9fdf0`). Still open, low value: `// @ts-check` on the leaf files. Not recommended: a bundler, one session state object, regrouping `kochState`/`vectorColors`. Not verified: the iOS build and the real iPhone for the next release.
 - 1.65.0 release prepared (2026-11-03, `/release`): tag `v1.65.0` on `527bf8a`, build 538, IPA `store-assets/1.65.0/ipa/App.ipa` (not uploaded; the upload and App Store Connect fields are the user's). Covers 1.55.6 to 1.65.0. Verified: lint; the full four-setup suite three times: before the release commit 3736 passed and 5 failed (two Jacob's Ladder first-run baselines, looked at and fine; two load flakes that pass alone, the pinch round trip and Paper cut on `webkit-desktop`; and the edge spec's control-bar ratio, recalibrated from 10x to 4x in `4f41f88`), after the stamp 3739 passed and 2 failed (`dot-replay` "fern, 100x" and Paper cut on `webkit-desktop`, both load flakes that pass alone; Paper cut takes 49 s alone against a 90 s timeout, so it is close to the limit under load), and the pre-push suite on the tag, 3741 passed and 2 skipped, none failed, the simulator real-build check (iPhone 17 Pro, iPad Pro 13", four shots each), every store screenshot looked at. Fixed in the release: the store script's hardcoded "Seven Looks." caption (now nine, `527bf8a`). Not verified: a Release build of 1.65.0 tapped through on a real iPhone (the phone has 1.64.2).
 - Phoenix zoom floor lowered by measurement (1.64.2, 2026-11-03, user asked to change it, then to run the measurement): `renderer.js` `phoenixDeepProbe` (a test hook: the deep shader's iteration counts for an n x n probe) and `tests/visual/phoenix-depth.spec.mjs` compare the probe with an independent BigInt iteration of each pixel at a boundary point (found by bisection), by scale. Parameter space agreed at 100% from 1e-9 to 1e-15; Julia (two usable start points of four) agreed at 89-100% to 1e-13, 73-87% at 1e-14, 14-71% at 1e-15. The floor was `FLOOR_STEPS` of the 2^-48 fixed-point grid, 7.1e-12; the view's center is a double (the reference orbit and the pixel offsets come from it; the grid only places the exact fallback for glitched pixels), so it is now the double-center formula with a minimum of `PHOENIX_MIN_SCALE` = 1e-13: 2.2e-13 at |c| = 0.5, about 30 to 70x deeper than before. Verified: lint; `phoenix-depth` and `zoom-floor` specs on both projects; `default-identity.mjs` zero differing pixels; 586 specs (app, dual, info-card, places-sheet, styles). Not verified: a real iPhone; a hand zoom through the Phoenix places at the new floor (the measurement is of the shader's counts, not of a drawn picture); other Phoenix boundary points beyond the three measured.
 - Longer-center places (1.64.1, 2026-11-03, user approved after the explanation): `places.js` `GOLDEN_RE`/`GOLDEN_IM` are 1/sqrt5 and 2/sqrt5 to 160 digits (integers; 2*re = im exactly, 5*re^2 within 1e-160 of 1), used by Golden Glide and Golden Dive; `view-math.js` `exactFromDecimal`, `decimalDigits`, `exactFromPlace` read a place's text into the exact center (fraction length from its digits and its scale, 576 bits for 160 digits; a place with 18 or more significant digits qualifies, so Spiral Cluster's 19-digit text now lands exact too, harmless at 1e-3); `teleport.js` `flyTo` sets the pair on landing and clears any stale pair on every other landing (fixes the "flight lands on the same double as a stale pair" leftover); `tests/cases.mjs` reads the two constants. Verified: lint; `long-centers.spec.mjs` (5) on both projects, including a 1e-60 zoom on from Golden Dive that matches the integer-computed point (the doubles alone give a flat view); `default-identity.mjs` zero differing pixels; 524 specs on both projects (long-centers, apollo-exact, exact-center, zoom-floor, app, dual, share-menu, info-card, places-sheet, cold-open). Not verified: a real iPhone; the spiral dive's frames still run on doubles until the landing snaps to the exact center.
