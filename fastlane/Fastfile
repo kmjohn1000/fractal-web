@@ -102,22 +102,18 @@ platform :ios do
       UI.important("This DELETES the existing screenshots of those locales on the editable version, then uploads these.")
       UI.user_error!("Cancelled") unless UI.confirm("Replace the screenshots on version #{options[:version]}?")
     end
-    # deliver resolves its relative paths (metadata, screenshots, Preview.html)
-    # against the current folder, which is the repo root when fastlane is started
-    # there. Run it from this Fastfile's folder so every path is the fastlane one.
-    Dir.chdir(__dir__) do
-      upload_to_app_store(
-        api_key: asc_key,
-        app_version: options[:version],
-        metadata_path: "metadata",
-        skip_binary_upload: true,
-        skip_screenshots: !with_shots,
-        screenshots_path: "screenshots",
-        overwrite_screenshots: with_shots,
-        submit_for_review: false,
-        automatic_release: false,
-        run_precheck_before_submit: false
-      )
-    end
+    # metadata_path and screenshots_path are left unset on purpose: deliver then
+    # uses fastlane/metadata and fastlane/screenshots. Passing a relative path
+    # resolves it against the repo root, which created an empty metadata/ there.
+    upload_to_app_store(
+      api_key: asc_key,
+      app_version: options[:version],
+      skip_binary_upload: true,
+      skip_screenshots: !with_shots,
+      overwrite_screenshots: with_shots,
+      submit_for_review: false,
+      automatic_release: false,
+      run_precheck_before_submit: false
+    )
   end
 end
