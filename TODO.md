@@ -20,7 +20,7 @@ each one changes the listing count, so fixes and polish come first.
    test's own steps), so check that failure's test name before changing them. The real-Play test near line 1590 is on the
    real clock on purpose.
 3. Newton orbits near 0 still finish in float32 (see Code-review
-   leftovers). The compass reset race is fixed, pending commit.
+   leftovers). The compass reset race is fixed (`5e9aedc`, 1.80.1).
 4. Accessibility pass: `role="img"` label on the canvas, announcements,
    Color sheet focus, VoiceOver zoom (App Store reach and review risk).
 5. Flashing check on Bands and Stripes flights (a safety question; Reduce
@@ -410,7 +410,7 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
 
 - [ ] Code-review leftovers (2026-10-16; bugs 1-2, the info card and
       Phoenix's threshold were fixed in 1.35.1):
-      - Compass reset race: DONE 2026-11-08, pending commit as 1.80.1. The
+      - Compass reset race: DONE 2026-11-08 (`5e9aedc`, 1.80.1). The
         reset now stops on a pointer-down, a flight or any other cancel;
         reproduced on the old code (a press-free write was overwritten within
         one frame), fixed-build checks in the 1.80.1 CHANGELOG entry
@@ -1388,7 +1388,8 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
-- DONE 2026-11-08 (1.80.1, pending commit): compass reset race. `resetRotation()` stops on a pointer-down, a flight or any other cancel, and a press on a vector view now cancels a flight or reset too. Reproduced on the old code in headless Chromium (a write during the reset was overwritten within one frame); on the fixed build a press then a write held, the no-press control finished at 0, and a flight froze the reset. Specs `app`, `vector`, `dual`: 590 passed on webkit-iphone15 and chromium-desktop. Not verified: a real two-finger twist on the phone.
+- DONE 2026-11-08 (`5e9aedc`, 1.80.3, with 1.80.2 and the Phoenix drag preview below): Phoenix and Julia:Phoenix draw the moving last-frame preview during a drag or pinch at every zoom, not only below 1e-4 (`gesturePreviewEligible` in `deepzoom.js`; the dual Julia pane still renders live); new `tests/visual/phoenix-drag-preview.spec.mjs` (the four Phoenix tests fail with the change reverted); 506 specs passed on webkit-iphone15 and chromium-desktop and default-identity showed 0 differing pixels. Also 1.80.2: `user-select: none` on the toolbar's buttons, labels and rows, so a double-tap no longer selects the "detail" text. Not verified: how a Phoenix drag feels on the phone, whether the other controls stay responsive, and that VoiceOver's double-tap now opens the picker.
+- DONE 2026-11-08 (`5e9aedc`, 1.80.1): compass reset race. `resetRotation()` stops on a pointer-down, a flight or any other cancel, and a press on a vector view now cancels a flight or reset too. Reproduced on the old code in headless Chromium (a write during the reset was overwritten within one frame); on the fixed build a press then a write held, the no-press control finished at 0, and a flight froze the reset. Specs `app`, `vector`, `dual`: 590 passed on webkit-iphone15 and chromium-desktop. Not verified: a real two-finger twist on the phone.
 - DONE 2026-11-05 (`de700d4`, 1.69.0): picker rows with a 64 px thumbnail, name and blurb (`PICKER_BLURBS` in `fractal-defs.js`, one column, two from 640 px), `aria-current` on the active row, the button's name is its label with the blurb as its description, and `ariaLabel: "Phoenix Julia set"` on Julia:Phoenix. Open: re-render the store "2-picker" shot at the next listing refresh; not verified on a real iPhone or with VoiceOver.
 - DONE 2026-11-05 (`26293d1` merged in `13bedd4`, stamped `9c30123`, 1.70.0): the Sine L-plane (key `Sine L plane`, label `Sine L-plane`), a Mandelbrot-family tile after Sine plane. z0 = pi/2 checked against a float64 reference. No new ftype: `FTYPE.SINE` with `juliaC: null`; Sine Julia is its `dualParent` preset. Float32 only, five places; default-identity 0 differing pixels; the oracle within its gates. Open: the agent's Sine Julia blurb (`ddc86bc`, branch `worktree-agent-a11df06c397ca5a39`, not merged; it would replace the user's wording); `docs/learn-more-links.md` has a row for the L-plane saying "None" (checked 2026-11-08), and no rows for Spider, Magnet I and II, Sine Julia or Sine plane; "Sine L-plane" label is final (user, 2026-11-05); not verified on a real iPhone.
 - DONE 2026-11-06 (the code-structure plan from the ES-module conversion, moved here by the 2026-11-08 backlog grooming): every step is done. Splits: `pattern-controls.js` (1.55.3, `702f1b0`), `vector-interaction.js` (1.55.4, `ff8a408`), `ifs.js` (1.55.5, `3fcad80`), then `digit-fractals.js` and `apollonian.js` (`88359a3`), `toolbar-a11y.js` (`2c98194`), `fractal-picker.js` (`c8c0258`), `dragon.js`/`lcurves.js`/`curve-view.js` (`f5ba282`), and the folder restructure into `src/` (`2772e2f`, 1.70.5). Safety nets: `check-duplicate-exports.mjs` in lint, `npm run smoke:scripts`, and the test-visual process-kill fix (`9c9fdf0`). Still open, low value: `// @ts-check` on the leaf files. Not recommended: a bundler, one session state object, regrouping `kochState`/`vectorColors`. Not verified: the iOS build and the real iPhone for the next release.
