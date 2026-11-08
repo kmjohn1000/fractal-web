@@ -1,10 +1,11 @@
 #!/bin/sh
-# Runs before a push. Cheap by default: lint, a few seconds. The visual
-# regression suite (npm run test:visual, 8-10 minutes) runs only when the push
-# carries a release tag (v*), which is what /release pushes. Run it by hand any
-# time with `npm run test:visual` (or one spec: `npx playwright test
+# Runs before a push. Cheap by default: lint, a few seconds. A release tag
+# (v*, which /release pushes) runs the two iPhone visual setups (npm run
+# test:release: webkit-iphone15 and chromium-iphone15; the App Store build is
+# iPhone and iPad only). Run the full four-setup suite by hand with
+# `npm run test:visual` (or one spec: `npx playwright test
 # tests/visual/<file>.spec.mjs`), or force it on a branch push with
-# RUN_VISUAL=1 git push. SKIP_VISUAL=1 skips it even for a tag.
+# RUN_VISUAL=1 git push (full suite). SKIP_VISUAL=1 skips it even for a tag.
 # Enabled by `npm install` (package.json's prepare script sets
 # core.hooksPath to .githooks).
 
@@ -22,8 +23,8 @@ while read -r _ _ remote_ref _; do
 done
 
 if [ -n "$release" ] || [ -n "$RUN_VISUAL" ]; then
-  npm run test:visual </dev/null || {
-    echo "pre-push: visual suite failed; see test-results/report/index.html. Push aborted."
+  npm run test:release </dev/null || {
+    echo "pre-push: release visual suite (iPhone setups) failed; see test-results/report/index.html. Push aborted."
     exit 1
   }
 else

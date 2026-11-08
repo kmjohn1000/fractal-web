@@ -10,6 +10,7 @@
     "ios:open": "cap open ios",
     "test:visual": "node scripts/test-visual.mjs",
     "test:quick": "node scripts/test-visual.mjs --project=webkit-iphone15 --project=chromium-desktop",
+    "test:release": "node scripts/test-visual.mjs --project=webkit-iphone15 --project=chromium-iphone15",
     "prepare": "git config core.hooksPath .githooks",
     "stamp": "node scripts/stamp.mjs"
   },
