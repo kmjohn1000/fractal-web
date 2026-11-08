@@ -105,10 +105,12 @@ platform :ios do
     upload_to_app_store(
       api_key: asc_key,
       app_version: options[:version],
-      metadata_path: "metadata",
+      # Absolute paths: deliver resolves relative paths against the folder it runs
+      # from (the repo root when fastlane is started there), not this Fastfile's folder.
+      metadata_path: File.join(__dir__, "metadata"),
       skip_binary_upload: true,
       skip_screenshots: !with_shots,
-      screenshots_path: "screenshots",
+      screenshots_path: File.join(__dir__, "screenshots"),
       overwrite_screenshots: with_shots,
       submit_for_review: false,
       automatic_release: false,
