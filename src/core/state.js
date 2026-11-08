@@ -6,18 +6,18 @@
 // reads, see rendererHost), so they can depend on this file and it on none of them; state-colors.js
 // holds the functions that do call them.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { SOLID_COLORS } from "../render/colormaps.js?v=1.70.5";
-import { FRACTAL_CONFIGS } from "./configs.js?v=1.70.5";
-import { LINE_CURVES } from "../fractals/dragon.js?v=1.70.5";
-import { createCurveView } from "../fractals/curve-view.js?v=1.70.5";
-import { createIfsView } from "../fractals/fern.js?v=1.70.5";
-import { createHexaflakeView } from "../fractals/hexaflake.js?v=1.70.5";
-import { createKochView } from "../fractals/koch.js?v=1.70.5";
-import { createPythagorasTreeView } from "../fractals/pythagoras.js?v=1.70.5";
-import { suggestedMaxIter, viewFromBounds } from "../fractals/fractal-defs.js?v=1.70.5";
-import { ignoresMaxIter } from "../fractals/digit-fractals.js?v=1.70.5";
-import { createFractalRenderer } from "../render/renderer.js?v=1.70.5";
-import { exactFrac, exactValid } from "./view-math.js?v=1.70.5";
+import { SOLID_COLORS } from "../render/colormaps.js?v=1.80.0";
+import { FRACTAL_CONFIGS } from "./configs.js?v=1.80.0";
+import { LINE_CURVES } from "../fractals/dragon.js?v=1.80.0";
+import { createCurveView } from "../fractals/curve-view.js?v=1.80.0";
+import { createIfsView } from "../fractals/fern.js?v=1.80.0";
+import { createHexaflakeView } from "../fractals/hexaflake.js?v=1.80.0";
+import { createKochView } from "../fractals/koch.js?v=1.80.0";
+import { createPythagorasTreeView } from "../fractals/pythagoras.js?v=1.80.0";
+import { suggestedMaxIter, viewFromBounds } from "../fractals/fractal-defs.js?v=1.80.0";
+import { ignoresMaxIter } from "../fractals/digit-fractals.js?v=1.80.0";
+import { createFractalRenderer } from "../render/renderer.js?v=1.80.0";
+import { exactFrac, exactValid } from "./view-math.js?v=1.80.0";
 
 // ---------------------------------------------------------------- app state
 

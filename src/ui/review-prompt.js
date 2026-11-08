@@ -7,7 +7,7 @@
 //
 // An ES module: every top-level declaration is exported (test-hooks.js relies on it), which is also
 // what lets the review-prompt spec call the decision functions directly.
-import { Platform } from "../core/platform.js?v=1.70.5";
+import { Platform } from "../core/platform.js?v=1.80.0";
 
 export const REVIEW_KEY = "fractalAtlas.review";
 export const REVIEW_MIN_DAYS = 3; // distinct days the app was opened

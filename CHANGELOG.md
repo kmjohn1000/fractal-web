@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.80.0 — 2026-11-08
+- Release build for the App Store: brings together 1.66.0 to 1.70.5 (Spider, Magnet I and II, the sine family and the Sine L-plane, the picker rows, the places pin). Nothing new on top of those entries.
+
 ## 1.70.5 — 2026-11-06
 - Internal: moved the 47 app modules from the repo root into `src/` (`core`, `render`, `fractals`, `ui`, with `app.js` at `src/app.js`). `index.html`, `sw.js`, the manifest and the legal pages stay at the root. No change in behavior.
 
