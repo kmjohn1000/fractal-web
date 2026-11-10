@@ -109,6 +109,16 @@ export function updateJuliaLabel() {
   els.juliaLabel.style.left = `${els.juliaCanvas.offsetLeft + 10}px`;
 }
 
+// The Surprise-me / Places destination's name while the main view is still the one the flight landed on
+// (any move, zoom or turn away from it ends the match; mod 2pi, so a landing at PI still matches a rotation
+// stored as -PI), else "". Shared by the info card and the canvas's screen-reader label (canvas-a11y.js).
+export function landedPlaceName() {
+  const s = mainState;
+  const d = TELEPORT_DESTINATIONS[teleportLandingIndex];
+  const sameTurn = !d || d.rotation === undefined || Math.abs(normalizeAngle((s.rotation || 0) - d.rotation)) < 1e-12;
+  return d && d.fractal === currentName && Number(d.re) === s.cx && Number(d.im) === s.cy && d.scale === s.scale && sameTurn ? d.label : "";
+}
+
 // deepPath: the main pane's last render() result ("perturbation", "fixed point" or null), which
 // render-layout.js remembers (lastMainDeepPath).
 export function updateHud(deepPath) {
@@ -156,9 +166,7 @@ export function updateHud(deepPath) {
   // one the flight landed on -- including its rotation, for a destination
   // that sets one (any turn away from it ends the match; mod 2pi, so a
   // landing at PI still matches a rotation stored as -PI).
-  const d = TELEPORT_DESTINATIONS[teleportLandingIndex];
-  const sameTurn = !d || d.rotation === undefined || Math.abs(normalizeAngle((s.rotation || 0) - d.rotation)) < 1e-12;
-  const place = d && d.fractal === currentName && Number(d.re) === s.cx && Number(d.im) === s.cy && d.scale === s.scale && sameTurn ? d.label : "";
+  const place = landedPlaceName();
   const f = formatHudCoords(s.cx, s.cy, s.scale);
   const label = fractalLabel(currentName);
   const deep = zoomPhrase(s.baseScale, s.scale);

@@ -63,6 +63,7 @@ import { applyShareHashFromUrl, applyShareLink, parseShareHash } from "./ui/shar
 import * as shareMenu from "./ui/share-menu.js?v=1.80.4";
 import * as reviewPrompt from "./ui/review-prompt.js?v=1.80.4";
 import * as penrose from "./fractals/penrose.js?v=1.80.4";
+import * as canvasA11y from "./ui/canvas-a11y.js?v=1.80.4";
 import * as toolbarA11y from "./ui/toolbar-a11y.js?v=1.80.4"; // last: it attaches its observers on load, after every module above has run
 
 exposeForTests({
@@ -79,7 +80,7 @@ exposeForTests({
   "src/ui/compass-ui.js": compassUi, "src/ui/teleport.js": teleport, "src/ui/pattern-controls.js": patternControls, "src/ui/colormap-picker.js": colormapPicker,
   "src/ui/color-sheet.js": colorSheet, "src/ui/places-sheet.js": placesSheet, "src/ui/share.js": share, "src/ui/share-menu.js": shareMenu,
   "src/fractals/chaos-run.js": chaosRunModule,
-  "src/ui/review-prompt.js": reviewPrompt, "src/fractals/penrose.js": penrose, "src/ui/toolbar-a11y.js": toolbarA11y, "src/ui/fractal-picker.js": fractalPicker,
+  "src/ui/review-prompt.js": reviewPrompt, "src/fractals/penrose.js": penrose, "src/ui/toolbar-a11y.js": toolbarA11y, "src/ui/canvas-a11y.js": canvasA11y, "src/ui/fractal-picker.js": fractalPicker,
 });
 
 // Pasting a different link into an open tab only changes the hash.
