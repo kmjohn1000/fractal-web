@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.80.4 — 2026-11-10
+- Changed: the fractal picker's thumbnails are sharper (384 px instead of 192).
+
 ## 1.80.3 — 2026-11-10
 - Changed: zoomed in on the Sine L-plane, dragging now moves the last picture and redraws when you stop, instead of redrawing every frame, and the picture finishes sharpening sooner (12 of its 16 passes; the speckled areas are a little grainier than before, the shapes are the same).
 - Changed: the Grayscale palette has a brighter middle (a mid-grey stop at 150 instead of a straight black-to-white ramp). This came in with 1.80.1 and was not listed there.
