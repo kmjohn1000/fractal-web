@@ -48,6 +48,81 @@ it needs an external service and a privacy-label change.
 
 ## Now
 
+- [ ] Sine L-plane: a shorter settle, then a deeper zoom (plan stored
+      2026-11-10; not approved to build; the user wants to run it later the
+      same day, starting with step 0). Why: zoomed in, the L-plane is slow
+      on a Mac (a settled Golden Shells view is 16 passes of about 80 ms at
+      1080x1920, 1270 iterations) and its zoom floor (`minScaleFor`,
+      about 1.2e-4 near |L| 1) comes from float32: the pixel is the
+      parameter L, so pixels narrower than a float32 step of the center
+      repeat the same L.
+      Measured 2026-11-10 (headless Chromium on a Mac GPU, an Apple M3; not a
+      phone; the throwaway code is local-only in `store-assets/perturb-spike/`,
+      git-ignored, never commit it):
+      - Time per pass follows the iteration count (auto iter climbs from 380
+        at the whole plane to about 1270 near the floor); inside the black
+        body is no slower than the filament zones.
+      - RULED OUT: two-stage render (a low-iteration pass, then only the
+        unresolved pixels): 111-161% of one-stage time on Golden Shells and
+        Dusty Edge, on a quiet machine too, because 63-71% of their pixels
+        stay unresolved at 300 iterations and every 16x16 tile holds one.
+        RULED OUT: Brent cycle detection in the shader: 2.8x faster deep in
+        the black body, about 50% slower on filament views (reverted).
+      - Perturbation (a float64 reference orbit on the CPU with sinZ and
+        cosZ precomputed; per pixel the offset d in float32; rebase when
+        |d|^2 > TH |z|^2 with TH 1 to 4, or before the reference runs out):
+        on reliable pixels (those float64 itself does not flip under a
+        one-ulp move of L) the error against float64 at half-height 1e-10 is
+        0.09-2.9% on four centers, 1e-12 0.5-3.9%, 1e-8 1.8-11%; the GPU
+        matches the JS float32 emulation within 0.2 points. Today's shader
+        is 91-100% wrong from 1e-8 down. A pass costs 2.4-2.7x today's;
+        about 2x with a half-angle variant (one shared sin/cos/cosh/sinh of
+        d/2 gives sin d and cos d - 1). Used only below today's floor, so no
+        view that works today gets slower.
+      Steps, each its own commit, version bump and CHANGELOG entry, in this
+      order:
+      0. Visual study for the pass cap (no code): settle the Sine L-plane's
+         views at 16, 12, 8 and 4 passes (`#passes=<n>` overrides it; see
+         `Diag.passesOverride` in `render-layout.js`) at Golden Shells,
+         Dusty Edge, Rim Bulb, Yellow Fans, Touching Discs, the zoomed disc
+         and the whole plane, on a phone-sized and a desktop canvas. Show
+         them as 100% crops side by side with the 16-pass picture, plus the
+         numbers (mean error, p99, share of pixels more than 20 of 255 off,
+         the filament zones separately). The user decides from the crops
+         whether 8 passes is acceptable; the DEEP_PASSES rule already uses 8
+         for deep views (8 looked the same as 16 on an iPhone 15 at three
+         views, 2026-10-22).
+      1. If approved: stop at 8 passes for the sine family when its pass is
+         expensive (the rule can follow the iteration count and the scale),
+         via `refinePassCount` in `render-layout.js`; Save and Share still
+         finish all 16 (`finishRefinement`).
+      2. Drag preview: add the Sine L-plane (when its iteration count is
+         high) to `gesturePreviewEligible` in `deepzoom.js`, as Phoenix is
+         since 1.80.3, so a drag shows the moving last-frame preview.
+      3. Perturbation deep path, about 400-500 lines plus tests:
+         `renderSineLPlanePerturbation` in `shaders.js` (about 120-150
+         lines of GLSL, reusing `cSin` and `sineSmoothCount`); a float64
+         reference-orbit builder and cache in `deepzoom.js` (about 60
+         lines); a 2-row RGBA32F reference texture in `renderer.js`
+         reusing the `refOrbitTex` plumbing (about 40); the switch-over rule
+         at today's floor and the reference re-pick when panning (60-80);
+         stripes and orbit-trap looks need z = Z + d each step (about 40);
+         `minScaleFor` gets a deep floor for the L-plane (1e-10 is the safe
+         value; 1e-12 is the edge of a float64 center, below it needs an
+         exact center like the escape family's); the info-card text and the
+         zoom-floor comments.
+         Open design points: the switch-over scale, the rebase threshold,
+         what the dual view's Julia pane does (it is a different map and
+         stays float32), and a deep-zoom visual spec plus an oracle
+         comparison that counts only reliable pixels (a plain pixel diff
+         fails in the speckled zones by nature).
+      Verification: tier 3 for steps 1 to 3 (they change pixels):
+      `npm run lint`, `npm run stamp`, `test:quick` on the specs that cover
+      it, `node scripts/default-identity.mjs check` (the default output stays
+      at zero differing pixels), the oracle comparison for the new path, a
+      look at every new or re-recorded image. Cost and battery on a phone are
+      never verified from the Mac: list them as not verified.
+
 - [x] DONE 2026-11-06 (the code-structure plan, see the Done entry; all steps
       are done, the two notes at the end of the old list are kept there).
       1. DONE 2026-11-02 (`702f1b0`, 1.55.3; 534 tests passed on
