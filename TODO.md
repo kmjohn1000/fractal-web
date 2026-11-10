@@ -4,51 +4,54 @@ Now / Next / Later. Adding an item here isn't approval to build it (see CLAUDE.m
 Codebase work only; product and strategy notes are kept in a local,
 git-ignored file.
 
-## Priorities (proposed 2026-11-08; not approved)
+## Priorities (re-ranked 2026-11-10 in the backlog grooming; not approved)
 
 Ranked by what reaches App Store users first, then cost and risk. The
-2026-10-23 "no new fractal types" pause is still the rule for new modes:
-each one changes the listing count, so fixes and polish come first.
+2026-10-23 "no new fractal types" pause is still the rule for new modes
+(it was not kept 1.66 to 1.70, when Spider, Magnet and the sine family
+shipped): each one changes the listing count, so fixes and polish come first.
 
-1. Real-iPhone check of 1.80.0 (the user's; nothing else on this list
-   is verified on a phone until it is done). A development build of 1.80.0
-   (build 598, the same code) is already on the phone, so it can start now.
-2. Test reliability: DONE 2026-11-10 for the two "no run starts" waits in
-   `tests/visual/dot-replay.spec.mjs` (they now wait six animation frames,
-   since `scheduleSharedRun` starts a run after two, instead of 700 and 800
-   ms; the whole spec passed twice over on webkit-iphone15 and
-   chromium-desktop before the change, 564 runs). Not found: the 1.55.5
-   failure's test names (the 2026-11-02 note names none), so which tests
-   raced a run against their own steps is unknown; the tests that still use
-   the real clock (the real Play button, wheel and Back tests near lines
-   209, 754, 1176 and 1639 to 1692) are the candidates. The real-Play test
-   near line 1622 is on the real clock on purpose.
-3. Newton orbits near 0 still finish in float32 (see Code-review
-   leftovers). The compass reset race is fixed (`5e9aedc`, 1.80.1).
-4. Accessibility pass: `role="img"` label on the canvas, announcements,
-   Color sheet focus, VoiceOver zoom (App Store reach and review risk).
-5. Flashing check on Bands and Stripes flights (a safety question; Reduce
+1. Real-iPhone check of 1.80.4 and 1.80.5 (the user's), including VoiceOver
+   on the new canvas label and swipe zoom (the six checks are in the 1.80.5
+   Done entry). Nothing else on this list is verified on a phone until it
+   is done.
+2. Flashing check on Bands and Stripes flights (a safety question; Reduce
    Motion crossfade if it fails).
-6. Sharper picker thumbnails (384 px; cheap, visible on every phone).
-7. Open the Mandelbrot family rotated on portrait phones (cheap, visible).
-8. Small UI polish: accent color from the colormap, first-launch gesture
+3. What is left of the accessibility pass: one-finger alternatives, and
+   whatever the VoiceOver check turns up (see the Accessibility item).
+4. VoiceOver check of the toolbar buttons' size and spacing (the touch-target
+   item; no build unless it fails).
+5. Newton orbits near 0 still finish in float32 (see Code-review leftovers).
+6. The mirrored palette option, the first step of the OKLCH palette item
+   (the biggest visible color upgrade; toggle, seam stays the default).
+7. Saved places (medium): a spike exists on branch
+   `worktree-agent-a3886907b2360519d` (`e7d2344`), not merged; it needs the
+   user's answers to its design questions (where the list lives, storage,
+   fly or cut, keep or replace the colormap). Design is in
+   `docs/saved-places/`.
+8. Open the Mandelbrot family rotated on portrait phones (cheap, visible).
+9. Small UI polish: accent color from the colormap, first-launch gesture
    hint, Haptics at key moments, Copy image in the share menu.
-9. Surprise-me additions: rare "golden" places, place of the day (small,
-   retention).
-10. Places captions and themed groups (small; uses the sheet that exists).
-11. Minimap (medium; helps keep bearings on deep zooms).
-12. Learn-more links (medium; needs an in-app browser through
-    `platform.js` and a privacy wording check).
-13. Saved places (medium; design is in `docs/saved-places/`).
-14. Shake to roll the dice (medium; app-only, needs a Settings toggle).
+10. Surprise-me additions: rare "golden" places, place of the day (small).
+11. Places captions and themed groups (small; uses the sheet that exists).
+12. Learn-more links (medium; needs an in-app browser through `platform.js`
+    and a privacy wording check) or the Minimap (medium; helps keep bearings
+    on deep zooms).
+13. Shake to roll the dice (medium; app-only, needs a Settings toggle).
+
+Done since the 2026-11-08 ranking: the compass reset race (1.80.0), the
+chaos-game progress ring (1.80.1), sharper picker thumbnails (1.80.4), the
+dot-replay "no run starts" waits (`acc6b35`), the canvas label, landing
+announcements, alert banner and VoiceOver zoom (1.80.5).
 
 Later, once the pause ends: Buffalo and Lambda (small each), Nova powers,
 Newton polynomials, higher Multibrot, the L-curves (Terdragon, Peano,
-Moore), then Spider, Magnet, sine and Lyapunov (larger; one listing count
-each). Big bets, not scheduled: WebGPU renderer, AirPlay TV mode, native
-tvOS, 3D fractals (first resolve the conflict with Deferred), deeper than
-1e-30, tilted 3D terrain, auto-dive. Held: AI-curated discovery, because
-it needs an external service and a privacy-label change.
+Moore), then Lyapunov (larger; one listing count each). Big bets, not
+scheduled: WebGPU renderer, AirPlay TV mode, native tvOS, 3D fractals
+(first resolve the conflict with Deferred), deeper than 1e-30, tilted 3D
+terrain, Sine L-plane step 3 (the perturbation deep path), auto-dive. Held:
+AI-curated discovery, because it needs an external service and a
+privacy-label change.
 
 ## Now
 
@@ -144,94 +147,6 @@ it needs an external service and a privacy-label change.
       look at every new or re-recorded image. Cost and battery on a phone are
       never verified from the Mac: list them as not verified.
 
-- [x] DONE 2026-11-06 (the code-structure plan, see the Done entry; all steps
-      are done, the two notes at the end of the old list are kept there).
-      1. DONE 2026-11-02 (`702f1b0`, 1.55.3; 534 tests passed on
-         webkit-iphone15 and chromium-desktop; the block diffed identical to
-         the old lines; `teleport.js` is now 270 lines, `pattern-controls.js`
-         313). Was: `pattern-controls.js` from `teleport.js` (about 270 lines): the
-         Koch depth and fill handlers, depth play with its speed bubble and
-         slide gestures, the dot-shape replay button, and the depth-slider
-         and Reset handlers of the tree, hexaflake, dragon and fern. Leaves
-         flights, the cold open and the teleport index state. Importers:
-         `modes.js` (`stopDepthPlay`), `interaction.js` (`stopDotReplay`).
-         Medium risk (many load-time listeners). Specs: `vector`,
-         `koch-generations`, `dot-replay`, `dual`, `cold-open`.
-      2. DONE 2026-11-02 (`ff8a408`, 1.55.4; 816 tests passed on
-         webkit-iphone15 and chromium-desktop across ten specs; the moved text
-         diffed identical; the fern's box-zoom toggle and `curveBoxCache` went
-         with it so the two files do not import each other; the keyboard
-         stayed in `interaction.js`, now 295 lines, `vector-interaction.js`
-         330). Was: `vector-interaction.js` from `interaction.js` (about 290 lines):
-         `attachVectorViewInteraction`, `vectorViewBox`, `VECTOR_VIEWS`, the
-         fit helpers, the `*Nav` objects and their Back listeners,
-         `activeVectorTarget`; optionally the keyboard handler (with
-         `keyAction` and `KEY_*`) into `keyboard.js`. Many importers; the
-         keyboard has little spec coverage. Specs: `vector`, `places-sheet`,
-         `color-sheet`, `solid-colors`, `dot-replay`, `palettes`.
-      3. `ifs.js` from `fern.js` DONE 2026-11-02 (`3fcad80`, 1.55.5; 1058
-         tests passed on webkit-iphone15 and chromium-desktop; `fern.js` 851
-         lines, `ifs.js` 262; `make-short.mjs` patches `PENTAGON_RATIO` in
-         `ifs.js` through its own route and now checks that the patched
-         values reached the page). The rest DONE 2026-11-06 (user: "finish the
-         splits"; each a pure move, diffed against HEAD, lint, stamp, the covering
-         specs on webkit-iphone15 and chromium-desktop, one patch bump with an
-         "Internal" line): `digit-fractals.js` and `apollonian.js` from
-         `fractal-defs.js` (`88359a3`, 1.70.1; `EXTRA_MODES` stayed: `tests/cases.mjs`
-         reads it as text); `toolbar-a11y.js` from `app.js` (`2c98194`, 1.70.2;
-         the last import in `app.js`); `fractal-picker.js` from `compass-ui.js`
-         (`c8c0258`, 1.70.3); `dragon.js` into `dragon.js` (definitions and the
-         dragon walk), `lcurves.js` and `curve-view.js` (`f5ba282`, 1.70.4).
-         Then the folder restructure, DONE 2026-11-06 (user: "move to a more structured
-         folder structure", `2772e2f`, 1.70.5): the 47 modules moved by `git mv` into
-         `src/core`, `src/render`, `src/fractals`, `src/ui` (`src/app.js` the entry);
-         layout and rules are in `CLAUDE.md` ("Source layout"). Import paths were
-         edited one file at a time (no `sed`). Checked with lint, stamp, 1178 specs
-         on webkit-iphone15 and chromium-desktop across 12 spec files, and
-         `npm run smoke:scripts` (8 of 8, with a `www/` build); NOT checked: the full
-         four-project suite, the deployed service worker, the iOS app build and the
-         real iPhone, all for the next release. Not worth splitting: `shaders.js`, `renderer.js`,
-         the view factories, `configs.js`, `places.js`, `colormaps.js`.
-      4. Safety nets: `scripts/test-visual.mjs` no longer kills another
-         session's run: DONE 2026-11-02 (`9c9fdf0`, only orphaned processes)
-         and tightened 2026-11-03 (parent pid 1 is not proof of an orphan:
-         WebKit's helpers and Chrome's crash handlers have it in a live
-         run, so browsers are swept only when no other Playwright run is
-         alive, crash handlers are never killed, and only this run's own
-         test-server port is swept; see `tests/README.md`). DONE 2026-11-05: a
-         lint check that two modules never export the same name
-         (`scripts/check-duplicate-exports.mjs`, in `npm run lint`); a smoke
-         check that runs eight store, preview and thumbnail scripts against a
-         scratch `SCRIPT_OUT_DIR` (`npm run smoke:scripts`, about 2 minutes,
-         8 of 8 ok on `main` after the merge; see `tests/README.md`;
-         `release-ios.mjs` and the video scripts are not covered); `espree`
-         added to `package.json` (`a6fe188`). Merged from branch
-         `worktree-agent-aec28fc67cf62b97b`.
-      5. DONE 2026-11-02: 1.55.5 (build 455) released: full suite 2963 of
-         2963 on the tree before the tag, tag `v1.55.5` pushed after the
-         pre-push suite passed on its second attempt (the first failed two
-         `dot-replay` tests that race a real-time run against the test's own
-         steps; they pass alone, so they are load-sensitive: consider moving
-         them to the manual clock), IPA `store-assets/1.55.5/ipa/App.ipa`.
-         Still the user's: the real-iPhone check, the upload and the App
-         Store Connect fields. Was: release planned for 2026-11-03 (last tag `v1.53.0`; 40 commits
-         since, 1.53.1 to 1.54.7 almost all internal; the user-visible parts
-         are the pentagon dot shape in 1.54.0 and the offline picker
-         thumbnails in 1.53.12). Decide first: whether the chaos-game-run
-         merge is in it (then it must land and be tried locally before the
-         release starts) and the version (1.55.0 proposed, folding the
-         "Internal" entries in). Then `/release`: the full four-project suite
-         (the refactors since 1.53.11 were each checked with targeted specs
-         only; `npm run test:visual` kills every Playwright process, so no
-         other session may be running specs then), a Release build tapped
-         through on a real iPhone (simctl cannot tap), simulator screenshots,
-         archive and IPA, tag and push.
-      Not recommended: a bundler, one `session` or `panes` state object (about
-      300 reference edits and it weakens the read-only guard on imports),
-      regrouping `kochState`/`vectorColors` (tests mutate them in place).
-      Optional, low value: try `// @ts-check` plus `tsc --noEmit` on a file
-      with many callers (the three leaf files `colormaps.js`, `configs.js`
-      and `vectorgeom.js` checked clean once annotated and found no bugs).
 - [ ] Proposed order of work (a suggestion the user pasted 2026-10-23;
       status 2026-11-08: step 2 and step 3's Places sheet are DONE; the
       "no new fractal types" freeze of step 1 was not kept (1.59 to 1.70 added
@@ -320,21 +235,8 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
       effect. Also check whether theta-turned children overlap at the
       default angles.
 
-- [ ] Ambient auto-zoom mode (user idea 2026-11-03; not approved). A
-      hands-off slow zoom toward a curated destination, Mandelbrot only to
-      start; any touch stops it. To make it endless, loop a Misiurewicz point
-      by wrapping scale and rotation by its self-similarity factor (the
-      point's multiplier, a complex number: its modulus is the scale step and
-      its argument the rotation step), with the center in plain double
-      precision, so the zoom never reaches the float64 floor. UNVERIFIED: the
-      self-similarity math is from memory and untested; prototype one point
-      first (for example the Misiurewicz point at c = i, whose multiplier
-      comes from the derivative along its preperiodic orbit; derive it,
-      then check that the frame after a wrap matches the frame before it
-      to a few pixels). Related: the autopilot and tour items in the XaoS
-      list below, and the "ambient drift" note in the places list above;
-      decide how they fit together before building any of them. See also
-      STRATEGY.md.
+- Ambient auto-zoom, the autopilot and tours: merged into "Auto-dive,
+  ambient zoom and tours" under Next (below). See also STRATEGY.md.
 
 - Ideas from studying the open-source XaoS zoomer (2026-11-02; none approved,
   none started). XaoS is GPL v2 or later (checked: GitHub reports GPL-2.0) and
@@ -344,36 +246,10 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
   is a read-only agent's reading of the XaoS source, not checked line by line
   by me; the formulas especially must be confirmed from the published maths
   before anything is built.
-  - [ ] Ambient drift with a pixel-probe target picker (same goal as "Auto-dive
-        mode" and "Ambient auto-zoom mode" below: decide once, not three times): XaoS's autopilot looks
-        at the image it just drew, tries random small windows (about 5x5
-        pixels) and picks one that mixes inside and outside pixels (or, for
-        fractals with no inside, a noisy window), keeps zooming toward it,
-        searches near the last target so it doesn't turn sharply, re-picks at
-        random intervals, zooms out when nothing qualifies, and resets the
-        view at the precision limit. No distance estimation needed, but it
-        follows the boundary and never settles on a minibrot, so it doesn't
-        replace "zoom to nearest minibrot". Here: a small low-resolution
-        probe pass in `renderer.js` read back a few times a second (iPhone
-        readback stalls are the risk), a new file feeding `teleport.js`'s
-        `zoomPath`, any touch stops it, a depth cap or `DEEP_ZOOM_THRESHOLD`
-        as the "start somewhere new" trigger, a frame cap and pausing when
-        hidden. Small to medium.
-  - [ ] Tour as data: XaoS tours are scripts of commands (jump, glide, wait,
-        caption, palette) with a trapezoid speed profile (ease in, constant,
-        ease out). Here a tour could be a small list `[{ place, flightMs,
-        dwellMs, caption }]` played through `teleport.js` with the 107 places
-        as the playlist; the app's flight path is already smoother than
-        XaoS's, so borrow only the dwell and ease. A dev-only "record my
-        flights" button could author tours by flying around. Pairs with the
-        flyover-as-a-tour step in the list above. Small to medium.
-  - [ ] Seeded seamless palettes and a "Shuffle colors" button, beside the
-        Colormap animation item under Later: XaoS makes a random palette from
-        a seed as alternating dark and bright keyframe colors, interpolated,
-        with the last color forced equal to the first so a cycle loops
-        without a seam; a palette is just (type, seed, shift), tiny enough
-        for a share-link field. Cycling there runs at steps per second (30 by
-        default) and can reverse. Small.
+  - (The pixel-probe autopilot and the tour-as-data ideas are merged into
+        "Auto-dive, ambient zoom and tours" below; the seeded seamless
+        palettes and "Shuffle colors" are merged into the "OKLCH palette
+        work" item.)
   - [ ] "Inside out" plane mappings: render c = 1/w (or 1/(w+0.25), which
         gives infinitely repeating parabolic boundaries) by remapping the
         pixel coordinate before iterating; one pre-transform per pixel on
@@ -435,17 +311,6 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
       Places sheet (sections follow picker order) and `app.spec.mjs` (each key
       appears once) still hold. Tier 2; patch bump. The blurbs are keyed by
       fractal, so a split needs no blurb change (variant B shipped 1.69.0).
-- [ ] Peano curve, shaded by component with the colormaps (user idea
-      2026-10-23): the 3x3 space-filling curve (nine sub-squares per level,
-      snaking through them), colored along its length so each component
-      takes its place in the colormap, like the depth gradient on the other
-      line curves. Likely an L-system in the generic engine beside Hilbert,
-      Gosper and arrowhead (`LINE_CURVES`, same stroke path and colormap
-      picker); check whether the existing color is per segment or per
-      depth and how to color by position along the curve, so the levels
-      read as a gradient. Needs the new-fractal checklist: twist gesture,
-      a picker thumbnail (`node scripts/render_thumbs.mjs`), and a row in
-      `docs/learn-more-links.md` (Wikipedia "Peano curve").
 - [x] PARKED 2026-11-05, not building: the user tried the spike on an
       iPhone (the dev server on the LAN, `#margin=25`): the revealed strip
       was as sharp as the rest, but the gain is small, because moving or
@@ -506,10 +371,7 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
 
 - [ ] Code-review leftovers (2026-10-16; bugs 1-2, the info card and
       Phoenix's threshold were fixed in 1.35.1):
-      - Compass reset race: DONE 2026-11-08 (`5e9aedc`, 1.80.1). The
-        reset now stops on a pointer-down, a flight or any other cancel;
-        reproduced on the old code (a press-free write was overwritten within
-        one frame), fixed-build checks in the 1.80.1 CHANGELOG entry
+      - (The compass reset race is fixed; see Done.)
       - Newton orbits passing within ~1e-4 of 0 still finish in float32,
         so the deepest views right beside a star copy can still blur
       - `teleport()`'s one-place branch is unused now that every fractal
@@ -749,21 +611,20 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
         perturbation step (medium); deep zoom looks feasible, unverified.
         Heart, Simonbrot and Feather had no verifiable source.
       - From the XaoS source (agent's reading; ideas only, GPL, never port
-        code): Spider (z = z^2 + c, then c = c/2 + z; no perturbation), Manowar
-        (z(n+1) = z(n)^2 + z(n-1) + c; Phoenix-shaped, so the existing
-        `zPrev` path could carry it once `PHOENIX_P` is per config), Magnet I
-        (z = ((z^2 + c - 1)/(2z + c - 2))^2, with a convergence test to 1, no
-        perturbation path; Magnet II likewise), the three Barnsley fold
-        fractals, and odd ones (trice, Catseye, Beryl, Octo). Spider and
-        Manowar looked good in the agent's reading; Lambda's roles for z0 and
-        c were unclear to it (Lambda is z -> c z (1 - z)).
-      - Magnet, the sine family and Spider were chosen by the user on
-        2026-11-04 after seeing CPU mock-ups (not in the repo) and have their
-        own items below, with Lyapunov. Manowar (a five-armed star when
-        zoomed at 0, 0) was not chosen and stays here. Still low priority: the
-        exponential family (the mock-ups were mostly flat color fields, only
-        0.5 e^z showed structure), fractional and negative powers (no
-        perturbation, shallow only).
+        code): Manowar (z(n+1) = z(n)^2 + z(n-1) + c; Phoenix-shaped, so the
+        existing `zPrev` path could carry it once `PHOENIX_P` is per config),
+        the three Barnsley fold fractals, and odd ones (trice, Catseye,
+        Beryl, Octo). Lambda's roles for z0 and c were unclear to it (Lambda
+        is z -> c z (1 - z)). Spider and Magnet I and II, also on that list,
+        shipped (1.66.0 and 1.67.0).
+      - The user chose Magnet, the sine family and Spider on 2026-11-04
+        after seeing CPU mock-ups (not in the repo); they shipped in 1.66.0,
+        1.67.0, 1.68.0 and 1.70.0 (Lyapunov, also chosen, is still open
+        below). Manowar (a five-armed star when zoomed at 0, 0) was not
+        chosen and stays here. Still low priority: the exponential family
+        (the mock-ups were mostly flat color fields, only 0.5 e^z showed
+        structure), fractional and negative powers (no perturbation, shallow
+        only).
 - [ ] Nova for other powers: Nova², Nova⁴, Nova⁵, Nova⁶ beside the current Nova
       (user idea 2026-11-02, prompted by a Reddit post giving the general
       form z -> z - R (z^n - 1)/(n z^(n-1)) + c, z0 = 1, c = the pixel, n from
@@ -823,46 +684,18 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
       the conjugate handled in the perturbation step (unverified). Could
       start shallow-only. New `f=` ids (never renamed), a default view, a
       thumbnail and a few places each.
-- [ ] Four new fractals chosen by the user on 2026-11-04 after seeing CPU
-      mock-ups (a throwaway script, not in the repo; 320 px panels, plain
-      iteration-count colors): Lyapunov, Spider, Magnet and the sine family.
-      None approved to build, none started. The maths is standard and was
-      checked against the formulas in a local copy of an archive of Fractint
-      formula files (read for the definitions only, nothing copied). Each
-      needs, per the feature conventions: two-finger twist (free for WebGL
-      types), a picker thumbnail (`render_thumbs.mjs`), a row in the local
-      `docs/learn-more-links.md`, new `f=` ids (never renamed), a default view
-      and a few places. Suggested order by size, a guess: Spider, Magnet,
-      sine, Lyapunov. All four are float32 only (no perturbation), so each
+- [ ] Lyapunov fractals, the one left of the four the user chose on
+      2026-11-04 after seeing CPU mock-ups (a throwaway script, not in the
+      repo; 320 px panels, plain iteration-count colors). Spider, Magnet I
+      and II and the sine family shipped (1.66.0, 1.67.0, 1.68.0, 1.70.0; see
+      Done and the CHANGELOG). Not approved to build, not started. The maths
+      is standard and was checked against the formulas in a local copy of an
+      archive of Fractint formula files (read for the definitions only,
+      nothing copied). Needs, per the feature conventions: two-finger twist
+      (free for WebGL types), a picker thumbnail (`render_thumbs.mjs`), a row
+      in the local `docs/learn-more-links.md`, new `f=` ids (never renamed),
+      a default view and a few places. Float32 only (no perturbation), so it
       gets a zoom floor like the other non-Mandelbrot families.
-      - Spider (z -> z^2 + c, then c -> z + c/2, starting from z = c = the
-        pixel; bailout |z| > 4). Mock-up: the parameter plane is a black body
-        with rainbow stripes, and a zoom at (-0.2, 0.9) width 1.2 is the most
-        striking of the set. The state includes c, which changes each step,
-        so the derivative Looks (Edge glow, Relief, Halo, Paper cut) would
-        need their own branch or stay off (the Looks list is per type in
-        `color-styles.js`); Smooth, Bands, Stripes and the traps need only z.
-      - Magnet I and II. I: z -> ((z^2 + c - 1) / (2z + c - 2))^2; II: z ->
-        ((z^3 + 3(c-1) z + (c-1)(c-2)) / (3 z^2 + 3(c-2) z + (c-1)(c-2) + 1))^2.
-        Mandelbrot-type (z = 0, c = the pixel) and Julia-type (z = the pixel,
-        c fixed). Each pixel ends one of two ways, escaping (|z| > 100) or
-        converging to 1 (|z - 1| < about 1e-4 to 3e-5), so the shader needs
-        a second terminal state and both get a color. Mock-up: the plane at
-        width 3.8 centered (1.4, 0) is black bulbs in a cyan field with pink
-        bubbles; Magnet I Julia sets at c = 2, 2 + 0.5i and 2.5 + 0.3i are
-        dense circle-packing patterns, while c = 1.5 + 0.5i is speckled noise
-        (partly the mock-up's cyclic palette on fast escapes, partly the
-        set). Open: whether the dual view (Mandelbrot beside its Julia set)
-        works for it.
-      - Sine family: Julia sets of z -> L sin z with the complex sine from
-        sin(a + bi) = sin a cosh b + i cos a sinh b; escape at |z| > 50.
-        Mock-up: L = 1 + 0.4i is a field of spirals, L = 0.6 + i a
-        snowflake-like dendrite; L = 1 + 0.4i with cosh is noisier. The
-        plane z -> sin z + cosh(pixel), starting at z = the pixel, is a
-        Mandelbrot-like picture with a fractal border. Needs complex sin and
-        cosh helpers in GLSL; float32 accuracy of sin at |Re z| near 50 is
-        worth checking (reduce Re z modulo 2 pi first). Open: presets for L
-        per picker entry or a draggable parameter.
       - Lyapunov fractals: the logistic map x -> r x (1 - x) with r taken
         from a sequence of A and B (A = the x axis value, B = the y axis
         value), exponent = the mean of log |r (1 - 2x)| after a warm-up (the
@@ -875,10 +708,10 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
         Looks (orbit traps and so on) do not apply, palette only. Open: how
         to offer the sequences (presets as picker entries, or one entry with
         a sequence chooser) and which window each opens on.
-- [ ] A one-line "what you're looking at" blurb per fractal or place, in
-      the info card or picker (idea from the WebSim Fractal Explorer review,
-      2026-10-09). Surprise me itself now covers every zoom fractal
-      (`7155a63`, see Done). Phoenix research leftovers, not added:
+- [ ] Phoenix places not added (the per-fractal blurbs shipped in 1.69.0 as
+      `PICKER_BLURBS`; per-place captions are the "Place captions" item
+      under Next; Surprise me covers every zoom fractal, `7155a63`, see
+      Done). Phoenix research leftovers:
       Rising Phoenix (0.06, 0.706, s 1.25, rot π/2: the whole upper lobe,
       small in dark space) and Twin Curls (-0.112, 0.475, s 0.1: two big
       flat blobs); Phoenix has no perturbation, so ~1e-4 is its floor
@@ -892,8 +725,13 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
       Before retrying: reproduce on the phone, find what actually
       triggers it (one pass's length, memory, or refinement passes queued
       back to back with no yield), and consider multi-pass iteration
-      (state in float textures, see the Later item) instead of one long
-      loop per pixel
+      instead of one long loop per pixel. Multi-pass iteration (the
+      "maxIter past 8000" item, merged in here 2026-11-10): one draw looping
+      10⁴–10⁶ times needs per-pixel state (z, dz, reference index) saved in
+      float textures between passes, and a 2D reference-orbit texture (the
+      dual view's orbit row is 2*(maxIter+1) texels; iPhone's
+      MAX_TEXTURE_SIZE is 16384). It is step 1 of the "Deep-zoom order"
+      item under Later.
 - [ ] Playful Surprise-me ideas (same research, 2026-10-15):
       - Top 3:
         - Rare "golden" places drawn about 1 in 15 taps, with a gold "Rare
@@ -943,9 +781,16 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
         shared with teleport(), cancel wiring on the vector views' gestures,
         a Surprise me button in the pattern control rows, HUD place names.
         Phone performance of 1M-point fern/Lévy frames mid-flight unverified
-- [ ] Skip the black interior: a competitor (Fractal Dive) says it saves
-      time by not calculating black regions (user, 2026-10-14). Evaluated
-      2026-10-14, not approved to build:
+- [ ] Skip the black interior, and periodicity checking (one item; user
+      idea 2026-10-14: don't calculate the black regions; the separate
+      Brent-style periodicity item under Later is merged in here). Evaluated
+      2026-10-14, not approved to build. Where it helps: Julia, Ship, Tricorn,
+      Multibrot³, Phoenix and minibrot interiors, where the cardioid/bulb
+      skip doesn't apply; eps must scale with zoom; the GPU gain is capped by
+      warp divergence, so benchmark on a phone before keeping it. A related
+      2026-11-10 measurement on the Sine L-plane is under Now: Brent in that
+      shader was 2.8x faster deep in the black body but about 50% slower on
+      filament views, and was reverted.
       - Step 1 (~40 lines): during supersample refinement, skip passes 1–15
         for pixels whose 3×3 neighborhood was black in sample 0. Measured
         ~0.3–0.6× refinement cost on interior-heavy views. Needs the Fire
@@ -1043,14 +888,41 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
       Swift; MetalFX for 4K upscaling), driven by the Siri Remote (no
       pinch or twist): an ambient tour app. Few thousand lines, and every
       new fractal gets built twice. Only if AirPlay TV mode gets used
-- [ ] "Zoom to nearest minibrot" guided action
-- [ ] Auto-dive mode: a button that zooms steadily into an interesting spot
-      on its own, with drag to steer. Likely builds on distance estimation
-      and "zoom to nearest minibrot" for picking the target; capped by our
-      ~1e13 depth until the arbitrary-precision item under Later is done
-      (2026-10-10). Related "flyover" (user idea 2026-10-14): could
-      also mean a tour that flies between Surprise-me places, or an ambient
-      drift along the boundary; design evaluation pending
+- [ ] Auto-dive, ambient zoom and tours (one item, merged 2026-11-10 from
+      "Zoom to nearest minibrot", the old Auto-dive, the user's Ambient
+      auto-zoom idea of 2026-11-03 and the XaoS autopilot and tour ideas;
+      none approved; decide the design once, not three times). A hands-off
+      mode where any touch stops it, with drag to steer. Variants:
+      - Zoom to the nearest minibrot: needs distance estimation to pick the
+        target. The Mandelbrot family reaches about 1e-30 now (1.62.x), not
+        the old ~1e13, so a dive has far more room.
+      - Ambient endless zoom (Mandelbrot only to start): loop a Misiurewicz
+        point by wrapping scale and rotation by its self-similarity factor
+        (the point's multiplier, a complex number: its modulus is the scale
+        step, its argument the rotation step), with the center in plain
+        double precision, so the zoom never reaches the float64 floor.
+        UNVERIFIED: the math is from memory and untested; prototype one
+        point first (for example c = i, whose multiplier comes from the
+        derivative along its preperiodic orbit; derive it, then check that
+        the frame after a wrap matches the frame before it to a few pixels).
+      - Pixel-probe autopilot (from the XaoS study; XaoS is GPL, so write it
+        from scratch, ideas only): look at the image just drawn, try random
+        small windows (about 5x5 px), pick one that mixes inside and outside
+        pixels, keep zooming toward it, search near the last target so it
+        doesn't turn sharply, re-pick at random intervals, zoom out when
+        nothing qualifies, reset at the precision limit. It follows the
+        boundary and never settles on a minibrot. Needs a small
+        low-resolution probe pass in `renderer.js` read back a few times a
+        second (iPhone readback stalls are the risk), a new file feeding
+        `teleport.js`'s `zoomPath`, a frame cap and pausing when hidden.
+      - Tour as data: a list `[{ place, flightMs, dwellMs, caption }]` played
+        through `teleport.js` with the named places as the playlist,
+        borrowing XaoS's dwell and ease-in-out speed profile only (the app's
+        flight path is already smoother). A dev-only "record my flights"
+        button could author tours. Pairs with "Flight time and detail
+        during deep flights". Skip video export for now.
+      Also a "flyover" (user idea 2026-10-14): a tour between Surprise-me
+      places, or an ambient drift along the boundary.
 - [ ] Saved places (bookmarks): save the current view by name inside the app
       and fly back to it later. Today we only have share links and
       per-fractal memory that resets on relaunch. Store the full-precision
@@ -1060,7 +932,21 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
       `docs/saved-places/design.md` (local, git-ignored). User said
       2026-10-22 they might build it as saved links (stored share links);
       not approved yet. Whatever it stores must go through the share-link
-      writer, which never carries the `#diag` telemetry flag
+      writer, which never carries the `#diag` telemetry flag. A SPIKE exists
+      (2026-11-10, branch `worktree-agent-a3886907b2360519d`, commit
+      `e7d2344`, not merged, not stamped): a "Saved" section at the top of
+      the Places sheet (save under a name, rename, delete with a
+      confirmation, tap to cut to it through the share-link path), stored as
+      share-link strings in localStorage (`fractalAtlas.savedPlaces`, schema
+      1, 200 places at most); 262 lines across `src/ui/saved-places.js`,
+      `index.html`, `platform.js`, `places-sheet.js`, `app.js`, `sw.js` and a
+      4-test spec; no thumbnails, no flight, no undo. Open design questions:
+      the list in the Places sheet or a popover behind a new button;
+      localStorage or IndexedDB and native files (thumbnails need them, and
+      iOS can clear localStorage under storage pressure); fly or cut;
+      whether opening keeps or replaces the user's colormap (share links
+      replace it); the suggested-name rule; whether Saved sits above the
+      fold. Not verified: a real phone, VoiceOver, the app's WebView.
 - [ ] Open the Mandelbrot family rotated 90° on portrait phones: the set is
       wider than tall, so today it sits small mid-screen with ~45% empty
       space above and below. Rotation already exists; the opening view's
@@ -1103,55 +989,25 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
       width, a wider gap, and a slider box that stops above the button row.
       Check on the phone with VoiceOver: double-tap each button; a layout
       change, so tier 2 with a patch bump. Related: the accessibility pass below.
-      PARTLY DONE 2026-11-08 (uncommitted, 1.80.1): the buttons now sit above
+      PARTLY DONE 2026-11-08 (shipped in 1.80.1, `5644480`): the buttons now sit above
       the slider's box (`.control-row .iconBtn { position: relative; z-index: 1 }`),
       so the overlap no longer takes taps. 44 pt buttons are not possible at
       393 pt: nine or ten of them do not fit one row, so they stay about 40 pt
       wide. Still open: whether the 40 pt width and 3 pt gap are enough with
       VoiceOver (check on the phone); wrapping the row or dropping a button is
       the only way to 44 pt.
-- [ ] A progress ring on the Play button for chaos-game runs, instead of the
-      counter chip over the canvas (user idea 2026-11-08, liked after a
-      standalone mock). BUILT 2026-11-08, uncommitted (1.80.1): the ring fills
-      with run progress by the schedule's clock, stays when paused, closes and
-      pulses at the end, holds 2.5 s, takes the shape's picked colour
-      (`--run-ring`), and `#runChip` is gone; the percent is on the button's
-      `aria-description` and `data-pct` (the label stays "Play replay" and
-      "Pause replay", which many specs match exactly); 864 specs passed on
-      webkit-iphone15 and chromium-desktop. Not verified: a real iPhone, and
-      VoiceOver's reading of `aria-description`. Original note: The ring around `#fernReplayBtn`
-      fills with how far the run has played and closes with one soft pulse
-      when it ends (reduced motion: the ring updates in steps, no pulse; the
-      ring takes the shape's current palette colour). Not coverage: coverage
-      is about 97% lit a few seconds into the run (and the app reported 99%
-      at 2,000 points), so a coverage ring would be nearly full almost at
-      once. The points and coverage numbers stay on the info card; the Play
-      button's accessible name carries the percent played; the milestone
-      announcements stay. Removes `#runChip` and its updates (`updateRunChip`
-      in `chaos-run.js`, the rules in `index.html`), so the specs that read
-      the chip change. About 60 lines plus a CHANGELOG entry and a patch
-      bump. Best built with the touch-target item above: the ring wants a
-      44 pt button, and the phone-width row is 40 pt today. The mock is a
-      local, git-ignored file: `docs/mocks/chaos-run-ring-mock.html`.
-- [ ] Accessibility pass: the buttons have aria-labels, but the fractal
-      canvas gives VoiceOver nothing. Items below; after them, run
-      VoiceOver and Voice Control over the app
+- [ ] Accessibility pass, what is left after 1.80.5 (see Done: the canvas
+      label, the landing announcements, the alert banner, the VoiceOver zoom
+      and the sheet focus are built and specced). Open: run VoiceOver and
+      Voice Control over the app on the phone (the user's; the six checks
+      are in the 1.80.5 Done entry), then the items below
 - [ ] Flashing check: record deep flights in Bands and Stripes (high Repeat)
       and step through frame by frame against the three-flashes-per-second
       limit. If they flash, Reduce Motion crossfades instead of flying, and
       consider calming Bands/Stripes during flights for everyone.
-- [ ] Label the fractal for screen readers: `role="img"` on the main canvas
-      with a label that updates as you move ("Elephant Valley, Mandelbrot
-      set, 40 times in"); reuse the index captions once they exist.
-- [ ] Announcements: say the place name when Surprise me lands; make the
-      "graphics turned off" message an alert.
 - [ ] One-finger alternatives: double-tap to zoom in, a one-finger way to
       zoom out, and a rotate control that doesn't need a twist. Box zoom is
       the only one-finger zoom today, so keep it until these exist.
-- [ ] VoiceOver zoom in the app: zoom buttons only screen readers see, or an
-      adjustable canvas where swiping up and down zooms.
-- [ ] Color sheet focus: focus moves into the sheet when it opens and back to
-      the color button when it closes (check with VoiceOver).
 - [ ] Website only: try dropping `user-scalable=no` and `maximum-scale=1` so
       visitors can enlarge the page; check on an iPhone that gestures still work.
 - [ ] iPad check: layout at Stage Manager window sizes and in split view
@@ -1183,16 +1039,23 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
          if the difference can't be seen on a phone-sized render. Leave the
          matplotlib-derived palettes (Inferno, Plasma, Viridis, Turbo,
          Twilight) alone: they are already perceptual tables.
-      4. A seeded "Shuffle colors" built on OKLCH; it is the same item as the
-         seeded seamless palettes under the XaoS ideas and fits Colormap
-         animation below.
+      4. A seeded "Shuffle colors" built on OKLCH (merged in 2026-11-10 from
+         the XaoS-study item of the same name). XaoS makes a random palette
+         from a seed as alternating dark and bright keyframe colors,
+         interpolated, with the last color forced equal to the first so a
+         cycle loops without a seam; a palette is just (type, seed, shift),
+         tiny enough for a share-link field. Its cycling runs at steps per
+         second (30 by default) and can reverse. Idea only (GPL source: write
+         it from scratch). It fits Colormap animation below.
       Float accumulation for supersampling waits for its other reasons
       (Bird's Eye, margin rendering).
 - [ ] Colormap animation (WebGL: a u_colorPhase uniform shifting the LUT
       lookup over time via requestAnimationFrame; Koch/Tree: cycle the
       colormap's stops, like kochAnimateBtn cycles depth; new toggle, not
-      a repurposed "cycle colormap" button). u_colorPhase is the same
-      uniform as the coloring Style item's color offset control
+      a repurposed "cycle colormap" button). The Color sheet's Shift
+      control already offsets the palette (`u_offset` in `shaders.js`); the
+      animation could drive that same uniform. (The old reference to a coloring "Style item"
+      was stale: the Looks shipped in 1.40.0.)
 - [ ] Koch snowflake Easter egg (user idea 2026-10-17; not approved to
       build). Trigger: a full 360° twist in one gesture on the Koch view.
       The snowflake splits into its seven-piece self-tiling (one copy at
@@ -1208,19 +1071,11 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
       `normalizeAngle`, so it wraps at ±180°: detecting 360° needs an
       unwrapped running sum of per-frame angle deltas. A possible seasonal
       extra: snowfall on the Koch view
-- [ ] Sharper picker thumbnails (2026-10-17): icons/thumbs/*.webp are
-      192px, but a picker tile is ~110pt wide on a 393pt phone, ~330
-      device px at 3x, so they're upscaled ~1.7x. (Checked against
-      index.html 2026-10-17: the panel's content box is 347pt after the
-      10px insets, 1px border and 12px padding, and `minmax(96px, 1fr)`
-      with 10px gaps gives 3 columns of 109pt.) Render at 384px in
-      scripts/render_thumbs.mjs (`SIZE`; its "2x a ~96px tile" comment
-      is stale) (the whole set is ~180 KB today; expect several times
-      that). SVG was considered and rejected: 13 of 23 are escape-time
-      renders with no vector form, and the fern is 1M points. Optional
-      later: thumbnails that follow the current colormap, by storing
-      grayscale iteration maps and colorizing them with the LUT when the
-      picker opens.
+- [ ] Picker thumbnails that follow the current colormap (optional; the
+      sharper 384 px set shipped in 1.80.4): store grayscale iteration maps
+      and colorize them with the LUT when the picker opens. SVG thumbnails
+      were considered and rejected: most escape-time renders have no vector
+      form, and the fern is 1M points.
 - [ ] Flight time and detail during deep flights (user idea 2026-10-22;
       tried in 1.40.2 and 1.40.3, reverted in 1.40.4 because it did not
       work: the owner reported it stuttered too much on the phone. Which
@@ -1258,8 +1113,8 @@ distance estimation → zoom-to-minibrot / AI discovery.
 
 ### iOS integrations
 - [ ] "Fractal of the Day" widget (home or lock screen): a WidgetKit
-      extension, so native work; retention rather than discovery, so only
-      once the app has users
+      extension, so native work; it helps return visits rather than finding
+      new places, so it is for later
 - [ ] App Intents / Shortcuts: expose "Surprise me" and "Open last view" to
       Siri, Spotlight and Shortcuts
 - Skipped for now (no fit without a favorites feature): Apple Pencil,
@@ -1300,6 +1155,13 @@ distance estimation → zoom-to-minibrot / AI discovery.
       90); a Sierpinski curve (axiom F+XF+F+XF, X -> XF-F+F-XF+F+XF-F+F-X,
       angle 90); Penrose P3 via an L-system (angle 36). All small. Weigh them
       against the proposal to hold new fractal types back.
+      Peano (the user's own idea, 2026-10-23, merged in here 2026-11-10): the
+      3x3 space-filling curve, shaded by component with the colormaps, so each
+      of the nine sub-squares takes its place along the colormap, like the
+      depth gradient on the other line curves; check whether the existing
+      color is per segment or per depth and how to color by position along
+      the curve so the levels read as a gradient. Wikipedia "Peano curve"
+      for the learn-more row.
       A second read-only agent rendered about 45 curves with a throwaway
       turtle and looked at each (2026-11-02; sheets are scratchpad images, not
       in the repo). What it found, with confidence marked:
@@ -1402,26 +1264,14 @@ distance estimation → zoom-to-minibrot / AI discovery.
       update, or an on-device approach)
 
 ### Deep-zoom engine — only when someone actually hits these limits
-- [ ] Arbitrary-precision reference orbit for zoom past ~1e13
-      (computeReferenceOrbit is float64-limited to ~15-16 significant
-      digits — do this if/when deep zoom becomes an actual marketed
-      feature; the reference orbit is CPU/JS work (BigInt fixed-point),
-      but past ~1e-35 the shader's float32 deltas also underflow, so it
-      also needs extended-exponent deltas, plus BLA iteration skipping and
-      2D reference-orbit textures past MAX_TEXTURE_SIZE). Research
-      2026-10-20 (see `docs/render-research-2026-10-20.md`): a BigInt
-      orbit of 2000 iterations took 0.3 ms at 128 bits, 1.1 ms at 1024
-      bits, 10.8 ms at 4096 bits (M3), so the orbit isn't the bottleneck;
-      float32 deltas should hold to ~scale 1e-30 (inference); BLA wasn't
-      worth it at this iteration cap. Needs a share-link v2 and a
-      `chooseReference` redesign (scan candidates as float64 deltas against
-      the BigInt center orbit); ~250-400 lines. Measured 2026-10-21
-      (headless Chromium, a 100 px drag, same for every color style and
-      every fractal family tried): the float64 view center follows a drag
-      correctly down to scale ~1e-15, moves in coarse steps at 1e-16 (not
-      at all for centers near 1-2, up to 1.7x the drag for centers near
-      0.1-0.3) and doesn't move at 7.8e-18 (1.6e17x), while zoom itself
-      keeps working; there is no zoom cap
+- (The "arbitrary-precision reference orbit for zoom past ~1e13" item is
+  done for the Mandelbrot family: the exact view center, the BigInt orbit
+  and the zoom floor of about 1e-30 shipped in 1.62.4 to 1.64.2, see Done and
+  the next item. What is left is "Exact center, what is left" and "Deeper
+  than 1e-30" below. The 2026-10-20 research is in the git-ignored
+  `docs/render-research-2026-10-20.md`: a BigInt orbit of 2000 iterations
+  took 0.3 ms at 128 bits, 1.1 ms at 1024 bits and 10.8 ms at 4096 bits on
+  an M3; the float64 center stopped following a drag below about 1e-15.)
 - [ ] Exact center, what is left after 1.62.4 to 1.64.2 (see Done): (a) Newton
       still keeps a float64 / fixed-point center and stops at its zoom floor
       (the Apollonian is done, 1.64.0; Phoenix's floor was lowered by
@@ -1454,7 +1304,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
 - [ ] Deep-zoom order (user's pasted review notes, 2026-11-10; none
       approved; each item exists in this file, this fixes their order):
       1. Multi-pass iteration, since the 2000-iteration cap bites before
-         precision does (see "maxIter past 8000" and the Bird's Eye item).
+         precision does (see the Bird's Eye item under Next, which now holds it).
       2. Newton's exact center, which can reuse the Apollonian and
          Carpet/Gasket exact-center work (see "Exact center, what is left").
       3. Extended-range deltas past 1e-30, only after step 1 (see "Deeper
@@ -1470,7 +1320,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
       rescaled deltas (z = S*w with a CPU-tracked power-of-two S) or a
       floatexp (mantissa plus exponent), likely 150-300 lines and 2-3x
       slower per pass (unmeasured); a wider `EXACT_FRAC`; and past 2000
-      iterations the multi-pass iteration item below. Measure on the phone
+      iterations the multi-pass iteration under Bird's Eye (Next). Measure on the phone
       first with `#diag`. See `docs/render-research-2026-10-20.md` section 3.1.
 - [ ] Infinite zoom for the other digit-addressed IFS modes (Carpet and
       Gasket are done, see Done 1.63.0): the same grown-fraction exact
@@ -1479,23 +1329,12 @@ distance estimation → zoom-to-minibrot / AI discovery.
       center, and whether the HUD should show more than 17 decimals of the
       center at that depth (today the share link is the only way back to a
       very deep spot).
-- [ ] maxIter past 8000 (the cap planned for Bird's Eye, see Next): one
-      draw looping 10⁴–10⁶ times needs multi-pass iteration, saving
-      per-pixel state (z, dz, reference index) in float textures between
-      passes, and a 2D reference-orbit texture (dual view's orbit row is
-      2*(maxIter+1) texels; iPhone's MAX_TEXTURE_SIZE is 16384)
-- [ ] Periodicity checking (Brent-style: save z every so often, stop when
-      the orbit returns within eps) so interior pixels stop early instead of
-      running all of maxIter. Only real speedup where the cardioid/bulb skip
-      doesn't apply (Julia, Ship, Tricorn, Multibrot³, Phoenix, minibrot
-      interiors). Fast path only; eps must scale with zoom; GPU gain is capped
-      by warp divergence, so benchmark on a phone before keeping it
-- [ ] 3D fractals as picker modes, from `../fractalweb-3d/` (a plan
+- [ ] 3D fractals as picker modes, from `../fractal-web-3d/` (a plan
       written 2026-10-27 from a read-only evaluation; not approved, not
       started; it conflicts with the "no new fractal types for about a
       month" item under Now and with the "Deferred indefinitely" entry
       below, so those two need a decision first; see STRATEGY.md).
-      `fractalweb-3d` is about 72 KB of WebGL1 ray-marching source with no
+      `fractal-web-3d` is about 72 KB of WebGL1 ray-marching source with no
       dependencies (Mandelbulb, Menger sponge, Sierpinski tetrahedron,
       fractal tree), lighting, orbit/pinch/twist and share links.
       Plan: (1) one-day phone spike first: serve its `?bench` mode over the
@@ -1520,7 +1359,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
       work around: zoom stops at about 3,000x on the bulb (float32); one
       finger orbits instead of panning; no box zoom or named places.
       Estimate: spike 0.5-1 day, integration 4-6 days, release 1 day. If the
-      spike fails, leave `fractalweb-3d` standalone (about half a day of
+      spike fails, leave `fractal-web-3d` standalone (about half a day of
       tidying).
 
 ## Deferred indefinitely
@@ -1549,8 +1388,13 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
-- DONE 2026-11-08 (`5e9aedc`, 1.80.3, with 1.80.2 and the Phoenix drag preview below): Phoenix and Julia:Phoenix draw the moving last-frame preview during a drag or pinch at every zoom, not only below 1e-4 (`gesturePreviewEligible` in `deepzoom.js`; the dual Julia pane still renders live); new `tests/visual/phoenix-drag-preview.spec.mjs` (the four Phoenix tests fail with the change reverted); 506 specs passed on webkit-iphone15 and chromium-desktop and default-identity showed 0 differing pixels. Also 1.80.2: `user-select: none` on the toolbar's buttons, labels and rows, so a double-tap no longer selects the "detail" text. Verified on the phone (user, 2026-11-08): the Phoenix lag near the zoom floor is gone. Not verified: whether the other controls stay responsive during a drag, and that VoiceOver's double-tap now opens the picker.
-- DONE 2026-11-08 (`5e9aedc`, 1.80.1): compass reset race. `resetRotation()` stops on a pointer-down, a flight or any other cancel, and a press on a vector view now cancels a flight or reset too. Reproduced on the old code in headless Chromium (a write during the reset was overwritten within one frame); on the fixed build a press then a write held, the no-press control finished at 0, and a flight froze the reset. Specs `app`, `vector`, `dual`: 590 passed on webkit-iphone15 and chromium-desktop. Not verified: a real two-finger twist on the phone.
+- DONE 2026-11-10 (1.80.5, `3ed0816`, merged from branch `worktree-agent-a0ce34fddbca0a161`; pushed to the live site the same day): the accessibility pass. `src/ui/canvas-a11y.js`: the main canvas is an adjustable element (`role="slider"`) whose label is the landed place's name, else the fractal's, with the depth in `aria-valuetext` ("40 times deeper"), written 350 ms after the view stops; VoiceOver's increment and decrement arrive as arrow keys and zoom by 2x (the canvas has no `tabindex`, so desktop arrow-key panning is unchanged; WebGL zoom fractals only, the pattern canvases are labelled images); `flyTo` announces "<place>, <fractal>" through the polite live region when a flight lands; `#errorBanner` is `role="alert"` (so "graphics turned off" is announced); `landedPlaceName()` in `hud.js` is shared with the info card. The Color and Places sheets already moved focus in and back (`toolbar-a11y.js`); the new `a11y.spec.mjs` (9 tests) confirms it. Checks: lint; `a11y`, `info-card`, `run-announce`, `sw`, `vector`, `color-sheet`, `app` and the places and dual specs on webkit-iphone15 and chromium-desktop. NOT verified: VoiceOver itself (that iOS WebKit sends arrow keys on increment and decrement is the agent's belief, only synthesized in specs; if not, the fallback is hidden zoom buttons), a real iPhone, the app's WebView, and whether the alert is spoken when the hidden banner appears. To try with VoiceOver: touch the canvas (name, depth, "adjustable"); swipe up and down to zoom; Surprise me says the place; the Color and Places sheets take and return focus; the focus box is not stuck top left; with VoiceOver off, pinch and drag still work.
+- DONE 2026-11-10 (1.80.4, `0ea4c70`): sharper picker thumbnails. `scripts/render_thumbs.mjs` `SIZE` 192 to 384, the 35 `icons/thumbs/*.webp` re-rendered (316 KB to 732 KB, quality 82, about 400 KB more in the offline cache); the script now hides `#ruleChip` so the Corner Rules label stays out of its tile. Checked: a before and after contact sheet, lint, 14 picker specs. NOT verified: how they look on a phone.
+- DONE 2026-11-10 (`acc6b35`): the two fixed waits in `tests/visual/dot-replay.spec.mjs` that asserted that no run starts (700 and 800 ms) now wait six animation frames (a link's run starts after two); the whole spec passed twice over (564 runs) on webkit-iphone15 and chromium-desktop first. The 1.55.5 failure's tests were never named, so the remaining real-clock tests are only candidates.
+- DONE 2026-11-10 (1.80.1, `5644480`): the chaos-game progress ring around the Play button, replacing the `#runChip` counter: it fills by the run schedule's clock (not coverage, which is about 97% a few seconds in), stays when paused, closes and pulses at the end, holds 2.5 s, takes the shape's picked colour (`--run-ring`); the percent is on `aria-description` and `data-pct` (the label stays "Play replay" and "Pause replay"); the toolbar buttons also sit above the "detail" slider's touch area. 864 specs passed on webkit-iphone15 and chromium-desktop. NOT verified: a real iPhone and VoiceOver's reading of `aria-description`. The mock is local: `docs/mocks/chaos-run-ring-mock.html`.
+- DONE 2026-11-10 (the backlog grooming, user-approved edits): shipped items closed (ring, thumbnails, blurbs, the accessibility sub-items, Spider, Magnet and sine), the finished code-structure plan removed from Now (its Done entry below stays), duplicates merged (Auto-dive and ambient zoom and tours; Shuffle colors into the OKLCH item; Skip the black interior with periodicity checking; maxIter past 8000 into Bird's Eye; Peano into the L-system curves), the `fractal-web-3d` path fixed, competitor names removed from this file, and the version and hash of the compass and Phoenix fixes corrected below (they shipped in 1.80.0; the 1.80.1 to 1.80.3 numbers were reused on 2026-11-10 for other changes).
+- DONE 2026-11-08 (shipped in 1.80.0: work commit `5e9aedc`, whose CHANGELOG then numbered these fixes 1.80.1 to 1.80.3; they were folded into the one 1.80.0 entry in release commit `52ec9a1`, and those numbers were reused on 2026-11-10 for other changes; with the 1.80.2 text-selection fix and the Phoenix drag preview below): Phoenix and Julia:Phoenix draw the moving last-frame preview during a drag or pinch at every zoom, not only below 1e-4 (`gesturePreviewEligible` in `deepzoom.js`; the dual Julia pane still renders live); new `tests/visual/phoenix-drag-preview.spec.mjs` (the four Phoenix tests fail with the change reverted); 506 specs passed on webkit-iphone15 and chromium-desktop and default-identity showed 0 differing pixels. Also 1.80.2: `user-select: none` on the toolbar's buttons, labels and rows, so a double-tap no longer selects the "detail" text. Verified on the phone (user, 2026-11-08): the Phoenix lag near the zoom floor is gone. Not verified: whether the other controls stay responsive during a drag, and that VoiceOver's double-tap now opens the picker.
+- DONE 2026-11-08 (shipped in 1.80.0: work commit `5e9aedc`, release commit `52ec9a1`; see the entry above for the renumbering): compass reset race. `resetRotation()` stops on a pointer-down, a flight or any other cancel, and a press on a vector view now cancels a flight or reset too. Reproduced on the old code in headless Chromium (a write during the reset was overwritten within one frame); on the fixed build a press then a write held, the no-press control finished at 0, and a flight froze the reset. Specs `app`, `vector`, `dual`: 590 passed on webkit-iphone15 and chromium-desktop. Not verified: a real two-finger twist on the phone.
 - DONE 2026-11-05 (`de700d4`, 1.69.0): picker rows with a 64 px thumbnail, name and blurb (`PICKER_BLURBS` in `fractal-defs.js`, one column, two from 640 px), `aria-current` on the active row, the button's name is its label with the blurb as its description, and `ariaLabel: "Phoenix Julia set"` on Julia:Phoenix. Open: re-render the store "2-picker" shot at the next listing refresh; not verified on a real iPhone or with VoiceOver.
 - DONE 2026-11-05 (`26293d1` merged in `13bedd4`, stamped `9c30123`, 1.70.0): the Sine L-plane (key `Sine L plane`, label `Sine L-plane`), a Mandelbrot-family tile after Sine plane. z0 = pi/2 checked against a float64 reference. No new ftype: `FTYPE.SINE` with `juliaC: null`; Sine Julia is its `dualParent` preset. Float32 only, five places; default-identity 0 differing pixels; the oracle within its gates. Open: the agent's Sine Julia blurb (`ddc86bc`, branch `worktree-agent-a11df06c397ca5a39`, not merged; it would replace the user's wording); `docs/learn-more-links.md` has a row for the L-plane saying "None" (checked 2026-11-08), and no rows for Spider, Magnet I and II, Sine Julia or Sine plane; "Sine L-plane" label is final (user, 2026-11-05); not verified on a real iPhone.
 - DONE 2026-11-06 (the code-structure plan from the ES-module conversion, moved here by the 2026-11-08 backlog grooming): every step is done. Splits: `pattern-controls.js` (1.55.3, `702f1b0`), `vector-interaction.js` (1.55.4, `ff8a408`), `ifs.js` (1.55.5, `3fcad80`), then `digit-fractals.js` and `apollonian.js` (`88359a3`), `toolbar-a11y.js` (`2c98194`), `fractal-picker.js` (`c8c0258`), `dragon.js`/`lcurves.js`/`curve-view.js` (`f5ba282`), and the folder restructure into `src/` (`2772e2f`, 1.70.5). Safety nets: `check-duplicate-exports.mjs` in lint, `npm run smoke:scripts`, and the test-visual process-kill fix (`9c9fdf0`). Still open, low value: `// @ts-check` on the leaf files. Not recommended: a bundler, one session state object, regrouping `kochState`/`vectorColors`. Not verified: the iOS build and the real iPhone for the next release.
