@@ -5,15 +5,15 @@
 // render-layout.js, fractal-defs.js and pattern-controls.js (touchDotReplay, inside handlers only).
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { dragonState, dragonView, els, fernView, hexaflakeView, kochView, mode, treeView } from "../core/state.js?v=1.80.0";
-import { LINE_CURVES } from "../fractals/dragon.js?v=1.80.0";
-import { ifsData } from "../fractals/ifs.js?v=1.80.0";
-import { isCurveMode, isIfsMode, viewFromBounds } from "../fractals/fractal-defs.js?v=1.80.0";
-import { endVectorInteracting, markVectorInteracting } from "../core/state-colors.js?v=1.80.0";
-import { requestRender } from "../render/render-layout.js?v=1.80.0";
-import { normalizeAngle } from "../core/view-math.js?v=1.80.0";
-import { touchDotReplay } from "./pattern-controls.js?v=1.80.0";
-import { cancelTeleport } from "./teleport.js?v=1.80.0";
+import { dragonState, dragonView, els, fernView, hexaflakeView, kochView, mode, treeView } from "../core/state.js?v=1.80.1";
+import { LINE_CURVES } from "../fractals/dragon.js?v=1.80.1";
+import { ifsData } from "../fractals/ifs.js?v=1.80.1";
+import { isCurveMode, isIfsMode, viewFromBounds } from "../fractals/fractal-defs.js?v=1.80.1";
+import { endVectorInteracting, markVectorInteracting } from "../core/state-colors.js?v=1.80.1";
+import { requestRender } from "../render/render-layout.js?v=1.80.1";
+import { normalizeAngle } from "../core/view-math.js?v=1.80.1";
+import { touchDotReplay } from "./pattern-controls.js?v=1.80.1";
+import { cancelTeleport } from "./teleport.js?v=1.80.1";
 
 // The fern's own box-zoom toggle (the dot shapes' control row is separate from the toolbar's, whose
 // toggle is in interaction.js). Only this file reads or assigns it.

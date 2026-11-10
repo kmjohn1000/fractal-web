@@ -4,24 +4,24 @@
 // updateHud taking the main pane's last deep-zoom path as an argument), which calls the updaters after each
 // frame; this file imports nothing from render-layout.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { COLORMAPS } from "../render/colormaps.js?v=1.80.0";
-import { FRACTAL_CONFIGS, FTYPE, fractalLabel } from "../core/configs.js?v=1.80.0";
-import { EXTRA_MODES, SHAPE_INFO } from "../fractals/fractal-defs.js?v=1.80.0";
-import { apolloFrame } from "../fractals/apollonian.js?v=1.80.0";
-import { digitFractalDepth, isDigitFractal } from "../fractals/digit-fractals.js?v=1.80.0";
-import { DEEP_ZOOM_THRESHOLD, atZoomLimit, deepZoomEligible, isSineType, newtonDeepEligible, perturbationEligibleType, phoenixDeepEligible } from "../core/deepzoom.js?v=1.80.0";
-import { TELEPORT_DESTINATIONS } from "../fractals/places.js?v=1.80.0";
-import { COLOR_STYLES, ESCAPE_TIME_TYPES, colorStyle, styleDrawn } from "../render/color-styles.js?v=1.80.0";
-import { currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, hexaflakeView, isInteracting, kochState, kochView, mainRenderer, mainState, mode, treeState, treeView } from "../core/state.js?v=1.80.0";
-import { colormapIndex } from "../core/state-colors.js?v=1.80.0";
-import { dualPresetName } from "./modes.js?v=1.80.0";
-import { teleportLandingIndex } from "./teleport.js?v=1.80.0";
-import { hudVisible } from "./compass-ui.js?v=1.80.0";
-import { COLOR_LOOKS, bandsText, lookPalette, shiftText } from "./color-sheet.js?v=1.80.0";
-import { apolloCurvatureText, capitalize, formatHudCoords, rotationHudText, scaleBar, unitsPerCssPx, zoomPhrase } from "./hud-format.js?v=1.80.0";
-import { normalizeAngle } from "../core/view-math.js?v=1.80.0";
-import { runHudParts, updateRunChip } from "../fractals/chaos-run.js?v=1.80.0";
-import { cornerAbout, currentCornerRule } from "../fractals/corner-rules.js?v=1.80.0";
+import { COLORMAPS } from "../render/colormaps.js?v=1.80.1";
+import { FRACTAL_CONFIGS, FTYPE, fractalLabel } from "../core/configs.js?v=1.80.1";
+import { EXTRA_MODES, SHAPE_INFO } from "../fractals/fractal-defs.js?v=1.80.1";
+import { apolloFrame } from "../fractals/apollonian.js?v=1.80.1";
+import { digitFractalDepth, isDigitFractal } from "../fractals/digit-fractals.js?v=1.80.1";
+import { DEEP_ZOOM_THRESHOLD, atZoomLimit, deepZoomEligible, isSineType, newtonDeepEligible, perturbationEligibleType, phoenixDeepEligible } from "../core/deepzoom.js?v=1.80.1";
+import { TELEPORT_DESTINATIONS } from "../fractals/places.js?v=1.80.1";
+import { COLOR_STYLES, ESCAPE_TIME_TYPES, colorStyle, styleDrawn } from "../render/color-styles.js?v=1.80.1";
+import { currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, hexaflakeView, isInteracting, kochState, kochView, mainRenderer, mainState, mode, treeState, treeView } from "../core/state.js?v=1.80.1";
+import { colormapIndex } from "../core/state-colors.js?v=1.80.1";
+import { dualPresetName } from "./modes.js?v=1.80.1";
+import { teleportLandingIndex } from "./teleport.js?v=1.80.1";
+import { hudVisible } from "./compass-ui.js?v=1.80.1";
+import { COLOR_LOOKS, bandsText, lookPalette, shiftText } from "./color-sheet.js?v=1.80.1";
+import { apolloCurvatureText, capitalize, formatHudCoords, rotationHudText, scaleBar, unitsPerCssPx, zoomPhrase } from "./hud-format.js?v=1.80.1";
+import { normalizeAngle } from "../core/view-math.js?v=1.80.1";
+import { runHudParts, updateRunRing } from "../fractals/chaos-run.js?v=1.80.1";
+import { cornerAbout, currentCornerRule } from "../fractals/corner-rules.js?v=1.80.1";
 
 // Info overlay (see #hud in index.html): the title (a place name, or the
 // fractal or pattern), a plain-language line (how deep, rotation), a scale
@@ -233,7 +233,7 @@ export function updateFernHud() {
   // (a chaos-game run's counter and seed come in through runHudParts, chaos-run.js)
   setHud(modeLabel(fernView.system), [...runHudParts(`${fernView.accepted.toLocaleString()} of ${fernState.count.toLocaleString()} points`), rotationHudText(fernView.view.rotation)],
     patternBar(fernView.view, els.fernCanvas, fernView.system));
-  updateRunChip();
+  updateRunRing();
   updateRuleChip();
 }
 

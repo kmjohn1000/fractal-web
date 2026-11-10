@@ -2,6 +2,10 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.80.1 — 2026-11-08
+- Changed: a chaos-game run now shows how far it has played as a ring around the Play button, instead of a counter floating over the picture. The ring closes with one soft pulse when the run ends. The points and coverage numbers stay on the info card.
+- Fixed: the toolbar buttons now sit above the "detail" slider's oversized touch area, so a tap or VoiceOver double-tap near the slider's edge reaches the button.
+
 ## 1.80.0 — 2026-11-08
 - Release build for the App Store: brings together 1.66.0 to 1.70.5 (Spider, Magnet I and II, the sine family and the Sine L-plane, the picker rows, the places pin), plus the fixes below, found on a phone before this version went live.
 - Fixed: a compass reset no longer overwrites a twist or a flight that starts while it is turning the view back to upright.

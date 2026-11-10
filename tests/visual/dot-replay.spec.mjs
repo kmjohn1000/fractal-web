@@ -13,7 +13,7 @@ import { readFileSync } from "node:fs";
    ifsTransformColors, ifsPoints, IFS_SYSTEMS, backdropPixels, replayJumpsAt, replayTimeOf, REPLAY_SLOW_S, REPLAY_RAMP_S,
    REPLAY_CAP_S, depthPlayer, PLAY_SPEEDS, setFernColor, stopDepthPlay, hudVisible, seededRandom, REPLAY_LONG, replayStopPoints,
    IFS_STOP_POINTS, newRunSeed, parseRunSeed, replayGapLast, replaySchedule, REPLAY_DEFAULT_SCHEDULE, REPLAY_CAP_RATIO,
-   formatPointCount, ifsData, updateFernHud, announceRunDone, chaosRun, parseShareHash */
+   formatPointCount, ifsData, updateFernHud, announceRunDone, chaosRun, parseShareHash, runChipText, RING_HOLD_MS */
 
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
 const IFS_MODES = ["fern", "sierpinski", "pentagon", "levy", "vicsek"];
@@ -1092,7 +1092,7 @@ test.describe("the counter", () => {
           const st = fernView.runStats;
           if (st.coverage < prevCov || st.points < prevPoints) down++;
           prevCov = st.coverage; prevPoints = st.points;
-          checks.push({ target, n: st.n, points: st.points, lit: st.lit, wantLit: litRef, refCells: st.refCells, wantRef: ref.size, coverage: st.coverage, wantCov: Math.min(1, litRef / ref.size), chip: document.getElementById("runChip").textContent, chipPoints: formatPointCount(st.points) });
+          checks.push({ target, n: st.n, points: st.points, lit: st.lit, wantLit: litRef, refCells: st.refCells, wantRef: ref.size, coverage: st.coverage, wantCov: Math.min(1, litRef / ref.size), chip: runChipText(st), chipPoints: formatPointCount(st.points) });
         }
         return { checks, down };
       }, seed);
@@ -1121,80 +1121,113 @@ test.describe("the counter", () => {
     table.forEach(([n, want], i) => expect(got[i], `formatPointCount(${n})`).toBe(want));
   });
 
-  test("the chip counts every dot drawn from the first jump, on every shape: it never lags the dots on screen", async ({ page }) => {
+  test("the counter counts every dot drawn from the first jump, on every shape: it never lags the dots on screen", async ({ page }) => {
     // (the first 12 jumps are still off the shape and stay out of the picture's density and the coverage, but they are
-    // drawn as dots, so they count here: the chip once read 0 points for the first 12 dots and stayed 12 behind)
+    // drawn as dots, so they count here: the counter once read 0 points for the first 12 dots and stayed 12 behind)
     for (const m of IFS_MODES) {
       await startLongManual(page, m, { seed: 5 });
       for (const n of [1, 5, 12, 13, 40]) {
         await stepRunTo(page, n);
         expect(await page.evaluate(() => fernView.replayState.n), `${m}: jumps landed`).toBe(n);
-        await expect(page.locator("#runChip"), `${m}: the chip at ${n} dots`).toHaveText(new RegExp(`^${n} ${n === 1 ? "point" : "points"} · \\d+% filled$`));
+        expect(await page.evaluate(() => runChipText(fernView.runStats)), `${m}: the counter at ${n} dots`).toMatch(new RegExp(`^${n} ${n === 1 ? "point" : "points"} · \\d+% filled$`));
       }
       await page.evaluate(() => fernView.cancelReplay());
     }
   });
 
-  test("the chip shows over the canvas while a run is on, is gone when it ends, and takes no taps", async ({ page }) => {
+  test("the ring on Play shows while a run is on, follows how far it has played, stays when paused, is gone when it is cancelled, and takes no taps", async ({ page }) => {
     await startLongManual(page, "sierpinski", { seed: 5 });
-    const chip = page.locator("#runChip");
-    await expect(chip).toBeVisible();
-    await expect(chip).toHaveText("0 points · 0% filled");
-    await stepRunTo(page, 1216); // 1,216 dots drawn, 1,216 points
-    await expect(chip).toHaveText(/^1,216 points · \d+% filled$/);
+    const btn = page.locator("#fernReplayBtn");
+    await expect(btn).toHaveClass(/\bringOn\b/);
+    await expect(btn).toHaveAttribute("data-pct", "0");
+    await stepRunTo(page, 1216);
+    const p1 = Number(await btn.getAttribute("data-pct"));
     await stepRunTo(page, 30012);
-    await expect(chip).toHaveText(/^30 thousand points · \d+% filled$/);
-    const style = await chip.evaluate((e) => ({ pe: getComputedStyle(e).pointerEvents, live: e.getAttribute("aria-live"), insideCanvas: e.parentElement.id }));
-    expect(style).toEqual({ pe: "none", live: null, insideCanvas: "canvasArea" });
+    const p2 = Number(await btn.getAttribute("data-pct"));
+    expect(p1, "some of the run has played").toBeGreaterThan(0);
+    expect(p2, "and it only goes forward").toBeGreaterThan(p1);
+    const ring = await page.evaluate(() => {
+      const r = document.querySelector("#fernReplayBtn .ring"), fill = r.querySelector(".fill");
+      const [on, total] = fill.getAttribute("stroke-dasharray").split(" ").map(Number);
+      return { pe: getComputedStyle(r).pointerEvents, hidden: r.getAttribute("aria-hidden"), desc: document.getElementById("fernReplayBtn").getAttribute("aria-description"), share: on / total };
+    });
+    expect(ring.pe).toBe("none");
+    expect(ring.hidden, "decoration: the percent is the button's description").toBe("true");
+    expect(ring.desc).toBe(`${p2}% played`);
+    expect(ring.share, "the drawn arc is the percent").toBeCloseTo(p2 / 100, 1);
+    expect(await page.locator("#runChip").count(), "no counter floats over the canvas any more").toBe(0);
     await page.evaluate(() => fernView.pauseReplay());
-    await expect(chip, "still there when paused").toBeVisible();
+    await expect(btn, "still there when paused").toHaveClass(/\bringOn\b/);
     await page.evaluate(() => { fernView.cancelReplay(); requestRender(); });
-    await expect(chip).toBeHidden();
+    await expect(btn).not.toHaveClass(/\bringOn\b/);
     await settled(page, await page.evaluate(() => fernState.count));
-    await expect(chip).toBeHidden();
+    await expect(btn).not.toHaveClass(/\bringOn\b/);
+    await expect(btn).not.toHaveAttribute("aria-description", /.+/);
+  });
+
+  test("the ring closes when the run ends by itself, holds for a moment, then goes", async ({ page }) => {
+    await startLongManual(page, "sierpinski", { seed: 5 });
+    await page.evaluate(() => { const s = fernView.replayState; fernView.replayStep(s.sched.timeOf(s.total, s.total) - s.t + 0.01); updateFernHud(); });
+    const btn = page.locator("#fernReplayBtn");
+    expect(await page.evaluate(() => fernView.replaying), "the run is over").toBe(false);
+    await expect(btn, "closed").toHaveClass(/\bringDone\b/);
+    await expect(btn).toHaveAttribute("data-pct", "100");
+    await expect(btn).toHaveClass(/\bringOn\b/);
+    await page.waitForTimeout((await page.evaluate(() => RING_HOLD_MS)) + 400);
+    await expect(btn, "gone after the hold").not.toHaveClass(/\bringOn\b/);
+  });
+
+  test("the ring takes the shape's picked colour and follows a change of colour", async ({ page }) => {
+    await startLongManual(page, "sierpinski", { seed: 5 });
+    const color = () => page.evaluate(() => ({
+      set: document.getElementById("fernReplayBtn").style.getPropertyValue("--run-ring"),
+      drawn: getComputedStyle(document.querySelector("#fernReplayBtn .ring .fill")).stroke.replace(/\s/g, ""),
+    }));
+    await page.evaluate(() => setFernColor(3));
+    const a = await color();
+    await page.evaluate(() => setFernColor(4));
+    const b = await color();
+    expect(a.set).toMatch(/^rgb\(\d+,\d+,\d+\)$/);
+    expect(b.set, "another colour, another ring").not.toBe(a.set);
+    expect(a.drawn, "the ring is drawn in it").toBe(a.set);
+    expect(b.drawn).toBe(b.set);
+    await page.evaluate(() => fernView.cancelReplay());
   });
 
   for (const width of [360, 393]) {
-    test(`at ${width} px the chip is one line, at the top of the canvas, clear of the toolbar, the welcome card and the compass, in every shape`, async ({ page }) => {
+    test(`at ${width} px the ring sits on the Play button and inside the toolbar row, in every shape`, async ({ page }) => {
       await page.setViewportSize({ width, height: 852 });
       for (const m of IFS_MODES) {
         await startLongManual(page, m, { seed: 9 });
-        await page.evaluate(() => {
-          document.getElementById("welcome").classList.remove("hidden"); // the first web visit's card, at the bottom
-          document.querySelectorAll(".compass").forEach((c) => c.classList.add("shown")); // and the rotation compasses, top right
-          const s = fernView.replayState; fernView.replayStep(s.sched.timeOf(s.total - 1, s.total) - s.t); updateFernHud(); // one jump short of the end: the longest text, "500 thousand points · 100% filled"
-        });
+        await page.evaluate(() => { const s = fernView.replayState; fernView.replayStep(s.sched.timeOf(s.total / 2, s.total) - s.t); updateFernHud(); }); // part way: the ring is on
+        await expect(page.locator("#fernReplayBtn .ring"), `${m}: the ring is visible (it fades in)`).toHaveCSS("opacity", "1");
         const b = await page.evaluate(() => {
           const rect = (e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, w: r.width, h: r.height }; };
-          const chip = document.getElementById("runChip");
-          const compasses = [...document.querySelectorAll(".compass")].map(rect).filter((r) => r.w > 0);
-          return { chip: rect(chip), canvas: rect(els.fernCanvas), tb: rect(document.getElementById("fernControls")), welcome: rect(document.getElementById("welcome")), compasses, text: chip.textContent, lh: parseFloat(getComputedStyle(chip).lineHeight), z: [getComputedStyle(chip).zIndex, getComputedStyle(document.getElementById("welcome")).zIndex] };
+          const btn = document.getElementById("fernReplayBtn");
+          return { ring: rect(btn.querySelector(".ring")), btn: rect(btn), row: rect(document.getElementById("fernControls")) };
         });
-        const hit = (a, c) => a.x < c.right && c.x < a.right && a.y < c.bottom && c.y < a.bottom;
-        expect(b.chip.h, `${m}: one line (${b.text})`).toBeLessThan(b.lh + 14);
-        expect(b.chip.x, `${m}: inside on the left`).toBeGreaterThanOrEqual(b.canvas.x + 8);
-        expect(b.chip.right, `${m}: inside on the right`).toBeLessThanOrEqual(b.canvas.right - 8);
-        expect(b.chip.bottom, `${m}: clear of the toolbar`).toBeLessThanOrEqual(b.tb.y);
-        expect(b.chip.y, `${m}: at the top of the canvas`).toBeLessThan(b.canvas.y + 24);
-        expect(b.chip.y).toBeGreaterThanOrEqual(b.canvas.y);
-        expect(hit(b.chip, b.welcome), `${m}: the welcome card (${JSON.stringify(b.welcome)}) does not cover the chip (${JSON.stringify(b.chip)})`).toBe(false);
-        expect(b.compasses.length, "the compasses are laid out").toBeGreaterThan(0);
-        for (const c of b.compasses) expect(hit(b.chip, c), `${m}: a compass does not cover the chip`).toBe(false);
-        await page.evaluate(() => { document.getElementById("welcome").classList.add("hidden"); document.querySelectorAll(".compass").forEach((c) => c.classList.remove("shown")); fernView.cancelReplay(); });
+        expect(b.ring.x, `${m}: on the button's edge on the left (the button's 1 px border is where the ring's box starts)`).toBeCloseTo(b.btn.x, 0);
+        expect(b.ring.right, `${m}: and on the right`).toBeCloseTo(b.btn.right, 0);
+        expect(b.ring.x, `${m}: inside the toolbar row`).toBeGreaterThanOrEqual(b.row.x);
+        expect(b.ring.right).toBeLessThanOrEqual(b.row.right);
+        expect(b.ring.y).toBeGreaterThanOrEqual(b.row.y);
+        expect(b.ring.bottom).toBeLessThanOrEqual(b.row.bottom);
+        await page.evaluate(() => fernView.cancelReplay());
       }
     });
   }
 
-  test("the open info card, top left, takes the chip's place: the chip is not drawn under it", async ({ page }) => {
+  test("the run's numbers are on the info card, nothing floats over the canvas, and the ring stays on Play either way", async ({ page }) => {
     await startLongManual(page, "fern", { seed: 9 });
     await stepRunTo(page, 3000);
-    await expect(page.locator("#runChip")).toBeVisible();
+    expect(await page.locator("#runChip").count(), "no counter over the canvas").toBe(0);
+    await expect(page.locator("#fernReplayBtn")).toHaveClass(/\bringOn\b/);
     if (!(await page.evaluate(() => hudVisible))) await page.locator(".hudToggleBtn:visible").first().click();
     await expect(page.locator("#hud")).toBeVisible();
-    await expect(page.locator("#runChip"), "the card says the same numbers").toBeHidden();
     await expect(page.locator("#hud .hudPlain span").nth(0)).toHaveText(/^3,000 points · \d+% filled$/);
-    await page.locator(".hudToggleBtn:visible").first().click(); // the card closed again: the chip is back
-    await expect(page.locator("#runChip")).toBeVisible();
+    await expect(page.locator("#fernReplayBtn"), "with the card open").toHaveClass(/\bringOn\b/);
+    await page.locator(".hudToggleBtn:visible").first().click(); // the card closed again
+    await expect(page.locator("#fernReplayBtn"), "and with it closed").toHaveClass(/\bringOn\b/);
     await page.evaluate(() => fernView.cancelReplay());
   });
 
@@ -1205,8 +1238,7 @@ test.describe("the counter", () => {
     const plain = page.locator("#hud .hudPlain span");
     await expect(plain.nth(0)).toHaveText(/^1,216 points · \d+% filled$/);
     await expect(plain.nth(1)).toHaveText("Run 482913");
-    const chipText = await page.locator("#runChip").textContent();
-    expect(await plain.nth(0).textContent(), "the card and the chip say the same").toBe(chipText);
+    expect(await plain.nth(0).textContent(), "the card says what the counter says").toBe(await page.evaluate(() => runChipText(fernView.runStats)));
     await page.evaluate(() => fernView.cancelReplay());
     await page.evaluate(() => renderAll());
     await expect(plain.nth(0)).toHaveText(/ of 1,000,000 points$/);
@@ -1364,8 +1396,8 @@ test.describe("Play: a Long run with a seed of its own, and the seed in the link
     await page.waitForFunction(() => fernView.replayState && fernView.replayState.n >= 30);
     const got = await page.evaluate(() => fernView.replayState.seq.slice(1, 31).map((p) => [p.ci, p.x, p.y]));
     expect(got, "the sender's seed, the sender's jumps").toEqual(await seqFromSeed(page, "pentagon", sent.seed, 30));
-    const st = await page.evaluate(() => ({ stop: fernView.replayState.stop, slow: fernView.replayState.sched.slowJumps, chip: !document.getElementById("runChip").classList.contains("hidden"), remembered: chaosRun.seed }));
-    expect(st).toEqual({ stop: 300000, slow: 100, chip: true, remembered: sent.seed });
+    const st = await page.evaluate(() => ({ stop: fernView.replayState.stop, slow: fernView.replayState.sched.slowJumps, ring: document.getElementById("fernReplayBtn").classList.contains("ringOn"), remembered: chaosRun.seed }));
+    expect(st).toEqual({ stop: 300000, slow: 100, ring: true, remembered: sent.seed });
     expect(await page.evaluate(() => buildShareHash()), "and the opened view carries the same seed on").toBe(sent.hash);
     await page.evaluate(() => fernView.cancelReplay());
   });
@@ -1386,7 +1418,7 @@ test.describe("Play: a Long run with a seed of its own, and the seed in the link
     await page.waitForFunction(() => typeof fernView !== "undefined" && mode === "sierpinski" && fernView.accepted > 0);
     await page.waitForTimeout(800);
     expect(await page.evaluate(() => fernView.replaying)).toBe(false);
-    await expect(page.locator("#runChip")).toBeHidden();
+    await expect(page.locator("#fernReplayBtn")).not.toHaveClass(/\bringOn\b/);
   });
 
   test("a link with a seed, opened on another shape's page while a run plays, plays its own run", async ({ page }) => {
@@ -1432,7 +1464,7 @@ async function followProbe(page, { m, n, count = 200000, seed = 5, change, twice
     updateFernHud();
     const duringGesture = report();
     if (settle) fernView.replaySettle();
-    const a = report(), A = grab(), chip = document.getElementById("runChip").textContent;
+    const a = report(), A = grab(), chip = runChipText(fernView.runStats);
     fernView.cancelReplay();
     // the same run begun in that view
     start(); stepTo(n);
@@ -1607,7 +1639,7 @@ test.describe("Play: gestures on the picture do not end the run (the owner's whe
       await page.waitForTimeout(400);
       expect(await page.evaluate(() => fernView.replaying), "not ended by the wheel").toBe(true);
       await expect(page.locator("#fernReplayBtn")).toHaveAttribute("aria-label", "Pause replay");
-      await expect(page.locator("#runChip")).toBeVisible();
+      await expect(page.locator("#fernReplayBtn")).toHaveClass(/\bringOn\b/);
       expect(await page.evaluate(() => fernView.replayState.n), "points keep landing").toBeGreaterThan(n0);
       expect(await page.evaluate(() => fernView.accepted), "the run's points are not thrown at the screen all at once").toBeLessThan(900000);
       await page.evaluate(() => { depthPlayer.speedIndex = PLAY_SPEEDS.indexOf(4); syncReplayButtons(); }); // let it finish

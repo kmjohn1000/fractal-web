@@ -6,15 +6,15 @@
 // fern.js, chaos-run.js and teleport.js (cancelTeleport, inside startDotRun only).
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { KOCH_GROW_MS, KOCH_GROW_STEP_SHARE } from "../fractals/koch.js?v=1.80.0";
-import { isCurveMode } from "../fractals/fractal-defs.js?v=1.80.0";
-import { dragonState, els, fernState, fernView, hexaflakeState, kochState, kochView, mode, treeState } from "../core/state.js?v=1.80.0";
-import { fernRenderOpts, requestRender } from "../render/render-layout.js?v=1.80.0";
-import { dragonNav, fernNav, fitVectorView, hexaflakeNav, kochNav, treeNav, vectorViewIsFitted } from "./vector-interaction.js?v=1.80.0";
-import { prefersReducedMotion, syncSliderFill } from "./compass-ui.js?v=1.80.0";
-import { REPLAY_LONG, replayStopPoints, seededRandom } from "../fractals/fern.js?v=1.80.0";
-import { announceRunDone, newRunSeed, rememberRun, updateRunChip } from "../fractals/chaos-run.js?v=1.80.0";
-import { cancelTeleport } from "./teleport.js?v=1.80.0";
+import { KOCH_GROW_MS, KOCH_GROW_STEP_SHARE } from "../fractals/koch.js?v=1.80.1";
+import { isCurveMode } from "../fractals/fractal-defs.js?v=1.80.1";
+import { dragonState, els, fernState, fernView, hexaflakeState, kochState, kochView, mode, treeState } from "../core/state.js?v=1.80.1";
+import { fernRenderOpts, requestRender } from "../render/render-layout.js?v=1.80.1";
+import { dragonNav, fernNav, fitVectorView, hexaflakeNav, kochNav, treeNav, vectorViewIsFitted } from "./vector-interaction.js?v=1.80.1";
+import { prefersReducedMotion, syncSliderFill } from "./compass-ui.js?v=1.80.1";
+import { REPLAY_LONG, replayStopPoints, seededRandom } from "../fractals/fern.js?v=1.80.1";
+import { announceRunDone, newRunSeed, rememberRun, updateRunRing } from "../fractals/chaos-run.js?v=1.80.1";
+import { cancelTeleport } from "./teleport.js?v=1.80.1";
 
 els.kochDepthSlider.addEventListener("input", () => {
   syncSliderFill(els.kochDepthSlider);
@@ -201,7 +201,7 @@ export function syncReplayButtons() {
     btn.setAttribute("aria-label", running ? "Pause replay" : "Play replay");
     btn.title = running ? "Pause replay" : "Play replay: watch the chaos game build the picture";
   }
-  updateRunChip(); // the counter over the canvas shows while a run is on, paused or not
+  updateRunRing(); // the ring on Play shows while a run is on, paused or not
 }
 
 export function stopDotReplay() {

@@ -2,9 +2,9 @@
 // constants, normalizedCurve and LINE_CURVES. Split from the old dragon.js (a pure move), whose Hilbert, Gosper
 // and arrowhead walk is now lcurves.js and whose Canvas2D view, stroking and colors are curve-view.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { GOSPER_CURVE, HILBERT_CURVE, DRAGON_CURVE, SIERPINSKI_ARROWHEAD, lsystemPolylines, normalizePolylines } from "./lsystem.js?v=1.80.0";
-import { PENROSE_DEFAULT_DEPTH, PENROSE_MAX_DEPTH, PENROSE_MIN_DEPTH, penrosePoints } from "./penrose.js?v=1.80.0";
-import { VECTOR_CULL_MARGIN } from "../render/vectorgeom.js?v=1.80.0";
+import { GOSPER_CURVE, HILBERT_CURVE, DRAGON_CURVE, SIERPINSKI_ARROWHEAD, lsystemPolylines, normalizePolylines } from "./lsystem.js?v=1.80.1";
+import { PENROSE_DEFAULT_DEPTH, PENROSE_MAX_DEPTH, PENROSE_MIN_DEPTH, penrosePoints } from "./penrose.js?v=1.80.1";
+import { VECTOR_CULL_MARGIN } from "../render/vectorgeom.js?v=1.80.1";
 
 // The line-turtle curves that share one Canvas2D view (and one control
 // row in the app): the Heighway dragon plus Hilbert, Gosper and the

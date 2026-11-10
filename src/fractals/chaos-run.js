@@ -1,11 +1,11 @@
 // The chaos-game run of the dot shapes as the person sees it: the run's seed (which is in the share
-// link and on the info card), the points-and-coverage counter (the chip over the canvas and the same
-// numbers on the info card) and the few lines a screen reader hears. The engine itself is fern.js
+// link and on the info card), the points-and-coverage counter (on the info card), the ring on the Play
+// button that shows how far the run has played, and the few lines a screen reader hears. The engine itself is fern.js
 // (startReplay, fernView.runStats); teleport.js starts the runs and render-layout.js calls in here.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { fernView, mode } from "../core/state.js?v=1.80.0";
-import { formatPointCount } from "../ui/hud-format.js?v=1.80.0";
-import { cornerDeal } from "./corner-rules.js?v=1.80.0";
+import { fernView, mode } from "../core/state.js?v=1.80.1";
+import { formatPointCount } from "../ui/hud-format.js?v=1.80.1";
+import { cornerDeal } from "./corner-rules.js?v=1.80.1";
 
 // ---------------------------------------------------------------- the seed
 
@@ -23,7 +23,7 @@ export function parseRunSeed(raw) {
 // The run last played: its seed, the shape and the view it was played on. The seed belongs to the
 // picture only while all of that is as it was (a pan or zoom, another shape: it is not that run's
 // picture any more), so the share link and the info card ask currentRunSeed.
-export const chaosRun = { seed: 0, system: "", rule: 0, view: null, announced: 0, lastPoints: 0, clearTimer: 0 };
+export const chaosRun = { seed: 0, system: "", rule: 0, view: null, announced: 0, lastPoints: 0, clearTimer: 0, ringHold: 0 };
 // Corner Rules: the run belongs to the rule it was played under too (0 for the shapes without rules)
 export const runRule = () => (fernView.system === "corners" ? cornerDeal.id : 0);
 export function rememberRun(seed) {
@@ -52,17 +52,44 @@ export function runHudParts(normalLine) {
   return [stats ? runChipText(stats) : normalLine, seed ? `Run ${seed}` : ""];
 }
 
-// Shows the chip while a run is on (playing or paused), hides it otherwise. Called by updateFernHud
-// each time the replay draws a frame, and by syncReplayButtons when the run starts, pauses or ends.
-export function updateRunChip() {
-  const chip = document.getElementById("runChip");
-  if (!chip) return;
+// ---------------------------------------------------------------- the ring on Play
+
+// The ring around the Play button fills with how far the run has played (fernView.runStats.progress), is
+// there while a run is on (playing or paused), and closes with one soft pulse when the run ends by itself,
+// then stays closed for RING_HOLD_MS and fades. Nothing floats over the picture: the points and coverage
+// numbers are on the info card (runHudParts). Called by updateFernHud each time the replay draws a frame,
+// and by syncReplayButtons when the run starts, pauses or ends.
+export const RING_HOLD_MS = 2500;
+export const RING_LENGTH = 2 * Math.PI * 21; // the circle's circumference in the ring's 46 x 46 viewBox
+export function updateRunRing() {
   const stats = fernView.runStats;
-  chip.classList.toggle("hidden", !stats);
-  if (!stats) return;
-  const text = runChipText(stats);
-  if (chip.textContent !== text) chip.textContent = text;
-  announceMilestones(stats);
+  if (!stats && chaosRun.ringHold) return; // a run just ended: the closed ring stays until it fades
+  if (stats && chaosRun.ringHold) { clearTimeout(chaosRun.ringHold); chaosRun.ringHold = 0; }
+  const progress = stats ? stats.progress : 0, pct = Math.floor(progress * 100);
+  for (const btn of document.querySelectorAll(".replayPlayBtn")) {
+    btn.classList.toggle("ringOn", !!stats);
+    btn.classList.remove("ringDone", "ringPulse");
+    setRing(btn, progress, stats ? pct : null);
+  }
+  if (stats) announceMilestones(stats);
+}
+export function setRing(btn, progress, pct) {
+  const fill = btn.querySelector(".ring .fill");
+  if (fill) fill.setAttribute("stroke-dasharray", `${(RING_LENGTH * progress).toFixed(2)} ${RING_LENGTH.toFixed(2)}`);
+  if (pct === null) { delete btn.dataset.pct; btn.removeAttribute("aria-description"); return; }
+  if (btn.dataset.pct !== String(pct)) { btn.dataset.pct = String(pct); btn.setAttribute("aria-description", `${pct}% played`); }
+}
+// The run ended by itself: close the ring and pulse it once (not under reduced motion, which has no runs at all).
+export function finishRunRing() {
+  clearTimeout(chaosRun.ringHold);
+  for (const btn of document.querySelectorAll(".replayPlayBtn")) {
+    setRing(btn, 1, 100);
+    btn.classList.add("ringOn", "ringDone");
+    btn.classList.remove("ringPulse");
+    void btn.offsetWidth; // restart the pulse
+    btn.classList.add("ringPulse");
+  }
+  chaosRun.ringHold = setTimeout(() => { chaosRun.ringHold = 0; updateRunRing(); }, RING_HOLD_MS);
 }
 
 // ---------------------------------------------------------------- what a screen reader hears
@@ -91,5 +118,6 @@ export function announceMilestones(stats) {
 }
 // The run ended by itself (its stop point, or the cap): the normal render finishes the picture.
 export function announceRunDone(stats) {
+  finishRunRing();
   announce(`Done. ${formatPointCount(stats.points)} points, ${Math.floor(stats.coverage * 100 + 1e-9)}% filled.`);
 }

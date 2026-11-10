@@ -106,7 +106,7 @@ export const COLORMAPS = [
     [0.50,   0, 255, 128], [0.67,   0, 128, 255], [0.83, 128,   0, 255],
     [1.00, 255,   0,  41],
   ]},
-  { name: "Grayscale", stops: [[0.00, 0, 0, 0], [1.00, 255, 255, 255]] },
+  { name: "Grayscale", stops: [[0.00, 0, 0, 0], [0.50, 150, 150, 150], [1.00, 255, 255, 255]] },
 ];
 
 // Flat colors for the modes that aren't depth-mapped escape-time images:

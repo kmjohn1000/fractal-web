@@ -1007,6 +1007,36 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
       width, a wider gap, and a slider box that stops above the button row.
       Check on the phone with VoiceOver: double-tap each button; a layout
       change, so tier 2 with a patch bump. Related: the accessibility pass below.
+      PARTLY DONE 2026-11-08 (uncommitted, 1.80.1): the buttons now sit above
+      the slider's box (`.control-row .iconBtn { position: relative; z-index: 1 }`),
+      so the overlap no longer takes taps. 44 pt buttons are not possible at
+      393 pt: nine or ten of them do not fit one row, so they stay about 40 pt
+      wide. Still open: whether the 40 pt width and 3 pt gap are enough with
+      VoiceOver (check on the phone); wrapping the row or dropping a button is
+      the only way to 44 pt.
+- [ ] A progress ring on the Play button for chaos-game runs, instead of the
+      counter chip over the canvas (user idea 2026-11-08, liked after a
+      standalone mock). BUILT 2026-11-08, uncommitted (1.80.1): the ring fills
+      with run progress by the schedule's clock, stays when paused, closes and
+      pulses at the end, holds 2.5 s, takes the shape's picked colour
+      (`--run-ring`), and `#runChip` is gone; the percent is on the button's
+      `aria-description` and `data-pct` (the label stays "Play replay" and
+      "Pause replay", which many specs match exactly); 864 specs passed on
+      webkit-iphone15 and chromium-desktop. Not verified: a real iPhone, and
+      VoiceOver's reading of `aria-description`. Original note: The ring around `#fernReplayBtn`
+      fills with how far the run has played and closes with one soft pulse
+      when it ends (reduced motion: the ring updates in steps, no pulse; the
+      ring takes the shape's current palette colour). Not coverage: coverage
+      is about 97% lit a few seconds into the run (and the app reported 99%
+      at 2,000 points), so a coverage ring would be nearly full almost at
+      once. The points and coverage numbers stay on the info card; the Play
+      button's accessible name carries the percent played; the milestone
+      announcements stay. Removes `#runChip` and its updates (`updateRunChip`
+      in `chaos-run.js`, the rules in `index.html`), so the specs that read
+      the chip change. About 60 lines plus a CHANGELOG entry and a patch
+      bump. Best built with the touch-target item above: the ring wants a
+      44 pt button, and the phone-width row is 40 pt today. The mock is a
+      local, git-ignored file: `docs/mocks/chaos-run-ring-mock.html`.
 - [ ] Accessibility pass: the buttons have aria-labels, but the fractal
       canvas gives VoiceOver nothing. Items below; after them, run
       VoiceOver and Voice Control over the app
@@ -1388,7 +1418,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
-- DONE 2026-11-08 (`5e9aedc`, 1.80.3, with 1.80.2 and the Phoenix drag preview below): Phoenix and Julia:Phoenix draw the moving last-frame preview during a drag or pinch at every zoom, not only below 1e-4 (`gesturePreviewEligible` in `deepzoom.js`; the dual Julia pane still renders live); new `tests/visual/phoenix-drag-preview.spec.mjs` (the four Phoenix tests fail with the change reverted); 506 specs passed on webkit-iphone15 and chromium-desktop and default-identity showed 0 differing pixels. Also 1.80.2: `user-select: none` on the toolbar's buttons, labels and rows, so a double-tap no longer selects the "detail" text. Not verified: how a Phoenix drag feels on the phone, whether the other controls stay responsive, and that VoiceOver's double-tap now opens the picker.
+- DONE 2026-11-08 (`5e9aedc`, 1.80.3, with 1.80.2 and the Phoenix drag preview below): Phoenix and Julia:Phoenix draw the moving last-frame preview during a drag or pinch at every zoom, not only below 1e-4 (`gesturePreviewEligible` in `deepzoom.js`; the dual Julia pane still renders live); new `tests/visual/phoenix-drag-preview.spec.mjs` (the four Phoenix tests fail with the change reverted); 506 specs passed on webkit-iphone15 and chromium-desktop and default-identity showed 0 differing pixels. Also 1.80.2: `user-select: none` on the toolbar's buttons, labels and rows, so a double-tap no longer selects the "detail" text. Verified on the phone (user, 2026-11-08): the Phoenix lag near the zoom floor is gone. Not verified: whether the other controls stay responsive during a drag, and that VoiceOver's double-tap now opens the picker.
 - DONE 2026-11-08 (`5e9aedc`, 1.80.1): compass reset race. `resetRotation()` stops on a pointer-down, a flight or any other cancel, and a press on a vector view now cancels a flight or reset too. Reproduced on the old code in headless Chromium (a write during the reset was overwritten within one frame); on the fixed build a press then a write held, the no-press control finished at 0, and a flight froze the reset. Specs `app`, `vector`, `dual`: 590 passed on webkit-iphone15 and chromium-desktop. Not verified: a real two-finger twist on the phone.
 - DONE 2026-11-05 (`de700d4`, 1.69.0): picker rows with a 64 px thumbnail, name and blurb (`PICKER_BLURBS` in `fractal-defs.js`, one column, two from 640 px), `aria-current` on the active row, the button's name is its label with the blurb as its description, and `ariaLabel: "Phoenix Julia set"` on Julia:Phoenix. Open: re-render the store "2-picker" shot at the next listing refresh; not verified on a real iPhone or with VoiceOver.
 - DONE 2026-11-05 (`26293d1` merged in `13bedd4`, stamped `9c30123`, 1.70.0): the Sine L-plane (key `Sine L plane`, label `Sine L-plane`), a Mandelbrot-family tile after Sine plane. z0 = pi/2 checked against a float64 reference. No new ftype: `FTYPE.SINE` with `juliaC: null`; Sine Julia is its `dualParent` preset. Float32 only, five places; default-identity 0 differing pixels; the oracle within its gates. Open: the agent's Sine Julia blurb (`ddc86bc`, branch `worktree-agent-a11df06c397ca5a39`, not merged; it would replace the user's wording); `docs/learn-more-links.md` has a row for the L-plane saying "None" (checked 2026-11-08), and no rows for Spider, Magnet I and II, Sine Julia or Sine plane; "Sine L-plane" label is final (user, 2026-11-05); not verified on a real iPhone.

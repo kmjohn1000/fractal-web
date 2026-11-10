@@ -3,14 +3,14 @@
 // calls color-sheet.js (openColorSheet, openSolidColorSheet, colorSheetApplies) only inside event handlers.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { SOLID_COLORS } from "../render/colormaps.js?v=1.80.0";
-import { curveRamp } from "../fractals/curve-view.js?v=1.80.0";
-import { IFS_SYSTEMS, ifsTransformColors } from "../fractals/ifs.js?v=1.80.0";
-import { kochShade } from "../fractals/koch.js?v=1.80.0";
-import { treeSwatchStops } from "../fractals/pythagoras.js?v=1.80.0";
-import { hexaflakeShade } from "../fractals/hexaflake.js?v=1.80.0";
-import { dragonView, els, fernView, vectorColors } from "../core/state.js?v=1.80.0";
-import { colorSheetApplies, colorSheetSolid, openColorSheet, openSolidColorSheet } from "./color-sheet.js?v=1.80.0";
+import { SOLID_COLORS } from "../render/colormaps.js?v=1.80.1";
+import { curveRamp } from "../fractals/curve-view.js?v=1.80.1";
+import { IFS_SYSTEMS, ifsTransformColors } from "../fractals/ifs.js?v=1.80.1";
+import { kochShade } from "../fractals/koch.js?v=1.80.1";
+import { treeSwatchStops } from "../fractals/pythagoras.js?v=1.80.1";
+import { hexaflakeShade } from "../fractals/hexaflake.js?v=1.80.1";
+import { dragonView, els, fernView, vectorColors } from "../core/state.js?v=1.80.1";
+import { colorSheetApplies, colorSheetSolid, openColorSheet, openSolidColorSheet } from "./color-sheet.js?v=1.80.1";
 
 // ---------------------------------------------------------------- color buttons
 
@@ -77,6 +77,9 @@ export function updateColorSwatches() {
     pill.style.background = pillGradient(key, i);
     labelColorButton(btn, "Choose color", SOLID_COLORS[i].name);
   });
+  // The ring on the chaos-game Play (chaos-run.js, the .ring rules in index.html) takes the dot shape's picked color.
+  const ring = SOLID_COLORS[vectorColors[fernView.system]];
+  if (ring) document.getElementById("fernReplayBtn").style.setProperty("--run-ring", `rgb(${ring.rgb.map((v) => Math.round(v)).join(",")})`);
 }
 
 // Every color button opens the Color sheet (color-sheet.js): the fractals' own (Looks, styles,

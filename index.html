@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Fractal Atlas&trade;</title>
 
-<link rel="manifest" href="manifest.webmanifest?v=1.80.0">
+<link rel="manifest" href="manifest.webmanifest?v=1.80.1">
 <meta name="theme-color" content="#111111">
-<link rel="icon" href="icons/favicon-32.png?v=1.80.0" sizes="32x32" type="image/png">
+<link rel="icon" href="icons/favicon-32.png?v=1.80.1" sizes="32x32" type="image/png">
 
 <!-- iOS Safari ignores the manifest entirely for install/homescreen purposes
      and needs its own meta tags + a dedicated (non-transparent) icon. -->
@@ -15,7 +15,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fractal Atlas">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.80.0">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.80.1">
 
 <!-- Smart App Banner: Safari on iPhone/iPad offers the App Store app.
      Ignored everywhere else, including the app's own web view. -->
@@ -208,24 +208,9 @@
     font: 0.75rem/1.3 -apple-system, system-ui, sans-serif; color: #fff;
   }
 
-  /* The chaos-game run's counter ("1,204 points · 38% filled", chaos-run.js) over the top of the canvas, in the
-     card's style; it takes no taps, and shows only while a run is on (the replay is all motion, so
-     with reduced motion there is none). The live region beside it is for a screen reader: off screen. */
-  #runChip {
-    position: absolute; z-index: 10; pointer-events: none;
-    top: calc(10px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); white-space: nowrap;
-    padding: 4px 10px; border-radius: 999px;
-    background: rgba(20,20,22,0.6);
-    -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4);
-    box-shadow: 0 0 0 0.5px rgba(255,255,255,0.12);
-    font: 0.75rem/1.3 -apple-system, system-ui, sans-serif; font-variant-numeric: tabular-nums; color: #fff;
-  }
-  /* At the top, clear of the web welcome card (bottom) and the rotation compass (top right corner). The open
-     info card, top left, says the same numbers (updateFernHud), so the chip gives way to it. */
-  #hud:not(.hidden) ~ #runChip { display: none; }
-  @media (prefers-reduced-motion: reduce) { #runChip { display: none; } }
-  /* Corner Rules names its rule in the same style, at the top; the run's counter moves under it. The open
-     info card names the rule too, so the chip gives way to it, as the counter does. */
+  /* Corner Rules names its rule in a chip at the top. The open info card names the rule too, so the chip gives
+     way to it. (The run's counter is on the info card, and a ring on the Play button shows how far the run
+     has played: .replayPlayBtn .ring below. The live region for a screen reader, #runAnnounce, is off screen.) */
   #ruleChip {
     position: absolute; z-index: 10; pointer-events: none;
     top: calc(10px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); white-space: nowrap;
@@ -236,7 +221,6 @@
     font: 0.75rem/1.3 -apple-system, system-ui, sans-serif; color: #fff;
   }
   #hud:not(.hidden) ~ #ruleChip { display: none; }
-  #ruleChip:not(.hidden) ~ #runChip { top: calc(40px + env(safe-area-inset-top)); }
   .srOnly {
     position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
     clip-path: inset(50%); white-space: nowrap; border: 0;
@@ -645,6 +629,20 @@
   .depthPlayBtn.playing .pauseIcon, .replayPlayBtn.playing .pauseIcon { display: block; }
   /* The replay is all motion: with reduced motion there is nothing to play, so no buttons. */
   @media (prefers-reduced-motion: reduce) { .replayPlayBtn, .replaySpeedBtn { display: none; } }
+  /* The ring on the chaos-game Play (chaos-run.js, updateRunRing): how far the run has played, drawn just outside
+     the button. It is there while a run is on, closes with one pulse when the run ends by itself, and takes no taps. */
+  .replayPlayBtn { position: relative; }
+  .replayPlayBtn .ring { position: absolute; inset: -1px; width: calc(100% + 2px); height: calc(100% + 2px); pointer-events: none; overflow: visible; opacity: 0; transition: opacity 0.4s ease; }
+  .replayPlayBtn.ringOn .ring { opacity: 1; transition-duration: 0.1s; }
+  .replayPlayBtn .ring circle { fill: none; stroke-linecap: round; }
+  .replayPlayBtn .ring .track { stroke: rgba(255,255,255,0.14); stroke-width: 2; }
+  .replayPlayBtn .ring .fill { stroke: var(--run-ring, #ffb347); stroke-width: 2.5; transform: rotate(-90deg); transform-origin: 50% 50%; }
+  .replayPlayBtn.ringPulse .ring .fill { animation: ringClose 700ms ease-out 1; }
+  @keyframes ringClose { 0% { stroke-width: 2.5; filter: none; } 35% { stroke-width: 4.5; filter: drop-shadow(0 0 5px var(--run-ring, #ffb347)); } 100% { stroke-width: 2.5; filter: none; } }
+  @media (prefers-reduced-motion: reduce) { .replayPlayBtn.ringPulse .ring .fill { animation: none; } }
+  /* The "detail" slider's 44 pt box reaches into the button row under it: the buttons sit above it, so a tap
+     or a VoiceOver double-tap in the overlap is the button's. */
+  .control-row .iconBtn { position: relative; z-index: 1; }
   /* Speed: pressed and slid sideways, so the drag mustn't scroll the page. */
   /* Capped: at the largest Larger Text sizes "1×" would outgrow the
      button, which can't get wider. */
@@ -782,7 +780,6 @@
   </div>
   <div id="juliaLabel" class="hidden">Julia set of the center point</div>
   <div id="ruleChip" class="hidden"></div>
-  <div id="runChip" class="hidden"></div>
   <div id="runAnnounce" class="srOnly" role="status" aria-live="polite"></div>
   <canvas id="mainCanvas"></canvas>
   <canvas id="juliaCanvas" class="hidden"></canvas>
@@ -1054,6 +1051,7 @@
     <button id="fernReplayBtn" class="iconBtn replayPlayBtn" aria-label="Play replay" title="Play replay: watch the chaos game build the picture">
       <svg class="playIcon" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M7 5v14l12-7z"/></svg>
       <svg class="pauseIcon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+      <svg class="ring" viewBox="0 0 46 46" aria-hidden="true" focusable="false"><circle class="track" cx="23" cy="23" r="21"/><circle class="fill" cx="23" cy="23" r="21" stroke-dasharray="0 131.95"/></svg>
     </button>
     <button class="iconBtn replaySpeedBtn" aria-label="Play speed" title="Play speed: tap for the next speed, or hold and slide left or right">1×</button>
     <button id="cornerRuleBtn" class="iconBtn hidden" aria-label="Another rule" title="Another rule: deal the next corner rule">
@@ -1088,6 +1086,6 @@
   </div>
 </div>
 
-<script type="module" src="src/app.js?v=1.80.0"></script>
+<script type="module" src="src/app.js?v=1.80.1"></script>
 </body>
 </html>
