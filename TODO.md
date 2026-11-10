@@ -87,6 +87,15 @@ it needs an external service and a privacy-label change.
         about 2x with a half-angle variant (one shared sin/cos/cosh/sinh of
         d/2 gives sin d and cos d - 1). Used only below today's floor, so no
         view that works today gets slower.
+      STATUS 2026-11-10: steps 0, 1 and 2 are DONE. Step 0 (the pass-cap
+      study, crops and numbers in the git-ignored
+      `store-assets/sine-pass-study/`): 12 passes are indistinguishable from
+      16; 8 is visibly grainier on the speckle-heavy views (Golden Shells,
+      Dusty Edge: 6.6% to 15.8% of pixels more than 20/255 off), about the
+      same on the smooth ones; the whole plane always draws 16 (not "heavy").
+      The user chose 12 as the compromise, which 1.80.3 already ships, along
+      with the drag preview (step 2). Only step 3 (perturbation deep path)
+      is left; not approved.
       Steps, each its own commit, version bump and CHANGELOG entry, in this
       order:
       0. Visual study for the pass cap (no code): settle the Sine L-plane's
