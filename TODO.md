@@ -1165,6 +1165,29 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
       cyclic palettes (Classic, Twilight, Spectrum) are unaffected. Could be
       done by baking a forward+reverse LUT, no shader change. Keep the seam
       as the default: it suits Fire on the Burning Ship (2026-10-09)
+- [ ] OKLCH palette work (user's pasted review notes, 2026-11-10; none
+      approved). Checked in the source: `hueTurned` in `colormaps.js` already
+      turns hue in OKLCH (the pattern modes use it), while `sampleColor`
+      interpolates stops linearly in gamma-space sRGB, and Spectrum is a
+      hand-set ring of saturated stops, not an even-lightness wheel (that
+      last reading is from the stops, not yet measured in L*). In the order
+      the notes rank them:
+      1. The mirrored palette option above is the biggest visible upgrade;
+         toggle, seam stays the default.
+      2. Rebuild Spectrum as a constant-lightness OKLCH wheel, reusing the
+         gamut fitting that `hueTurned` has. Palette names stay (share links
+         store `cm=`), but the colors change for anyone who picked Spectrum:
+         say so in the CHANGELOG. Tier 3 (pixels).
+      3. OKLab interpolation in `sampleColor()` for the hand-tuned maps (Hot,
+         Fire, Ember, Glacier, Classic, Spectrum) as an opt-in A/B; drop it
+         if the difference can't be seen on a phone-sized render. Leave the
+         matplotlib-derived palettes (Inferno, Plasma, Viridis, Turbo,
+         Twilight) alone: they are already perceptual tables.
+      4. A seeded "Shuffle colors" built on OKLCH; it is the same item as the
+         seeded seamless palettes under the XaoS ideas and fits Colormap
+         animation below.
+      Float accumulation for supersampling waits for its other reasons
+      (Bird's Eye, margin rendering).
 - [ ] Colormap animation (WebGL: a u_colorPhase uniform shifting the LUT
       lookup over time via requestAnimationFrame; Koch/Tree: cycle the
       colormap's stops, like kochAnimateBtn cycles depth; new toggle, not
@@ -1428,6 +1451,18 @@ distance estimation → zoom-to-minibrot / AI discovery.
       and the Mac's 1e-36 grain limit are never drawn (the floor stops
       them), so the denormal question only matters for the deeper-than-1e-30
       item below.
+- [ ] Deep-zoom order (user's pasted review notes, 2026-11-10; none
+      approved; each item exists in this file, this fixes their order):
+      1. Multi-pass iteration, since the 2000-iteration cap bites before
+         precision does (see "maxIter past 8000" and the Bird's Eye item).
+      2. Newton's exact center, which can reuse the Apollonian and
+         Carpet/Gasket exact-center work (see "Exact center, what is left").
+      3. Extended-range deltas past 1e-30, only after step 1 (see "Deeper
+         than 1e-30").
+      4. For the float32-only types (Nova, Magnet, Spider, Sine): design a
+         soft floor instead of chasing precision. Not written up anywhere
+         yet; Sine's L-plane has its own plan under Now (step 3 there is the
+         one exception: a perturbation path below its float32 floor).
 - [ ] Deeper than 1e-30 (user question 2026-11-03; not approved). The center
       (192 bits, about 1e-55) and the BigInt orbit are not the limit; the
       GPU's float32 deltas are (measured clean to 1e-33, grainy by 1e-36 on
