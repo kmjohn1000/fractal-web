@@ -24,7 +24,7 @@ const root = new URL("..", import.meta.url).pathname;
 const outDir = join(process.env.SCRIPT_OUT_DIR ? resolve(process.env.SCRIPT_OUT_DIR) : root, "icons/thumbs");
 const onlyArg = process.argv.slice(2).find((a) => a.startsWith("--only="));
 const only = onlyArg ? onlyArg.slice(7).split(",").filter(Boolean) : null;
-const SIZE = 192; // px: 2x a ~96px tile
+const SIZE = 384; // px: a picker tile is ~109pt wide, ~330 device px at 3x
 const CHROME = process.env.CHROME || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const DEBUG_PORT = 9334;
 const WIDTH = 480;
@@ -134,6 +134,8 @@ try {
     } else {
       await sleep(2500);
     }
+    // Corner Rules names its rule in a chip over the canvas; keep it out of the tile.
+    await evaluate(`document.getElementById("ruleChip")?.classList.add("hidden")`);
     r = await evaluate(canvasRect);
     const side = Math.min(r.w, r.h);
     const shot = await send("Page.captureScreenshot", {
