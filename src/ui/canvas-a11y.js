@@ -11,17 +11,17 @@
 // Nothing here is visible and no pointer or touch handling changes. Labels are written at most once per
 // LABEL_DELAY_MS after the view stops changing (never per frame); a zoom step writes at once.
 // An ES module: every top-level declaration is exported (test-hooks.js relies on it).
-import { fractalLabel } from "../core/configs.js?v=1.80.4";
-import { limitScale } from "../core/deepzoom.js?v=1.80.4";
-import { isCurveMode, isIfsMode } from "../fractals/fractal-defs.js?v=1.80.4";
-import { cancelTeleport } from "./teleport.js?v=1.80.4";
-import { currentName, dualActive, els, mainState, mode, pushHistory } from "../core/state.js?v=1.80.4";
-import { markInteracting } from "../core/state-colors.js?v=1.80.4";
-import { requestRender } from "../render/render-layout.js?v=1.80.4";
-import { activeVectorTarget } from "./vector-interaction.js?v=1.80.4";
-import { landedPlaceName, modeLabel } from "./hud.js?v=1.80.4";
-import { dualPresetName } from "./modes.js?v=1.80.4";
-import { rotationHudText, zoomPhrase } from "./hud-format.js?v=1.80.4";
+import { fractalLabel } from "../core/configs.js?v=1.80.5";
+import { limitScale } from "../core/deepzoom.js?v=1.80.5";
+import { isCurveMode, isIfsMode } from "../fractals/fractal-defs.js?v=1.80.5";
+import { cancelTeleport } from "./teleport.js?v=1.80.5";
+import { currentName, dualActive, els, mainState, mode, pushHistory } from "../core/state.js?v=1.80.5";
+import { markInteracting } from "../core/state-colors.js?v=1.80.5";
+import { requestRender } from "../render/render-layout.js?v=1.80.5";
+import { activeVectorTarget } from "./vector-interaction.js?v=1.80.5";
+import { landedPlaceName, modeLabel } from "./hud.js?v=1.80.5";
+import { dualPresetName } from "./modes.js?v=1.80.5";
+import { rotationHudText, zoomPhrase } from "./hud-format.js?v=1.80.5";
 
 export const LABEL_DELAY_MS = 350;
 // One swipe zooms by this factor (the keyboard's +/- is 1.25: too small a step for a swipe).

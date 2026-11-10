@@ -2,6 +2,10 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.80.5 — 2026-11-10
+- Added: screen readers can use the picture. The fractal reads its name (or the place's), how deep you are, and can be swiped up and down with VoiceOver to zoom; pattern pictures have labels too.
+- Added: VoiceOver says the place's name when a flight lands (Surprise me, Places, the cold open), and the "graphics turned off" message is announced as an alert.
+
 ## 1.80.4 — 2026-11-10
 - Changed: the fractal picker's thumbnails are sharper (384 px instead of 192).
 
