@@ -3,10 +3,10 @@
 // tiles and attaches the listeners, so app.js imports it right after compass-ui.js. Needs state.js (els),
 // configs.js, fractal-defs.js (PICKER_LAYOUT, PICKER_BLURBS, EXTRA_MODES) and modes.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it).
-import { FRACTAL_CONFIGS, slugify } from "../core/configs.js?v=1.80.2";
-import { EXTRA_MODES, PICKER_BLURBS, PICKER_LAYOUT } from "../fractals/fractal-defs.js?v=1.80.2";
-import { els } from "../core/state.js?v=1.80.2";
-import { dealCornerRules, selectFractal, setMode, updateMenuActiveState } from "./modes.js?v=1.80.2";
+import { FRACTAL_CONFIGS, slugify } from "../core/configs.js?v=1.80.3";
+import { EXTRA_MODES, PICKER_BLURBS, PICKER_LAYOUT } from "../fractals/fractal-defs.js?v=1.80.3";
+import { els } from "../core/state.js?v=1.80.3";
+import { dealCornerRules, selectFractal, setMode, updateMenuActiveState } from "./modes.js?v=1.80.3";
 
 // Picker: a list of rows, each a pre-rendered thumbnail plus the name and a one-line blurb
 // (thumbnails come from scripts/render_thumbs.mjs; re-run it after adding a fractal or changing a

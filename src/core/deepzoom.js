@@ -2,8 +2,8 @@
 // offsets. No DOM references (no document, els, window or canvas): pure math on numbers and arrays.
 // Needs FTYPE and PHOENIX_P from configs.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { FTYPE, PHOENIX_P } from "./configs.js?v=1.80.2";
-import { EXACT_FRAC, EXACT_ONE, exactCenter, toExact } from "./view-math.js?v=1.80.2";
+import { FTYPE, PHOENIX_P } from "./configs.js?v=1.80.3";
+import { EXACT_FRAC, EXACT_ONE, exactCenter, toExact } from "./view-math.js?v=1.80.3";
 
 // ---------------------------------------------------------------- Phase 3: deep zoom
 // Below this scale, plain float32 starts losing pixels to precision collapse
@@ -541,6 +541,16 @@ export function deepZoomEligible(renderer, state) {
 // drag stuttered and held up the other controls. A dual Julia pane keeps deepZoomEligible: it must follow the
 // main pane's center live, which a stale preview cannot do.
 export function gesturePreviewEligible(renderer, state) {
-  return deepZoomEligible(renderer, state) || state.ftype === FTYPE.PHOENIX;
+  return deepZoomEligible(renderer, state) || state.ftype === FTYPE.PHOENIX || sineLHeavy(state);
 }
+
+// The Sine L-plane's cost per pass follows its iteration count (measured 2026-11-10 on a Mac GPU at 1080x1920: about
+// 12 ms at 380 iterations, 80 ms at 1270; a settled view is 16 passes), and the auto iteration count climbs as you zoom
+// in, so past SINE_L_HEAVY_ITER its views are heavy: a drag shows the moving last frame like Phoenix's (above) instead
+// of drawing a live float32 frame inside the touch handler, and the sharpening stops at SINE_L_PASSES of the 16
+// (refinePassCount in render-layout.js; 12 looked close to 16 in side-by-side crops, 8 and 4 were visibly grainier in
+// the speckled zones, which are most of its deep views).
+export const SINE_L_HEAVY_ITER = 500;
+export const SINE_L_PASSES = 12;
+export const sineLHeavy = (state) => isSineLPlane(state) && state.maxIter >= SINE_L_HEAVY_ITER;
 

@@ -4,17 +4,17 @@
 // fractal-defs.js; calls into modes, interaction and the later scripts only inside function bodies.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { COLORMAPS, buildLUTBytes } from "./colormaps.js?v=1.80.2";
-import { Diag } from "../core/diag.js?v=1.80.2";
-import { isCurveMode, isIfsMode } from "../fractals/fractal-defs.js?v=1.80.2";
-import { SAMPLE_OFFSETS, deepZoomEligible, gesturePreviewEligible } from "../core/deepzoom.js?v=1.80.2";
-import { activePane, adaptLiveResolution, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, hexaflakeView, isInteracting, juliaRenderer, juliaState, kochState, kochView, mainRenderer, mainState, mode, paneHistory, treeState, treeView, vectorColors } from "../core/state.js?v=1.80.2";
-import { colormapIndex, vectorLite } from "../core/state-colors.js?v=1.80.2";
-import { dragonNav, fernNav, hexaflakeNav, kochNav, treeNav, vectorFitHalfHeight } from "../ui/vector-interaction.js?v=1.80.2";
-import { flash, prefersReducedMotion, updateCompasses } from "../ui/compass-ui.js?v=1.80.2";
-import { cmGradient, labelColorButton } from "../ui/colormap-picker.js?v=1.80.2";
-import { COLOR_LOOKS, colorSheetStyles, currentLookId } from "../ui/color-sheet.js?v=1.80.2";
-import { updateDragonHud, updateFernHud, updateHexaflakeHud, updateHud, updateJuliaLabel, updateKochHud, updateTreeHud } from "../ui/hud.js?v=1.80.2";
+import { COLORMAPS, buildLUTBytes } from "./colormaps.js?v=1.80.3";
+import { Diag } from "../core/diag.js?v=1.80.3";
+import { isCurveMode, isIfsMode } from "../fractals/fractal-defs.js?v=1.80.3";
+import { SAMPLE_OFFSETS, SINE_L_PASSES, deepZoomEligible, gesturePreviewEligible, sineLHeavy } from "../core/deepzoom.js?v=1.80.3";
+import { activePane, adaptLiveResolution, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, hexaflakeView, isInteracting, juliaRenderer, juliaState, kochState, kochView, mainRenderer, mainState, mode, paneHistory, treeState, treeView, vectorColors } from "../core/state.js?v=1.80.3";
+import { colormapIndex, vectorLite } from "../core/state-colors.js?v=1.80.3";
+import { dragonNav, fernNav, hexaflakeNav, kochNav, treeNav, vectorFitHalfHeight } from "../ui/vector-interaction.js?v=1.80.3";
+import { flash, prefersReducedMotion, updateCompasses } from "../ui/compass-ui.js?v=1.80.3";
+import { cmGradient, labelColorButton } from "../ui/colormap-picker.js?v=1.80.3";
+import { COLOR_LOOKS, colorSheetStyles, currentLookId } from "../ui/color-sheet.js?v=1.80.3";
+import { updateDragonHud, updateFernHud, updateHexaflakeHud, updateHud, updateJuliaLabel, updateKochHud, updateTreeHud } from "../ui/hud.js?v=1.80.3";
 
 // ---------------------------------------------------------------- rendering + layout
 
@@ -131,14 +131,19 @@ export let refineTarget = SAMPLE_OFFSETS.length; // how many samples it draws in
 // DEEP_PASSES: on an iPhone 15, 8 of 16 looked the same as 16 at Seahorse
 // Valley, Mini Mandelbrot and a deep Newton view, 4 was slightly grainier
 // (2026-10-22; TODO.md). Views drawn in plain float32 are cheap and always get
-// all 16, and Save and Share finish the rest (finishRefinement). Diag.passesOverride
+// all 16, and Save and Share finish the rest (finishRefinement). The Sine L-plane's
+// heavy views (sineLHeavy: plain float32, but 12 to 80 ms a pass) stop at SINE_L_PASSES
+// = 12: its deep views are mostly speckle, which the passes average, and 8 was visibly
+// grainier there (2026-11-10 crops). Diag.passesOverride
 // ("#passes=16" for full quality, "#passes=6" to try fewer) replaces it for tests
 // and tuning.
 export const DEEP_PASSES = 8;
 export function refinePassCount() {
   const deep = lastMainDeepPath || (dualActive && lastJuliaDeepPath);
   const n = Diag.passesOverride ?? DEEP_PASSES;
-  return deep ? Math.min(SAMPLE_OFFSETS.length, n) : SAMPLE_OFFSETS.length;
+  if (deep) return Math.min(SAMPLE_OFFSETS.length, n);
+  if (mode === "fractal" && sineLHeavy(mainState)) return Math.min(SAMPLE_OFFSETS.length, Diag.passesOverride ?? SINE_L_PASSES);
+  return SAMPLE_OFFSETS.length;
 }
 export function refineStep(gen) {
   if (gen !== refineGeneration || mode !== "fractal" || isInteracting) return;

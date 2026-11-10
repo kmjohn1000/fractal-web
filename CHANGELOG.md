@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.80.3 — 2026-11-10
+- Changed: zoomed in on the Sine L-plane, dragging now moves the last picture and redraws when you stop, instead of redrawing every frame, and the picture finishes sharpening sooner (12 of its 16 passes; the speckled areas are a little grainier than before, the shapes are the same).
+
 ## 1.80.2 — 2026-11-10
 - Added a Sine L-plane place, Golden Shells: nested gold and blue spirals next to Dusty Edge, at that fractal's zoom floor.
 - Changed: a share link from a newer version of the app (a fractal or mode this version does not have) now says "This link needs a newer version of Fractal Atlas" instead of silently opening the default view.

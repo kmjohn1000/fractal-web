@@ -3,7 +3,7 @@
 // configs.js (FTYPE), so renderer.js, state.js and the rest can all depend on it. Split from state.js
 // (a pure move); colorStyle is assigned only by setColorStyle in state-colors.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { FTYPE } from "../core/configs.js?v=1.80.2";
+import { FTYPE } from "../core/configs.js?v=1.80.3";
 
 // How an escape-time pixel picks its colormap coordinate (see
 // COLOR_STYLE_GLSL in shaders.js). Like the colormap, the style is global:

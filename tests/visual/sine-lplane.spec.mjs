@@ -447,7 +447,7 @@ test("the plane at its floor near |L| = 1 still draws a full picture", async ({ 
   await expect(page).toHaveScreenshot("sine-lplane-deep.png");
 });
 
-test("its five places are named, unique, above the floor at their own center, and have thumbnails", async ({ page }) => {
+test("its six places are named, unique, above the floor at their own center, and have thumbnails", async ({ page }) => {
   const r = await page.evaluate(async () => {
     const mine = TELEPORT_DESTINATIONS.filter((d) => d.fractal === "Sine L plane");
     const out = { labels: mine.map((d) => d.label), below: [], notUnique: [], thumbs: [], deepest: Infinity };
@@ -461,10 +461,10 @@ test("its five places are named, unique, above the floor at their own center, an
     }
     return out;
   });
-  expect(r.labels).toEqual(["Touching Discs", "Rim Bulb", "Far Copy", "Yellow Fans", "Dusty Edge"]);
+  expect(r.labels).toEqual(["Touching Discs", "Rim Bulb", "Far Copy", "Yellow Fans", "Dusty Edge", "Golden Shells"]);
   expect(r.below).toEqual([]);
   expect(r.notUnique).toEqual([]);
-  expect(r.thumbs).toEqual([true, true, true, true, true]);
+  expect(r.thumbs).toEqual([true, true, true, true, true, true]);
   expect(r.deepest, "the deepest place is not cut short, and is not far above its floor either").toBeLessThan(10);
 });
 
