@@ -3,14 +3,14 @@
 // (fractal-defs.js), deepzoom.js and color-styles.js. It imports nothing from state.js: state.js
 // calls createFractalRenderer(canvas, host) and passes the two live values a frame needs.
 // An ES module: every top-level declaration is exported (test-hooks.js and state.js rely on it).
-import { FTYPE, PHOENIX_P } from "../core/configs.js?v=1.80.1";
-import { Diag } from "../core/diag.js?v=1.80.1";
-import { FRAG_SRC, NEWTON_DEEP_FRAG_SRC, PHOENIX_DEEP_FRAG_SRC, PREVIEW_FRAG_SRC, VERT_SRC, VERT_SRC_300 } from "./shaders.js?v=1.80.1";
-import { apolloCapColor, apolloFrame } from "../fractals/apollonian.js?v=1.80.1";
-import { DIGIT_MAX_CELL_LEVEL, digitBase, digitCellFrame, digitCellLevel, digitColorCycle, digitFractalDepth, digitSubPixelColor, isDigitFractal } from "../fractals/digit-fractals.js?v=1.80.1";
-import { DEEP_ZOOM_THRESHOLD, FIXED_THIRD, PHOENIX_DEEP_SAMPLES, PHOENIX_EXACT_CAP, SAMPLE_OFFSETS, chooseReference, chooseReferenceExact, computeReferenceOrbit, computeReferenceOrbitExact, exactReferencePoint, exactRender, exactRenderEligible, fixedLimbs, newtonDeepEligible, newtonOrbitF64, perturbationEligibleType, phoenixDeepEligible, phoenixEscapeF64, phoenixReference } from "../core/deepzoom.js?v=1.80.1";
-import { EXACT_FROM, EXACT_ONE, exactCenter, exactFracFor, exactValid, toExact } from "../core/view-math.js?v=1.80.1";
-import { colorStyle, colorStyleFor, styleDrawn, trapRangeFor } from "./color-styles.js?v=1.80.1";
+import { FTYPE, PHOENIX_P } from "../core/configs.js?v=1.80.2";
+import { Diag } from "../core/diag.js?v=1.80.2";
+import { FRAG_SRC, NEWTON_DEEP_FRAG_SRC, PHOENIX_DEEP_FRAG_SRC, PREVIEW_FRAG_SRC, VERT_SRC, VERT_SRC_300 } from "./shaders.js?v=1.80.2";
+import { apolloCapColor, apolloFrame } from "../fractals/apollonian.js?v=1.80.2";
+import { DIGIT_MAX_CELL_LEVEL, digitBase, digitCellFrame, digitCellLevel, digitColorCycle, digitFractalDepth, digitSubPixelColor, isDigitFractal } from "../fractals/digit-fractals.js?v=1.80.2";
+import { DEEP_ZOOM_THRESHOLD, FIXED_THIRD, PHOENIX_DEEP_SAMPLES, PHOENIX_EXACT_CAP, SAMPLE_OFFSETS, chooseReference, chooseReferenceExact, computeReferenceOrbit, computeReferenceOrbitExact, exactReferencePoint, exactRender, exactRenderEligible, fixedLimbs, newtonDeepEligible, newtonOrbitF64, perturbationEligibleType, phoenixDeepEligible, phoenixEscapeF64, phoenixReference } from "../core/deepzoom.js?v=1.80.2";
+import { EXACT_FROM, EXACT_ONE, exactCenter, exactFracFor, exactValid, toExact } from "../core/view-math.js?v=1.80.2";
+import { colorStyle, colorStyleFor, styleDrawn, trapRangeFor } from "./color-styles.js?v=1.80.2";
 
 // ---------------------------------------------------------------- WebGL renderer factory
 
@@ -63,7 +63,7 @@ export function createFractalRenderer(canvas, host) {
   // the first time a style asks for them.
   const programs = new Map();
   const UNIFORMS = ["resolution", "center", "scale", "rotCos", "rotSin", "flipY", "maxIter", "ftype", "power", "isJulia",
-    "juliaC", "phoenixP", "lut", "style", "density", "offset", "pixelSize", "trapCenter", "digitDepth", "digitLevel",
+    "juliaC", "newtonRoots", "newtonCustom", "phoenixP", "lut", "style", "density", "offset", "pixelSize", "trapCenter", "digitDepth", "digitLevel",
     "digitCenter", "digitScale", "cellHole", "digitCycle", "subPixelColor", "apoW0", "apoK", "apoL", "apoFlip", "apoRescale",
     "apoSteps", "apoCapColor", "jitter", "usePerturbation", "refOrbitTex", "refOrbitLen", "critOffset",
     "critLen", "refTexWidth", "refOffset", "trapLo", "trapHi", "trapProbe"];
@@ -325,7 +325,8 @@ export function createFractalRenderer(canvas, host) {
   }
   function updateTrapRange(u, state, cs, sampleIndex) {
     const key = [cs.glsl, cs.trap[0], cs.trap[1], state.ftype, state.cx, state.cy, state.scale, state.rotation || 0, !!state.flipY,
-      state.power, state.maxIter, state.isJulia, state.juliaC[0], state.juliaC[1], canvas.width, canvas.height].join(",");
+      state.power, state.maxIter, state.isJulia, state.juliaC[0], state.juliaC[1], canvas.width, canvas.height,
+      state.newtonRoots ? state.newtonRoots.flat().join(":") : ""].join(",");
     if (sampleIndex === 0 && (!trapRange || (trapRange.key !== key && !host.isInteracting()))) {
       trapRange = { key, ...probeTrapRange(u, cs) };
     }
@@ -606,6 +607,10 @@ export function createFractalRenderer(canvas, host) {
     gl.uniform1f(u.power, state.power);
     gl.uniform1i(u.isJulia, state.isJulia ? 1 : 0);
     gl.uniform2f(u.juliaC, state.juliaC[0], state.juliaC[1]);
+    // Newton with its three roots moved (state.newtonRoots, [[x, y] x 3], set only by a Short's driver); else the classic z^3 - 1.
+    const customRoots = state.ftype === FTYPE.NEWTON && Array.isArray(state.newtonRoots);
+    gl.uniform1i(u.newtonCustom, customRoots ? 1 : 0);
+    if (customRoots) gl.uniform2fv(u.newtonRoots, Float32Array.from(state.newtonRoots.flat()));
     gl.uniform2f(u.phoenixP, PHOENIX_P[0], PHOENIX_P[1]);
     gl.uniform1i(u.style, cs.glsl);
     gl.uniform1f(u.density, cs.density);

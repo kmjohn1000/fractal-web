@@ -39,7 +39,8 @@
 // renderer "dive": the WebGL escape-time renderer, one deep-zoom path, frame by frame
 //   fractal   the app fractal ("Mandelbrot"), palette {name, stops} added to the app's list
 //   path(seconds)  -> (t) => { t, scale, cx, cy, offset, rotation (radians, default 0), fractal (optional: the app fractal this
-//             frame is shot in, when a Short goes from one fractal to another; default the recipe's), layers: [{style, density, weight?}, ...], ... }
+//             frame is shot in, when a Short goes from one fractal to another; default the recipe's), roots (optional, Newton only:
+//             [[x, y], [x, y], [x, y]], the three roots of the polynomial that frame is shot with; default the cube roots of unity), layers: [{style, density, weight?}, ...], ... }
 //             layers[0] is the base picture; each later layer is shot too and blended
 //             over it at `weight` (skipped when weight <= 0.002). A layer may name one of the app's palettes
 //             (`palette: "Classic"`; else the page's current one stays), so a tour can change color, and the
@@ -369,7 +370,7 @@ async function setFrame(page, v, label) {
       if (k !== colormapIndex) pickColormap(k);
     }
     setColorStyle({ style: v.style, density: v.density, offset: v.offset });
-    Object.assign(mainState, { cx: v.cx, cy: v.cy, scale: v.scale, rotation: v.rotation || 0 });
+    Object.assign(mainState, { cx: v.cx, cy: v.cy, scale: v.scale, rotation: v.rotation || 0, newtonRoots: v.roots || null });
     if (v.maxIter) { mainState.maxIter = v.maxIter; mainState.iterAutoLocked = true; } else { mainState.iterAutoLocked = false; applyAutoIter(); }
     requestRender();
   })()`);
@@ -395,7 +396,7 @@ if (command === "stills") {
       const t0 = Date.now();
       if (j.palette && j.palette !== R.palette?.name) await page.evaluate(`pickColormap(Math.max(0, COLORMAPS.findIndex((c) => c.name === ${JSON.stringify(j.palette)})))`);
       else if (R.palette) await page.evaluate(`pickColormap(COLORMAPS.findIndex((c) => c.name === ${JSON.stringify(R.palette.name)}))`);
-      await setFrame(page, { cx: Number(j.cx), cy: Number(j.cy), scale: j.scale, style: j.style || "relief", density: j.density ?? 1, offset: j.offset ?? 0, maxIter: j.maxIter, rotation: j.rotation, fractal: j.fractal }, j.name);
+      await setFrame(page, { cx: Number(j.cx), cy: Number(j.cy), scale: j.scale, style: j.style || "relief", density: j.density ?? 1, offset: j.offset ?? 0, maxIter: j.maxIter, rotation: j.rotation, fractal: j.fractal, roots: j.roots }, j.name);
       await page.screenshot({ path: join(stillsDir, `${j.name}.png`), type: "png" });
       console.log(`${j.name}  ${Date.now() - t0} ms  maxIter ${await page.evaluate("mainState.maxIter")}`);
     }
@@ -421,7 +422,7 @@ async function renderDiveFrames() {
       const file = join(framesDir, `${pad(i)}.jpg`);
       if (resume && existsSync(file)) continue;
       const s = path(i / FPS);
-      const base = { cx: s.cx, cy: s.cy, scale: s.scale, offset: s.offset, rotation: s.rotation, fractal: s.fractal };
+      const base = { cx: s.cx, cy: s.cy, scale: s.scale, offset: s.offset, rotation: s.rotation, fractal: s.fractal, roots: s.roots };
       const blended = s.layers.slice(1).filter((l) => l.weight > 0.002);
       // The base picture; while a further layer (the Bands look) is still dissolving, a
       // shot of it is blended in over the picture (ImageMagick).

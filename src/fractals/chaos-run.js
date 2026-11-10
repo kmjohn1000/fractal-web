@@ -3,9 +3,9 @@
 // button that shows how far the run has played, and the few lines a screen reader hears. The engine itself is fern.js
 // (startReplay, fernView.runStats); teleport.js starts the runs and render-layout.js calls in here.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { fernView, mode } from "../core/state.js?v=1.80.1";
-import { formatPointCount } from "../ui/hud-format.js?v=1.80.1";
-import { cornerDeal } from "./corner-rules.js?v=1.80.1";
+import { fernView, mode } from "../core/state.js?v=1.80.2";
+import { formatPointCount } from "../ui/hud-format.js?v=1.80.2";
+import { cornerDeal } from "./corner-rules.js?v=1.80.2";
 
 // ---------------------------------------------------------------- the seed
 

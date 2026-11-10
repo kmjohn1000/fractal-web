@@ -3,26 +3,26 @@
 // colormap-picker.js; applyShareHashFromUrl and applyShareLink are called from init in app.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { Platform } from "../core/platform.js?v=1.80.1";
-import { COLORMAPS, SOLID_COLORS } from "../render/colormaps.js?v=1.80.1";
-import { FRACTAL_CONFIGS } from "../core/configs.js?v=1.80.1";
-import { LINE_CURVES } from "../fractals/dragon.js?v=1.80.1";
-import { Diag } from "../core/diag.js?v=1.80.1";
-import { EXTRA_MODES, isCurveMode, isIfsMode } from "../fractals/fractal-defs.js?v=1.80.1";
-import { limitScale } from "../core/deepzoom.js?v=1.80.1";
-import { COLOR_BANDS_RANGE, STYLE_LINK_CODES, colorStyle } from "../render/color-styles.js?v=1.80.1";
-import { HEXAFLAKE_DEFAULT_DEPTH, HEXAFLAKE_MAX_DEPTH, currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, juliaState, kochState, mainState, mode, treeState, vectorColors } from "../core/state.js?v=1.80.1";
-import { colormapIndex, colormapIndexNamed, defaultColormapName, setColorStyle, setColormapIndex, setColormapPicked } from "../core/state-colors.js?v=1.80.1";
-import { requestRender, updateLUT } from "../render/render-layout.js?v=1.80.1";
-import { exactFromLink, exactLinkFields, normalizeAngle, setCenter } from "../core/view-math.js?v=1.80.1";
-import { enterDual, exitDual, selectFractal, setCornerRule, setMode } from "./modes.js?v=1.80.1";
-import { VECTOR_VIEWS, dragonNav, fernNav, fitVectorView, fittedVectorModes } from "./vector-interaction.js?v=1.80.1";
-import { PENROSE_HH_MAX, PENROSE_HH_MIN, penroseCenterFields, penroseClampHalfHeight, penroseParseExact } from "../fractals/penrose.js?v=1.80.1";
-import { cancelTeleport } from "./teleport.js?v=1.80.1";
-import { scheduleSharedRun } from "./pattern-controls.js?v=1.80.1";
-import { currentRunSeed, parseRunSeed } from "../fractals/chaos-run.js?v=1.80.1";
-import { cornerDeal, parseCornerRule } from "../fractals/corner-rules.js?v=1.80.1";
-import { setFernColor, updateColorSwatches } from "./colormap-picker.js?v=1.80.1";
+import { Platform } from "../core/platform.js?v=1.80.2";
+import { COLORMAPS, SOLID_COLORS } from "../render/colormaps.js?v=1.80.2";
+import { FRACTAL_CONFIGS } from "../core/configs.js?v=1.80.2";
+import { LINE_CURVES } from "../fractals/dragon.js?v=1.80.2";
+import { Diag } from "../core/diag.js?v=1.80.2";
+import { EXTRA_MODES, isCurveMode, isIfsMode } from "../fractals/fractal-defs.js?v=1.80.2";
+import { limitScale } from "../core/deepzoom.js?v=1.80.2";
+import { COLOR_BANDS_RANGE, STYLE_LINK_CODES, colorStyle } from "../render/color-styles.js?v=1.80.2";
+import { HEXAFLAKE_DEFAULT_DEPTH, HEXAFLAKE_MAX_DEPTH, currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, juliaState, kochState, mainState, mode, treeState, vectorColors } from "../core/state.js?v=1.80.2";
+import { colormapIndex, colormapIndexNamed, defaultColormapName, setColorStyle, setColormapIndex, setColormapPicked } from "../core/state-colors.js?v=1.80.2";
+import { requestRender, updateLUT } from "../render/render-layout.js?v=1.80.2";
+import { exactFromLink, exactLinkFields, normalizeAngle, setCenter } from "../core/view-math.js?v=1.80.2";
+import { enterDual, exitDual, selectFractal, setCornerRule, setMode } from "./modes.js?v=1.80.2";
+import { VECTOR_VIEWS, dragonNav, fernNav, fitVectorView, fittedVectorModes } from "./vector-interaction.js?v=1.80.2";
+import { PENROSE_HH_MAX, PENROSE_HH_MIN, penroseCenterFields, penroseClampHalfHeight, penroseParseExact } from "../fractals/penrose.js?v=1.80.2";
+import { cancelTeleport } from "./teleport.js?v=1.80.2";
+import { scheduleSharedRun } from "./pattern-controls.js?v=1.80.2";
+import { currentRunSeed, parseRunSeed } from "../fractals/chaos-run.js?v=1.80.2";
+import { cornerDeal, parseCornerRule } from "../fractals/corner-rules.js?v=1.80.2";
+import { setFernColor, updateColorSwatches } from "./colormap-picker.js?v=1.80.2";
 
 // ---------------------------------------------------------------- share: links
 
@@ -294,24 +294,77 @@ export function applyShareState(st) {
   if (st.seed) scheduleSharedRun(st.seed, st.mode); // a link with a run's seed plays that run
 }
 
+// Whether a hash that parseShareHash rejected is a share link from a NEWER version of the app, as opposed to
+// garbage or a damaged link: its format number is above 1, or it is a well-formed v1 link (a view with x, y and s)
+// that names a fractal or mode this version does not have. An older app opens the default view for such a link,
+// which looked like a broken link; this lets it say so (showLinkNotice).
+export function shareHashNeedsNewer(hash) {
+  try {
+    if (!hash || hash.length < 2) return false;
+    const p = new URLSearchParams(hash.slice(1));
+    const v = Number(p.get("v"));
+    if (!Number.isInteger(v) || v < 1) return false;
+    if (v > 1) return true;
+    const finite = (k) => p.get(k) !== null && p.get(k) !== "" && Number.isFinite(Number(p.get(k)));
+    if (!finite("x") || !finite("y") || !finite("s")) return false;
+    const m = p.get("m");
+    if (m === "fractal") return !Object.prototype.hasOwnProperty.call(FRACTAL_CONFIGS, p.get("f"));
+    return !EXTRA_MODES.some((e) => e.key === m);
+  } catch {
+    return false;
+  }
+}
+
+export const LINK_NOTICE_MS = 9000;
+export let linkNoticeEl = null;
+export let linkNoticeTimer = 0;
+// A short message over the top of the picture (role="status", so VoiceOver reads it); tapping it, or 9 seconds,
+// dismisses it. Made on first use, empty first and filled a moment later so a screen reader announces the text.
+export function showLinkNotice(text) {
+  if (!linkNoticeEl) {
+    linkNoticeEl = document.createElement("div");
+    linkNoticeEl.id = "linkNotice";
+    linkNoticeEl.setAttribute("role", "status");
+    linkNoticeEl.addEventListener("click", () => linkNoticeEl.classList.remove("shown"));
+    document.body.appendChild(linkNoticeEl);
+  }
+  linkNoticeEl.textContent = "";
+  linkNoticeEl.classList.add("shown");
+  setTimeout(() => { linkNoticeEl.textContent = text; }, 60);
+  clearTimeout(linkNoticeTimer);
+  linkNoticeTimer = setTimeout(() => linkNoticeEl.classList.remove("shown"), LINK_NOTICE_MS);
+}
+
+// What the notice says; the app can point at the App Store, the web page can only say to reload.
+export function linkNeedsNewerText() {
+  return Platform.isNative
+    ? "This link needs a newer version of Fractal Atlas. Update it in the App Store, then open the link again."
+    : "This link needs a newer version of Fractal Atlas. Reload the page to get the latest.";
+}
+
 // Applies a share link from the URL, then strips the hash so a reload
 // returns to the app's normal start rather than re-pinning the link.
 export function applyShareHashFromUrl() {
-  const st = parseShareHash(location.hash);
-  if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+  const hash = location.hash;
+  const st = parseShareHash(hash);
+  if (hash) history.replaceState(null, "", location.pathname + location.search);
   if (st) applyShareState(st);
+  else if (shareHashNeedsNewer(hash)) showLinkNotice(linkNeedsNewerText());
 }
 
 // A share link that opened the iOS app (universal link, see platform.js):
 // same parse/apply as a link loaded on the web. Anything that isn't a valid
-// share hash is ignored, leaving the current view alone.
+// share hash is ignored, leaving the current view alone (a link from a newer version says so).
 export function applyShareLink(url) {
   Diag.fromLink(url);
   const i = url.indexOf("#");
-  const st = i >= 0 ? parseShareHash(url.slice(i)) : null;
+  const hash = i >= 0 ? url.slice(i) : "";
+  const st = hash ? parseShareHash(hash) : null;
   if (st) {
     cancelTeleport();
     applyShareState(st);
+  } else if (shareHashNeedsNewer(hash)) {
+    showLinkNotice(linkNeedsNewerText());
   }
 }
 

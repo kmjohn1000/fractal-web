@@ -10,15 +10,15 @@
 // which is what lets test-hooks.js expose them (the places spec and scripts/render_place_thumbs.mjs
 // read placeId); see scripts/check-test-globals.mjs.
 
-import { FRACTAL_CONFIGS, fractalLabel, slugify } from "../core/configs.js?v=1.80.1";
-import { PICKER_LAYOUT, viewFromBounds } from "../fractals/fractal-defs.js?v=1.80.1";
-import { TELEPORT_DESTINATIONS } from "../fractals/places.js?v=1.80.1";
-import { currentName, dualActive, els, mainCanvasAspect, mode } from "../core/state.js?v=1.80.1";
-import { capitalize, zoomPhrase } from "./hud-format.js?v=1.80.1";
-import { exitDual, selectFractal } from "./modes.js?v=1.80.1";
-import { prefersReducedMotion, showHud } from "./compass-ui.js?v=1.80.1";
-import { flyToPlace } from "./teleport.js?v=1.80.1";
-import { colorSheetEl } from "./color-sheet.js?v=1.80.1";
+import { FRACTAL_CONFIGS, fractalLabel, slugify } from "../core/configs.js?v=1.80.2";
+import { PICKER_LAYOUT, viewFromBounds } from "../fractals/fractal-defs.js?v=1.80.2";
+import { TELEPORT_DESTINATIONS } from "../fractals/places.js?v=1.80.2";
+import { currentName, dualActive, els, mainCanvasAspect, mode } from "../core/state.js?v=1.80.2";
+import { capitalize, zoomPhrase } from "./hud-format.js?v=1.80.2";
+import { exitDual, selectFractal } from "./modes.js?v=1.80.2";
+import { prefersReducedMotion, showHud } from "./compass-ui.js?v=1.80.2";
+import { flyToPlace } from "./teleport.js?v=1.80.2";
+import { colorSheetEl } from "./color-sheet.js?v=1.80.2";
 
 // ---------------------------------------------------------------- places sheet
 

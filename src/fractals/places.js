@@ -283,6 +283,9 @@ export const TELEPORT_DESTINATIONS = [
   { fractal: "Sine L plane", label: "Far Copy", re: "4.9", im: "0.18", scale: 0.8 },
   { fractal: "Sine L plane", label: "Yellow Fans", re: "5.008356546", im: "0.08547486", scale: 0.01 },
   { fractal: "Sine L plane", label: "Dusty Edge", re: "0.3", im: "0.99000463319974052", scale: 0.001 },
+  // Golden Shells: nested gold and blue spirals a little right of Dusty Edge, at that zoom floor (1.19e-4). Our own name;
+  // it was found by eye, and looks its best in the Classic palette with the Cross look (rendered and checked 2026-11-09).
+  { fractal: "Sine L plane", label: "Golden Shells", re: "0.3002522816081156", im: "0.9895126626650655", scale: 0.00011920928955078125 },
   // Celtic equals Mandelbrot on the real axis, so Mandelbrot's real-axis
   // landmarks reappear in new shapes: Halo Bell is Mini Mandelbrot's
   // period-55 point. Baby Celtic (period 3, nucleus -1.754877666246693),

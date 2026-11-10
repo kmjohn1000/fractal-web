@@ -2,6 +2,10 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.80.2 — 2026-11-10
+- Added a Sine L-plane place, Golden Shells: nested gold and blue spirals next to Dusty Edge, at that fractal's zoom floor.
+- Changed: a share link from a newer version of the app (a fractal or mode this version does not have) now says "This link needs a newer version of Fractal Atlas" instead of silently opening the default view.
+
 ## 1.80.1 — 2026-11-08
 - Changed: a chaos-game run now shows how far it has played as a ring around the Play button, instead of a counter floating over the picture. The ring closes with one soft pulse when the run ends. The points and coverage numbers stay on the info card.
 - Fixed: the toolbar buttons now sit above the "detail" slider's oversized touch area, so a tap or VoiceOver double-tap near the slider's edge reaches the button.

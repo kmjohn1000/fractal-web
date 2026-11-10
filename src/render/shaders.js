@@ -144,6 +144,8 @@ uniform int   u_ftype;   // 0=escape 1=ship 2=tricorn 3=newton 7=celtic (see FTY
 uniform float u_power;   // 2.0 or 3.0 (escape family only)
 uniform bool  u_isJulia;
 uniform vec2  u_juliaC;
+uniform vec2  u_newtonRoots[3]; // Newton only, read when u_newtonCustom: the three roots of the polynomial (see renderNewtonRoots)
+uniform bool  u_newtonCustom;   // false: the classic z^3 - 1, drawn by the original loop in renderNewton
 uniform vec2  u_phoenixP; // Phoenix only: fixed p in z' = z^2 + c + p*z_prev
 uniform sampler2D u_lut;
 // Carpet/Gasket only, see renderDigitFractal below and digitCellFrame in fractal-defs.js.
@@ -812,7 +814,38 @@ vec3 renderMagnet(vec2 c) {
   return vec3(0.0);
 }
 
+// Newton's method for (z - a)(z - b)(z - c) with the roots moved off the cube roots of unity (u_newtonRoots).
+// f / f' = 1 / (1/(z-a) + 1/(z-b) + 1/(z-c)), so each step is z - 1/s with s the sum of the three inverses.
+// Same colors as renderNewton: the root reached picks the third of the colormap, the iteration count the position
+// inside it. Float32 only (no deep path), and only a Short's driver sets the roots.
+vec2 cInvN(vec2 v) { return vec2(v.x, -v.y) / dot(v, v); }
+vec3 renderNewtonRoots(vec2 p) {
+  vec2 z = p;
+  int rootIdx = -1;
+  int iterUsed = 0;
+  for (int i = 0; i < 2000; i++) {
+    if (i >= u_maxIter) break;
+    iterUsed = i;
+    vec2 da = z - u_newtonRoots[0], db = z - u_newtonRoots[1], dc = z - u_newtonRoots[2];
+    // Sitting on a root already (the inverses would blow up).
+    if (dot(da, da) < 1e-24) { rootIdx = 0; break; }
+    if (dot(db, db) < 1e-24) { rootIdx = 1; break; }
+    if (dot(dc, dc) < 1e-24) { rootIdx = 2; break; }
+    vec2 s = cInvN(da) + cInvN(db) + cInvN(dc);
+    float ss = dot(s, s);
+    if (ss < 1e-30) break; // f' = 0: the step is infinite, the pixel stays black
+    z -= vec2(s.x, -s.y) / ss;
+    if (dot(z - u_newtonRoots[0], z - u_newtonRoots[0]) < 1e-12) { rootIdx = 0; break; }
+    if (dot(z - u_newtonRoots[1], z - u_newtonRoots[1]) < 1e-12) { rootIdx = 1; break; }
+    if (dot(z - u_newtonRoots[2], z - u_newtonRoots[2]) < 1e-12) { rootIdx = 2; break; }
+  }
+  if (rootIdx < 0) return vec3(0.0);
+  float t = (float(rootIdx) + float(iterUsed) / max(float(u_maxIter - 1), 1.0)) / 3.0;
+  return lutColor(t);
+}
+
 vec3 renderNewton(vec2 p) {
+  if (u_newtonCustom) return renderNewtonRoots(p);
   // Matches _newton_chunk: z starts at the grid point itself.
   vec2 z = p;
   int rootIdx = -1;

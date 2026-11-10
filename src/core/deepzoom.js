@@ -2,8 +2,8 @@
 // offsets. No DOM references (no document, els, window or canvas): pure math on numbers and arrays.
 // Needs FTYPE and PHOENIX_P from configs.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { FTYPE, PHOENIX_P } from "./configs.js?v=1.80.1";
-import { EXACT_FRAC, EXACT_ONE, exactCenter, toExact } from "./view-math.js?v=1.80.1";
+import { FTYPE, PHOENIX_P } from "./configs.js?v=1.80.2";
+import { EXACT_FRAC, EXACT_ONE, exactCenter, toExact } from "./view-math.js?v=1.80.2";
 
 // ---------------------------------------------------------------- Phase 3: deep zoom
 // Below this scale, plain float32 starts losing pixels to precision collapse
@@ -36,8 +36,8 @@ export function perturbationEligibleType(state) {
 export const NEWTON_FLOAT32_REACH = 1000;
 export function newtonDeepEligible(state) {
   const r = Math.hypot(state.cx, state.cy);
-  return state.ftype === FTYPE.NEWTON && state.scale < DEEP_ZOOM_THRESHOLD
-    && r > NEWTON_FLOAT32_REACH * state.scale && r * 2 ** -23 > 2 ** -48 && r < 100;
+  return state.ftype === FTYPE.NEWTON && !state.newtonRoots && state.scale < DEEP_ZOOM_THRESHOLD
+    && r >NEWTON_FLOAT32_REACH * state.scale && r * 2 ** -23 > 2 ** -48 && r < 100;
 }
 
 // Nova has no deep zoom path (its orbit starts at z = 1 and the pixel's c is
