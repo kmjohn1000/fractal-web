@@ -9,6 +9,20 @@
 # Enabled by `npm install` (package.json's prepare script sets
 # core.hooksPath to .githooks).
 
+# git passes "<local ref> <local sha> <remote ref> <remote sha>" lines on
+# stdin; keep them, they are read twice below.
+refs=$(cat)
+
+# A machine-local guard, if this clone has one (it lives in .git/, not in the
+# repo): it gets git's arguments and the same ref lines, and can refuse the push.
+local_guard="$(git rev-parse --git-common-dir)/local-hooks/pre-push"
+if [ -x "$local_guard" ]; then
+  printf '%s\n' "$refs" | "$local_guard" "$@" || {
+    echo "pre-push: the local guard refused this push. Push aborted."
+    exit 1
+  }
+fi
+
 npm run lint </dev/null || {
   echo "pre-push: lint failed. Push aborted."
   exit 1
@@ -16,11 +30,12 @@ npm run lint </dev/null || {
 
 [ -n "$SKIP_VISUAL" ] && { echo "pre-push: SKIP_VISUAL set, not running the visual suite"; exit 0; }
 
-# git passes "<local ref> <local sha> <remote ref> <remote sha>" lines.
 release=""
 while read -r _ _ remote_ref _; do
   case "$remote_ref" in refs/tags/v*) release=1 ;; esac
-done
+done <<EOF
+$refs
+EOF
 
 if [ -n "$release" ] || [ -n "$RUN_VISUAL" ]; then
   npm run test:release </dev/null || {
