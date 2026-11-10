@@ -14,6 +14,7 @@ import { dragonNav, fernNav, hexaflakeNav, kochNav, treeNav, vectorFitHalfHeight
 import { flash, prefersReducedMotion, updateCompasses } from "../ui/compass-ui.js?v=1.80.4";
 import { cmGradient, labelColorButton } from "../ui/colormap-picker.js?v=1.80.4";
 import { COLOR_LOOKS, colorSheetStyles, currentLookId } from "../ui/color-sheet.js?v=1.80.4";
+import { scheduleCanvasA11y } from "../ui/canvas-a11y.js?v=1.80.4";
 import { updateDragonHud, updateFernHud, updateHexaflakeHud, updateHud, updateJuliaLabel, updateKochHud, updateTreeHud } from "../ui/hud.js?v=1.80.4";
 
 // ---------------------------------------------------------------- rendering + layout
@@ -111,6 +112,7 @@ export function renderAll() {
   }
   updateCompasses();
   updateJuliaLabel();
+  scheduleCanvasA11y(); // a timer restart, the labels are written once the view has been still for a moment
 }
 
 // Progressive supersampling: after renderAll draws sample 0, add the rest of
