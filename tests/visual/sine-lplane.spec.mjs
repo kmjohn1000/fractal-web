@@ -96,8 +96,13 @@ function orbit(kind, p, maxIter, L = null, z0 = [Math.PI / 2, 0]) {
   return null;
 }
 const smoothCount = (kind, p, maxIter, L = null) => orbit(kind, p, maxIter, L)?.n ?? null;
-// The gray a Grayscale render at Repeat 0.25 gives that count: 255 * fract(n * 0.1 * 0.25), black when it never escapes.
-const grayOf = (n) => (n === null ? 0 : 255 * ((n * 0.025) % 1));
+// The gray a Grayscale render at Repeat 0.25 gives that count: the palette's position fract(n * 0.1 * 0.25) on its stops
+// (0 -> 0, 0.5 -> 150, 1 -> 255, straight between them), black when it never escapes.
+const grayOf = (n) => {
+  if (n === null) return 0;
+  const t = (n * 0.025) % 1;
+  return t < 0.5 ? 300 * t : 150 + 210 * (t - 0.5);
+};
 
 // Draws a view of `fractal` in Grayscale at Repeat 0.25, then compares a grid of its pixels with the float64 reference
 // (the app averages SAMPLE_OFFSETS' 16 jittered samples, so the reference averages the same 16 grays). kind "lplane" for

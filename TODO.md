@@ -48,6 +48,14 @@ it needs an external service and a privacy-label change.
 
 ## Now
 
+- [ ] Revisit the Grayscale palette (user, 2026-11-10: "I may want to
+      revisit grayscale"). It has a mid-grey stop, `[0.50, 150, 150, 150]`
+      in `colormaps.js` (it was a straight black-to-white ramp up to
+      1.80.0; the change came in with the 1.80.1 commit, `5644480`, and was
+      never written up). Kept as is for now. Two specs model its ramp in
+      their `grayOf` helper (`sine.spec.mjs`, `sine-lplane.spec.mjs`):
+      change that helper with any change to the stops.
+
 - [ ] Sine L-plane: a shorter settle, then a deeper zoom (plan stored
       2026-11-10; not approved to build; the user wants to run it later the
       same day, starting with step 0). Why: zoomed in, the L-plane is slow
