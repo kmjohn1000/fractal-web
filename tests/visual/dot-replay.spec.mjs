@@ -1406,7 +1406,9 @@ test.describe("Play: a Long run with a seed of its own, and the seed in the link
     for (const hash of ["#v=1&m=levy&x=0.5&y=0.5&s=1&r=0&n=300000&c=2", "#v=1&m=levy&x=0.5&y=0.5&s=1&r=0&n=300000&c=2&sd=0", "#v=1&m=levy&x=0.5&y=0.5&s=1&r=0&n=300000&c=2&sd=banana"]) {
       await page.goto(`index.html${hash}`);
       await page.waitForFunction(() => typeof fernView !== "undefined" && mode === "levy" && fernView.accepted > 0);
-      await page.waitForTimeout(700);
+      // scheduleSharedRun starts a link's run two animation frames after the first paint, so six
+      // frames are long enough for one to have started: waiting on frames, not on the wall clock
+      for (let i = 0; i < 3; i++) await frames(page);
       expect(await page.evaluate(() => fernView.replaying), hash).toBe(false);
       expect(await page.evaluate(() => chaosRun.seed)).toBe(0);
     }
@@ -1416,7 +1418,7 @@ test.describe("Play: a Long run with a seed of its own, and the seed in the link
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("index.html#v=1&m=sierpinski&x=0&y=0.25&s=1.3&r=0&n=300000&c=1&sd=482913");
     await page.waitForFunction(() => typeof fernView !== "undefined" && mode === "sierpinski" && fernView.accepted > 0);
-    await page.waitForTimeout(800);
+    for (let i = 0; i < 3; i++) await frames(page); // six frames: a run would have started by two (see above)
     expect(await page.evaluate(() => fernView.replaying)).toBe(false);
     await expect(page.locator("#fernReplayBtn")).not.toHaveClass(/\bringOn\b/);
   });

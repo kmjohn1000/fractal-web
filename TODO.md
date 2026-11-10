@@ -13,12 +13,16 @@ each one changes the listing count, so fixes and polish come first.
 1. Real-iPhone check of 1.80.0 (the user's; nothing else on this list
    is verified on a phone until it is done). A development build of 1.80.0
    (build 598, the same code) is already on the phone, so it can start now.
-2. Test reliability: most `dot-replay` tests already run on the manual
-   clock. Left: two fixed waits near lines 1377 and 1387 of
-   `tests/visual/dot-replay.spec.mjs` that assert that no run starts. They
-   are probably not the 1.55.5 failure (that one raced a run against the
-   test's own steps), so check that failure's test name before changing them. The real-Play test near line 1590 is on the
-   real clock on purpose.
+2. Test reliability: DONE 2026-11-10 for the two "no run starts" waits in
+   `tests/visual/dot-replay.spec.mjs` (they now wait six animation frames,
+   since `scheduleSharedRun` starts a run after two, instead of 700 and 800
+   ms; the whole spec passed twice over on webkit-iphone15 and
+   chromium-desktop before the change, 564 runs). Not found: the 1.55.5
+   failure's test names (the 2026-11-02 note names none), so which tests
+   raced a run against their own steps is unknown; the tests that still use
+   the real clock (the real Play button, wheel and Back tests near lines
+   209, 754, 1176 and 1639 to 1692) are the candidates. The real-Play test
+   near line 1622 is on the real clock on purpose.
 3. Newton orbits near 0 still finish in float32 (see Code-review
    leftovers). The compass reset race is fixed (`5e9aedc`, 1.80.1).
 4. Accessibility pass: `role="img"` label on the canvas, announcements,
