@@ -1,12 +1,13 @@
 // The rating prompt (review-prompt.js): when the iOS app asks for an App Store rating. The sheet itself is
-// iOS's and can't be seen here, so these checks cover the decision (opened on 3 different days, then a
-// save or share, not twice within 120 days), the stored dates, and that the website never asks. The
+// iOS's and can't be seen here, so these checks cover the decision (opened on 2 different days, then a
+// save, a share or a deep zoom left alone, not twice within 120 days), the stored dates, and that the
+// website never asks. The
 // app's side (Platform.requestReview and the Swift plugin) is checked by hand on a Release build.
 // Plain behavior checks, no screenshots. Run through `npm run test:visual`.
 import { test, expect } from "@playwright/test";
 
 /* global reviewShouldAsk, reviewRecordDay, reviewParse, reviewDaysBetween, reviewMaybeAsk, reviewNoteOpen,
-   reviewLoad, reviewSave, REVIEW_KEY */
+   reviewLoad, reviewSave, reviewNoteDeep, REVIEW_KEY */
 
 let pageErrors = [];
 
@@ -24,14 +25,14 @@ async function load(page) {
 }
 
 test.describe("the decision", () => {
-  test("asks only after the app was opened on 3 different days, and not again within 120 days", async ({ page }) => {
+  test("asks only after the app was opened on 2 different days, and not again within 120 days", async ({ page }) => {
     await load(page);
     const r = await page.evaluate(() => {
-      const two = { days: ["2026-11-01", "2026-11-02"], askedOn: null };
-      const three = { days: ["2026-11-01", "2026-11-02", "2026-11-05"], askedOn: null };
+      const one = { days: ["2026-11-01"], askedOn: null };
+      const three = { days: ["2026-11-01", "2026-11-05"], askedOn: null };
       const asked = (day) => ({ ...three, askedOn: day });
       return {
-        two: reviewShouldAsk(two, "2026-11-05"),
+        two: reviewShouldAsk(one, "2026-11-05"),
         three: reviewShouldAsk(three, "2026-11-05"),
         justAsked: reviewShouldAsk(asked("2026-11-05"), "2026-11-05"),
         day119: reviewShouldAsk(asked("2026-11-05"), "2027-03-04"),
@@ -97,17 +98,18 @@ test.describe("where it runs", () => {
       // Opening counts a day once, however often the app starts that day.
       reviewNoteOpen(true, "2026-11-01"); reviewNoteOpen(true, "2026-11-01"); reviewNoteOpen(true, "2026-11-02");
       out.afterTwoDays = reviewLoad().days;
-      // A save on the 2nd day: too early.
-      out.tooEarly = await reviewMaybeAsk(on("2026-11-02"));
+      // A save on the 1st day (only one day opened so far): too early.
+      reviewSave({ days: ["2026-11-01"], askedOn: null });
+      out.tooEarly = await reviewMaybeAsk(on("2026-11-01"));
       out.asksTooEarly = window["__asks"];
-      // The 3rd day's save counts that day too, so it asks.
-      out.third = await reviewMaybeAsk(on("2026-11-03"));
+      // The 2nd day's save counts that day too, so it asks.
+      out.third = await reviewMaybeAsk(on("2026-11-02"));
       out.stored = reviewLoad();
       // The next save, even the same day, does not ask again.
-      out.again = await reviewMaybeAsk(on("2026-11-03"));
+      out.again = await reviewMaybeAsk(on("2026-11-02"));
       out.asksAfter = window["__asks"];
       // A failing request never throws into saving or sharing.
-      reviewSave({ days: ["2026-01-01", "2026-01-02", "2026-01-03"], askedOn: null });
+      reviewSave({ days: ["2026-01-01", "2026-01-02"], askedOn: null });
       out.failed = await reviewMaybeAsk({ ...on("2026-01-03"), request: async () => { throw new Error("no"); } });
       return out;
     });
@@ -115,10 +117,44 @@ test.describe("where it runs", () => {
     expect(r.tooEarly).toBe(false);
     expect(r.asksTooEarly).toBe(0);
     expect(r.third).toBe(true);
-    expect(r.stored).toEqual({ days: ["2026-11-01", "2026-11-02", "2026-11-03"], askedOn: "2026-11-03" });
+    expect(r.stored).toEqual({ days: ["2026-11-01", "2026-11-02"], askedOn: "2026-11-02" });
     expect(r.again).toBe(false);
     expect(r.asksAfter).toBe(1);
     expect(r.failed).toBe(false);
+    expect(pageErrors).toEqual([]);
+  });
+
+  test("a deep view left alone asks once; moving, a shallow view or the website does not", async ({ page }) => {
+    await load(page);
+    const r = await page.evaluate(async () => {
+      const wait = (ms) => new Promise((res) => setTimeout(res, ms));
+      let asks = 0;
+      const deps = (isNative = true) => ({ isNative, idleMs: 60, ask: () => { asks++; } });
+      const out = {};
+      // Deep and still: asks once, after the wait.
+      reviewNoteDeep(1e-7, deps());
+      out.beforeWait = asks;
+      await wait(150);
+      out.afterWait = asks;
+      // Renders keep restarting the wait, so a view that keeps moving never asks.
+      for (let i = 0; i < 5; i++) { reviewNoteDeep(1e-7, deps()); await wait(30); }
+      out.whileMoving = asks;
+      // A shallower render cancels the wait.
+      reviewNoteDeep(1e-7, deps());
+      reviewNoteDeep(0.5, deps());
+      await wait(150);
+      out.shallow = asks;
+      // The website never asks.
+      reviewNoteDeep(1e-7, deps(false));
+      await wait(150);
+      out.web = asks;
+      return out;
+    });
+    expect(r.beforeWait).toBe(0);
+    expect(r.afterWait).toBe(1);
+    expect(r.whileMoving).toBe(1);
+    expect(r.shallow).toBe(1);
+    expect(r.web).toBe(1);
     expect(pageErrors).toEqual([]);
   });
 });

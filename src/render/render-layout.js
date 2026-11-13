@@ -4,18 +4,19 @@
 // fractal-defs.js; calls into modes, interaction and the later scripts only inside function bodies.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { COLORMAPS, buildLUTBytes } from "./colormaps.js?v=1.80.5";
-import { Diag } from "../core/diag.js?v=1.80.5";
-import { isCurveMode, isIfsMode } from "../fractals/fractal-defs.js?v=1.80.5";
-import { SAMPLE_OFFSETS, SINE_L_PASSES, deepZoomEligible, gesturePreviewEligible, sineLHeavy } from "../core/deepzoom.js?v=1.80.5";
-import { activePane, adaptLiveResolution, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, hexaflakeView, isInteracting, juliaRenderer, juliaState, kochState, kochView, mainRenderer, mainState, mode, paneHistory, treeState, treeView, vectorColors } from "../core/state.js?v=1.80.5";
-import { colormapIndex, vectorLite } from "../core/state-colors.js?v=1.80.5";
-import { dragonNav, fernNav, hexaflakeNav, kochNav, treeNav, vectorFitHalfHeight } from "../ui/vector-interaction.js?v=1.80.5";
-import { flash, prefersReducedMotion, updateCompasses } from "../ui/compass-ui.js?v=1.80.5";
-import { cmGradient, labelColorButton } from "../ui/colormap-picker.js?v=1.80.5";
-import { COLOR_LOOKS, colorSheetStyles, currentLookId } from "../ui/color-sheet.js?v=1.80.5";
-import { scheduleCanvasA11y } from "../ui/canvas-a11y.js?v=1.80.5";
-import { updateDragonHud, updateFernHud, updateHexaflakeHud, updateHud, updateJuliaLabel, updateKochHud, updateTreeHud } from "../ui/hud.js?v=1.80.5";
+import { COLORMAPS, buildLUTBytes } from "./colormaps.js?v=1.80.6";
+import { Diag } from "../core/diag.js?v=1.80.6";
+import { isCurveMode, isIfsMode } from "../fractals/fractal-defs.js?v=1.80.6";
+import { SAMPLE_OFFSETS, SINE_L_PASSES, deepZoomEligible, gesturePreviewEligible, sineLHeavy } from "../core/deepzoom.js?v=1.80.6";
+import { activePane, adaptLiveResolution, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, hexaflakeView, isInteracting, juliaRenderer, juliaState, kochState, kochView, mainRenderer, mainState, mode, paneHistory, treeState, treeView, vectorColors } from "../core/state.js?v=1.80.6";
+import { colormapIndex, vectorLite } from "../core/state-colors.js?v=1.80.6";
+import { dragonNav, fernNav, hexaflakeNav, kochNav, treeNav, vectorFitHalfHeight } from "../ui/vector-interaction.js?v=1.80.6";
+import { flash, prefersReducedMotion, updateCompasses } from "../ui/compass-ui.js?v=1.80.6";
+import { cmGradient, labelColorButton } from "../ui/colormap-picker.js?v=1.80.6";
+import { COLOR_LOOKS, colorSheetStyles, currentLookId } from "../ui/color-sheet.js?v=1.80.6";
+import { scheduleCanvasA11y } from "../ui/canvas-a11y.js?v=1.80.6";
+import { reviewNoteDeep } from "../ui/review-prompt.js?v=1.80.6";
+import { updateDragonHud, updateFernHud, updateHexaflakeHud, updateHud, updateJuliaLabel, updateKochHud, updateTreeHud } from "../ui/hud.js?v=1.80.6";
 
 // ---------------------------------------------------------------- rendering + layout
 
@@ -86,6 +87,7 @@ export function renderAll() {
       positionCrosshair();
     }
     updateHud(lastMainDeepPath);
+    reviewNoteDeep(mainState.scale); // the app: a deep view left alone may earn a rating prompt
     scheduleRefinement();
   } else if (mode === "koch") {
     kochView.render({ depth: kochState.depth, fill: kochState.fill, colorIndex: vectorColors.koch, fitHalfHeight: vectorFitHalfHeight("koch"), lite: vectorLite });

@@ -2,7 +2,7 @@
 // observers and the Escape handler, so app.js imports it last, after every other module has been evaluated
 // (the block used to run after app.js's imports). An ES module: every top-level declaration is exported
 // (test-hooks.js relies on it). Needs state.js (els).
-import { els } from "../core/state.js?v=1.80.5";
+import { els } from "../core/state.js?v=1.80.6";
 
 // Toggle buttons and popovers change state by toggling "active"/"open" at
 // many call sites, so one observer per element mirrors that state into

@@ -3,20 +3,20 @@
 // interaction.js and the later scripts only inside function bodies.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { FRACTAL_CONFIGS } from "../core/configs.js?v=1.80.5";
-import { LINE_CURVES } from "../fractals/dragon.js?v=1.80.5";
-import { isCurveMode, isIfsMode, suggestedMaxIter, viewFromBounds } from "../fractals/fractal-defs.js?v=1.80.5";
-import { ignoresMaxIter } from "../fractals/digit-fractals.js?v=1.80.5";
-import { TELEPORT_DESTINATIONS } from "../fractals/places.js?v=1.80.5";
-import { applyAutoIter, currentName, dragonState, dragonView, dualActive, els, fernView, freshState, juliaHistory, juliaState, kochView, mainCanvasAspect, mainHistory, mainState, mode, setActivePane, setCurrentName, setDualActive, setJuliaHistory, setJuliaState, setMainHistory, setMainState, setModeKey } from "../core/state.js?v=1.80.5";
-import { setCenter } from "../core/view-math.js?v=1.80.5";
-import { applyDefaultColormap } from "../core/state-colors.js?v=1.80.5";
-import { crosshairFlash, labelColormapButton, layoutCanvasArea, requestRender } from "../render/render-layout.js?v=1.80.5";
-import { dragonNav, fernNav, fitVectorView, fittedVectorModes } from "./vector-interaction.js?v=1.80.5";
-import { cancelTeleport } from "./teleport.js?v=1.80.5";
-import { stopDepthPlay } from "./pattern-controls.js?v=1.80.5";
-import { updateColorSwatches } from "./colormap-picker.js?v=1.80.5";
-import { applyCornerRule, dealCornerRule } from "../fractals/corner-rules.js?v=1.80.5";
+import { FRACTAL_CONFIGS } from "../core/configs.js?v=1.80.6";
+import { LINE_CURVES } from "../fractals/dragon.js?v=1.80.6";
+import { isCurveMode, isIfsMode, suggestedMaxIter, viewFromBounds } from "../fractals/fractal-defs.js?v=1.80.6";
+import { ignoresMaxIter } from "../fractals/digit-fractals.js?v=1.80.6";
+import { TELEPORT_DESTINATIONS } from "../fractals/places.js?v=1.80.6";
+import { applyAutoIter, currentName, dragonState, dragonView, dualActive, els, fernView, freshState, juliaHistory, juliaState, kochView, mainCanvasAspect, mainHistory, mainState, mode, setActivePane, setCurrentName, setDualActive, setJuliaHistory, setJuliaState, setMainHistory, setMainState, setModeKey } from "../core/state.js?v=1.80.6";
+import { setCenter } from "../core/view-math.js?v=1.80.6";
+import { applyDefaultColormap } from "../core/state-colors.js?v=1.80.6";
+import { crosshairFlash, labelColormapButton, layoutCanvasArea, requestRender } from "../render/render-layout.js?v=1.80.6";
+import { dragonNav, fernNav, fitVectorView, fittedVectorModes } from "./vector-interaction.js?v=1.80.6";
+import { cancelTeleport } from "./teleport.js?v=1.80.6";
+import { stopDepthPlay } from "./pattern-controls.js?v=1.80.6";
+import { updateColorSwatches } from "./colormap-picker.js?v=1.80.6";
+import { applyCornerRule, dealCornerRule } from "../fractals/corner-rules.js?v=1.80.6";
 
 // ---------------------------------------------------------------- fractal-type / mode switching
 

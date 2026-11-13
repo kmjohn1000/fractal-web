@@ -2,11 +2,11 @@
 // one view that draws every LINE_CURVES entry. Split from the old dragon.js (a pure move); the curve definitions
 // and the dragon's walk are in dragon.js, the Hilbert, Gosper and arrowhead walk in lcurves.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { SOLID_COLORS, hueTurned, isGreyColor, strokeWidthFor } from "../render/colormaps.js?v=1.80.5";
-import { CURVE_FIT_HH, DRAGON_BUDGET, DRAGON_FIT_HH, DRAGON_LITE_PX_MIN, DRAGON_PX_MIN, DRAGON_ZOOM_SLACK, LINE_CURVES, dragonAdaptive } from "./dragon.js?v=1.80.5";
-import { curveAdaptive, lcurveSpec } from "./lcurves.js?v=1.80.5";
-import { makePenroseRenderer, penroseClampHalfHeight, penroseRebase } from "./penrose.js?v=1.80.5";
-import { VECTOR_CULL_MARGIN, paintBackdrop, vectorAffine } from "../render/vectorgeom.js?v=1.80.5";
+import { SOLID_COLORS, hueTurned, isGreyColor, strokeWidthFor } from "../render/colormaps.js?v=1.80.6";
+import { CURVE_FIT_HH, DRAGON_BUDGET, DRAGON_FIT_HH, DRAGON_LITE_PX_MIN, DRAGON_PX_MIN, DRAGON_ZOOM_SLACK, LINE_CURVES, dragonAdaptive } from "./dragon.js?v=1.80.6";
+import { curveAdaptive, lcurveSpec } from "./lcurves.js?v=1.80.6";
+import { makePenroseRenderer, penroseClampHalfHeight, penroseRebase } from "./penrose.js?v=1.80.6";
+import { VECTOR_CULL_MARGIN, paintBackdrop, vectorAffine } from "../render/vectorgeom.js?v=1.80.6";
 
 // Strokes the polyline of n canvas-pixel x, y pairs in buf, with the pen
 // state (width, join) already set. Points closer than half a pixel

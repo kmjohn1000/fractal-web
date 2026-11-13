@@ -2,15 +2,19 @@
 // sheet itself (Platform.requestReview) and decides whether it shows (at most 3 times a year per
 // person), so this file only picks a good moment: the person has opened the app on at least
 // REVIEW_MIN_DAYS different days and has just saved an image to Photos or shared one, and we haven't
-// asked in the last REVIEW_GAP_DAYS days. The only state is a few dates in localStorage on the
-// device; nothing is sent anywhere. Needs platform.js; share-menu.js calls reviewMaybeAsk().
+// asked in the last REVIEW_GAP_DAYS days. A second good moment is a deep zoom the person has
+// stopped on (reviewNoteDeep), for people who never save or share. The only state is a few dates in
+// localStorage on the device; nothing is sent anywhere. Needs platform.js; share-menu.js calls
+// reviewMaybeAsk() and render-layout.js calls reviewNoteDeep().
 //
 // An ES module: every top-level declaration is exported (test-hooks.js relies on it), which is also
 // what lets the review-prompt spec call the decision functions directly.
-import { Platform } from "../core/platform.js?v=1.80.5";
+import { Platform } from "../core/platform.js?v=1.80.6";
 
 export const REVIEW_KEY = "fractalAtlas.review";
-export const REVIEW_MIN_DAYS = 3; // distinct days the app was opened
+export const REVIEW_MIN_DAYS = 2; // distinct days the app was opened
+export const REVIEW_DEEP_SCALE = 1e-6; // a view this deep (1000x past the float32 wall) is a good moment
+export const REVIEW_DEEP_IDLE_MS = 4000; // the view must sit still this long at that depth
 export const REVIEW_GAP_DAYS = 120; // at least this long between our own asks
 export const REVIEW_DELAY_MS = 2000; // after the save or share, so the sheet doesn't land on its menu
 export const REVIEW_KEEP_DAYS = 10; // opened-day dates kept (the newest); only the count up to 3 matters
@@ -92,6 +96,20 @@ export function reviewMaybeAsk(deps = {}) {
       }
     }, delayMs);
   });
+}
+
+export let deepTimer = null;
+
+// Called with the main view's scale on every fractal render. A deep view that then stays put for
+// REVIEW_DEEP_IDLE_MS is a good moment to ask (the person is looking at what they found), so
+// every render restarts the wait and a shallower one cancels it. `deps` is for the spec.
+export function reviewNoteDeep(scale, deps = {}) {
+  const { isNative = Platform.isNative, idleMs = REVIEW_DEEP_IDLE_MS, ask = reviewMaybeAsk } = deps;
+  if (!isNative) return;
+  clearTimeout(deepTimer);
+  deepTimer = null;
+  if (!(scale < REVIEW_DEEP_SCALE)) return;
+  deepTimer = setTimeout(() => { deepTimer = null; ask(); }, idleMs);
 }
 
 reviewNoteOpen();
