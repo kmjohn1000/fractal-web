@@ -15,7 +15,7 @@ import { fractalLabel } from "../core/configs.js?v=1.80.6";
 import { limitScale } from "../core/deepzoom.js?v=1.80.6";
 import { isCurveMode, isIfsMode } from "../fractals/fractal-defs.js?v=1.80.6";
 import { cancelTeleport } from "./teleport.js?v=1.80.6";
-import { currentName, dualActive, els, mainState, mode, pushHistory } from "../core/state.js?v=1.80.6";
+import { currentName, dualActive, els, mainState, mode, pushHistory, shownGeometry } from "../core/state.js?v=1.80.6";
 import { markInteracting } from "../core/state-colors.js?v=1.80.6";
 import { requestRender } from "../render/render-layout.js?v=1.80.6";
 import { activeVectorTarget } from "./vector-interaction.js?v=1.80.6";
@@ -56,7 +56,7 @@ export function setCanvasA11y(canvas, role, label, valuetext, valuenow) {
 // What the current view is, for the canvas the mode shows. Plain data, no DOM writes.
 export function describeCanvas() {
   if (mode === "fractal") {
-    const s = mainState;
+    const s = shownGeometry(mainState); // the same depth whether or not the picture grew under a faded toolbar
     const place = landedPlaceName();
     const label = fractalLabel(currentName);
     const turn = rotationHudText(s.rotation);

@@ -5,7 +5,8 @@
 import { test, expect } from "@playwright/test";
 
 /* global setControlsFade, controlsFaded, mainState, els, toolbarGrow, setCenter, applyAutoIter, requestRender, lastMainDeepPath,
-   mainRenderer, buildShareUrl, applyShareState, parseShareHash, pushHistory, popHistory, setMode, enterDual */
+   mainRenderer, buildShareUrl, applyShareState, parseShareHash, pushHistory, popHistory, setMode, enterDual,
+   TELEPORT_DESTINATIONS, currentName, setTeleportLandingIndex, landedPlaceName, describeCanvas */
 
 const DELAY = 300;
 let pageErrors = [];
@@ -321,6 +322,38 @@ test("a share link made while faded is the same as one made while shown, and ope
   expect(await page.evaluate(() => toolbarGrow)).toBe(null);
   const st = await page.evaluate(() => ({ s: mainState.scale, x: mainState.cx }));
   expect(Math.abs(st.s / Number(a.s) - 1)).toBeLessThan(1e-6);
+});
+
+test("the info card and the screen-reader label read the same depth and place name while grown", async ({ page }) => {
+  await loadGrowable(page);
+  // Land on a Mandelbrot place with no turn, as a flight would leave it.
+  const ok = await page.evaluate(() => {
+    const i = TELEPORT_DESTINATIONS.findIndex((d) => d.fractal === currentName && d.rotation === undefined && d.scale > 1e-6);
+    if (i < 0) return false;
+    const d = TELEPORT_DESTINATIONS[i];
+    setCenter(mainState, Number(d.re), Number(d.im));
+    mainState.scale = d.scale;
+    setTeleportLandingIndex(i);
+    requestRender();
+    return true;
+  });
+  expect(ok, "a Mandelbrot place without a rotation exists").toBe(true);
+  await settle(page);
+  // The depth is compared as a number: the round trip through the tall geometry costs a few ulps, which can
+  // flip a rounded phrase that sits exactly on a boundary (1250x reads "1.3 thousand", 1249.99...x "1.2").
+  const read = () => page.evaluate(() => ({ place: landedPlaceName(), label: describeCanvas().label, depth: describeCanvas().valuenow }));
+  const shown = await read();
+  expect(shown.place).not.toBe("");
+  await fadeOn(page);
+  await waitGrown(page);
+  await settle(page);
+  const grown = await read();
+  expect(grown.place).toBe(shown.place);
+  expect(grown.label).toBe(shown.label);
+  expect(Math.abs(grown.depth - shown.depth)).toBeLessThan(1e-9);
+  // The control: the state itself is in the tall geometry, so reading it raw would differ.
+  const raw = await page.evaluate(() => Math.log2(mainState.baseScale / mainState.scale));
+  expect(Math.abs(raw - shown.depth)).toBeGreaterThan(0.05);
 });
 
 test("Back after growing returns to the view it was written for", async ({ page }) => {
