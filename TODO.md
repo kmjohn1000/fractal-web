@@ -55,6 +55,31 @@ privacy-label change.
 
 ## Now
 
+- [ ] Controls fade when idle (user idea 2026-11-14, for 1.x; preferred
+      over moving the detail slider to the bottom of the info card; not
+      approved to build). The toolbar row (`#fractalControls`, with the
+      detail slider) shows, then fades out after a few seconds with no
+      touch, and comes back on any touch of the screen. To settle when
+      built: the idle delay; what else fades (info card, compass, Julia
+      label) or stays; never fade while a sheet or menu is open, a slider is
+      being dragged, or focus is in the controls (keyboard, VoiceOver);
+      faded buttons take no taps (the touch that wakes them must not also
+      press one); a gesture still pans or zooms while waking them; reduced
+      motion snaps instead of fading; desktop wakes on mouse move. The
+      visual specs and the store screenshots need a test hook that keeps
+      the controls shown. `v2` replaces this toolbar, so it needs porting
+      when `main` is merged into `v2`.
+
+- [ ] First-run walkthrough in the app (user idea 2026-11-14, for 1.x;
+      not approved to build). A short orientation on first launch:
+      pinch to zoom, drag, twist to rotate, the die (Surprise me), Colors
+      and Share. Today only the website shows a one-line welcome card
+      (`initWelcomeCard`, `compass-ui.js`); the app shows nothing. Shown
+      once (stored like the welcome card's dismissal through `platform.js`),
+      skippable, readable by VoiceOver; it must not trip the rating prompt
+      or the cold open. `v2` changes the toolbar and opens with a flight,
+      so the steps differ there.
+
 - [ ] Revisit the Grayscale palette (user, 2026-11-10: "I may want to
       revisit grayscale"). It has a mid-grey stop, `[0.50, 150, 150, 150]`
       in `colormaps.js` (it was a straight black-to-white ramp up to
