@@ -11,7 +11,7 @@ import { Diag } from "../core/diag.js?v=1.80.6";
 import { EXTRA_MODES, isCurveMode, isIfsMode } from "../fractals/fractal-defs.js?v=1.80.6";
 import { limitScale } from "../core/deepzoom.js?v=1.80.6";
 import { COLOR_BANDS_RANGE, STYLE_LINK_CODES, colorStyle } from "../render/color-styles.js?v=1.80.6";
-import { HEXAFLAKE_DEFAULT_DEPTH, HEXAFLAKE_MAX_DEPTH, currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, juliaState, kochState, mainState, mode, treeState, vectorColors } from "../core/state.js?v=1.80.6";
+import { HEXAFLAKE_DEFAULT_DEPTH, HEXAFLAKE_MAX_DEPTH, currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, juliaState, kochState, mainState, mode, shownGeometry, treeState, vectorColors } from "../core/state.js?v=1.80.6";
 import { colormapIndex, colormapIndexNamed, defaultColormapName, setColorStyle, setColormapIndex, setColormapPicked } from "../core/state-colors.js?v=1.80.6";
 import { requestRender, updateLUT } from "../render/render-layout.js?v=1.80.6";
 import { exactFromLink, exactLinkFields, normalizeAngle, setCenter } from "../core/view-math.js?v=1.80.6";
@@ -42,7 +42,7 @@ export function buildShareHash() {
   p.set("m", mode);
   const put = (k, v) => p.set(k, String(v));
   if (mode === "fractal") {
-    const s = mainState;
+    const s = shownGeometry(mainState); // as if the toolbar were showing, whether or not it has faded
     p.set("f", currentName);
     put("x", s.cx); put("y", s.cy); put("s", s.scale); put("r", s.rotation || 0);
     // A deep view's exact center (ex, ey: signed hex of a 2^-192 fixed point), only when the doubles aren't it.

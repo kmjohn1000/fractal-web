@@ -12,7 +12,7 @@ import { digitFractalDepth, isDigitFractal } from "../fractals/digit-fractals.js
 import { DEEP_ZOOM_THRESHOLD, atZoomLimit, deepZoomEligible, isSineType, newtonDeepEligible, perturbationEligibleType, phoenixDeepEligible } from "../core/deepzoom.js?v=1.80.6";
 import { TELEPORT_DESTINATIONS } from "../fractals/places.js?v=1.80.6";
 import { COLOR_STYLES, ESCAPE_TIME_TYPES, colorStyle, styleDrawn } from "../render/color-styles.js?v=1.80.6";
-import { currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, hexaflakeView, isInteracting, kochState, kochView, mainRenderer, mainState, mode, treeState, treeView } from "../core/state.js?v=1.80.6";
+import { currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, hexaflakeView, isInteracting, kochState, kochView, mainRenderer, mainState, mode, shownGeometry, toolbarGrow, treeState, treeView } from "../core/state.js?v=1.80.6";
 import { colormapIndex } from "../core/state-colors.js?v=1.80.6";
 import { dualPresetName } from "./modes.js?v=1.80.6";
 import { teleportLandingIndex } from "./teleport.js?v=1.80.6";
@@ -112,11 +112,16 @@ export function updateJuliaLabel() {
 // The Surprise-me / Places destination's name while the main view is still the one the flight landed on
 // (any move, zoom or turn away from it ends the match; mod 2pi, so a landing at PI still matches a rotation
 // stored as -PI), else "". Shared by the info card and the canvas's screen-reader label (canvas-a11y.js).
+// While the picture has grown into a faded toolbar's space (controls-fade.js), the view is compared as if the
+// toolbar were showing; converting back costs a few ulps, so that case matches within 1e-9 of the scale.
 export function landedPlaceName() {
-  const s = mainState;
+  const s = shownGeometry(mainState);
   const d = TELEPORT_DESTINATIONS[teleportLandingIndex];
-  const sameTurn = !d || d.rotation === undefined || Math.abs(normalizeAngle((s.rotation || 0) - d.rotation)) < 1e-12;
-  return d && d.fractal === currentName && Number(d.re) === s.cx && Number(d.im) === s.cy && d.scale === s.scale && sameTurn ? d.label : "";
+  if (!d || d.fractal !== currentName) return "";
+  const sameTurn = d.rotation === undefined || Math.abs(normalizeAngle((s.rotation || 0) - d.rotation)) < 1e-12;
+  const tol = toolbarGrow ? 1e-9 * s.scale : 0;
+  const same = Math.abs(Number(d.re) - s.cx) <= tol && Math.abs(Number(d.im) - s.cy) <= tol && Math.abs(d.scale - s.scale) <= tol;
+  return same && sameTurn ? d.label : "";
 }
 
 // deepPath: the main pane's last render() result ("perturbation", "fixed point" or null), which
@@ -167,9 +172,11 @@ export function updateHud(deepPath) {
   // that sets one (any turn away from it ends the match; mod 2pi, so a
   // landing at PI still matches a rotation stored as -PI).
   const place = landedPlaceName();
-  const f = formatHudCoords(s.cx, s.cy, s.scale);
+  // The centre and depth read the same whether or not the picture has grown under a faded toolbar.
+  const shown = shownGeometry(s);
+  const f = formatHudCoords(shown.cx, shown.cy, shown.scale);
   const label = fractalLabel(currentName);
-  const deep = zoomPhrase(s.baseScale, s.scale);
+  const deep = zoomPhrase(s.baseScale, shown.scale);
   const styleHud = colorStyleHud(s);
   setHud(place || label, [
     place ? `${label}, ${deep}` : capitalize(deep),
