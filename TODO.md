@@ -79,6 +79,12 @@ privacy-label change.
       skippable, readable by VoiceOver; it must not trip the rating prompt
       or the cold open. `v2` changes the toolbar and opens with a flight,
       so the steps differ there.
+      Design (user, 2026-11-14): coach marks, small bubbles one at a time
+      pointing at the real thing, tap for the next, Skip on each; app only
+      (the website keeps its welcome card); covers pinch and drag, twist to
+      rotate, the die (Surprise me), and Colors, Places and Share. Build it
+      after "Controls fade when idle" lands: the controls stay shown while
+      the marks are up.
 
 - [ ] Revisit the Grayscale palette (user, 2026-11-10: "I may want to
       revisit grayscale"). It has a mid-grey stop, `[0.50, 150, 150, 150]`
