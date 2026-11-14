@@ -47,6 +47,7 @@ const APP_SHELL = [
   "./src/fractals/places.js",
   "./src/fractals/pythagoras.js",
   "./src/ui/color-sheet.js",
+  "./src/ui/controls-fade.js",
   "./src/ui/colormap-picker.js",
   "./src/ui/compass-ui.js",
   "./src/ui/fractal-picker.js",
