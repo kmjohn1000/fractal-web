@@ -2,6 +2,10 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.81.0 — 2026-11-14
+- Changed: the toolbar fades away after a few seconds without a touch, and the picture grows to fill the screen; touch anywhere to bring the toolbar back. A touch on a faded toolbar only wakes it, it doesn't press a button, and a drag or pinch still moves the picture.
+- The toolbar stays while a sheet or menu is open, while you drag a slider and while the keyboard is in it. With Reduce Motion it hides without fading. Share links, Back and the info card read the same whether or not the picture has grown.
+
 ## 1.80.6 — 2026-11-13
 - Changed: in the iPhone and iPad app, the rating request can now come after the second day you open the app (it was the third), and also after you rest on a very deep zoom, not only after you save or share a picture.
 
