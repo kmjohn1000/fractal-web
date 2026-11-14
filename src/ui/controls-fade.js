@@ -14,8 +14,45 @@
 // toolbar (:focus-visible), or the website welcome card shows. Focus moving into the toolbar wakes it.
 // Under automation (Playwright) it is off by default so screenshots and timings stay deterministic; the
 // controls-fade spec turns it on with setControlsFade.
-import { els } from "../core/state.js?v=1.80.6";
+import { dualActive, els, isInteracting, mainState, mode, setToolbarGrow, toolbarGrow } from "../core/state.js?v=1.80.6";
+import { resizeView } from "../core/view-math.js?v=1.80.6";
+import { layoutCanvasArea, renderAll, requestRender } from "../render/render-layout.js?v=1.80.6";
 import { prefersReducedMotion } from "./compass-ui.js?v=1.80.6";
+
+// The picture grows into the toolbar's space while the toolbar is faded (a single fractal view only: the
+// vector modes and dual view fade the toolbar but keep their size). The toolbar becomes a fixed overlay
+// (class "overlay"), so the canvas area fills the screen; the view is adjusted (resizeView) so the picture
+// stays where it is and new rows appear at the bottom, then drawn at once, in the same task as the layout
+// change, so there is no stretched or blank frame. Waking puts the toolbar back over the bottom of the
+// picture; the canvas does not shrink again until an ordinary layout change (window resize, a mode switch,
+// dual view): restoreToolbarFlow puts the view back to the shown-toolbar geometry first.
+// Returns true when grown, "busy" when a gesture or flight is running (try again soon), false otherwise.
+export function growIntoToolbar() {
+  if (toolbarGrow) return true;
+  if (mode !== "fractal" || dualActive || !mainState) return false;
+  if (isInteracting) return "busy";
+  const hs = els.mainCanvas.clientHeight;
+  cfToolbar.classList.add("overlay");
+  const ht = els.mainCanvas.clientHeight; // reading it lays the page out
+  if (ht <= hs + 1) { cfToolbar.classList.remove("overlay"); return false; }
+  resizeView(mainState, hs, ht);
+  setToolbarGrow({ hs, ht });
+  layoutCanvasArea();
+  renderAll();
+  return true;
+}
+
+// Back to the toolbar in the page flow, with the view in the shown geometry. The caller renders (or is
+// about to). Wakes the toolbar: a layout change is an interaction.
+export function restoreToolbarFlow() {
+  if (!toolbarGrow) return;
+  const g = toolbarGrow;
+  setToolbarGrow(null);
+  if (mainState) resizeView(mainState, g.ht, g.hs);
+  cfToolbar.classList.remove("overlay");
+  if (cfFaded) wakeControls();
+  layoutCanvasArea();
+}
 
 export const CF_DEFAULT_MS = 4000;
 
@@ -30,6 +67,7 @@ export let cfSliderHeld = false;
 export let cfFaded = false;
 export let cfInertTimer = 0;
 export let cfSwallowClickUntil = 0;
+export let cfGrowTimer = 0;
 
 export function controlsFaded() { return cfFaded; }
 
@@ -56,6 +94,13 @@ export function cfFade() {
   cfToolbar.classList.add("inert");
   cfToolbar.classList.toggle("noFadeAnim", prefersReducedMotion());
   cfToolbar.classList.add("faded");
+  cfGrowSoon();
+}
+
+export function cfGrowSoon() {
+  clearTimeout(cfGrowTimer);
+  if (!cfFaded) return;
+  if (growIntoToolbar() === "busy") cfGrowTimer = setTimeout(cfGrowSoon, 500);
 }
 
 export function cfDropInert() {
@@ -65,6 +110,7 @@ export function cfDropInert() {
 
 // fromDown: the wake is a pointer-down. The toolbar stays inert until that pointer ends.
 export function wakeControls(fromDown = false, onToolbar = false) {
+  clearTimeout(cfGrowTimer);
   if (cfFaded) {
     cfFaded = false;
     cfToolbar.classList.toggle("noFadeAnim", prefersReducedMotion());
@@ -90,6 +136,7 @@ export function setControlsFade({ enabled = cfConfig.enabled, delayMs = cfConfig
   if (!enabled) {
     clearTimeout(cfTimer);
     cfFaded = false;
+    if (toolbarGrow) { restoreToolbarFlow(); requestRender(); }
     cfDropInert();
     cfToolbar.classList.remove("faded");
   } else {
@@ -111,6 +158,13 @@ window.addEventListener("pointermove", (e) => {
   if (e.pointerType === "mouse") wakeControls();
 }, { capture: true, passive: true });
 window.addEventListener("keydown", () => wakeControls(), { capture: true, passive: true });
+// A window resize or an orientation change is an ordinary layout change: back to the toolbar in the flow
+// (and showing); the app's own resize listener renders.
+window.addEventListener("resize", () => {
+  if (!toolbarGrow) return;
+  restoreToolbarFlow();
+  requestRender();
+});
 cfToolbar.addEventListener("focusin", () => wakeControls());
 cfToolbar.addEventListener("focusout", () => cfArm());
 // A tap that woke the toolbar must not also click a button in it.

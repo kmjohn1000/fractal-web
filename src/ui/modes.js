@@ -14,6 +14,7 @@ import { applyDefaultColormap } from "../core/state-colors.js?v=1.80.6";
 import { crosshairFlash, labelColormapButton, layoutCanvasArea, requestRender } from "../render/render-layout.js?v=1.80.6";
 import { dragonNav, fernNav, fitVectorView, fittedVectorModes } from "./vector-interaction.js?v=1.80.6";
 import { cancelTeleport } from "./teleport.js?v=1.80.6";
+import { restoreToolbarFlow } from "./controls-fade.js?v=1.80.6";
 import { stopDepthPlay } from "./pattern-controls.js?v=1.80.6";
 import { updateColorSwatches } from "./colormap-picker.js?v=1.80.6";
 import { applyCornerRule, dealCornerRule } from "../fractals/corner-rules.js?v=1.80.6";
@@ -30,6 +31,7 @@ export const fractalMemory = new Map();
 
 export function selectFractal(name, { fresh = false } = {}) {
   cancelTeleport();
+  restoreToolbarFlow(); // the picture goes back to the shown-toolbar size before the view is worked out
   if (dualActive && FRACTAL_CONFIGS[name].dualParent) { openPresetInDual(name); return; }
   // Picking the fractal already showing keeps its view; it only leaves a
   // vector mode (whose switch back lands here too).
@@ -87,6 +89,7 @@ export function selectFractal(name, { fresh = false } = {}) {
 // from: a remembered { juliaState, juliaHistory } (see selectFractal) to bring
 // back instead of opening a fresh Julia pane.
 export function enterDual(from = null) {
+  restoreToolbarFlow();
   const config = FRACTAL_CONFIGS[currentName];
   if (!config.dual) return;
   setDualActive(true);
@@ -190,6 +193,7 @@ export function exitDual() {
 }
 
 export function setMode(next) {
+  restoreToolbarFlow();
   stopDepthPlay();
   kochView.cancelGrow();
   fernView.cancelReplay(); // any mode or shape switch ends a replay; the requestRender below draws normally

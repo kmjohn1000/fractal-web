@@ -203,6 +203,26 @@ export function setCenter(state, cx, cy, ex = null, ey = null, ef = EXACT_BITS) 
   state.ef = ok ? ef : null;
 }
 
+// A pane whose canvas changes height with its top edge fixed (the toolbar fading away, see controls-fade.js).
+// state.scale is a half-height, so keeping the pixel size means scaling it by toH / fromH, and the new
+// center sits (toH - fromH) / 2 CSS px below the old one on screen. The shift is a world offset worked out
+// from the old geometry (same rotation and flipY handling as screenToComplex), applied through moveCenter so
+// a deep view keeps its exact center. The picture on screen is unchanged: the same pixels, plus or minus rows
+// at the bottom. resizeView(state, a, b) and then resizeView(state, b, a) return to the same view.
+export function geometryShift(state, fromH, toH) {
+  const uvy = -(toH - fromH) / (2 * fromH);
+  const rot = state.rotation || 0;
+  const wx = -uvy * Math.sin(rot);
+  const wy = uvy * Math.cos(rot) * (state.flipY ? -1 : 1);
+  return { ox: wx * state.scale * 2.0, oy: wy * state.scale * 2.0 };
+}
+
+export function resizeView(state, fromH, toH) {
+  const { ox, oy } = geometryShift(state, fromH, toH);
+  moveCenter(state, ox, oy);
+  state.scale *= toH / fromH;
+}
+
 // Wraps an angle to (-PI, PI]. cos/sin are periodic, so this never changes
 // what's rendered (rotation=720deg looks identical to 0deg either way) —
 // it's purely for the HUD display, which otherwise showed "720deg" instead

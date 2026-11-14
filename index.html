@@ -322,6 +322,8 @@
   #controls.faded { opacity: 0; }
   #controls.inert { pointer-events: none; }
   #controls.noFadeAnim { transition: none; }
+  /* The picture has grown into the toolbar's space: the toolbar floats over the bottom of it, opaque as before. */
+  #controls.overlay { position: fixed; left: 0; right: 0; bottom: 0; }
   @media (prefers-reduced-motion: reduce) { #controls { transition: none; } }
   .control-row:not(:last-child) { border-bottom: 0.5px solid rgba(255,255,255,0.1); }
   /* Every mode's buttons share one order: picker, color, info, then the

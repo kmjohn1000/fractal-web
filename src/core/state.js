@@ -17,7 +17,7 @@ import { createPythagorasTreeView } from "../fractals/pythagoras.js?v=1.80.6";
 import { suggestedMaxIter, viewFromBounds } from "../fractals/fractal-defs.js?v=1.80.6";
 import { ignoresMaxIter } from "../fractals/digit-fractals.js?v=1.80.6";
 import { createFractalRenderer } from "../render/renderer.js?v=1.80.6";
-import { exactFrac, exactValid } from "./view-math.js?v=1.80.6";
+import { exactFrac, exactValid, resizeView } from "./view-math.js?v=1.80.6";
 
 // ---------------------------------------------------------------- app state
 
@@ -237,8 +237,20 @@ export function shownPane() {
   return dualActive && activePane === "julia" && juliaState ? "julia" : "main";
 }
 
+// While the toolbar has faded and the picture has grown into its space (controls-fade.js), the main view is in
+// the tall canvas's geometry: { hs, ht } are the canvas heights shown and grown. Share links and Back history
+// are always written in the shown geometry, so they don't depend on whether the toolbar is faded.
+export let toolbarGrow = null;
+export function setToolbarGrow(v) { toolbarGrow = v; }
+export function shownGeometry(st) {
+  if (!toolbarGrow || st !== mainState) return st;
+  const copy = { ...st };
+  resizeView(copy, toolbarGrow.ht, toolbarGrow.hs);
+  return copy;
+}
+
 export function pushHistory(pane) {
-  const st = paneState(pane);
+  const st = shownGeometry(paneState(pane));
   const hist = paneHistory(pane);
   if (!st) return;
   hist.push({ cx: st.cx, cy: st.cy, ex: exactValid(st) ? st.ex : null, ey: exactValid(st) ? st.ey : null, ef: exactValid(st) ? exactFrac(st) : null, scale: st.scale, rotation: st.rotation || 0, flipY: !!st.flipY });

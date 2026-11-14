@@ -4,7 +4,8 @@
 // each test turns it on with a 300 ms delay. Run through `npm run test:visual`.
 import { test, expect } from "@playwright/test";
 
-/* global setControlsFade, controlsFaded, mainState, els */
+/* global setControlsFade, controlsFaded, mainState, els, toolbarGrow, setCenter, applyAutoIter, requestRender, lastMainDeepPath,
+   mainRenderer, buildShareUrl, applyShareState, parseShareHash, pushHistory, popHistory, setMode, enterDual */
 
 const DELAY = 300;
 let pageErrors = [];
@@ -192,4 +193,181 @@ test("the other modes' control rows fade with the same toolbar", async ({ page }
   await waitFaded(page);
   await expect(page.locator("#kochControls")).toBeVisible(); // still laid out, only transparent
   await expect(bar(page)).toHaveCSS("opacity", "0", { timeout: 3000 });
+});
+
+// ---------------------------------------------------------------- the picture grows into the toolbar's space
+
+const DRIVER = new URL("../driver.js", import.meta.url).pathname;
+const settle = (page) => page.waitForFunction(() => window["__vt"].settled(), null, { timeout: 90_000, polling: 50 });
+const canvasH = (page) => page.evaluate(() => els.mainCanvas.clientHeight);
+const waitGrown = (page) => expect.poll(() => page.evaluate(() => !!toolbarGrow), { timeout: 5000 }).toBe(true);
+
+async function loadGrowable(page) {
+  await load(page);
+  await page.addScriptTag({ path: DRIVER });
+  await settle(page);
+}
+
+// A deep (perturbation) place and an exact-center one, as view states.
+const VIEWS = {
+  normal: null,
+  deep: { cx: -0.743643887037151, cy: 0.13182590420533, scale: 3e-7 },
+  exact: { cx: -0.743643887037151, cy: 0.13182590420533, scale: 1e-11 },
+};
+async function setView(page, v) {
+  if (!v) return;
+  await page.evaluate((view) => {
+    setCenter(mainState, view.cx, view.cy);
+    mainState.scale = view.scale;
+    mainState.iterAutoLocked = false;
+    applyAutoIter();
+    requestRender();
+  }, v);
+  await settle(page);
+}
+// The top rows of the main canvas, as RGBA bytes.
+const topRows = (page, rows = 160) => page.evaluate((n) => {
+  const c = els.mainCanvas;
+  const t = document.createElement("canvas");
+  t.width = c.width; t.height = Math.min(n, c.height);
+  const g = t.getContext("2d");
+  g.drawImage(c, 0, 0, c.width, t.height, 0, 0, c.width, t.height);
+  return Array.from(g.getImageData(0, 0, t.width, t.height).data);
+}, rows);
+function diffStats(a, b) {
+  expect(a.length).toBe(b.length);
+  let sum = 0, over = 0;
+  for (let i = 0; i < a.length; i += 4) {
+    const d = (Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2])) / 3;
+    sum += d;
+    if (d > 40) over++;
+  }
+  return { mean: sum / (a.length / 4), over: over / (a.length / 4) };
+}
+
+for (const [name, view] of Object.entries(VIEWS)) {
+  test(`the canvas grows when faded and the picture does not jump (${name} depth)`, async ({ page }) => {
+    await loadGrowable(page);
+    await setView(page, view);
+    const before = await topRows(page);
+    const h0 = await canvasH(page);
+    const scale0 = await page.evaluate(() => mainState.scale);
+    await fadeOn(page);
+    await waitGrown(page);
+    await settle(page);
+    const h1 = await canvasH(page);
+    expect(h1).toBeGreaterThan(h0 + 20);
+    await expect(bar(page)).toHaveClass(/\boverlay\b/);
+    // The pixel size is kept: a half-height scales with the canvas height.
+    const scale1 = await page.evaluate(() => mainState.scale);
+    expect(Math.abs(scale1 / scale0 - h1 / h0)).toBeLessThan(1e-9);
+    if (name !== "normal") expect(await page.evaluate(() => lastMainDeepPath)).not.toBe(null);
+    const after = await topRows(page);
+    const { mean, over } = diffStats(before, after);
+    // Control: the same picture moved down by a few rows must read as clearly different, or the probe is blind.
+    const dpr = await page.evaluate(() => window.devicePixelRatio);
+    const rowBytes = (before.length / 160) | 0;
+    const moved = diffStats(before.slice(0, before.length - rowBytes * 6 * dpr), after.slice(rowBytes * 6 * dpr, after.length - 0 - (after.length - before.length)));
+    if (name !== "normal") expect(moved.over, "control: a 6 px shift is detectable").toBeGreaterThan(0.05); // the default view is mostly black
+    // A redraw differs a little in the grain of the sharpening passes; a jump of even a few rows is far more.
+    expect(mean, "mean difference of the top rows").toBeLessThan(4);
+    expect(over, "share of pixels clearly different").toBeLessThan(0.002);
+    expect(pageErrors).toEqual([]);
+  });
+}
+
+test("waking keeps the canvas tall and does not render again", async ({ page }) => {
+  await loadGrowable(page);
+  await fadeOn(page, 1500);
+  await waitGrown(page);
+  await settle(page);
+  await page.evaluate(() => {
+    window["__renders"] = 0;
+    const r = mainRenderer, a = r.render, b = r.renderPreview;
+    r.render = (...x) => { window["__renders"]++; return a.apply(r, x); };
+    r.renderPreview = (...x) => { window["__renders"]++; return b.apply(r, x); };
+  });
+  const h = await canvasH(page);
+  await page.keyboard.press("Shift");
+  await expect(bar(page)).toHaveCSS("opacity", "1", { timeout: 3000 });
+  await page.waitForTimeout(400);
+  expect(await canvasH(page)).toBe(h);
+  expect(await page.evaluate(() => window["__renders"])).toBe(0);
+  expect(await page.evaluate(() => !!toolbarGrow)).toBe(true);
+  // The toolbar sits over the bottom of the picture.
+  const box = await bar(page).boundingBox();
+  const vh = await page.evaluate(() => window.innerHeight);
+  expect(Math.round(box.y + box.height)).toBe(vh);
+});
+
+test("a share link made while faded is the same as one made while shown, and opens the same view", async ({ page }) => {
+  await loadGrowable(page);
+  await setView(page, VIEWS.deep);
+  const fields = (url) => Object.fromEntries(new URLSearchParams(new URL(url).hash.slice(1)));
+  const shown = await page.evaluate(() => buildShareUrl());
+  await fadeOn(page);
+  await waitGrown(page);
+  await settle(page);
+  const grownScale = await page.evaluate(() => mainState.scale);
+  const faded = await page.evaluate(() => buildShareUrl());
+  const a = fields(shown), b = fields(faded);
+  expect(Number(a.s) / grownScale).not.toBeCloseTo(1, 3); // the state itself is in the tall geometry
+  for (const k of ["x", "y", "s", "r"]) {
+    const rel = Math.abs(Number(a[k]) - Number(b[k])) / Math.max(Math.abs(Number(a[k])), Number(a.s));
+    expect(rel, `link field ${k}`).toBeLessThan(1e-6);
+  }
+  // Opening the link while grown goes back to the shown layout at that view.
+  await page.evaluate((u) => applyShareState(parseShareHash(new URL(u).hash)), faded);
+  expect(await page.evaluate(() => toolbarGrow)).toBe(null);
+  const st = await page.evaluate(() => ({ s: mainState.scale, x: mainState.cx }));
+  expect(Math.abs(st.s / Number(a.s) - 1)).toBeLessThan(1e-6);
+});
+
+test("Back after growing returns to the view it was written for", async ({ page }) => {
+  await loadGrowable(page);
+  await fadeOn(page);
+  await waitGrown(page);
+  await settle(page);
+  const before = await page.evaluate(() => ({ cx: mainState.cx, cy: mainState.cy, scale: mainState.scale }));
+  await page.evaluate(() => { pushHistory("main"); mainState.scale *= 0.5; popHistory("main"); });
+  const after = await page.evaluate(() => ({ cx: mainState.cx, cy: mainState.cy, scale: mainState.scale }));
+  expect(Math.abs(after.scale / before.scale - 1)).toBeLessThan(1e-9);
+  expect(Math.abs(after.cx - before.cx)).toBeLessThan(1e-9 * before.scale);
+  expect(Math.abs(after.cy - before.cy)).toBeLessThan(1e-9 * before.scale);
+});
+
+test("a window resize while faded puts the toolbar back in the flow, showing, with the same view", async ({ page, viewport }) => {
+  await loadGrowable(page);
+  const scale0 = await page.evaluate(() => mainState.scale);
+  await fadeOn(page, 1500); // long enough to look before it fades again
+  await waitGrown(page);
+  await page.setViewportSize({ width: viewport.width, height: viewport.height - 40 });
+  await expect.poll(() => page.evaluate(() => toolbarGrow), { timeout: 5000 }).toBe(null);
+  expect(await isFaded(page)).toBe(false);
+  await expect(bar(page)).not.toHaveClass(/\boverlay\b/);
+  expect(Math.abs((await page.evaluate(() => mainState.scale)) / scale0 - 1)).toBeLessThan(1e-9);
+  // It fades and grows again after another idle delay.
+  await waitGrown(page);
+  expect(pageErrors).toEqual([]);
+});
+
+test("a mode switch while faded goes back to the flow first", async ({ page }) => {
+  await loadGrowable(page);
+  await fadeOn(page);
+  await waitGrown(page);
+  await page.evaluate(() => setMode("koch"));
+  expect(await page.evaluate(() => toolbarGrow)).toBe(null);
+  await expect(bar(page)).not.toHaveClass(/\boverlay\b/);
+});
+
+test("only a single fractal view grows: the toolbar fades but dual view keeps its size", async ({ page }) => {
+  await loadGrowable(page);
+  await page.evaluate(() => { enterDual(); });
+  await settle(page);
+  const h = await canvasH(page);
+  await fadeOn(page);
+  await waitFaded(page);
+  await page.waitForTimeout(400);
+  expect(await page.evaluate(() => toolbarGrow)).toBe(null);
+  expect(await canvasH(page)).toBe(h);
 });

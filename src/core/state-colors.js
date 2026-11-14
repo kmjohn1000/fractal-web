@@ -7,10 +7,10 @@
 import { COLORMAPS } from "../render/colormaps.js?v=1.80.6";
 import { FRACTAL_CONFIGS } from "./configs.js?v=1.80.6";
 import { COLOR_BANDS_RANGE, COLOR_STYLES, colorStyle } from "../render/color-styles.js?v=1.80.6";
-import { applyAutoIter, currentName, els, paneHistory, paneState, setIsInteracting } from "./state.js?v=1.80.6";
+import { applyAutoIter, currentName, els, mainState, paneHistory, paneState, setIsInteracting, toolbarGrow } from "./state.js?v=1.80.6";
 import { labelColormapButton, renderAll, requestRender, updateLUT } from "../render/render-layout.js?v=1.80.6";
 import { buildShareHash } from "../ui/share.js?v=1.80.6";
-import { setCenter } from "./view-math.js?v=1.80.6";
+import { resizeView, setCenter } from "./view-math.js?v=1.80.6";
 
 // ---------------------------------------------------------------- default colormaps
 
@@ -163,6 +163,8 @@ export function popHistory(pane) {
   const st = paneState(pane);
   setCenter(st, snap.cx, snap.cy, snap.ex, snap.ey, snap.ef ?? undefined);
   st.scale = snap.scale; st.rotation = snap.rotation ?? 0; st.flipY = !!snap.flipY;
+  // History is kept in the shown geometry; with the picture grown over the faded toolbar, put the entry in that one.
+  if (toolbarGrow && st === mainState) resizeView(st, toolbarGrow.hs, toolbarGrow.ht);
   applyAutoIter();
   renderAll();
 }
