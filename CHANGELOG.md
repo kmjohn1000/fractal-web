@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.82.0 — 2026-11-14
+- New: in the iPhone and iPad app, the first launch shows a short tour: small bubbles, one at a time, for pinch and drag, twisting to turn the picture, the die, Colors, the fractal picker and its Places, and Share. Tap anywhere for the next one, or Skip. It shows once, and not to anyone who already used the app. The website keeps its welcome card.
+
 ## 1.81.0 — 2026-11-14
 - Changed: the toolbar fades away after a few seconds without a touch, and the picture grows to fill the screen; touch anywhere to bring the toolbar back. A touch on a faded toolbar only wakes it, it doesn't press a button, and a drag or pinch still moves the picture.
 - The toolbar stays while a sheet or menu is open, while you drag a slider and while the keyboard is in it. With Reduce Motion it hides without fading. Share links, Back and the info card read the same whether or not the picture has grown.

@@ -11,13 +11,13 @@
 // moves a slider under the finger. The listeners only watch (capture, passive): canvas gestures run as usual.
 //
 // Never fades while: a sheet or menu inside the toolbar is open, a slider is held, keyboard focus is in the
-// toolbar (:focus-visible), or the website welcome card shows. Focus moving into the toolbar wakes it.
+// toolbar (:focus-visible), or the website welcome card or the app's first-run tour shows. Focus moving into the toolbar wakes it.
 // Under automation (Playwright) it is off by default so screenshots and timings stay deterministic; the
 // controls-fade spec turns it on with setControlsFade.
-import { dualActive, els, isInteracting, mainState, mode, setToolbarGrow, toolbarGrow } from "../core/state.js?v=1.81.0";
-import { resizeView } from "../core/view-math.js?v=1.81.0";
-import { layoutCanvasArea, renderAll, requestRender } from "../render/render-layout.js?v=1.81.0";
-import { prefersReducedMotion } from "./compass-ui.js?v=1.81.0";
+import { dualActive, els, isInteracting, mainState, mode, setToolbarGrow, toolbarGrow } from "../core/state.js?v=1.82.0";
+import { resizeView } from "../core/view-math.js?v=1.82.0";
+import { layoutCanvasArea, renderAll, requestRender } from "../render/render-layout.js?v=1.82.0";
+import { prefersReducedMotion } from "./compass-ui.js?v=1.82.0";
 
 // The picture grows into the toolbar's space while the toolbar is faded (a single fractal view only: the
 // vector modes and dual view fade the toolbar but keep their size). The toolbar becomes a fixed overlay
@@ -76,6 +76,7 @@ export function controlsBusy() {
   if (cfSliderHeld) return true;
   if (cfToolbar.querySelector(".open")) return true; // color, places, share, fractal picker
   if (els.welcome && !els.welcome.classList.contains("hidden")) return true;
+  if (els.tour && !els.tour.classList.contains("hidden")) return true; // the app's first-run tour points at the toolbar
   if (cfToolbar.querySelector(":focus-visible")) return true;
   return false;
 }

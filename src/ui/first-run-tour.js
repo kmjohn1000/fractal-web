@@ -1,0 +1,168 @@
+// The app's first-run tour: a few coach marks on the first launch, one small bubble at a time, each
+// pointing at the real control (a ring round it) or floating over the picture for the gestures. A tap
+// anywhere, or Next, goes on; Skip (or Escape) ends it. Shown once, in the iOS app only: the website
+// keeps its welcome card (compass-ui.js). Someone who opened the app on an earlier day (before the tour
+// existed) never sees it. Readable by VoiceOver: a modal dialog whose bubble takes focus at each step.
+// The toolbar stays shown while it is up (controls-fade.js controlsBusy reads #tour).
+//
+// An ES module: every top-level declaration is exported (test-hooks.js relies on it), hence the tour
+// prefix on the names (they become flat test globals). Needs platform.js, state.js, controls-fade.js and
+// review-prompt.js (its record of the days the app was opened).
+import { Platform } from "../core/platform.js?v=1.82.0";
+import { els } from "../core/state.js?v=1.82.0";
+import { cfArm, wakeControls } from "./controls-fade.js?v=1.82.0";
+import { reviewDayKey, reviewLoad } from "./review-prompt.js?v=1.82.0";
+
+export const TOUR_DELAY_MS = 1200; // after load, so the launch screen has faded into the first picture
+
+// A step with `targets` points at the first of those controls that shows (the toolbar differs by mode);
+// a step whose controls are all hidden is left out. A step without targets floats over the picture.
+export const TOUR_STEPS = [
+  { text: "Pinch to zoom in and out. Drag to move around." },
+  { text: "Twist two fingers to turn the picture." },
+  { targets: ["#teleportBtn"], text: "Tap the die to fly to a surprise place." },
+  { targets: ["#colormapBtn", "#fernColorBtn"], text: "Colors: palettes and Looks that restyle the picture." },
+  { targets: [".fractalMenuBtn"], text: "Pick another fractal here, or browse Places to dive into." },
+  { targets: [".shareBtn"], text: "Save the picture to Photos, or share a link to this exact view." },
+];
+
+export const tourRing = document.getElementById("tourRing");
+export const tourBubble = document.getElementById("tourBubble");
+export const tourText = document.getElementById("tourText");
+export const tourCount = document.getElementById("tourCount");
+export const tourSkip = document.getElementById("tourSkip");
+export const tourNextBtn = document.getElementById("tourNext");
+
+export let tourSteps = []; // the steps shown this time
+export let tourIndex = -1;
+export let tourFocusBefore = null;
+
+export function tourShowing() {
+  return !els.tour.classList.contains("hidden");
+}
+
+// The step's control as shown now, or null.
+export function tourTarget(step) {
+  if (!step.targets) return null;
+  for (const sel of step.targets) {
+    for (const el of document.querySelectorAll(sel)) {
+      const r = el.getBoundingClientRect();
+      if (el.offsetParent !== null && r.width > 0 && r.height > 0) return el;
+    }
+  }
+  return null;
+}
+
+// Someone who opened the app on a day before today already knows their way round.
+export function tourIsReturning(today = reviewDayKey()) {
+  return reviewLoad().days.some((d) => d !== today);
+}
+
+// Called once at load (app.js). Starts the tour after TOUR_DELAY_MS when it is due.
+export function maybeStartTour() {
+  if (!Platform.tour.isDue()) return;
+  if (tourIsReturning()) { Platform.tour.done(); return; }
+  setTimeout(startTour, TOUR_DELAY_MS);
+}
+
+export function startTour() {
+  if (tourShowing()) return;
+  tourSteps = TOUR_STEPS.filter((s) => !s.targets || tourTarget(s));
+  if (!tourSteps.length) return;
+  tourFocusBefore = document.activeElement;
+  wakeControls();
+  els.tour.classList.remove("hidden");
+  tourIndex = 0;
+  tourShow(true);
+}
+
+export function tourNext() {
+  if (tourIndex + 1 >= tourSteps.length) { endTour(); return; }
+  tourIndex++;
+  tourShow(true);
+}
+
+export function endTour() {
+  if (!tourShowing()) return;
+  Platform.tour.done();
+  els.tour.classList.add("hidden");
+  tourIndex = -1;
+  const back = tourFocusBefore;
+  tourFocusBefore = null;
+  if (back && back !== document.body && back.isConnected && typeof back.focus === "function") back.focus({ preventScroll: true });
+  else if (els.tour.contains(document.activeElement)) document.activeElement.blur();
+  cfArm(); // the toolbar's idle wait starts now
+}
+
+// Draws the current step. `fresh` is a new step (it animates in and takes focus); a re-layout redraws
+// in place.
+export function tourShow(fresh = false) {
+  const step = tourSteps[tourIndex];
+  if (!step) return;
+  const last = tourIndex === tourSteps.length - 1;
+  tourText.textContent = step.text;
+  tourCount.textContent = `${tourIndex + 1} of ${tourSteps.length}`;
+  tourNextBtn.textContent = last ? "Done" : "Next";
+  tourSkip.classList.toggle("hidden", last);
+
+  if (fresh) {
+    tourBubble.classList.add("again"); // restart the fade-in
+    void tourBubble.offsetWidth;
+    tourBubble.classList.remove("again");
+  }
+
+  const W = window.innerWidth, H = window.innerHeight, M = 12;
+  const bw = tourBubble.offsetWidth, bh = tourBubble.offsetHeight;
+  const target = tourTarget(step);
+  tourBubble.classList.remove("above", "below");
+  if (target) {
+    const r = target.getBoundingClientRect();
+    const pad = 4;
+    Object.assign(tourRing.style, {
+      left: `${r.left - pad}px`, top: `${r.top - pad}px`,
+      width: `${r.width + 2 * pad}px`, height: `${r.height + 2 * pad}px`,
+    });
+    tourRing.classList.remove("hidden");
+    const cx = r.left + r.width / 2;
+    const left = Math.min(Math.max(cx - bw / 2, M), Math.max(M, W - bw - M));
+    const above = r.top + r.height / 2 > H / 2;
+    const top = above ? r.top - pad - 12 - bh : r.bottom + pad + 12;
+    tourBubble.style.left = `${left}px`;
+    tourBubble.style.top = `${Math.min(Math.max(top, M), Math.max(M, H - bh - M))}px`;
+    tourBubble.style.setProperty("--x", `${Math.min(Math.max(cx - left, 18), bw - 18)}px`);
+    tourBubble.classList.add(above ? "above" : "below");
+  } else {
+    tourRing.classList.add("hidden");
+    // Over the picture, a little above its middle (clear of the toolbar).
+    const area = els.canvasArea.getBoundingClientRect();
+    const midY = area.height > 0 ? area.top + area.height * 0.42 : H * 0.42;
+    tourBubble.style.left = `${Math.max(M, (W - bw) / 2)}px`;
+    tourBubble.style.top = `${Math.min(Math.max(midY - bh / 2, M), Math.max(M, H - bh - M))}px`;
+  }
+
+  if (fresh) tourBubble.focus({ preventScroll: true });
+}
+
+// A tap anywhere (the scrim, the bubble, the ring's control) is Next; Skip ends the tour.
+els.tour.addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (e.target === tourSkip) endTour();
+  else tourNext();
+});
+// The tour's keys stay in the tour: Escape skips, Tab cycles Skip and Next, and nothing reaches the
+// app's own shortcuts (compass-ui.js, toolbar-a11y.js listen on the document).
+els.tour.addEventListener("keydown", (e) => {
+  e.stopPropagation();
+  if (e.key === "Escape") { e.preventDefault(); endTour(); return; }
+  if (e.key === "Tab") {
+    e.preventDefault();
+    const order = [tourSkip, tourNextBtn].filter((b) => !b.classList.contains("hidden"));
+    const i = order.indexOf(document.activeElement);
+    const next = e.shiftKey ? (i <= 0 ? order.length - 1 : i - 1) : (i + 1) % order.length;
+    order[next].focus({ preventScroll: true });
+  }
+});
+// The toolbar re-lays out on a rotation or resize; follow it on the next frame.
+window.addEventListener("resize", () => {
+  if (tourShowing()) requestAnimationFrame(() => tourShow(false));
+});

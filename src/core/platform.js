@@ -154,6 +154,15 @@ export const Platform = (() => {
     dismiss: () => writeFlag(DISMISSED_KEY),
   };
 
+  // The app's first-run tour (first-run-tour.js); the website never shows
+  // it (it keeps the welcome card). A failed read counts as "already seen",
+  // so blocked storage never brings the tour back on every launch.
+  const TOUR_KEY = "fractalAtlas.tourDone";
+  const tour = {
+    isDue: () => isNative && readFlag(TOUR_KEY) === false,
+    done: () => writeFlag(TOUR_KEY),
+  };
+
   // ------------------------------------------------------------ API
 
   return {
@@ -162,6 +171,7 @@ export const Platform = (() => {
     hideLaunchScreen,
     onOpenUrl,
     welcome,
+    tour,
 
     saveImageLabel: isNative ? "Save to Photos" : "Save image",
 

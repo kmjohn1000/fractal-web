@@ -4,13 +4,13 @@
 // colormaps.js and, inside function bodies only, render-layout.js and share.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { COLORMAPS } from "../render/colormaps.js?v=1.81.0";
-import { FRACTAL_CONFIGS } from "./configs.js?v=1.81.0";
-import { COLOR_BANDS_RANGE, COLOR_STYLES, colorStyle } from "../render/color-styles.js?v=1.81.0";
-import { applyAutoIter, currentName, els, mainState, paneHistory, paneState, setIsInteracting, toolbarGrow } from "./state.js?v=1.81.0";
-import { labelColormapButton, renderAll, requestRender, updateLUT } from "../render/render-layout.js?v=1.81.0";
-import { buildShareHash } from "../ui/share.js?v=1.81.0";
-import { resizeView, setCenter } from "./view-math.js?v=1.81.0";
+import { COLORMAPS } from "../render/colormaps.js?v=1.82.0";
+import { FRACTAL_CONFIGS } from "./configs.js?v=1.82.0";
+import { COLOR_BANDS_RANGE, COLOR_STYLES, colorStyle } from "../render/color-styles.js?v=1.82.0";
+import { applyAutoIter, currentName, els, mainState, paneHistory, paneState, setIsInteracting, toolbarGrow } from "./state.js?v=1.82.0";
+import { labelColormapButton, renderAll, requestRender, updateLUT } from "../render/render-layout.js?v=1.82.0";
+import { buildShareHash } from "../ui/share.js?v=1.82.0";
+import { resizeView, setCenter } from "./view-math.js?v=1.82.0";
 
 // ---------------------------------------------------------------- default colormaps
 
