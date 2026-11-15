@@ -55,21 +55,6 @@ privacy-label change.
 
 ## Now
 
-- [ ] Controls fade when idle (user idea 2026-11-14, for 1.x; preferred
-      over moving the detail slider to the bottom of the info card; not
-      approved to build). The toolbar row (`#fractalControls`, with the
-      detail slider) shows, then fades out after a few seconds with no
-      touch, and comes back on any touch of the screen. To settle when
-      built: the idle delay; what else fades (info card, compass, Julia
-      label) or stays; never fade while a sheet or menu is open, a slider is
-      being dragged, or focus is in the controls (keyboard, VoiceOver);
-      faded buttons take no taps (the touch that wakes them must not also
-      press one); a gesture still pans or zooms while waking them; reduced
-      motion snaps instead of fading; desktop wakes on mouse move. The
-      visual specs and the store screenshots need a test hook that keeps
-      the controls shown. `v2` replaces this toolbar, so it needs porting
-      when `main` is merged into `v2`.
-
 - [ ] First-run walkthrough in the app (user idea 2026-11-14, for 1.x;
       not approved to build). A short orientation on first launch:
       pinch to zoom, drag, twist to rotate, the die (Surprise me), Colors
@@ -1419,6 +1404,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
+- DONE 2026-11-14 (1.81.0, `bc83c05`, merged from branch `worktree-agent-a9848635f47ce2ca5`; pushed to the live site): controls fade when idle (user idea 2026-11-14, chosen over moving the detail slider into the info card). `src/ui/controls-fade.js`: the whole `#controls` fades after 4 s with no touch, pointer, key or focus (0.5 s, instant with reduced motion), and any touch wakes it; while faded it takes no taps, so the waking touch presses nothing, and canvas gestures still run. It never fades with a sheet or menu open, a slider held, keyboard focus in it, or the welcome card up. A single fractal view then grows into the toolbar's space (user's choice): top-anchored, same pixel size (`resizeView` in `view-math.js`, exact centers kept), the toolbar returns as an overlay without a re-render, and a resize, mode switch or dual view puts it back in the flow. Share links, Back history, the info card and the canvas label read the shown geometry (`shownGeometry` in `state.js`). Off under automation; `setControlsFade` turns it on in `tests/visual/controls-fade.spec.mjs` (24 tests). Verified: lint, default identity zero, 123 tests on `webkit-iphone15` and `chromium-desktop`. Not verified: a real iPhone (touch feel, VoiceOver, rotation while grown). `v2` replaces this toolbar, so it needs porting when `main` is next merged into `v2`.
 - DONE 2026-11-10 (1.80.5, `3ed0816`, merged from branch `worktree-agent-a0ce34fddbca0a161`; pushed to the live site the same day): the accessibility pass. `src/ui/canvas-a11y.js`: the main canvas is an adjustable element (`role="slider"`) whose label is the landed place's name, else the fractal's, with the depth in `aria-valuetext` ("40 times deeper"), written 350 ms after the view stops; VoiceOver's increment and decrement arrive as arrow keys and zoom by 2x (the canvas has no `tabindex`, so desktop arrow-key panning is unchanged; WebGL zoom fractals only, the pattern canvases are labelled images); `flyTo` announces "<place>, <fractal>" through the polite live region when a flight lands; `#errorBanner` is `role="alert"` (so "graphics turned off" is announced); `landedPlaceName()` in `hud.js` is shared with the info card. The Color and Places sheets already moved focus in and back (`toolbar-a11y.js`); the new `a11y.spec.mjs` (9 tests) confirms it. Checks: lint; `a11y`, `info-card`, `run-announce`, `sw`, `vector`, `color-sheet`, `app` and the places and dual specs on webkit-iphone15 and chromium-desktop. NOT verified: VoiceOver itself (that iOS WebKit sends arrow keys on increment and decrement is the agent's belief, only synthesized in specs; if not, the fallback is hidden zoom buttons), a real iPhone, the app's WebView, and whether the alert is spoken when the hidden banner appears. To try with VoiceOver: touch the canvas (name, depth, "adjustable"); swipe up and down to zoom; Surprise me says the place; the Color and Places sheets take and return focus; the focus box is not stuck top left; with VoiceOver off, pinch and drag still work.
 - DONE 2026-11-10 (1.80.4, `0ea4c70`): sharper picker thumbnails. `scripts/render_thumbs.mjs` `SIZE` 192 to 384, the 35 `icons/thumbs/*.webp` re-rendered (316 KB to 732 KB, quality 82, about 400 KB more in the offline cache); the script now hides `#ruleChip` so the Corner Rules label stays out of its tile. Checked: a before and after contact sheet, lint, 14 picker specs. NOT verified: how they look on a phone.
 - DONE 2026-11-10 (`acc6b35`): the two fixed waits in `tests/visual/dot-replay.spec.mjs` that asserted that no run starts (700 and 800 ms) now wait six animation frames (a link's run starts after two); the whole spec passed twice over (564 runs) on webkit-iphone15 and chromium-desktop first. The 1.55.5 failure's tests were never named, so the remaining real-clock tests are only candidates.
