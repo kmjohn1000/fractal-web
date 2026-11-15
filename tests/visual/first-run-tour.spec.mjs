@@ -4,8 +4,8 @@
 // checks, no baselines. Run through `npm run test:visual`.
 import { test, expect } from "@playwright/test";
 
-/* global startTour, endTour, mainState, tourSteps, tourIsReturning, maybeStartTour, Platform, TOUR_STEPS,
-   TOUR_DELAY_MS, setControlsFade, controlsFaded, REVIEW_KEY */
+/* global startTour, endTour, mainState, tourSteps, maybeStartTour, Platform, TOUR_STEPS,
+   TOUR_DELAY_MS, setControlsFade, controlsFaded */
 
 let pageErrors = [];
 
@@ -134,19 +134,14 @@ test("the toolbar stays shown while the tour is up, and fades after it ends", as
   await expect.poll(() => page.evaluate(() => controlsFaded()), { timeout: 5000 }).toBe(true);
 });
 
-test("someone who opened the app on an earlier day counts as returning", async ({ page }) => {
+test("only its own flag stops it: an existing user's stored state does not", async ({ page }) => {
   await load(page);
-  const r = await page.evaluate(() => {
-    const out = {};
-    localStorage.removeItem(REVIEW_KEY);
-    out.none = tourIsReturning("2026-11-14");
-    localStorage.setItem(REVIEW_KEY, JSON.stringify({ days: ["2026-11-14"], askedOn: null }));
-    out.today = tourIsReturning("2026-11-14");
-    localStorage.setItem(REVIEW_KEY, JSON.stringify({ days: ["2026-11-02", "2026-11-14"], askedOn: null }));
-    out.earlier = tourIsReturning("2026-11-14");
-    return out;
-  });
-  expect(r).toEqual({ none: false, today: false, earlier: true });
+  // Someone who used the app on earlier days (the rating prompt's record) still sees the tour once.
+  await page.evaluate(() => localStorage.setItem("fractalAtlas.review", JSON.stringify({ days: ["2026-11-02", "2026-11-10"], askedOn: null })));
+  await page.evaluate(() => startTour());
+  await expect(tour(page)).toBeVisible();
+  await page.locator("#tourSkip").click();
+  expect(await tourDone(page)).toBe("1");
 });
 
 test.describe("phone", () => {

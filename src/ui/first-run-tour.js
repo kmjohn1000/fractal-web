@@ -1,17 +1,15 @@
 // The app's first-run tour: a few coach marks on the first launch, one small bubble at a time, each
 // pointing at the real control (a ring round it) or floating over the picture for the gestures. A tap
 // anywhere, or Next, goes on; Skip (or Escape) ends it. Shown once, in the iOS app only: the website
-// keeps its welcome card (compass-ui.js). Someone who opened the app on an earlier day (before the tour
-// existed) never sees it. Readable by VoiceOver: a modal dialog whose bubble takes focus at each step.
+// keeps its welcome card (compass-ui.js). People who already had the app see it once too, on the first
+// launch after the update that brought it (user, 2026-11-14). Readable by VoiceOver: a modal dialog whose bubble takes focus at each step.
 // The toolbar stays shown while it is up (controls-fade.js controlsBusy reads #tour).
 //
 // An ES module: every top-level declaration is exported (test-hooks.js relies on it), hence the tour
-// prefix on the names (they become flat test globals). Needs platform.js, state.js, controls-fade.js and
-// review-prompt.js (its record of the days the app was opened).
-import { Platform } from "../core/platform.js?v=1.82.0";
-import { els } from "../core/state.js?v=1.82.0";
-import { cfArm, wakeControls } from "./controls-fade.js?v=1.82.0";
-import { reviewDayKey, reviewLoad } from "./review-prompt.js?v=1.82.0";
+// prefix on the names (they become flat test globals). Needs platform.js, state.js and controls-fade.js.
+import { Platform } from "../core/platform.js?v=1.82.1";
+import { els } from "../core/state.js?v=1.82.1";
+import { cfArm, wakeControls } from "./controls-fade.js?v=1.82.1";
 
 export const TOUR_DELAY_MS = 1200; // after load, so the launch screen has faded into the first picture
 
@@ -53,15 +51,9 @@ export function tourTarget(step) {
   return null;
 }
 
-// Someone who opened the app on a day before today already knows their way round.
-export function tourIsReturning(today = reviewDayKey()) {
-  return reviewLoad().days.some((d) => d !== today);
-}
-
 // Called once at load (app.js). Starts the tour after TOUR_DELAY_MS when it is due.
 export function maybeStartTour() {
   if (!Platform.tour.isDue()) return;
-  if (tourIsReturning()) { Platform.tour.done(); return; }
   setTimeout(startTour, TOUR_DELAY_MS);
 }
 

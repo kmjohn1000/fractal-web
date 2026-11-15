@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.82.1 — 2026-11-14
+- Changed: people who already have the app also see the first-run tour once, on the first launch after this update.
+
 ## 1.82.0 — 2026-11-14
 - New: in the iPhone and iPad app, the first launch shows a short tour: small bubbles, one at a time, for pinch and drag, twisting to turn the picture, the die, Colors, the fractal picker and its Places, and Share. Tap anywhere for the next one, or Skip. It shows once, and not to anyone who already used the app. The website keeps its welcome card.
 
