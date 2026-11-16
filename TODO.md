@@ -1047,6 +1047,13 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
       so it may cost nothing before takeoff. Limits stay as for the way in:
       starts past float64's reach (`exactRenderEligible`) and the Burning
       Ship keep the stretched frame until they rise above it.
+      BUILT 2026-11-16 (1.85.1, `4051ee1`, user said give it a shot): the
+      second reference is computed at takeoff (not reused from `refCache`,
+      which keeps no orbit data); `flightRefFor` picks the nearer one in
+      reach. Mini Mandelbrot to Seahorse Valley draws every deep frame live
+      both ways; way-out frames match settled renders of the same views.
+      Spec in `flight-blend.spec.mjs`. Not verified: the feel and the
+      phone's frame rate (the user's iPhone).
 - [ ] One-finger alternatives: double-tap to zoom in, a one-finger way to
       zoom out, and a rotate control that doesn't need a twist. Box zoom is
       the only one-finger zoom today, so keep it until these exist.
