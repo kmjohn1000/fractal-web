@@ -79,9 +79,16 @@ test("walks through every step: gestures over the picture, then a ring round eac
   await expect(text(page)).toContainText("Places");
   await expect(page.locator("#colorSheet")).not.toHaveClass(/open/);
 
-  // The last step says Done and has no Skip; it ends the tour and remembers it.
   await tapScrim(page);
   await expect(text(page)).toContainText("share a link");
+  await expect(page.locator("#tourNext")).toHaveText("Next");
+
+  // The last step floats over the picture again (the fading controls), says Done and has no Skip; it
+  // ends the tour and remembers it.
+  await tapScrim(page);
+  await expect(text(page)).toContainText("Touch anywhere to bring them back");
+  await expect(page.locator("#tourCount")).toHaveText(`${n} of ${n}`);
+  await expect(page.locator("#tourRing")).toBeHidden();
   await expect(page.locator("#tourNext")).toHaveText("Done");
   await expect(page.locator("#tourSkip")).toBeHidden();
   expect(await tourDone(page)).toBeNull();
@@ -151,19 +158,21 @@ test.describe("phone", () => {
     await load(page);
     await page.evaluate(() => startTour());
     const n = await page.evaluate(() => tourSteps.length);
+    let W = 390, H = 844;
     for (let i = 0; i < n; i++) {
       const b = await page.locator("#tourBubble").boundingBox();
       expect(b.x).toBeGreaterThanOrEqual(0);
       expect(b.y).toBeGreaterThanOrEqual(0);
-      expect(b.x + b.width).toBeLessThanOrEqual(390);
-      expect(b.y + b.height).toBeLessThanOrEqual(844);
-      if (i === n - 1) {
-        await page.setViewportSize({ width: 844, height: 390 });
+      expect(b.x + b.width).toBeLessThanOrEqual(W);
+      expect(b.y + b.height).toBeLessThanOrEqual(H);
+      if (i === n - 1) break;
+      if (i === n - 2) { // the Share step (the last one has no ring): rotate, the ring follows
+        [W, H] = [844, 390];
+        await page.setViewportSize({ width: W, height: H });
         await page.waitForTimeout(300);
         const share = await page.locator(".shareBtn").filter({ visible: true }).first().boundingBox();
         const ring = await page.locator("#tourRing").boundingBox();
         expect(Math.abs(ring.x + ring.width / 2 - (share.x + share.width / 2))).toBeLessThan(2);
-        break;
       }
       await page.locator("#tour").tap({ position: { x: 8, y: 8 } });
       await expect(page.locator("#tourCount")).toHaveText(new RegExp(`^${i + 2} of `));

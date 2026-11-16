@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.82.2 — 2026-11-15
+- Changed: the first-run tour ends with one more bubble: the controls fade away when you leave the screen alone, and a touch anywhere brings them back.
+
 ## 1.82.1 — 2026-11-14
 - Changed: people who already have the app also see the first-run tour once, on the first launch after this update.
 

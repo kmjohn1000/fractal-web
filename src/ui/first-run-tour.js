@@ -7,9 +7,9 @@
 //
 // An ES module: every top-level declaration is exported (test-hooks.js relies on it), hence the tour
 // prefix on the names (they become flat test globals). Needs platform.js, state.js and controls-fade.js.
-import { Platform } from "../core/platform.js?v=1.82.1";
-import { els } from "../core/state.js?v=1.82.1";
-import { cfArm, wakeControls } from "./controls-fade.js?v=1.82.1";
+import { Platform } from "../core/platform.js?v=1.82.2";
+import { els } from "../core/state.js?v=1.82.2";
+import { cfArm, wakeControls } from "./controls-fade.js?v=1.82.2";
 
 export const TOUR_DELAY_MS = 1200; // after load, so the launch screen has faded into the first picture
 
@@ -22,6 +22,8 @@ export const TOUR_STEPS = [
   { targets: ["#colormapBtn", "#fernColorBtn"], text: "Colors: palettes and Looks that restyle the picture." },
   { targets: [".fractalMenuBtn"], text: "Pick another fractal here, or browse Places to dive into." },
   { targets: [".shareBtn"], text: "Save the picture to Photos, or share a link to this exact view." },
+  // Last, since it is about what happens once the tour ends (controls-fade.js).
+  { text: "The controls fade away when you leave the screen alone. Touch anywhere to bring them back." },
 ];
 
 export const tourRing = document.getElementById("tourRing");
