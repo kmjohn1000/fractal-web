@@ -23,23 +23,26 @@ shipped): each one changes the listing count, so fixes and polish come first.
    whatever the VoiceOver check turns up (see the Accessibility item).
 4. VoiceOver check of the toolbar buttons' size and spacing (the touch-target
    item; no build unless it fails).
-5. Newton orbits near 0 still finish in float32 (see Code-review leftovers).
-6. The mirrored palette option, the first step of the OKLCH palette item
+5. The mirrored palette option, the first step of the OKLCH palette item
    (the biggest visible color upgrade; toggle, seam stays the default).
-7. Saved places (medium): a spike exists on branch
+6. Saved places (medium): a spike exists on branch
    `worktree-agent-a3886907b2360519d` (`e7d2344`), not merged; it needs the
    user's answers to its design questions (where the list lives, storage,
    fly or cut, keep or replace the colormap). Design is in
    `docs/saved-places/`.
-8. Open the Mandelbrot family rotated on portrait phones (cheap, visible).
-9. Small UI polish: accent color from the colormap, first-launch gesture
+7. Open the Mandelbrot family rotated on portrait phones (cheap, visible).
+8. Small UI polish: accent color from the colormap, first-launch gesture
    hint, Haptics at key moments, Copy image in the share menu.
-10. Surprise-me additions: rare "golden" places, place of the day (small).
-11. Places captions and themed groups (small; uses the sheet that exists).
-12. Learn-more links (medium; needs an in-app browser through `platform.js`
+9. Surprise-me additions: rare "golden" places, place of the day (small).
+10. Places captions and themed groups (small; uses the sheet that exists).
+11. Learn-more links (medium; needs an in-app browser through `platform.js`
     and a privacy wording check) or the Minimap (medium; helps keep bearings
     on deep zooms).
-13. Shake to roll the dice (medium; app-only, needs a Settings toggle).
+12. Shake to roll the dice (medium; app-only, needs a Settings toggle).
+
+Taken off this list 2026-11-16 (user): Newton orbits near 0 finishing in
+float32. It stays a note under Code-review leftovers; it comes back only if
+a view is found where it shows.
 
 Done since the 2026-11-08 ranking: the compass reset race (1.80.0), the
 chaos-game progress ring (1.80.1), sharper picker thumbnails (1.80.4), the
@@ -376,6 +379,8 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
       - (The compass reset race is fixed; see Done.)
       - Newton orbits passing within ~1e-4 of 0 still finish in float32,
         so the deepest views right beside a star copy can still blur
+        (never seen; off the priority list 2026-11-16, user: only if a view
+        is found where it shows)
       - `teleport()`'s one-place branch is unused now that every fractal
         has 2+ places; kept for a future fractal with a single place
       - Unexplained: on 2026-10-16 the user's iPhone Safari turned WebGL
