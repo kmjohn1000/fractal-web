@@ -4,18 +4,18 @@
 // showHud); the scripts before and after it call cancelTeleport etc.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { FRACTAL_CONFIGS, fractalLabel } from "../core/configs.js?v=1.85.0";
-import { announce } from "../fractals/chaos-run.js?v=1.85.0";
-import { suggestedMaxIter, viewFromBounds } from "../fractals/fractal-defs.js?v=1.85.0";
-import { TELEPORT_DESTINATIONS } from "../fractals/places.js?v=1.85.0";
-import { applyAutoIter, currentName, dualActive, els, mainCanvasAspect, mainRenderer, mainState, mode, pushHistory, setActivePane } from "../core/state.js?v=1.85.0";
-import { applyDefaultColormap, markInteracting } from "../core/state-colors.js?v=1.85.0";
-import { renderAll } from "../render/render-layout.js?v=1.85.0";
-import { exactFromPlace, normalizeAngle, setCenter } from "../core/view-math.js?v=1.85.0";
-import { selectFractal } from "./modes.js?v=1.85.0";
-import { prefersReducedMotion, showHud } from "./compass-ui.js?v=1.85.0";
-import { cancelFlightBlend, landFlightBlend, startCrossfade, startFlightBlend } from "../render/flight-blend.js?v=1.85.0";
-import { closeDiveMenu, consumeDiveLongPress, diveStyle } from "./dive-style.js?v=1.85.0";
+import { FRACTAL_CONFIGS, fractalLabel } from "../core/configs.js?v=1.85.1";
+import { announce } from "../fractals/chaos-run.js?v=1.85.1";
+import { suggestedMaxIter, viewFromBounds } from "../fractals/fractal-defs.js?v=1.85.1";
+import { TELEPORT_DESTINATIONS } from "../fractals/places.js?v=1.85.1";
+import { applyAutoIter, currentName, dualActive, els, mainCanvasAspect, mainRenderer, mainState, mode, pushHistory, setActivePane } from "../core/state.js?v=1.85.1";
+import { applyDefaultColormap, markInteracting } from "../core/state-colors.js?v=1.85.1";
+import { renderAll } from "../render/render-layout.js?v=1.85.1";
+import { exactFromPlace, normalizeAngle, setCenter } from "../core/view-math.js?v=1.85.1";
+import { selectFractal } from "./modes.js?v=1.85.1";
+import { prefersReducedMotion, showHud } from "./compass-ui.js?v=1.85.1";
+import { cancelFlightBlend, landFlightBlend, startCrossfade, startFlightBlend } from "../render/flight-blend.js?v=1.85.1";
+import { closeDiveMenu, consumeDiveLongPress, diveStyle } from "./dive-style.js?v=1.85.1";
 
 // ---------------------------------------------------------------- teleport ("Surprise me")
 
@@ -211,15 +211,16 @@ export function flyTo(st, d, target, landingIndex, spinSign, style = diveStyle) 
     turn += 2 * Math.PI * Math.round((spin - turn) / (2 * Math.PI));
   }
   // Slow dive (a test dive style): a plain flight at a steady pace, its deep
-  // frames drawn live from one reference orbit at the destination, computed
-  // here before takeoff at the detail the deepest frame will ask for.
+  // frames drawn live from reference orbits at the destination (the way in)
+  // and at the start view (the way out of a deep start), computed here before
+  // takeoff at the detail the deepest frame near each will ask for.
   const slow = style === "slow" && !spiral;
   const ease = spiral || slow ? steadyEase : (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
   const durationMs = spiral ? SPIRAL_DIVE_MS : slow ? slowDiveMs(path.distance) : teleportDurationMs(path.distance);
   mainRenderer.setFlightReference(slow ? {
     ...st, cx: target.cx, cy: target.cy, scale: target.scale, rotation: target.rotation ?? st.rotation,
     maxIter: Math.max(suggestedMaxIter(st.baseScale, target.scale), landingIndex >= 0 && d.maxIter ? d.maxIter : 0),
-  } : null);
+  } : null, slow ? { ...st, maxIter: Math.max(st.maxIter, suggestedMaxIter(st.baseScale, st.scale)) } : null);
   const gen = ++teleportGeneration;
   const t0 = performance.now();
 

@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.85.1 — 2026-11-16
+- Changed: Slow dive (test) now also draws the way out live. A flight that starts deep zooms out through real detail instead of a stretched, shrinking picture, on the same fractals as the way in.
+
 ## 1.85.0 — 2026-11-16
 - Added, to try out: a third dive style, Slow dive (test), in the Surprise me menu (touch and hold the die). Plain flights take a steady 4 to 12 seconds, and on the Mandelbrot set, its Julia sets, Multibrot³, the Tricorn and Celtic the deep part of the flight is drawn all the way down instead of turning to a stretched blur. Spiral dives fly as before.
 

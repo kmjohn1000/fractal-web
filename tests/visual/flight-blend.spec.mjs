@@ -13,7 +13,8 @@ const DRIVER = new URL("../driver.js", import.meta.url).pathname;
 let pageErrors = [];
 
 // dive: the stored dive style to start with (null: none stored, the default).
-async function load(page, dive = "blur") {
+// view: the share-link view to open (the whole set by default).
+async function load(page, dive = "blur", view = "x=-0.5&y=0&s=1.2&r=0") {
   pageErrors = [];
   page.on("pageerror", (e) => pageErrors.push(e.message));
   await page.addInitScript((d) => {
@@ -24,7 +25,7 @@ async function load(page, dive = "blur") {
       if (d && !sessionStorage.getItem("diveSet")) { localStorage.setItem("fractalAtlas.diveStyle", d); sessionStorage.setItem("diveSet", "1"); }
     } catch { /* storage blocked */ }
   }, dive);
-  await page.goto("index.html#v=1&m=fractal&f=Mandelbrot&x=-0.5&y=0&s=1.2&r=0");
+  await page.goto(`index.html#v=1&m=fractal&f=Mandelbrot&${view}`);
   await page.addScriptTag({ path: DRIVER });
   await settle(page);
 }
@@ -139,6 +140,34 @@ test.describe("Slow dive (test)", () => {
     expect(seen.deepPreview, "none of them the stretched last frame").toBe(0);
     await settle(page);
     expect(await page.evaluate(() => mainRenderer.flightDeepLive(Object.assign({}, mainState))), "no flight reference after landing").toBe(false);
+  });
+
+  test("a deep-to-deep flight draws its way out live too, from a reference at the start", async ({ page }) => {
+    // Start at Mini Mandelbrot (1.5e-12) and fly to Seahorse Valley (4e-10): the path climbs out of the start
+    // above DEEP_ZOOM_THRESHOLD before diving into the destination.
+    await load(page, "slow", "x=-1.749003357223038&y=0&s=1.5e-12&r=0&i=2000");
+    expect(await page.evaluate(() => mainState.scale), "it starts deep").toBe(1.5e-12);
+    const i = await place(page, "Seahorse Valley");
+    const seen = await page.evaluate((n) => new Promise((resolve) => {
+      let out = true, peak = mainState.scale;
+      const legs = { out: { live: 0, preview: 0 }, in: { live: 0, preview: 0 } };
+      flyToPlace(n);
+      const watch = () => {
+        if (isInteracting && teleportLandingIndex !== n) {
+          // Past the top of the path once well below its highest point (a frame can round a hair below the last).
+          peak = Math.max(peak, mainState.scale);
+          if (mainState.scale < peak / 2) out = false;
+          if (mainState.scale < 1e-4) legs[out ? "out" : "in"][lastMainDeepPath === "perturbation (flight)" ? "live" : "preview"]++;
+        }
+        if (teleportLandingIndex === n) resolve(legs);
+        else requestAnimationFrame(watch);
+      };
+      requestAnimationFrame(watch);
+    }), i);
+    expect(seen.out.live, `deep frames on the way out drawn live (${JSON.stringify(seen)})`).toBeGreaterThan(0);
+    expect(seen.out.preview, "none of them the stretched last frame").toBe(0);
+    expect(seen.in.live, "deep frames on the way in drawn live").toBeGreaterThan(0);
+    expect(seen.in.preview, "none of them the stretched last frame").toBe(0);
   });
 
   test("a spiral dive keeps its own pace", async ({ page }) => {

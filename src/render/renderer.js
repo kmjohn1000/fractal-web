@@ -3,14 +3,14 @@
 // (fractal-defs.js), deepzoom.js and color-styles.js. It imports nothing from state.js: state.js
 // calls createFractalRenderer(canvas, host) and passes the two live values a frame needs.
 // An ES module: every top-level declaration is exported (test-hooks.js and state.js rely on it).
-import { FTYPE, PHOENIX_P } from "../core/configs.js?v=1.85.0";
-import { Diag } from "../core/diag.js?v=1.85.0";
-import { FRAG_SRC, NEWTON_DEEP_FRAG_SRC, PHOENIX_DEEP_FRAG_SRC, PREVIEW_FRAG_SRC, VERT_SRC, VERT_SRC_300 } from "./shaders.js?v=1.85.0";
-import { apolloCapColor, apolloFrame } from "../fractals/apollonian.js?v=1.85.0";
-import { DIGIT_MAX_CELL_LEVEL, digitBase, digitCellFrame, digitCellLevel, digitColorCycle, digitFractalDepth, digitSubPixelColor, isDigitFractal } from "../fractals/digit-fractals.js?v=1.85.0";
-import { DEEP_ZOOM_THRESHOLD, FIXED_THIRD, PHOENIX_DEEP_SAMPLES, PHOENIX_EXACT_CAP, SAMPLE_OFFSETS, chooseReference, chooseReferenceExact, computeReferenceOrbit, computeReferenceOrbitExact, exactReferencePoint, exactRender, exactRenderEligible, fixedLimbs, newtonDeepEligible, newtonOrbitF64, perturbationEligibleType, phoenixDeepEligible, phoenixEscapeF64, phoenixReference } from "../core/deepzoom.js?v=1.85.0";
-import { EXACT_FROM, EXACT_ONE, exactCenter, exactFracFor, exactValid, toExact } from "../core/view-math.js?v=1.85.0";
-import { colorStyle, colorStyleFor, styleDrawn, trapRangeFor } from "./color-styles.js?v=1.85.0";
+import { FTYPE, PHOENIX_P } from "../core/configs.js?v=1.85.1";
+import { Diag } from "../core/diag.js?v=1.85.1";
+import { FRAG_SRC, NEWTON_DEEP_FRAG_SRC, PHOENIX_DEEP_FRAG_SRC, PREVIEW_FRAG_SRC, VERT_SRC, VERT_SRC_300 } from "./shaders.js?v=1.85.1";
+import { apolloCapColor, apolloFrame } from "../fractals/apollonian.js?v=1.85.1";
+import { DIGIT_MAX_CELL_LEVEL, digitBase, digitCellFrame, digitCellLevel, digitColorCycle, digitFractalDepth, digitSubPixelColor, isDigitFractal } from "../fractals/digit-fractals.js?v=1.85.1";
+import { DEEP_ZOOM_THRESHOLD, FIXED_THIRD, PHOENIX_DEEP_SAMPLES, PHOENIX_EXACT_CAP, SAMPLE_OFFSETS, chooseReference, chooseReferenceExact, computeReferenceOrbit, computeReferenceOrbitExact, exactReferencePoint, exactRender, exactRenderEligible, fixedLimbs, newtonDeepEligible, newtonOrbitF64, perturbationEligibleType, phoenixDeepEligible, phoenixEscapeF64, phoenixReference } from "../core/deepzoom.js?v=1.85.1";
+import { EXACT_FROM, EXACT_ONE, exactCenter, exactFracFor, exactValid, toExact } from "../core/view-math.js?v=1.85.1";
+import { colorStyle, colorStyleFor, styleDrawn, trapRangeFor } from "./color-styles.js?v=1.85.1";
 
 // ---------------------------------------------------------------- WebGL renderer factory
 
@@ -342,18 +342,24 @@ export function createFractalRenderer(canvas, host) {
   let refCache = null;
 
   // Slow dive (a test dive style, dive-style.js): a flight's deep frames are drawn live, with perturbation against
-  // one reference orbit computed for the destination before takeoff (setFlightReference), instead of the stretched
-  // last frame (renderPreview). A straight dive keeps the destination in view, so the one orbit serves every frame
-  // on the way in; a frame too far from it (the way out of a deep-to-deep flight) keeps the stretched frame, and so
-  // does anything past the float64 reference's reach (exactRenderEligible) or a type without perturbation. The
-  // Burning Ship too: one reference at its destination drew a third of the way down as streaks of noise (Sunken
-  // Crown, 2026-11-16; its folds flip sign between the frames and the destination), so it keeps the stretched frame.
-  let flightRef = null;
+  // reference orbits computed before takeoff (setFlightReference), instead of the stretched last frame
+  // (renderPreview). One is at the destination: a straight dive keeps the destination in view, so it serves every
+  // frame on the way in. One is at the start view (since 1.85.1): the way out of a deep-to-deep flight keeps the
+  // start in view the same way, so it serves every frame on the way out. Each frame takes the nearer one in reach
+  // (flightRefFor); a frame near neither keeps the stretched frame, and so does anything past the float64
+  // reference's reach (exactRenderEligible) or a type without perturbation. The Burning Ship too: one reference at
+  // its destination drew a third of the way down as streaks of noise (Sunken Crown, 2026-11-16; its folds flip sign
+  // between the frames and the destination), so it keeps the stretched frame.
+  let flightRefs = [];
   const FLIGHT_REF_REACH = 50; // in view half-heights from the frame's center
-  function setFlightReference(target) {
-    flightRef = null;
+  // target: the destination view; origin: the start view (null for none). Either one past a reference's reach
+  // gets none.
+  function setFlightReference(target, origin = null) {
+    flightRefs = [target, origin].map(flightReference).filter(Boolean);
+  }
+  function flightReference(target) {
     if (!target || !perturbationSupported || !perturbationEligibleType(target) || target.ftype === FTYPE.SHIP
-      || exactRenderEligible(target)) return;
+      || exactRenderEligible(target)) return null;
     const ref = chooseReference(target, canvas.width, canvas.height);
     const rx = target.cx + ref.dx, ry = target.cy + ref.dy;
     let data, refLen, critOffset, critLen;
@@ -370,14 +376,23 @@ export function createFractalRenderer(canvas, host) {
       data = orbit.data;
       refLen = orbit.length; critOffset = 0; critLen = orbit.length;
     }
-    flightRef = { rx, ry, data, refLen, critOffset, critLen, width: data.length / 4, maxIter: target.maxIter,
+    return { rx, ry, data, refLen, critOffset, critLen, width: data.length / 4, maxIter: target.maxIter,
       key: `flight:${rx},${ry},${target.maxIter},${target.isJulia}` };
   }
-  // Whether this frame of a flight is drawn live from the flight's reference.
+  // The flight reference this frame of a flight is drawn live from: the nearer one in reach, or null.
+  function flightRefFor(state) {
+    if (flightRefs.length === 0 || !host.isInteracting() || !perturbationEligibleType(state)
+      || state.scale >= DEEP_ZOOM_THRESHOLD || exactRenderEligible(state)) return null;
+    let best = null, bestDist = FLIGHT_REF_REACH * state.scale;
+    for (const r of flightRefs) {
+      const dist = Math.hypot(r.rx - state.cx, r.ry - state.cy);
+      if (state.maxIter <= r.maxIter && dist < bestDist) { best = r; bestDist = dist; }
+    }
+    return best;
+  }
+  // Whether this frame of a flight is drawn live from a flight reference.
   function flightDeepLive(state) {
-    return !!flightRef && host.isInteracting() && perturbationEligibleType(state)
-      && state.scale < DEEP_ZOOM_THRESHOLD && !exactRenderEligible(state) && state.maxIter <= flightRef.maxIter
-      && Math.hypot(flightRef.rx - state.cx, flightRef.ry - state.cy) < FLIGHT_REF_REACH * state.scale;
+    return !!flightRefFor(state);
   }
 
   // Newton's fixed-point deep zoom (NEWTON_DEEP_FRAG_SRC): compiled and
@@ -707,8 +722,9 @@ export function createFractalRenderer(canvas, host) {
     // suppressed mid-gesture (see isInteracting) since recomputing the
     // reference orbit every frame during a live pinch/wheel is expensive
     // enough to visibly jank.
-    // A slow dive's deep frames are the exception: they reuse the flight's reference (flightDeepLive).
-    const flightLive = flightDeepLive(state);
+    // A slow dive's deep frames are the exception: they reuse a flight reference (flightRefFor).
+    const flightRef = flightRefFor(state);
+    const flightLive = !!flightRef;
     const usePerturbation = perturbationSupported && (flightLive
       || (!host.isInteracting()
       && perturbationEligibleType(state)
