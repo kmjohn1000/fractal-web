@@ -15,8 +15,8 @@ shipped): each one changes the listing count, so fixes and polish come first.
    including VoiceOver on the new canvas label and swipe zoom (the six checks
    are in the 1.80.5 Done entry); the user checked them on the phone with
    1.82.4 installed.
-2. Flashing check on Bands and Stripes flights (a safety question; Reduce
-   Motion crossfade if it fails).
+2. Flights flash (checked 2026-11-16: every style fails, the default too, see
+   the Accessibility items); needs the user's pick of a fix.
 3. What is left of the accessibility pass: one-finger alternatives, and
    whatever the VoiceOver check turns up (see the Accessibility item).
 4. VoiceOver check of the toolbar buttons' size and spacing (the touch-target
@@ -1001,10 +1001,30 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
       and the sheet focus are built and specced). Open: run VoiceOver and
       Voice Control over the app on the phone (the user's; the six checks
       are in the 1.80.5 Done entry), then the items below
-- [ ] Flashing check: record deep flights in Bands and Stripes (high Repeat)
-      and step through frame by frame against the three-flashes-per-second
-      limit. If they flash, Reduce Motion crossfades instead of flying, and
-      consider calming Bands/Stripes during flights for everyone.
+- [ ] Flights flash above the three-flashes-per-second limit (WCAG 2.3.1),
+      in every color style, not only Bands and Stripes. Check DONE 2026-11-16
+      with `scripts/flash-check.mjs` (the app's own flyToPlace on a fake clock,
+      iPhone 15 size, 16 ms frames; a transition is a 0.1 swing in the mean
+      luminance of a 140 pt square, a quarter of a 10-degree field at 30 cm;
+      more than 6 in any second fails; output in git-ignored
+      `store-assets/flash-check/`). 15 flights x 6 looks: the default Smooth
+      in the fractal's own palette fails 8 of 15 (median 6, worst 12
+      transitions/s), Smooth in Turbo 10 of 15, Bands 1x 9, Bands 8x 12 of 15
+      (worst 19), Stripes 9 of 13 at either Repeat. The flashing is in the
+      fast float32 middle of a 1 to 2.5 s flight (big areas going dark,
+      bright, dark within ~0.3 s, then blocky patches as float32 gives out);
+      the deep part is a flat stretched frame and doesn't flash. The 7 s
+      spiral dives sit at 4 to 7 (mostly pass); Tricorn's Flame Minibrot
+      passes except in Bands 8x and Stripes. The website's cold open flies
+      to Seahorse Valley and Sunburst Fan (10/s in Smooth) without a tap.
+      Repeat runs vary by about 2 transitions/s. Not checked: iPad, real
+      phone frame drops (the live resolution step), 120 Hz.
+      Fix options, not chosen: (a) Reduce Motion crossfades instead of
+      flying (only helps people who turned it on); (b) slower flights (fewer
+      e-folds per second; the spiral dives' pace passes); (c) a temporal
+      low-pass during flights (blend each live frame with the last, or fade
+      to the frozen frame through the fast middle), so area luminance can't
+      swing more than 3 times a second; then rerun the check.
 - [ ] One-finger alternatives: double-tap to zoom in, a one-finger way to
       zoom out, and a rotate control that doesn't need a twist. Box zoom is
       the only one-finger zoom today, so keep it until these exist.
