@@ -1035,6 +1035,18 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
       perturbation, 1.5 to 2.4 s) are unchanged at 8 to 11. Waiting on the
       user's iPhone check (build 651): the feel, and whether the phone keeps
       up (the live resolution step drops when frames run late).
+      USER'S iPHONE CHECK 2026-11-16: likes it, works well. Gap the user
+      found: a deep-to-deep flight's way out (the zoom-out half) never draws
+      live frames, only the stretched last frame, because the one reference
+      is at the destination and those frames are out of its reach
+      (`FLIGHT_REF_REACH`). Idea (not approved): a second reference at the
+      start view. The zoom path keeps the start in view on the way out the
+      same way it keeps the destination in view on the way in, so each frame
+      uses whichever reference is in reach. The start view's orbit is
+      usually already in the renderer's `refCache` from its settled render,
+      so it may cost nothing before takeoff. Limits stay as for the way in:
+      starts past float64's reach (`exactRenderEligible`) and the Burning
+      Ship keep the stretched frame until they rise above it.
 - [ ] One-finger alternatives: double-tap to zoom in, a one-finger way to
       zoom out, and a rotate control that doesn't need a twist. Box zoom is
       the only one-finger zoom today, so keep it until these exist.
