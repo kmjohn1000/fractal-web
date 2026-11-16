@@ -4,16 +4,17 @@
 // showHud); the scripts before and after it call cancelTeleport etc.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { FRACTAL_CONFIGS, fractalLabel } from "../core/configs.js?v=1.82.4";
-import { announce } from "../fractals/chaos-run.js?v=1.82.4";
-import { viewFromBounds } from "../fractals/fractal-defs.js?v=1.82.4";
-import { TELEPORT_DESTINATIONS } from "../fractals/places.js?v=1.82.4";
-import { applyAutoIter, currentName, dualActive, els, mainCanvasAspect, mainState, mode, pushHistory, setActivePane } from "../core/state.js?v=1.82.4";
-import { applyDefaultColormap, markInteracting } from "../core/state-colors.js?v=1.82.4";
-import { renderAll } from "../render/render-layout.js?v=1.82.4";
-import { exactFromPlace, normalizeAngle, setCenter } from "../core/view-math.js?v=1.82.4";
-import { selectFractal } from "./modes.js?v=1.82.4";
-import { prefersReducedMotion, showHud } from "./compass-ui.js?v=1.82.4";
+import { FRACTAL_CONFIGS, fractalLabel } from "../core/configs.js?v=1.83.0";
+import { announce } from "../fractals/chaos-run.js?v=1.83.0";
+import { viewFromBounds } from "../fractals/fractal-defs.js?v=1.83.0";
+import { TELEPORT_DESTINATIONS } from "../fractals/places.js?v=1.83.0";
+import { applyAutoIter, currentName, dualActive, els, mainCanvasAspect, mainState, mode, pushHistory, setActivePane } from "../core/state.js?v=1.83.0";
+import { applyDefaultColormap, markInteracting } from "../core/state-colors.js?v=1.83.0";
+import { renderAll } from "../render/render-layout.js?v=1.83.0";
+import { exactFromPlace, normalizeAngle, setCenter } from "../core/view-math.js?v=1.83.0";
+import { selectFractal } from "./modes.js?v=1.83.0";
+import { prefersReducedMotion, showHud } from "./compass-ui.js?v=1.83.0";
+import { cancelFlightBlend, landFlightBlend, startCrossfade, startFlightBlend } from "../render/flight-blend.js?v=1.83.0";
 
 // ---------------------------------------------------------------- teleport ("Surprise me")
 
@@ -83,8 +84,9 @@ export function setLastTeleportIndex(v) { lastTeleportIndex = v; }
 export function setTeleportLandingIndex(v) { teleportLandingIndex = v; }
 
 // Any direct manipulation (pointer, wheel, Back, fractal switch) wins over
-// an in-flight flight: bumping the generation makes its next frame a no-op.
-export function cancelTeleport() { teleportGeneration++; }
+// an in-flight flight: bumping the generation makes its next frame a no-op,
+// and the live picture shows at once (no flight blend over it).
+export function cancelTeleport() { teleportGeneration++; cancelFlightBlend(); }
 
 export function teleport() {
   if (mode !== "fractal") return;
@@ -148,13 +150,50 @@ export function flyTo(st, d, target, landingIndex, spinSign) {
   // stays (applyDefaultColormap).
   applyDefaultColormap(landingIndex >= 0 ? d : null);
   setActivePane("main");
+
+  // The view lands on the place (the flight's last frame, or Reduce Motion's jump).
+  const land = () => {
+    // Exact landing: the path's last point can be a few ulps off, which
+    // matters at 1e-12 scales.
+    Object.assign(st, target);
+    // A place whose text has more digits than a double (Golden Dive) lands on its exact center, so a deeper
+    // zoom from here stays on the point; any other landing clears the previous view's exact pair.
+    const exact = landingIndex >= 0 ? exactFromPlace(d) : null;
+    if (exact) setCenter(st, exact.cx, exact.cy, exact.ex, exact.ey, exact.bits);
+    else setCenter(st, st.cx, st.cy);
+    // A slider-locked maxIter can be far too low for the new place (a
+    // lock at 300 lands Seahorse Valley all black), so landing hands
+    // maxIter back to auto mode; the settle's applyAutoIter sets it. A
+    // place with its own maxIter (Bird's Eye) lands locked to it instead.
+    if (landingIndex >= 0 && d.maxIter) {
+      st.maxIter = d.maxIter;
+      st.iterAutoLocked = true;
+    } else {
+      st.iterAutoLocked = false;
+    }
+    teleportLandingIndex = landingIndex;
+    // Say where it landed (the info card may be off, and the canvas is a picture). Heading home (-1) has no name.
+    if (landingIndex >= 0) announce(`${d.label}, ${fractalLabel(currentName)}`);
+  };
+
+  // Reduce Motion: no flight. The old picture holds on an overlay while the
+  // new place draws, then dissolves to it (flight-blend.js).
+  if (prefersReducedMotion()) {
+    ++teleportGeneration; // a flight still going stops here
+    startCrossfade();
+    land();
+    markInteracting();
+    renderAll();
+    return;
+  }
+
   const path = zoomPath([st.cx, st.cy, 2 * st.scale], [target.cx, target.cy, 2 * target.scale]);
   // A spiral adds whole turns to the landing turn, as many as its zoom
   // calls for: path.distance times sqrt(2) is the e-folds of zoom travelled
   // (out and back in, for a flight that starts deep). The path's parameter
   // runs at constant speed in zoom, so a turn linear in it keeps the spin
-  // locked to the zoom. Reduced motion skips the spin and the long flight.
-  const spiral = d.spiral && !prefersReducedMotion();
+  // locked to the zoom.
+  const spiral = !!d.spiral;
   if (spiral) {
     const spin = spinSign * SPIRAL_RAD_PER_ZOOM * Math.SQRT2 * path.distance;
     turn += 2 * Math.PI * Math.round((spin - turn) / (2 * Math.PI));
@@ -170,8 +209,13 @@ export function flyTo(st, d, target, landingIndex, spinSign) {
   // settle timer does the full-quality render -- perturbation reference
   // orbit included, via render()'s normal chooseReference call -- plus
   // applyAutoIter once the last frame lands.
+  // The picture on screen goes through the flight blend (flight-blend.js): a
+  // fast zoom sweeps big areas dark and bright several times a second, and
+  // the blend keeps that under three flashes a second.
+  startFlightBlend();
   const step = (now) => {
-    if (gen !== teleportGeneration || mode !== "fractal" || mainState !== st) return;
+    if (gen !== teleportGeneration) return; // a newer flight carries the blend on, or a touch cancelled it
+    if (mode !== "fractal" || mainState !== st) { cancelFlightBlend(); return; }
     const t = Math.min(1, (now - t0) / durationMs);
     if (t < 1) {
       const k = ease(t);
@@ -185,27 +229,8 @@ export function flyTo(st, d, target, landingIndex, spinSign) {
       // zoom frame by frame instead of jumping on landing.
       if (spiral) { st.iterAutoLocked = false; applyAutoIter(); }
     } else {
-      // Exact landing: the path's last point can be a few ulps off, which
-      // matters at 1e-12 scales.
-      Object.assign(st, target);
-      // A place whose text has more digits than a double (Golden Dive) lands on its exact center, so a deeper
-      // zoom from here stays on the point; any other landing clears the previous view's exact pair.
-      const exact = landingIndex >= 0 ? exactFromPlace(d) : null;
-      if (exact) setCenter(st, exact.cx, exact.cy, exact.ex, exact.ey, exact.bits);
-      else setCenter(st, st.cx, st.cy);
-      // A slider-locked maxIter can be far too low for the new place (a
-      // lock at 300 lands Seahorse Valley all black), so landing hands
-      // maxIter back to auto mode; the settle's applyAutoIter sets it. A
-      // place with its own maxIter (Bird's Eye) lands locked to it instead.
-      if (landingIndex >= 0 && d.maxIter) {
-        st.maxIter = d.maxIter;
-        st.iterAutoLocked = true;
-      } else {
-        st.iterAutoLocked = false;
-      }
-      teleportLandingIndex = landingIndex;
-      // Say where it landed (the info card may be off, and the canvas is a picture). Heading home (-1) has no name.
-      if (landingIndex >= 0) announce(`${d.label}, ${fractalLabel(currentName)}`);
+      land();
+      landFlightBlend();
     }
     markInteracting();
     renderAll();

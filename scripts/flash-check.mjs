@@ -1,14 +1,16 @@
 // Photosensitivity check of Surprise-me flights: do any of them flash more
 // than three times a second (WCAG 2.3.1, the general and red flash thresholds)?
 //
-//   node scripts/flash-check.mjs [--out DIR] [--only NAME] [--distance-cm N] [--keep-frames]
+//   node scripts/flash-check.mjs [--out DIR] [--only NAME] [--distance-cm N] [--keep-frames] [--reduced-motion]
 //   node scripts/flash-check.mjs --analyze DIR     (re-run the analysis on frames already captured)
 //
 // Capture: the web build in headless WebKit at iPhone 15 size (393x852 pt at 2x, the renderer's
 // pixel-ratio cap) runs the app's own flight (flyToPlace, as Surprise me does) on Playwright's fake
-// clock, one 16 ms step at a time, and saves each frame; it keeps going 1.2 s past the landing so the
-// full-quality redraw is in the recording too. Each run sets a color style, Repeat and palette first,
-// the way the Color sheet does.
+// clock, one 16 ms step at a time, and saves each frame (the flight blend's overlay included); it keeps
+// going 2 s past the landing so the full-quality redraw and the blend's fade are in the recording too.
+// Each run sets a color style, Repeat and palette first, the way the Color sheet does. A run whose
+// folder already has a result.json is skipped, so use a new --out for each build checked.
+// --reduced-motion: the page prefers reduced motion (the crossfade instead of the flight).
 //
 // Analysis, per run, on relative luminance (sRGB linearized, 2x2 pixels averaged to one point):
 //   area   A square the size of the smallest area WCAG counts (a quarter of a 10-degree visual
@@ -24,7 +26,7 @@
 // iPhone 15: 460 ppi at 3 px per point, about 60.4 points per cm. Viewing distance 30 cm by
 // default (a 10-degree field is then about 317 points across); 25 cm is stricter.
 /* global window, TELEPORT_DESTINATIONS, COLORMAPS, setColorStyle, mainState, zoomPath, prefersReducedMotion,
-   SPIRAL_DIVE_MS, teleportDurationMs, colorStyleFor, flyToPlace */
+   SPIRAL_DIVE_MS, teleportDurationMs, colorStyleFor, flyToPlace, blendState */
 import { webkit } from "@playwright/test";
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -41,6 +43,10 @@ const args = process.argv.slice(2);
 const opt = (name, fallback) => { const i = args.indexOf(`--${name}`); return i >= 0 ? args[i + 1] : fallback; };
 const has = (name) => args.includes(`--${name}`);
 const distanceCm = Number(opt("distance-cm", 30));
+const tau = opt("tau", null); // the flight blend's time constant in ms, for trying others (flight-blend.js)
+// --shard I/N: only every Nth run, from the Ith (0-based), so N copies (each with its own PW_PORT) share one --out.
+const [shardI, shardN] = opt("shard", "0/1").split("/").map(Number);
+let runIndex = 0;
 
 // Flights: from the fractal's opening view to a place (from: null), or from one place to another.
 // Bands draws on every escape-time type; Stripes on Mandelbrot, Ship, Tricorn, Celtic, Spider, sine.
@@ -74,7 +80,7 @@ const LOOKS = [
 const extraPalettes = opt("palettes", "").split(",").filter(Boolean); // e.g. --palettes Grayscale
 
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-const runName = (f, l) => `${slug(f.fractal)}_${f.from ? `${slug(f.from)}-to-` : ""}${slug(f.to)}_${l.style}_${slug(l.palette || "default")}_x${l.density}`;
+const runName = (f, l) => `${slug(f.fractal)}_${f.from ? `${slug(f.from)}-to-` : ""}${slug(f.to)}_${l.style}_${slug(l.palette || "default")}_x${l.density}${tau ? `_tau${tau}` : ""}`;
 
 // ------------------------------------------------------------------ analysis
 
@@ -233,11 +239,13 @@ async function capture(outDir, only) {
         if (flight.styles && look.style !== "smooth" && !flight.styles.includes(look.style)) continue;
         const name = runName(flight, look);
         if (only && !name.includes(only)) continue;
+        if (shardN > 1 && runIndex++ % shardN !== shardI) continue;
         const dir = join(outDir, name);
         if (existsSync(join(dir, "result.json"))) { results[name] = JSON.parse(readFileSync(join(dir, "result.json"), "utf8")); continue; }
         mkdirSync(dir, { recursive: true });
         const t0 = Date.now();
-        const context = await browser.newContext({ viewport: { width: W_PT, height: H_PT }, deviceScaleFactor: DPR, serviceWorkers: "block" });
+        const context = await browser.newContext({ viewport: { width: W_PT, height: H_PT }, deviceScaleFactor: DPR, serviceWorkers: "block",
+          reducedMotion: has("reduced-motion") ? "reduce" : "no-preference" });
         await context.addInitScript(() => {
           try {
             localStorage.setItem("fractalAtlas.visited", "1");
@@ -264,11 +272,12 @@ async function capture(outDir, only) {
           if (cm < 0) return { error: `no palette ${look.palette}` };
           if (from >= 0) window.__vt.place(from, cm); else window.__vt.fractal(flight.fractal, cm);
           setColorStyle({ style: look.style, density: look.density, offset: 0 });
+          if (look.tau) blendState.tau = Number(look.tau);
           const st = mainState, d = TELEPORT_DESTINATIONS[to];
           const path = zoomPath([st.cx, st.cy, 2 * st.scale], [Number(d.re), Number(d.im), 2 * d.scale]);
           const ms = d.spiral && !prefersReducedMotion() ? SPIRAL_DIVE_MS : teleportDurationMs(path.distance);
           return { to, ms, efolds: path.distance * Math.SQRT2, drawn: colorStyleFor(st).glsl };
-        }, { flight, look });
+        }, { flight, look: { ...look, tau } });
         if (setup.error) throw new Error(`${name}: ${setup.error}`);
         // Let the starting view finish (supersamples, deep passes) on the fake clock.
         for (let i = 0; i < 400; i++) {
@@ -286,7 +295,8 @@ async function capture(outDir, only) {
         };
         await shot(); // the frame before takeoff
         await page.evaluate((i) => flyToPlace(i), setup.to);
-        const steps = Math.ceil((setup.ms + 1200) / STEP_MS);
+        // Past the landing: the settle (200 ms), the flight blend's tail and fade (flight-blend.js), and a margin.
+        const steps = Math.ceil(((has("reduced-motion") ? 0 : setup.ms) + 2000) / STEP_MS);
         for (let i = 0; i < steps; i++) {
           await page.clock.runFor(STEP_MS);
           await shot();
@@ -311,7 +321,7 @@ async function capture(outDir, only) {
     await browser.close();
     server.kill();
   }
-  writeFileSync(join(outDir, "summary.json"), JSON.stringify(results, null, 2));
+  writeFileSync(join(outDir, shardN > 1 ? `summary-${shardI}.json` : "summary.json"), JSON.stringify(results, null, 2));
   return results;
 }
 

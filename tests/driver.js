@@ -2,7 +2,7 @@
 /* global FRACTAL_CONFIGS, EXTRA_MODES, TELEPORT_DESTINATIONS, dualActive, exitDual, selectFractal,
    setMode, mainState, applyAutoIter, updateLUT, requestRender, renderPending, isInteracting,
    refineDone, mode, isIfsMode, fernView, setColormapIndex, setColormapPicked, applyDefaultColormap,
-   mainRenderer, juliaRenderer, kochView, COLORMAPS */
+   mainRenderer, juliaRenderer, kochView, COLORMAPS, flightBlendBusy */
 
 // In-page helpers for the visual suite (tests/visual/app.spec.mjs). Added to
 // the page as a classic <script> after the app's scripts load, so it sees their
@@ -74,7 +74,7 @@ window.__vt = {
   // True once the frame is final: no render queued, every supersample of a
   // WebGL fractal blended in, and an IFS mode's points all plotted.
   settled() {
-    if (renderPending || isInteracting) return false;
+    if (renderPending || isInteracting || flightBlendBusy()) return false;
     if (mode === "fractal") return refineDone;
     if (isIfsMode(mode)) return !fernView.refining;
     if (mode === "koch") return !kochView.growing;  // a new generation is still growing in

@@ -2,6 +2,10 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.83.0 — 2026-11-16
+- Fixed: Surprise me's flights no longer flash. A fast zoom could sweep big parts of the screen from dark to bright and back several times a second, in every color style; the picture now blends from frame to frame during a flight, so it stays under three flashes a second.
+- Changed: with Reduce Motion on, Surprise me and the places list dissolve to the new place instead of flying there.
+
 ## 1.82.4 — 2026-11-15
 - Changed: the first-run tour's bubbles stay out of the way: the ones for the gestures sit near the top, leaving the picture free, and the ones for buttons sit above the whole toolbar instead of over the detail slider. Shorter wording, and the bubbles lost their small arrow (the ring round the button does the pointing).
 

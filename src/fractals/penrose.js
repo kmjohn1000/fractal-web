@@ -1,6 +1,6 @@
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
-import { SOLID_COLORS, hueTurned, isGreyColor, strokeWidthFor } from "../render/colormaps.js?v=1.82.4";
-import { VECTOR_CULL_MARGIN } from "../render/vectorgeom.js?v=1.82.4";
+import { SOLID_COLORS, hueTurned, isGreyColor, strokeWidthFor } from "../render/colormaps.js?v=1.83.0";
+import { VECTOR_CULL_MARGIN } from "../render/vectorgeom.js?v=1.83.0";
 
 // The Penrose tiling (P3: thick and thin rhombs) by deflation, drawn from the viewport, so zooming
 // shows ever finer tiles instead of a fixed patch.
