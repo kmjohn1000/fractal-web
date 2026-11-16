@@ -1020,6 +1020,21 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
       `scripts/flash-check.mjs` (a slower pace should cut it in proportion,
       maybe under the limit without Blur); the feel and the phone's frame
       rate need the user's iPhone.
+      PROTOTYPE BUILT 2026-11-16 (1.85.0, `a61f82f`, user said build a test
+      switch): the third dive style "Slow dive (test)" in the Surprise me menu.
+      4 e-folds a second, 1.5 to 12 s (`slowDiveMs`); deep frames live via
+      `setFlightReference`/`flightDeepLive` in renderer.js for the Mandelbrot
+      set, its Julia sets, Multibrot³, Tricorn and Celtic (looked right all
+      the way down); the Burning Ship keeps the stretched frame (one
+      reference drew streaks a third of the way down), and its float32
+      streaks just above 1e-3 now last longer. Flash check, default look
+      (`store-assets/flash-check-slow/`): not better than Full Motion, 2 to
+      12 transitions a second (Full Motion 2 to 12), because the deep part
+      now shows real moving detail where it used to be a flat stretch; the
+      short flights of Spider, Phoenix, Magnet and the sine family (no
+      perturbation, 1.5 to 2.4 s) are unchanged at 8 to 11. Waiting on the
+      user's iPhone check (build 651): the feel, and whether the phone keeps
+      up (the live resolution step drops when frames run late).
 - [ ] One-finger alternatives: double-tap to zoom in, a one-finger way to
       zoom out, and a rotate control that doesn't need a twist. Box zoom is
       the only one-finger zoom today, so keep it until these exist.
