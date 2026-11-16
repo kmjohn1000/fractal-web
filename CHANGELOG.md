@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.86.1 — 2026-11-16
+- Changed: in the dive style menu, Full Motion's description reads "Zoom style flights".
+
 ## 1.86.0 — 2026-11-16
 - Changed: Full Motion now flies the way Slow dive (test) did. Surprise me's plain flights take a steady 4 to 12 seconds, and on the Mandelbrot set, its Julia sets, Multibrot³, the Tricorn and Celtic they show real detail all the way down and back up, instead of a stretched blur. Spiral dives fly as before, and Blur keeps the quick flight.
 - Removed: the Slow dive (test) choice in the dive style menu. If you had picked it, you now get Full Motion.
