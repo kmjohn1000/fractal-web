@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.82.3 — 2026-11-15
+- Changed: the first-run tour no longer blocks the screen. You can pinch, drag and twist while a bubble shows, and the tour moves on once you have; tapping the button a bubble points at does what the button does, and the tour waits while its sheet is open. Tap the bubble for the next one.
+
 ## 1.82.2 — 2026-11-15
 - Changed: the first-run tour ends with one more bubble: the controls fade away when you leave the screen alone, and a touch anywhere brings them back.
 

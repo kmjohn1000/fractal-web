@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Fractal Atlas&trade;</title>
 
-<link rel="manifest" href="manifest.webmanifest?v=1.82.2">
+<link rel="manifest" href="manifest.webmanifest?v=1.82.3">
 <meta name="theme-color" content="#111111">
-<link rel="icon" href="icons/favicon-32.png?v=1.82.2" sizes="32x32" type="image/png">
+<link rel="icon" href="icons/favicon-32.png?v=1.82.3" sizes="32x32" type="image/png">
 
 <!-- iOS Safari ignores the manifest entirely for install/homescreen purposes
      and needs its own meta tags + a dedicated (non-transparent) icon. -->
@@ -15,7 +15,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fractal Atlas">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.82.2">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.82.3">
 
 <!-- Smart App Banner: Safari on iPhone/iPad offers the App Store app.
      Ignored everywhere else, including the app's own web view. -->
@@ -200,20 +200,22 @@
 
   /* The app's first-run tour (first-run-tour.js): one bubble at a time, in
      the info card's frosted style, pointing at the real control (a ring
-     round it) or floating over the picture for the gestures. The scrim
-     takes every tap: a tap anywhere is Next. */
+     round it) or floating over the picture for the gestures. Only the
+     bubble takes taps; everything else reaches the app, so the gestures
+     and the ringed control can be tried while it is up. */
   #tour {
     position: fixed; inset: 0; z-index: 70;
-    background: rgba(0,0,0,0.3); touch-action: none;
+    pointer-events: none;
     -webkit-tap-highlight-color: transparent;
   }
+  #tour.paused { visibility: hidden; }
   #tourRing {
     position: fixed; box-sizing: border-box; border-radius: 14px;
     border: 2px solid #fff; box-shadow: 0 0 0 4px rgba(108,204,255,0.45), 0 0 18px rgba(255,255,255,0.35);
     pointer-events: none;
   }
   #tourBubble {
-    position: fixed; box-sizing: border-box;
+    position: fixed; box-sizing: border-box; pointer-events: auto; touch-action: manipulation;
     width: min(300px, calc(100vw - 24px)); padding: 12px 14px 8px;
     border-radius: 14px; color: #fff; outline: none;
     background: rgba(20,20,22,0.86);
@@ -860,7 +862,7 @@
 <div id="boxZoomRect" class="hidden"></div>
 <div id="speedBubble" class="hidden" role="status" aria-live="polite"></div>
 <div id="crosshair" class="hidden"></div>
-<div id="tour" class="hidden" role="dialog" aria-modal="true" aria-label="Getting started">
+<div id="tour" class="hidden" role="dialog" aria-modal="false" aria-label="Getting started">
   <div id="tourRing" class="hidden" aria-hidden="true"></div>
   <div id="tourBubble" tabindex="-1">
     <p id="tourText"></p>
@@ -1166,6 +1168,6 @@
   </div>
 </div>
 
-<script type="module" src="src/app.js?v=1.82.2"></script>
+<script type="module" src="src/app.js?v=1.82.3"></script>
 </body>
 </html>

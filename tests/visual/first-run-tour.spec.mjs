@@ -1,11 +1,11 @@
-// The app's first-run tour (first-run-tour.js): coach marks one at a time, a tap anywhere for the next,
-// Skip on each, shown once. The tour is the iOS app's only, so on the web build (what Playwright loads)
+// The app's first-run tour (first-run-tour.js): coach marks one at a time that block nothing (a tap on
+// the bubble, the gesture itself or the ringed control goes on), Skip on each, shown once. The tour is the iOS app's only, so on the web build (what Playwright loads)
 // it never starts by itself; each test starts it through the test hook (startTour). Plain behavior
 // checks, no baselines. Run through `npm run test:visual`.
 import { test, expect } from "@playwright/test";
 
 /* global startTour, endTour, mainState, tourSteps, maybeStartTour, Platform, TOUR_STEPS,
-   TOUR_DELAY_MS, setControlsFade, controlsFaded */
+   TOUR_DELAY_MS, setControlsFade, controlsFaded, tourCheckGesture */
 
 let pageErrors = [];
 
@@ -25,8 +25,8 @@ async function load(page) {
 const tour = (page) => page.locator("#tour");
 const text = (page) => page.locator("#tourText");
 const tourDone = (page) => page.evaluate(() => localStorage.getItem("fractalAtlas.tourDone"));
-// A tap on the scrim, clear of the bubble and the toolbar.
-const tapScrim = (page) => page.locator("#tour").click({ position: { x: 8, y: 8 } });
+// A tap on the bubble, clear of its buttons (only the bubble takes taps; the rest reaches the app).
+const tapBubble = (page) => page.locator("#tourBubble").click({ position: { x: 8, y: 8 } });
 
 test.afterEach(() => {
   expect(pageErrors).toEqual([]);
@@ -48,7 +48,7 @@ test("walks through every step: gestures over the picture, then a ring round eac
   const n = await page.evaluate(() => tourSteps.length);
   expect(n).toBe(await page.evaluate(() => TOUR_STEPS.length)); // Mandelbrot's toolbar has every control
   await expect(page.locator("#tour")).toHaveAttribute("role", "dialog");
-  await expect(page.locator("#tour")).toHaveAttribute("aria-modal", "true");
+  await expect(page.locator("#tour")).toHaveAttribute("aria-modal", "false");
 
   // Step 1 floats over the picture: no ring, and the bubble has focus for VoiceOver.
   await expect(text(page)).toContainText("Pinch");
@@ -56,11 +56,21 @@ test("walks through every step: gestures over the picture, then a ring round eac
   await expect(page.locator("#tourRing")).toBeHidden();
   await expect(page.locator("#tourBubble")).toBeFocused();
 
-  await tapScrim(page);
+  // The tour blocks nothing: a drag on the picture moves the view, and once it settles the tour goes on.
+  const cx = await page.evaluate(() => mainState.cx);
+  await page.mouse.move(60, 120);
+  await page.mouse.down();
+  await page.mouse.move(140, 160, { steps: 6 });
+  await page.mouse.up();
+  expect(await page.evaluate(() => mainState.cx)).not.toBe(cx);
   await expect(text(page)).toContainText("Twist");
+  // A twist step waits for the picture to turn, not just to move.
+  await page.evaluate(() => { mainState.cx += 1e-3; tourCheckGesture(); });
+  await page.waitForTimeout(800);
+  await expect(text(page)).toContainText("Twist");
+  await page.evaluate(() => { mainState.rotation = (mainState.rotation || 0) + 0.3; tourCheckGesture(); });
 
   // The die: the ring sits round it and the bubble above it.
-  await tapScrim(page);
   await expect(text(page)).toContainText("die");
   const ring = await page.locator("#tourRing").boundingBox();
   const die = await page.locator("#teleportBtn").boundingBox();
@@ -71,21 +81,27 @@ test("walks through every step: gestures over the picture, then a ring round eac
   expect(bubble.y + bubble.height).toBeLessThan(die.y);
   await expect(page.locator("#tourBubble")).toHaveClass(/above/);
 
-  // A tap on the ringed control is Next, not a press of that control.
-  await tapScrim(page);
+  // A tap on the bubble is Next.
+  await tapBubble(page);
   await expect(text(page)).toContainText("Colors");
-  const color = await page.locator("#colormapBtn").boundingBox();
-  await page.mouse.click(color.x + color.width / 2, color.y + color.height / 2);
-  await expect(text(page)).toContainText("Places");
+  // A tap on the ringed control does its job (the sheet opens) and the tour waits out of sight until
+  // the sheet closes, then shows the next step.
+  await page.locator("#colormapBtn").click();
+  await expect(page.locator("#colorSheet")).toHaveClass(/open/);
+  await expect(page.locator("#tourBubble")).toBeHidden();
+  await page.locator("#colormapBtn").click();
   await expect(page.locator("#colorSheet")).not.toHaveClass(/open/);
+  await expect(page.locator("#tourBubble")).toBeVisible();
+  await expect(text(page)).toContainText("Places");
+  await expect(page.locator("#tourBubble")).toBeFocused();
 
-  await tapScrim(page);
+  await tapBubble(page);
   await expect(text(page)).toContainText("share a link");
   await expect(page.locator("#tourNext")).toHaveText("Next");
 
   // The last step floats over the picture again (the fading controls), says Done and has no Skip; it
   // ends the tour and remembers it.
-  await tapScrim(page);
+  await tapBubble(page);
   await expect(text(page)).toContainText("Touch anywhere to bring them back");
   await expect(page.locator("#tourCount")).toHaveText(`${n} of ${n}`);
   await expect(page.locator("#tourRing")).toBeHidden();
@@ -100,7 +116,7 @@ test("walks through every step: gestures over the picture, then a ring round eac
 test("Skip and Escape end the tour at once and remember it", async ({ page }) => {
   await load(page);
   await page.evaluate(() => startTour());
-  await tapScrim(page);
+  await tapBubble(page);
   await page.locator("#tourSkip").click();
   await expect(tour(page)).toBeHidden();
   expect(await tourDone(page)).toBe("1");
@@ -174,7 +190,7 @@ test.describe("phone", () => {
         const ring = await page.locator("#tourRing").boundingBox();
         expect(Math.abs(ring.x + ring.width / 2 - (share.x + share.width / 2))).toBeLessThan(2);
       }
-      await page.locator("#tour").tap({ position: { x: 8, y: 8 } });
+      await page.locator("#tourBubble").tap({ position: { x: 8, y: 8 } });
       await expect(page.locator("#tourCount")).toHaveText(new RegExp(`^${i + 2} of `));
     }
   });
