@@ -1003,57 +1003,6 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
       and the sheet focus are built and specced). Open: run VoiceOver and
       Voice Control over the app on the phone (the user's; the six checks
       are in the 1.80.5 Done entry), then the items below
-- [ ] Slower Full Motion flights with real frames all the way down (user idea,
-      2026-11-16; not approved). Only the plain (non-spiral) flights of the
-      zoom fractals; the 7 s spiral dives stay as they are. Today a flight
-      takes 1 to 2.5 s (`teleportDurationMs`, cubic ease, peak speed 3x the
-      average): Mini Mandelbrot is 28 e-folds in 1.8 s. Below
-      DEEP_ZOOM_THRESHOLD (1e-3) no new frames are drawn, only the last live
-      frame stretched (`gesturePreviewEligible`), which goes to a flat color:
-      on Mini Mandelbrot about 75% of the zoom. Slowing down alone only
-      stretches that frame longer. Prototype, behind a test switch: (a) a
-      steady pace like the spiral dives' (`steadyEase`; e.g. ~4 e-folds a
-      second, Mini Mandelbrot ~7 s); (b) live deep frames during the flight,
-      using the destination's reference orbit computed before takeoff (a
-      straight dive keeps the destination in view), at the live resolution
-      step. Measure: frame cost on the Mac, the flash rate with
-      `scripts/flash-check.mjs` (a slower pace should cut it in proportion,
-      maybe under the limit without Blur); the feel and the phone's frame
-      rate need the user's iPhone.
-      PROTOTYPE BUILT 2026-11-16 (1.85.0, `a61f82f`, user said build a test
-      switch): the third dive style "Slow dive (test)" in the Surprise me menu.
-      4 e-folds a second, 1.5 to 12 s (`slowDiveMs`); deep frames live via
-      `setFlightReference`/`flightDeepLive` in renderer.js for the Mandelbrot
-      set, its Julia sets, Multibrot³, Tricorn and Celtic (looked right all
-      the way down); the Burning Ship keeps the stretched frame (one
-      reference drew streaks a third of the way down), and its float32
-      streaks just above 1e-3 now last longer. Flash check, default look
-      (`store-assets/flash-check-slow/`): not better than Full Motion, 2 to
-      12 transitions a second (Full Motion 2 to 12), because the deep part
-      now shows real moving detail where it used to be a flat stretch; the
-      short flights of Spider, Phoenix, Magnet and the sine family (no
-      perturbation, 1.5 to 2.4 s) are unchanged at 8 to 11. Waiting on the
-      user's iPhone check (build 651): the feel, and whether the phone keeps
-      up (the live resolution step drops when frames run late).
-      USER'S iPHONE CHECK 2026-11-16: likes it, works well. Gap the user
-      found: a deep-to-deep flight's way out (the zoom-out half) never draws
-      live frames, only the stretched last frame, because the one reference
-      is at the destination and those frames are out of its reach
-      (`FLIGHT_REF_REACH`). Idea (not approved): a second reference at the
-      start view. The zoom path keeps the start in view on the way out the
-      same way it keeps the destination in view on the way in, so each frame
-      uses whichever reference is in reach. The start view's orbit is
-      usually already in the renderer's `refCache` from its settled render,
-      so it may cost nothing before takeoff. Limits stay as for the way in:
-      starts past float64's reach (`exactRenderEligible`) and the Burning
-      Ship keep the stretched frame until they rise above it.
-      BUILT 2026-11-16 (1.85.1, `4051ee1`, user said give it a shot): the
-      second reference is computed at takeoff (not reused from `refCache`,
-      which keeps no orbit data); `flightRefFor` picks the nearer one in
-      reach. Mini Mandelbrot to Seahorse Valley draws every deep frame live
-      both ways; way-out frames match settled renders of the same views.
-      Spec in `flight-blend.spec.mjs`. Not verified: the feel and the
-      phone's frame rate (the user's iPhone).
 - [ ] One-finger alternatives: double-tap to zoom in, a one-finger way to
       zoom out, and a rotate control that doesn't need a twist. Box zoom is
       the only one-finger zoom today, so keep it until these exist.
@@ -1444,6 +1393,7 @@ distance estimation → zoom-to-minibrot / AI discovery.
   below the rebased cell.
 
 ## Done
+- DONE 2026-11-16 (1.86.0, `2947972`; pushed to the live site): slower Full Motion flights with real frames all the way down (user idea 2026-11-16). Before, a plain flight took 1 to 2.5 s (`teleportDurationMs`, cubic ease) and below DEEP_ZOOM_THRESHOLD (1e-3) showed only the last live frame stretched, which went to a flat color (about 75% of the zoom on Mini Mandelbrot). Prototype 1.85.0 (`a61f82f`) as a third dive style, "Slow dive (test)": a steady 4 e-folds a second, 1.5 to 12 s (`slowDiveMs`, `steadyEase`), deep frames drawn live by perturbation against a reference orbit computed at the destination before takeoff (`setFlightReference`, `flightDeepLive` in renderer.js) for the Mandelbrot set, its Julia sets, Multibrot³, Tricorn and Celtic; the Burning Ship keeps the stretched frame (one reference drew streaks a third of the way down). Flash check (`store-assets/flash-check-slow/`): 2 to 12 transitions a second, no better than the quick flights, because the deep part now moves with real detail. The user liked it on the iPhone (build 651) and found the way out of a deep start still stretched; 1.85.1 (`4051ee1`) adds a second reference at the start view, and `flightRefFor` takes the nearer one in reach (Mini Mandelbrot to Seahorse Valley: every deep frame live both ways; way-out frames matched settled renders of the same views). 1.86.0 (user: "Replace full motion with slow dive. Call it full motion."): Full Motion flies this way, the menu is back to Full Motion and Blur, a stored "slow" reads as "full", Blur keeps the quick cubic flight, spiral dives are unchanged. Verified: lint, stamp, default identity zero, `flight-blend` (with new specs for the way out, the two-style menu and Blur's pace) plus `live-res`, `a11y`, `palettes`, `long-centers`, `first-run-tour`: 112 passed on webkit-iphone15 and chromium-desktop. Not verified: 1.86.0 on the user's iPhone (frame rate on long deep flights, battery), iPad, VoiceOver. `v2` needs this ported at the next main->v2 merge.
 - DONE 2026-11-16 (1.83.0, `8f5d2cf`; pushed to the live site): flights no longer flash (WCAG 2.3.1). The check (`scripts/flash-check.mjs`, `1bcb26b`: the app's own flyToPlace on a fake clock at iPhone 15 size, 16 ms frames; a transition is a 0.1 swing in the mean luminance of a 140 pt square, a quarter of a 10-degree field at 30 cm, or WCAG's red measure; more than 6 in any second fails) found flights flashing in every style, not only Bands and Stripes: in 1.82.4 the default Smooth failed 8 of 15 flights, Bands 8x 12 of 15 (worst 19 a second), Stripes 9 of 13; the flashing is in the fast float32 middle of a 1 to 2.5 s flight, and the website's cold open (Seahorse Valley, Sunburst Fan) was among the fails. Fix, options 1 and 3 (user's pick): `src/render/flight-blend.js`, an overlay canvas over the main canvas that follows the picture through two 100 ms exponential stages during a flight and fades out 0.5 s after the landing's redraw (a touch cancels it at once); with Reduce Motion a flight is a crossfade (the view jumps, the old picture dissolves in 0.5 s). Blend time picked from 50/70/100 ms runs: 70 left Magnet I's Deep Foam at 6 (red, the limit itself). Verified: all 86 flights (15 flights x Smooth, Smooth Turbo, Bands 1x/8x, Stripes 1x/8x) now 1 to 5 transitions a second (median 2, output `store-assets/flash-check-1.83.0-tau100/`); Reduce Motion's crossfade 1 to 2 on all 58 1x runs; default identity zero; lint; `flight-blend.spec.mjs` (4 tests) plus `a11y`, `live-res`, `places-sheet`, `cold-open`, `controls-fade`: 117 passed on webkit-iphone15 and chromium-desktop. Not verified: a real iPhone (look, cost and battery of the overlay's copies, frame drops), iPad, 120 Hz, VoiceOver. The flight now reads as a motion-blurred zoom into a blur, then a dissolve into the place: less of the zoom's detail shows. `v2` needs this ported at the next main->v2 merge. 1.84.0 (`e896afe`, user 2026-11-16: the blur loses the feel of the spiral dives, so it should be an option): touch and hold (or right-click) Surprise me for a Dive style menu (`src/ui/dive-style.js`), Full Motion (the default, the flights as before 1.83.0) or Blur (this blend), kept in `fractalAtlas.diveStyle`; the website's first-visit flight always blurs (user's pick); Reduce Motion still dissolves. Known, accepted by the user: in Full Motion the flights flash as measured above, and so do the Carpet, Gasket and Apollonian spiral dives (8 to 11 transitions a second, 12 to 14 on the red measure, unblurred). Verified: lint, stamp, default identity zero, `flight-blend.spec.mjs` 10 tests (20 on the two quick setups) plus `cold-open`, `places-sheet`; the menu looked at in an iPhone-size screenshot. The user checked build 648 on their iPhone 15 the same day: "looks good". Not verified: VoiceOver (the die now reads as a popup button; holding is VoiceOver's double-tap-and-hold), iPad.
 - DONE 2026-11-14 (1.82.0, `019057d`; pushed to the live site): first-run tour in the app (user idea and design 2026-11-14). `src/ui/first-run-tour.js`: six coach marks, one bubble at a time: pinch and drag, twist (both over the picture), then a ring round the die, Colors, the fractal picker (its first row is Places) and Share, with the bubble above the control. A tap anywhere or Next goes on, Skip on each but the last ("Done"), Escape ends it; a modal dialog whose bubble takes focus each step, Tab cycles Skip and Next, keys never reach the app's shortcuts. A step whose control is hidden in the current mode is left out. Shown once (`Platform.tour`, `fractalAtlas.tourDone`), app only (the website keeps its welcome card), 1.2 s after load; existing users see it once too (1.82.1, `5c102c9`, user 2026-11-14; 1.82.0 had skipped anyone who opened the app on an earlier day). `controlsBusy` keeps the toolbar shown while it is up. Cannot trip the rating prompt (that needs two opened days) or the cold open (website only). Verified: lint, stamp, `first-run-tour.spec.mjs` (7 tests) plus `controls-fade`, `cold-open`, `a11y`, `review-prompt`, `sw`: 102 passed on webkit-iphone15 and chromium-desktop; an iPhone 15 screenshot of each step looked at. Not verified: the app itself (the simulator or a real iPhone: the tour only starts natively), VoiceOver, an iPad layout. `v2` changes the toolbar and opens with a flight, so its steps need redoing at the next main->v2 merge. 1.82.2 (`8062263`, 2026-11-15, user said build it) adds a seventh, last step over the picture: the controls fade when the screen is left alone, touch anywhere brings them back; `first-run-tour.spec.mjs` 14 passed on the two quick setups. 1.82.3 (`1110162`, user 2026-11-15: "it blocks you from pinching"): the tour blocks nothing; only the bubble takes taps, gesture steps go on once the gesture changed the view, a tap on the ringed control does its job and goes on, an open sheet hides the tour until it closes; no longer aria-modal. Tour + controls-fade specs: 61 passed on the two quick setups. 1.82.4 (`e08c5c5`, design review): gesture bubbles near the top, control bubbles above the whole toolbar (not over the detail slider), shorter copy, arrow removed; 61 passed again; build 637 on the user's iPhone 15, where the user checked it: "it looks great" (2026-11-15). Left from the review: in landscape the gesture bubbles still overlap the top of the picture.
 - DONE 2026-11-14 (1.81.0, `bc83c05`, merged from branch `worktree-agent-a9848635f47ce2ca5`; pushed to the live site): controls fade when idle (user idea 2026-11-14, chosen over moving the detail slider into the info card). `src/ui/controls-fade.js`: the whole `#controls` fades after 4 s with no touch, pointer, key or focus (0.5 s, instant with reduced motion), and any touch wakes it; while faded it takes no taps, so the waking touch presses nothing, and canvas gestures still run. It never fades with a sheet or menu open, a slider held, keyboard focus in it, or the welcome card up. A single fractal view then grows into the toolbar's space (user's choice): top-anchored, same pixel size (`resizeView` in `view-math.js`, exact centers kept), the toolbar returns as an overlay without a re-render, and a resize, mode switch or dual view puts it back in the flow. Share links, Back history, the info card and the canvas label read the shown geometry (`shownGeometry` in `state.js`). Off under automation; `setControlsFade` turns it on in `tests/visual/controls-fade.spec.mjs` (24 tests). Verified: lint, default identity zero, 123 tests on `webkit-iphone15` and `chromium-desktop`. Not verified: a real iPhone (touch feel, VoiceOver, rotation while grown). `v2` replaces this toolbar, so it needs porting when `main` is next merged into `v2`.
