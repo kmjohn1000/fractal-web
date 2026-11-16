@@ -2,7 +2,7 @@
 // observers and the Escape handler, so app.js imports it last, after every other module has been evaluated
 // (the block used to run after app.js's imports). An ES module: every top-level declaration is exported
 // (test-hooks.js relies on it). Needs state.js (els).
-import { els } from "../core/state.js?v=1.83.0";
+import { els } from "../core/state.js?v=1.84.0";
 
 // Toggle buttons and popovers change state by toggling "active"/"open" at
 // many call sites, so one observer per element mirrors that state into
@@ -22,6 +22,7 @@ export const POPOVERS = [
   { menu: els.colorSheet, openers: [els.colormapBtn, els.kochColormapBtn, els.treeColormapBtn, els.hexaflakeColormapBtn, els.dragonColormapBtn, els.fernColorBtn] },
   { menu: els.placesSheet, openers: [...document.querySelectorAll("[data-opens-places]")] },
   { menu: els.shareMenu, openers: [...document.querySelectorAll(".shareBtn")] },
+  { menu: els.diveMenu, openers: [els.teleportBtn] }, // touch and hold the die (dive-style.js)
 ];
 for (const p of POPOVERS) {
   let opener = null;

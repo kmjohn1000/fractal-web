@@ -1,7 +1,7 @@
 // Photosensitivity check of Surprise-me flights: do any of them flash more
 // than three times a second (WCAG 2.3.1, the general and red flash thresholds)?
 //
-//   node scripts/flash-check.mjs [--out DIR] [--only NAME] [--distance-cm N] [--keep-frames] [--reduced-motion]
+//   node scripts/flash-check.mjs [--out DIR] [--only NAME] [--distance-cm N] [--keep-frames] [--reduced-motion] [--dive full|blur]
 //   node scripts/flash-check.mjs --analyze DIR     (re-run the analysis on frames already captured)
 //
 // Capture: the web build in headless WebKit at iPhone 15 size (393x852 pt at 2x, the renderer's
@@ -26,7 +26,7 @@
 // iPhone 15: 460 ppi at 3 px per point, about 60.4 points per cm. Viewing distance 30 cm by
 // default (a 10-degree field is then about 317 points across); 25 cm is stricter.
 /* global window, TELEPORT_DESTINATIONS, COLORMAPS, setColorStyle, mainState, zoomPath, prefersReducedMotion,
-   SPIRAL_DIVE_MS, teleportDurationMs, colorStyleFor, flyToPlace, blendState */
+   SPIRAL_DIVE_MS, teleportDurationMs, colorStyleFor, flyToPlace, blendState, setDiveStyle */
 import { webkit } from "@playwright/test";
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -44,6 +44,7 @@ const opt = (name, fallback) => { const i = args.indexOf(`--${name}`); return i 
 const has = (name) => args.includes(`--${name}`);
 const distanceCm = Number(opt("distance-cm", 30));
 const tau = opt("tau", null); // the flight blend's time constant in ms, for trying others (flight-blend.js)
+const dive = opt("dive", "full"); // the dive style (dive-style.js): full (the app's default) or blur
 // --shard I/N: only every Nth run, from the Ith (0-based), so N copies (each with its own PW_PORT) share one --out.
 const [shardI, shardN] = opt("shard", "0/1").split("/").map(Number);
 let runIndex = 0;
@@ -66,6 +67,10 @@ const FLIGHTS = [
   { fractal: "Sine L plane", to: "Golden Shells" },
   { fractal: "Julia:Phoenix", to: "Ember Spiral", styles: ["bands"] },
   { fractal: "Magnet I", to: "Deep Foam", styles: ["bands"] },
+  // The pattern fractals' 7 s spiral dives: Smooth only (Bands and Stripes don't draw on them).
+  { fractal: "Carpet", to: "Spiral Dive", styles: [] },
+  { fractal: "Gasket", to: "Stair Dive", styles: [] },
+  { fractal: "Apollonian", to: "Golden Dive", styles: [] },
 ];
 // The two Looks (Bands: Turbo, Stripes: Glacier), at the default Repeat and the slider's top.
 // Smooth is the control: the default style, in the fractal's (and the place's) own palette (null) and in Turbo.
@@ -80,7 +85,7 @@ const LOOKS = [
 const extraPalettes = opt("palettes", "").split(",").filter(Boolean); // e.g. --palettes Grayscale
 
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-const runName = (f, l) => `${slug(f.fractal)}_${f.from ? `${slug(f.from)}-to-` : ""}${slug(f.to)}_${l.style}_${slug(l.palette || "default")}_x${l.density}${tau ? `_tau${tau}` : ""}`;
+const runName = (f, l) => `${slug(f.fractal)}_${f.from ? `${slug(f.from)}-to-` : ""}${slug(f.to)}_${l.style}_${slug(l.palette || "default")}_x${l.density}${dive === "blur" ? "_blur" : ""}${tau ? `_tau${tau}` : ""}`;
 
 // ------------------------------------------------------------------ analysis
 
@@ -272,12 +277,13 @@ async function capture(outDir, only) {
           if (cm < 0) return { error: `no palette ${look.palette}` };
           if (from >= 0) window.__vt.place(from, cm); else window.__vt.fractal(flight.fractal, cm);
           setColorStyle({ style: look.style, density: look.density, offset: 0 });
+          setDiveStyle(look.dive);
           if (look.tau) blendState.tau = Number(look.tau);
           const st = mainState, d = TELEPORT_DESTINATIONS[to];
           const path = zoomPath([st.cx, st.cy, 2 * st.scale], [Number(d.re), Number(d.im), 2 * d.scale]);
           const ms = d.spiral && !prefersReducedMotion() ? SPIRAL_DIVE_MS : teleportDurationMs(path.distance);
           return { to, ms, efolds: path.distance * Math.SQRT2, drawn: colorStyleFor(st).glsl };
-        }, { flight, look: { ...look, tau } });
+        }, { flight, look: { ...look, tau, dive } });
         if (setup.error) throw new Error(`${name}: ${setup.error}`);
         // Let the starting view finish (supersamples, deep passes) on the fake clock.
         for (let i = 0; i < 400; i++) {

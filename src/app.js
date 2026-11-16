@@ -7,68 +7,69 @@
 // listed in exposeForTests below, so tests can read their names (see test-hooks.js). Nothing reads
 // this file's own names, so it exports nothing. Every import specifier needs the ?v= query (npm run
 // stamp keeps it current): a module is keyed by its full URL, so a differing query loads it twice.
-import { exposeForTests } from "./core/test-hooks.js?v=1.83.0";
-import * as state from "./core/state.js?v=1.83.0";
-import { currentName, els, mode } from "./core/state.js?v=1.83.0";
-import * as renderer from "./render/renderer.js?v=1.83.0";
-import * as platform from "./core/platform.js?v=1.83.0";
-import { Platform } from "./core/platform.js?v=1.83.0";
-import * as places from "./fractals/places.js?v=1.83.0";
-import * as colormaps from "./render/colormaps.js?v=1.83.0";
-import * as lsystem from "./fractals/lsystem.js?v=1.83.0";
-import * as vectorgeom from "./render/vectorgeom.js?v=1.83.0";
-import * as viewMath from "./core/view-math.js?v=1.83.0";
-import * as colorStyles from "./render/color-styles.js?v=1.83.0";
-import * as hudFormat from "./ui/hud-format.js?v=1.83.0";
-import * as configs from "./core/configs.js?v=1.83.0";
-import * as dragon from "./fractals/dragon.js?v=1.83.0";
-import * as lcurves from "./fractals/lcurves.js?v=1.83.0";
-import * as curveView from "./fractals/curve-view.js?v=1.83.0";
-import * as fern from "./fractals/fern.js?v=1.83.0";
-import * as ifs from "./fractals/ifs.js?v=1.83.0";
-import * as cornerRules from "./fractals/corner-rules.js?v=1.83.0";
-import * as chaosRunModule from "./fractals/chaos-run.js?v=1.83.0";
-import * as shaders from "./render/shaders.js?v=1.83.0";
-import * as koch from "./fractals/koch.js?v=1.83.0";
-import * as pythagoras from "./fractals/pythagoras.js?v=1.83.0";
-import * as hexaflake from "./fractals/hexaflake.js?v=1.83.0";
-import * as diag from "./core/diag.js?v=1.83.0";
-import * as fractalDefs from "./fractals/fractal-defs.js?v=1.83.0";
-import * as digitFractals from "./fractals/digit-fractals.js?v=1.83.0";
-import * as apollonian from "./fractals/apollonian.js?v=1.83.0";
-import * as deepzoom from "./core/deepzoom.js?v=1.83.0";
-import * as stateColors from "./core/state-colors.js?v=1.83.0";
-import * as renderLayout from "./render/render-layout.js?v=1.83.0";
-import * as flightBlend from "./render/flight-blend.js?v=1.83.0";
-import { layoutCanvasArea, requestRender, updateLUT } from "./render/render-layout.js?v=1.83.0";
-import * as hud from "./ui/hud.js?v=1.83.0";
-import { refitHud } from "./ui/hud.js?v=1.83.0";
-import * as modes from "./ui/modes.js?v=1.83.0";
-import { selectFractal } from "./ui/modes.js?v=1.83.0";
-import * as interaction from "./ui/interaction.js?v=1.83.0";
-import * as vectorInteraction from "./ui/vector-interaction.js?v=1.83.0";
-import { VECTOR_VIEWS } from "./ui/vector-interaction.js?v=1.83.0";
-import * as compassUi from "./ui/compass-ui.js?v=1.83.0";
-import { applyHudVisibility, initWelcomeCard } from "./ui/compass-ui.js?v=1.83.0";
-import * as fractalPicker from "./ui/fractal-picker.js?v=1.83.0";
-import * as teleport from "./ui/teleport.js?v=1.83.0";
-import { coldOpen } from "./ui/teleport.js?v=1.83.0";
-import * as patternControls from "./ui/pattern-controls.js?v=1.83.0";
-import * as colormapPicker from "./ui/colormap-picker.js?v=1.83.0";
-import { updateColorSwatches } from "./ui/colormap-picker.js?v=1.83.0";
-import * as colorSheet from "./ui/color-sheet.js?v=1.83.0";
-import { fitColorSegment, prepareColorSheet } from "./ui/color-sheet.js?v=1.83.0";
-import * as placesSheet from "./ui/places-sheet.js?v=1.83.0";
-import * as share from "./ui/share.js?v=1.83.0";
-import { applyShareHashFromUrl, applyShareLink, parseShareHash } from "./ui/share.js?v=1.83.0";
-import * as shareMenu from "./ui/share-menu.js?v=1.83.0";
-import * as reviewPrompt from "./ui/review-prompt.js?v=1.83.0";
-import * as penrose from "./fractals/penrose.js?v=1.83.0";
-import * as canvasA11y from "./ui/canvas-a11y.js?v=1.83.0";
-import * as controlsFade from "./ui/controls-fade.js?v=1.83.0";
-import * as firstRunTour from "./ui/first-run-tour.js?v=1.83.0";
-import { maybeStartTour } from "./ui/first-run-tour.js?v=1.83.0";
-import * as toolbarA11y from "./ui/toolbar-a11y.js?v=1.83.0"; // last: it attaches its observers on load, after every module above has run
+import { exposeForTests } from "./core/test-hooks.js?v=1.84.0";
+import * as state from "./core/state.js?v=1.84.0";
+import { currentName, els, mode } from "./core/state.js?v=1.84.0";
+import * as renderer from "./render/renderer.js?v=1.84.0";
+import * as platform from "./core/platform.js?v=1.84.0";
+import { Platform } from "./core/platform.js?v=1.84.0";
+import * as places from "./fractals/places.js?v=1.84.0";
+import * as colormaps from "./render/colormaps.js?v=1.84.0";
+import * as lsystem from "./fractals/lsystem.js?v=1.84.0";
+import * as vectorgeom from "./render/vectorgeom.js?v=1.84.0";
+import * as viewMath from "./core/view-math.js?v=1.84.0";
+import * as colorStyles from "./render/color-styles.js?v=1.84.0";
+import * as hudFormat from "./ui/hud-format.js?v=1.84.0";
+import * as configs from "./core/configs.js?v=1.84.0";
+import * as dragon from "./fractals/dragon.js?v=1.84.0";
+import * as lcurves from "./fractals/lcurves.js?v=1.84.0";
+import * as curveView from "./fractals/curve-view.js?v=1.84.0";
+import * as fern from "./fractals/fern.js?v=1.84.0";
+import * as ifs from "./fractals/ifs.js?v=1.84.0";
+import * as cornerRules from "./fractals/corner-rules.js?v=1.84.0";
+import * as chaosRunModule from "./fractals/chaos-run.js?v=1.84.0";
+import * as shaders from "./render/shaders.js?v=1.84.0";
+import * as koch from "./fractals/koch.js?v=1.84.0";
+import * as pythagoras from "./fractals/pythagoras.js?v=1.84.0";
+import * as hexaflake from "./fractals/hexaflake.js?v=1.84.0";
+import * as diag from "./core/diag.js?v=1.84.0";
+import * as fractalDefs from "./fractals/fractal-defs.js?v=1.84.0";
+import * as digitFractals from "./fractals/digit-fractals.js?v=1.84.0";
+import * as apollonian from "./fractals/apollonian.js?v=1.84.0";
+import * as deepzoom from "./core/deepzoom.js?v=1.84.0";
+import * as stateColors from "./core/state-colors.js?v=1.84.0";
+import * as renderLayout from "./render/render-layout.js?v=1.84.0";
+import * as flightBlend from "./render/flight-blend.js?v=1.84.0";
+import * as diveStyleModule from "./ui/dive-style.js?v=1.84.0";
+import { layoutCanvasArea, requestRender, updateLUT } from "./render/render-layout.js?v=1.84.0";
+import * as hud from "./ui/hud.js?v=1.84.0";
+import { refitHud } from "./ui/hud.js?v=1.84.0";
+import * as modes from "./ui/modes.js?v=1.84.0";
+import { selectFractal } from "./ui/modes.js?v=1.84.0";
+import * as interaction from "./ui/interaction.js?v=1.84.0";
+import * as vectorInteraction from "./ui/vector-interaction.js?v=1.84.0";
+import { VECTOR_VIEWS } from "./ui/vector-interaction.js?v=1.84.0";
+import * as compassUi from "./ui/compass-ui.js?v=1.84.0";
+import { applyHudVisibility, initWelcomeCard } from "./ui/compass-ui.js?v=1.84.0";
+import * as fractalPicker from "./ui/fractal-picker.js?v=1.84.0";
+import * as teleport from "./ui/teleport.js?v=1.84.0";
+import { coldOpen } from "./ui/teleport.js?v=1.84.0";
+import * as patternControls from "./ui/pattern-controls.js?v=1.84.0";
+import * as colormapPicker from "./ui/colormap-picker.js?v=1.84.0";
+import { updateColorSwatches } from "./ui/colormap-picker.js?v=1.84.0";
+import * as colorSheet from "./ui/color-sheet.js?v=1.84.0";
+import { fitColorSegment, prepareColorSheet } from "./ui/color-sheet.js?v=1.84.0";
+import * as placesSheet from "./ui/places-sheet.js?v=1.84.0";
+import * as share from "./ui/share.js?v=1.84.0";
+import { applyShareHashFromUrl, applyShareLink, parseShareHash } from "./ui/share.js?v=1.84.0";
+import * as shareMenu from "./ui/share-menu.js?v=1.84.0";
+import * as reviewPrompt from "./ui/review-prompt.js?v=1.84.0";
+import * as penrose from "./fractals/penrose.js?v=1.84.0";
+import * as canvasA11y from "./ui/canvas-a11y.js?v=1.84.0";
+import * as controlsFade from "./ui/controls-fade.js?v=1.84.0";
+import * as firstRunTour from "./ui/first-run-tour.js?v=1.84.0";
+import { maybeStartTour } from "./ui/first-run-tour.js?v=1.84.0";
+import * as toolbarA11y from "./ui/toolbar-a11y.js?v=1.84.0"; // last: it attaches its observers on load, after every module above has run
 
 exposeForTests({
   "src/core/platform.js": platform, "src/fractals/places.js": places, "src/render/renderer.js": renderer, "src/core/state.js": state,
@@ -79,7 +80,7 @@ exposeForTests({
   "src/fractals/fern.js": fern, "src/fractals/ifs.js": ifs, "src/fractals/corner-rules.js": cornerRules,
   "src/render/colormaps.js": colormaps, "src/fractals/lsystem.js": lsystem, "src/render/vectorgeom.js": vectorgeom, "src/core/view-math.js": viewMath,
   "src/render/color-styles.js": colorStyles, "src/ui/hud.js": hud, "src/ui/hud-format.js": hudFormat,
-  "src/core/state-colors.js": stateColors, "src/render/render-layout.js": renderLayout, "src/render/flight-blend.js": flightBlend, "src/ui/modes.js": modes, "src/ui/interaction.js": interaction,
+  "src/core/state-colors.js": stateColors, "src/render/render-layout.js": renderLayout, "src/render/flight-blend.js": flightBlend, "src/ui/dive-style.js": diveStyleModule, "src/ui/modes.js": modes, "src/ui/interaction.js": interaction,
   "src/ui/vector-interaction.js": vectorInteraction,
   "src/ui/compass-ui.js": compassUi, "src/ui/teleport.js": teleport, "src/ui/pattern-controls.js": patternControls, "src/ui/colormap-picker.js": colormapPicker,
   "src/ui/color-sheet.js": colorSheet, "src/ui/places-sheet.js": placesSheet, "src/ui/share.js": share, "src/ui/share-menu.js": shareMenu,

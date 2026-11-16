@@ -2,6 +2,11 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.84.0 — 2026-11-16
+- Added: touch and hold Surprise me (or right-click it) to choose the dive style. Full Motion, the default, flies the way it always has, spiral dives included; Blur softens the fast flashing a quick zoom can make (1.83.0's flights). The choice is remembered.
+- Changed: flights are back to full motion unless you pick Blur. With Reduce Motion on, they still dissolve to the place.
+- Changed: the website's first-visit flight, which starts without a tap, always uses Blur.
+
 ## 1.83.0 — 2026-11-16
 - Fixed: Surprise me's flights no longer flash. A fast zoom could sweep big parts of the screen from dark to bright and back several times a second, in every color style; the picture now blends from frame to frame during a flight, so it stays under three flashes a second.
 - Changed: with Reduce Motion on, Surprise me and the places list dissolve to the new place instead of flying there.

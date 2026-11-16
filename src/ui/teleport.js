@@ -4,17 +4,18 @@
 // showHud); the scripts before and after it call cancelTeleport etc.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { FRACTAL_CONFIGS, fractalLabel } from "../core/configs.js?v=1.83.0";
-import { announce } from "../fractals/chaos-run.js?v=1.83.0";
-import { viewFromBounds } from "../fractals/fractal-defs.js?v=1.83.0";
-import { TELEPORT_DESTINATIONS } from "../fractals/places.js?v=1.83.0";
-import { applyAutoIter, currentName, dualActive, els, mainCanvasAspect, mainState, mode, pushHistory, setActivePane } from "../core/state.js?v=1.83.0";
-import { applyDefaultColormap, markInteracting } from "../core/state-colors.js?v=1.83.0";
-import { renderAll } from "../render/render-layout.js?v=1.83.0";
-import { exactFromPlace, normalizeAngle, setCenter } from "../core/view-math.js?v=1.83.0";
-import { selectFractal } from "./modes.js?v=1.83.0";
-import { prefersReducedMotion, showHud } from "./compass-ui.js?v=1.83.0";
-import { cancelFlightBlend, landFlightBlend, startCrossfade, startFlightBlend } from "../render/flight-blend.js?v=1.83.0";
+import { FRACTAL_CONFIGS, fractalLabel } from "../core/configs.js?v=1.84.0";
+import { announce } from "../fractals/chaos-run.js?v=1.84.0";
+import { viewFromBounds } from "../fractals/fractal-defs.js?v=1.84.0";
+import { TELEPORT_DESTINATIONS } from "../fractals/places.js?v=1.84.0";
+import { applyAutoIter, currentName, dualActive, els, mainCanvasAspect, mainState, mode, pushHistory, setActivePane } from "../core/state.js?v=1.84.0";
+import { applyDefaultColormap, markInteracting } from "../core/state-colors.js?v=1.84.0";
+import { renderAll } from "../render/render-layout.js?v=1.84.0";
+import { exactFromPlace, normalizeAngle, setCenter } from "../core/view-math.js?v=1.84.0";
+import { selectFractal } from "./modes.js?v=1.84.0";
+import { prefersReducedMotion, showHud } from "./compass-ui.js?v=1.84.0";
+import { cancelFlightBlend, landFlightBlend, startCrossfade, startFlightBlend } from "../render/flight-blend.js?v=1.84.0";
+import { closeDiveMenu, consumeDiveLongPress, diveStyle } from "./dive-style.js?v=1.84.0";
 
 // ---------------------------------------------------------------- teleport ("Surprise me")
 
@@ -131,8 +132,9 @@ export function teleport() {
 }
 
 // The flight itself, shared by Surprise me and the web's first-visit cold
-// open (flyToPlace).
-export function flyTo(st, d, target, landingIndex, spinSign) {
+// open (flyToPlace). style: the dive style (dive-style.js), the user's unless
+// the caller fixes one (the cold open always blurs).
+export function flyTo(st, d, target, landingIndex, spinSign, style = diveStyle) {
   // A destination with a rotation lands turned to it (0 for the Burning
   // Ship's places, so they land upright whatever the view was turned to);
   // one without leaves the view's rotation alone, as before. The turn takes
@@ -209,10 +211,14 @@ export function flyTo(st, d, target, landingIndex, spinSign) {
   // settle timer does the full-quality render -- perturbation reference
   // orbit included, via render()'s normal chooseReference call -- plus
   // applyAutoIter once the last frame lands.
-  // The picture on screen goes through the flight blend (flight-blend.js): a
-  // fast zoom sweeps big areas dark and bright several times a second, and
-  // the blend keeps that under three flashes a second.
-  startFlightBlend();
+  // Dive style Blur (dive-style.js; touch and hold the die): the picture on
+  // screen goes through the flight blend (flight-blend.js). A fast zoom sweeps
+  // big areas dark and bright several times a second, and the blend keeps that
+  // under three flashes a second. Full Motion, the default, shows every frame.
+  // A flight that starts while an earlier one's blend is still fading takes
+  // that blend away (the style may have changed in between).
+  if (style === "blur") startFlightBlend();
+  else cancelFlightBlend();
   const step = (now) => {
     if (gen !== teleportGeneration) return; // a newer flight carries the blend on, or a touch cancelled it
     if (mode !== "fractal" || mainState !== st) { cancelFlightBlend(); return; }
@@ -239,11 +245,11 @@ export function flyTo(st, d, target, landingIndex, spinSign) {
   requestAnimationFrame(step);
 }
 
-// Flies the main view to one named place, as Surprise me does.
-export function flyToPlace(i) {
+// Flies the main view to one named place, as Surprise me does (style: as flyTo).
+export function flyToPlace(i, style = diveStyle) {
   const d = TELEPORT_DESTINATIONS[i];
   lastTeleportIndex = i;
-  flyTo(mainState, d, { cx: Number(d.re), cy: Number(d.im), scale: d.scale }, i, 1);
+  flyTo(mainState, d, { cx: Number(d.re), cy: Number(d.im), scale: d.scale }, i, 1, style);
 }
 
 // The website's first visit (no share link): instead of a small plain
@@ -251,7 +257,10 @@ export function flyToPlace(i) {
 // the info card open. Waits a beat after the first painted frame so the
 // whole set registers first; any touch (pointerdown bumps the generation)
 // before then, or during the flight, wins. A renamed label throws here
-// rather than silently skipping the flight.
+// rather than silently skipping the flight. It always flies in Blur: nobody
+// tapped anything to start it or has had the chance to pick a dive style, and
+// in Full Motion these flights flash up to 10 times a second (the user's call,
+// 2026-11-16: Full Motion is the default everywhere else).
 export const COLD_OPEN_PLACES = ["Seahorse Valley", "Mini Mandelbrot", "Elephant Valley", "Double Spiral", "Sunburst Fan"];
 export function coldOpen() {
   const gen = teleportGeneration;
@@ -263,7 +272,7 @@ export function coldOpen() {
       return i;
     });
     showHud();
-    flyToPlace(places[Math.floor(Math.random() * places.length)]);
+    flyToPlace(places[Math.floor(Math.random() * places.length)], "blur");
   }, 600)));
 }
 
@@ -296,7 +305,12 @@ export function glideMainTo(x, y) {
   requestAnimationFrame(step);
 }
 
-els.teleportBtn.addEventListener("click", teleport);
+// A hold that opened the dive style menu doesn't also fly; a plain tap closes the menu and flies.
+els.teleportBtn.addEventListener("click", () => {
+  if (consumeDiveLongPress()) return;
+  closeDiveMenu();
+  teleport();
+});
 
 els.resetBtn.addEventListener("click", () => selectFractal(currentName, { fresh: true }));
 

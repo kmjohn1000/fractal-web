@@ -1,25 +1,28 @@
-// The flight blend (flight-blend.js): during a Surprise-me flight an overlay over the main canvas
-// follows the picture through a time-based low-pass, so a fast zoom can't flash; it fades away after
-// the landing. With Reduce Motion on, a flight is a crossfade instead: the view jumps to the place and
-// the old picture dissolves into it. Function checks, no screenshots (scripts/flash-check.mjs measures
-// the flashing itself). Run through `npm run test:visual`.
+// Dive styles (dive-style.js) and the flight blend (flight-blend.js). Touch and hold Surprise me for a
+// menu: Full Motion (the default: every frame of the flight) or Blur (an overlay over the main canvas
+// follows the picture through a time-based low-pass, so a fast zoom can't flash, and fades away after the
+// landing). With Reduce Motion on, a flight is a crossfade either way: the view jumps to the place and the
+// old picture dissolves into it. Function checks, no screenshots (scripts/flash-check.mjs measures the
+// flashing itself). Run through `npm run test:visual`.
 import { test, expect } from "@playwright/test";
 
-/* global TELEPORT_DESTINATIONS, mainState, flyToPlace, blendState, teleportLandingIndex, enterDual */
+/* global TELEPORT_DESTINATIONS, mainState, flyToPlace, blendState, teleportLandingIndex, enterDual, diveStyle, isInteracting */
 
 const DRIVER = new URL("../driver.js", import.meta.url).pathname;
 let pageErrors = [];
 
-async function load(page) {
+// dive: the stored dive style to start with (null: none stored, the default).
+async function load(page, dive = "blur") {
   pageErrors = [];
   page.on("pageerror", (e) => pageErrors.push(e.message));
-  await page.addInitScript(() => {
+  await page.addInitScript((d) => {
     try {
       localStorage.setItem("fractalAtlas.visited", "1");
       localStorage.setItem("fractalAtlas.welcomeDismissed", "1");
       localStorage.setItem("fractalAtlas.tourDone", "1");
+      if (d && !sessionStorage.getItem("diveSet")) { localStorage.setItem("fractalAtlas.diveStyle", d); sessionStorage.setItem("diveSet", "1"); }
     } catch { /* storage blocked */ }
-  });
+  }, dive);
   await page.goto("index.html#v=1&m=fractal&f=Mandelbrot&x=-0.5&y=0&s=1.2&r=0");
   await page.addScriptTag({ path: DRIVER });
   await settle(page);
@@ -36,67 +39,151 @@ const overlay = (page) => page.evaluate(() => {
     over: [r.x - c.x, r.y - c.y, r.width - c.width, r.height - c.height].every((v) => Math.abs(v) < 0.5),
   };
 });
+const shown = async (page) => (await overlay(page))?.shown ?? false;
+const menu = (page) => page.locator("#diveMenu");
+// Touch and hold the die: press, wait past the hold time, lift.
+async function holdDie(page) {
+  const box = await page.locator("#teleportBtn").boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(700);
+  await page.mouse.up();
+}
 
 test.afterEach(() => {
   expect(pageErrors, "uncaught page errors").toEqual([]);
 });
 
-test("a flight shows the blend over the canvas, and it is gone once the place has settled", async ({ page }) => {
-  await load(page);
-  expect(await overlay(page), "no overlay before the first flight").toBeNull();
-  const i = await place(page, "Seahorse Valley");
-  await page.evaluate((n) => flyToPlace(n), i);
-  const o = await overlay(page);
-  expect(o.shown && o.active && o.mode === "blend").toBe(true);
-  expect(o.over, "the overlay covers the main canvas exactly").toBe(true);
-  expect(o.pointerEvents, "touches go through to the canvas").toBe("none");
-  // settled() waits for the overlay (the driver's flightBlendBusy), so screenshots never catch it.
-  await settle(page);
-  expect((await overlay(page)).shown).toBe(false);
-  expect(await page.evaluate(() => teleportLandingIndex)).toBe(i);
-  expect(await page.evaluate((n) => mainState.scale === TELEPORT_DESTINATIONS[n].scale, i)).toBe(true);
+test.describe("dive style", () => {
+  test("Full Motion is the default: a flight draws every frame, with no blend over it", async ({ page }) => {
+    await load(page, null);
+    expect(await page.evaluate(() => diveStyle)).toBe("full");
+    await page.locator("#teleportBtn").click();
+    await page.waitForFunction(() => isInteracting, null, { timeout: 5_000 });
+    expect(await shown(page), "no overlay in Full Motion").toBe(false);
+    await page.waitForTimeout(400);
+    expect(await shown(page), "nor later in the flight").toBe(false);
+    await settle(page);
+    expect(await page.evaluate(() => teleportLandingIndex), "it landed on a place").toBeGreaterThanOrEqual(0);
+  });
+
+  test("touching and holding the die opens the menu without flying; picking Blur is kept", async ({ page }) => {
+    await load(page, null);
+    const before = await page.evaluate(() => mainState.scale);
+    await holdDie(page);
+    await expect(menu(page)).toHaveClass(/open/);
+    expect(await page.evaluate(() => mainState.scale), "the hold didn't fly").toBe(before);
+    await expect(menu(page).locator('[data-dive="full"]')).toHaveAttribute("aria-checked", "true");
+    await expect(menu(page).locator('[data-dive="full"]'), "focus goes to the current style").toBeFocused();
+    const m = await menu(page).boundingBox(), d = await page.locator("#teleportBtn").boundingBox();
+    expect(m.y + m.height, "the menu sits above the die").toBeLessThanOrEqual(d.y);
+    const vw = page.viewportSize().width;
+    expect(m.x >= 0 && m.x + m.width <= vw, "and inside the screen").toBe(true);
+
+    await menu(page).locator('[data-dive="blur"]').click();
+    await expect(menu(page)).not.toHaveClass(/open/);
+    expect(await page.evaluate(() => [diveStyle, localStorage.getItem("fractalAtlas.diveStyle")])).toEqual(["blur", "blur"]);
+    await page.reload();
+    await page.addScriptTag({ path: DRIVER });
+    expect(await page.evaluate(() => diveStyle), "remembered after a reload").toBe("blur");
+  });
+
+  test("a right-click opens the menu too; Escape and a tap elsewhere close it", async ({ page }) => {
+    await load(page, null);
+    await page.locator("#teleportBtn").click({ button: "right" });
+    await expect(menu(page)).toHaveClass(/open/);
+    await page.keyboard.press("Escape");
+    await expect(menu(page)).not.toHaveClass(/open/);
+    await page.locator("#teleportBtn").click({ button: "right" });
+    await expect(menu(page)).toHaveClass(/open/);
+    const c = await page.locator("#mainCanvas").boundingBox();
+    await page.mouse.click(c.x + c.width / 2, c.y + c.height / 3);
+    await expect(menu(page)).not.toHaveClass(/open/);
+  });
+
+  test("a plain tap on the die with the menu open closes it and flies", async ({ page }) => {
+    await load(page, null);
+    await page.locator("#teleportBtn").click({ button: "right" });
+    await expect(menu(page)).toHaveClass(/open/);
+    await page.locator("#teleportBtn").click();
+    await expect(menu(page)).not.toHaveClass(/open/);
+    // The flight's first frame is on the next animation frame: wait for it before waiting for the landing.
+    await page.waitForFunction(() => isInteracting, null, { timeout: 5_000 });
+    await settle(page);
+    expect(await page.evaluate(() => teleportLandingIndex), "it flew to a place").toBeGreaterThanOrEqual(0);
+  });
 });
 
-test("a touch during a flight takes the blend away at once", async ({ page }) => {
-  await load(page);
-  await page.evaluate((n) => flyToPlace(n), await place(page, "Mini Mandelbrot"));
-  await page.waitForTimeout(300);
-  expect((await overlay(page)).shown).toBe(true);
-  const box = await page.locator("#mainCanvas").boundingBox();
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page.mouse.down();
-  expect((await overlay(page)).shown, "hidden on the pointerdown").toBe(false);
-  await page.mouse.up();
-  expect(await page.evaluate(() => teleportLandingIndex), "the flight never landed").not.toBe(await place(page, "Mini Mandelbrot"));
+test("the website's first-visit flight always blurs, whatever the dive style", async ({ page }) => {
+  pageErrors = [];
+  page.on("pageerror", (e) => pageErrors.push(e.message));
+  // A fresh visitor (no visited flag), no share link: the cold open flies to a showpiece.
+  await page.goto("index.html");
+  await page.waitForFunction(() => typeof diveStyle === "string" && isInteracting, null, { timeout: 30_000, polling: 20 });
+  expect(await page.evaluate(() => diveStyle), "the visitor's own style is the default").toBe("full");
+  expect(await shown(page), "the flight blurs anyway").toBe(true);
 });
 
-test("in dual view the overlay covers only the main pane", async ({ page }) => {
-  await load(page);
-  await page.evaluate(() => enterDual());
-  await settle(page);
-  await page.evaluate((n) => flyToPlace(n), await place(page, "Elephant Valley"));
-  const o = await overlay(page);
-  expect(o.shown && o.over).toBe(true);
-  await settle(page);
+test.describe("Blur", () => {
+  test("a flight shows the blend over the canvas, and it is gone once the place has settled", async ({ page }) => {
+    await load(page);
+    expect(await overlay(page), "no overlay before the first flight").toBeNull();
+    const i = await place(page, "Seahorse Valley");
+    await page.evaluate((n) => flyToPlace(n), i);
+    const o = await overlay(page);
+    expect(o.shown && o.active && o.mode === "blend").toBe(true);
+    expect(o.over, "the overlay covers the main canvas exactly").toBe(true);
+    expect(o.pointerEvents, "touches go through to the canvas").toBe("none");
+    // settled() waits for the overlay (the driver's flightBlendBusy), so screenshots never catch it.
+    await settle(page);
+    expect(await shown(page)).toBe(false);
+    expect(await page.evaluate(() => teleportLandingIndex)).toBe(i);
+    expect(await page.evaluate((n) => mainState.scale === TELEPORT_DESTINATIONS[n].scale, i)).toBe(true);
+  });
+
+  test("a touch during a flight takes the blend away at once", async ({ page }) => {
+    await load(page);
+    await page.evaluate((n) => flyToPlace(n), await place(page, "Mini Mandelbrot"));
+    await page.waitForTimeout(300);
+    expect(await shown(page)).toBe(true);
+    const box = await page.locator("#mainCanvas").boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    expect(await shown(page), "hidden on the pointerdown").toBe(false);
+    await page.mouse.up();
+    expect(await page.evaluate(() => teleportLandingIndex), "the flight never landed").not.toBe(await place(page, "Mini Mandelbrot"));
+  });
+
+  test("in dual view the overlay covers only the main pane", async ({ page }) => {
+    await load(page);
+    await page.evaluate(() => enterDual());
+    await settle(page);
+    await page.evaluate((n) => flyToPlace(n), await place(page, "Elephant Valley"));
+    const o = await overlay(page);
+    expect(o.shown && o.over).toBe(true);
+    await settle(page);
+  });
 });
 
 test.describe("with Reduce Motion on", () => {
   test.use({ reducedMotion: "reduce" });
 
-  test("a flight is a crossfade: the view is on the place at once, and the old picture dissolves", async ({ page }) => {
-    await load(page);
-    const i = await place(page, "Sunburst Fan");
-    const at = await page.evaluate((n) => {
-      flyToPlace(n);
-      const d = TELEPORT_DESTINATIONS[n];
-      return { scale: mainState.scale === d.scale, landed: teleportLandingIndex === n };
-    }, i);
-    expect(at, "no frames in between: the view jumps straight to the place").toEqual({ scale: true, landed: true });
-    const o = await overlay(page);
-    expect(o.shown && o.mode === "crossfade" && o.opacity === 1, "the old picture holds while the new one draws").toBe(true);
-    // Once the new place has drawn in full, the overlay dissolves (opacity heads to 0) and goes.
-    await page.waitForFunction(() => Number(getComputedStyle(document.getElementById("flightBlend")).opacity) < 1, null, { timeout: 30_000 });
-    await settle(page);
-    expect((await overlay(page)).shown).toBe(false);
-  });
+  for (const dive of ["full", "blur"]) {
+    test(`a flight is a crossfade in ${dive === "full" ? "Full Motion" : "Blur"}: the view is on the place at once, and the old picture dissolves`, async ({ page }) => {
+      await load(page, dive);
+      const i = await place(page, "Sunburst Fan");
+      const at = await page.evaluate((n) => {
+        flyToPlace(n);
+        const d = TELEPORT_DESTINATIONS[n];
+        return { scale: mainState.scale === d.scale, landed: teleportLandingIndex === n };
+      }, i);
+      expect(at, "no frames in between: the view jumps straight to the place").toEqual({ scale: true, landed: true });
+      const o = await overlay(page);
+      expect(o.shown && o.mode === "crossfade" && o.opacity === 1, "the old picture holds while the new one draws").toBe(true);
+      // Once the new place has drawn in full, the overlay dissolves (opacity heads to 0) and goes.
+      await page.waitForFunction(() => Number(getComputedStyle(document.getElementById("flightBlend")).opacity) < 1, null, { timeout: 30_000 });
+      await settle(page);
+      expect(await shown(page)).toBe(false);
+    });
+  }
 });

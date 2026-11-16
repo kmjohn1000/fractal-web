@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Fractal Atlas&trade;</title>
 
-<link rel="manifest" href="manifest.webmanifest?v=1.83.0">
+<link rel="manifest" href="manifest.webmanifest?v=1.84.0">
 <meta name="theme-color" content="#111111">
-<link rel="icon" href="icons/favicon-32.png?v=1.83.0" sizes="32x32" type="image/png">
+<link rel="icon" href="icons/favicon-32.png?v=1.84.0" sizes="32x32" type="image/png">
 
 <!-- iOS Safari ignores the manifest entirely for install/homescreen purposes
      and needs its own meta tags + a dedicated (non-transparent) icon. -->
@@ -15,7 +15,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fractal Atlas">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.83.0">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.84.0">
 
 <!-- Smart App Banner: Safari on iPhone/iPad offers the App Store app.
      Ignored everywhere else, including the app's own web view. -->
@@ -610,6 +610,20 @@
   }
   #shareMenu.open { display: flex; }
   #shareMenu button { text-align: left; }
+  /* The dive style menu: like the share menu, above the die (left is set by dive-style.js). */
+  #diveMenu {
+    position: absolute; bottom: 100%; margin-bottom: 8px; left: 10px;
+    padding: 8px; display: none; flex-direction: column; gap: 6px;
+    background: #1c1c1c; border: 1px solid #444; border-radius: 10px;
+    box-shadow: 0 -6px 20px rgba(0,0,0,0.5); z-index: 30;
+  }
+  #diveMenu.open { display: flex; }
+  #diveMenu .diveMenuTitle { font: 600 0.8125rem -apple-system, system-ui, sans-serif; color: #9a9a9a; padding: 2px 4px 0; }
+  #diveMenu button { text-align: left; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding-left: 28px; position: relative; }
+  #diveMenu button span { font-size: 0.75rem; color: #9a9a9a; font-weight: 400; }
+  #diveMenu button[aria-checked="true"]::before { content: "✓"; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); }
+  /* Holding the die opens the menu, not iOS's callout or a text selection. */
+  #teleportBtn { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
   .fractalMenuBtn { max-width: 60vw; overflow: hidden; text-overflow: ellipsis; }
 
   /* Section and group titles in the picker grid (Zoom forever, Julia sets,
@@ -874,6 +888,12 @@
     <button id="shareSaveBtn" role="menuitem">Save image</button>
     <button id="shareCopyBtn" role="menuitem">Copy link</button>
     <button id="shareNativeBtn" role="menuitem" class="hidden">Share…</button>
+  </div>
+  <!-- Touch and hold Surprise me (dive-style.js). -->
+  <div id="diveMenu" role="menu" aria-label="Dive style">
+    <div class="diveMenuTitle" aria-hidden="true">Dive style</div>
+    <button role="menuitemradio" data-dive="full" aria-checked="true">Full Motion<span>The flight as it zooms</span></button>
+    <button role="menuitemradio" data-dive="blur" aria-checked="false">Blur<span>Softens fast flashing</span></button>
   </div>
   <div id="fractalControls" class="control-row">
     <label id="iterField" class="field">detail <input id="iterSlider" type="range" min="50" max="2000" step="10" value="300"></label>
@@ -1159,6 +1179,6 @@
   </div>
 </div>
 
-<script type="module" src="src/app.js?v=1.83.0"></script>
+<script type="module" src="src/app.js?v=1.84.0"></script>
 </body>
 </html>

@@ -14,10 +14,10 @@
 // toolbar (:focus-visible), or the website welcome card or the app's first-run tour shows. Focus moving into the toolbar wakes it.
 // Under automation (Playwright) it is off by default so screenshots and timings stay deterministic; the
 // controls-fade spec turns it on with setControlsFade.
-import { dualActive, els, isInteracting, mainState, mode, setToolbarGrow, toolbarGrow } from "../core/state.js?v=1.83.0";
-import { resizeView } from "../core/view-math.js?v=1.83.0";
-import { layoutCanvasArea, renderAll, requestRender } from "../render/render-layout.js?v=1.83.0";
-import { prefersReducedMotion } from "./compass-ui.js?v=1.83.0";
+import { dualActive, els, isInteracting, mainState, mode, setToolbarGrow, toolbarGrow } from "../core/state.js?v=1.84.0";
+import { resizeView } from "../core/view-math.js?v=1.84.0";
+import { layoutCanvasArea, renderAll, requestRender } from "../render/render-layout.js?v=1.84.0";
+import { prefersReducedMotion } from "./compass-ui.js?v=1.84.0";
 
 // The picture grows into the toolbar's space while the toolbar is faded (a single fractal view only: the
 // vector modes and dual view fade the toolbar but keep their size). The toolbar becomes a fixed overlay
