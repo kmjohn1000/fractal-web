@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.85.0 — 2026-11-16
+- Added, to try out: a third dive style, Slow dive (test), in the Surprise me menu (touch and hold the die). Plain flights take a steady 4 to 12 seconds, and on the Mandelbrot set, its Julia sets, Multibrot³, the Tricorn and Celtic the deep part of the flight is drawn all the way down instead of turning to a stretched blur. Spiral dives fly as before.
+
 ## 1.84.0 — 2026-11-16
 - Added: touch and hold Surprise me (or right-click it) to choose the dive style. Full Motion, the default, flies the way it always has, spiral dives included; Blur softens the fast flashing a quick zoom can make (1.83.0's flights). The choice is remembered.
 - Changed: flights are back to full motion unless you pick Blur. With Reduce Motion on, they still dissolve to the place.

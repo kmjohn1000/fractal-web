@@ -6,10 +6,12 @@
 // consumeDiveLongPress before a tap flies; toolbar-a11y.js lists the menu as a popover (focus, Escape).
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { els } from "../core/state.js?v=1.84.0";
+import { els } from "../core/state.js?v=1.85.0";
 
 export const DIVE_STYLE_KEY = "fractalAtlas.diveStyle";
-export const DIVE_STYLES = ["full", "blur"];
+// "slow": a test style (user 2026-11-16, not decided): plain flights at a steady, slower pace with their deep frames
+// drawn live (teleport.js slowDiveMs, renderer.js setFlightReference); spiral dives fly as in Full Motion.
+export const DIVE_STYLES = ["full", "blur", "slow"];
 export const DIVE_HOLD_MS = 500;
 
 export function readDiveStyle() {

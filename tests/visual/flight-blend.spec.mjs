@@ -6,7 +6,8 @@
 // flashing itself). Run through `npm run test:visual`.
 import { test, expect } from "@playwright/test";
 
-/* global TELEPORT_DESTINATIONS, mainState, flyToPlace, blendState, teleportLandingIndex, enterDual, diveStyle, isInteracting */
+/* global TELEPORT_DESTINATIONS, mainState, flyToPlace, blendState, teleportLandingIndex, enterDual, diveStyle, isInteracting,
+   lastMainDeepPath, mainRenderer, SPIRAL_DIVE_MS */
 
 const DRIVER = new URL("../driver.js", import.meta.url).pathname;
 let pageErrors = [];
@@ -111,6 +112,47 @@ test.describe("dive style", () => {
     await page.waitForFunction(() => isInteracting, null, { timeout: 5_000 });
     await settle(page);
     expect(await page.evaluate(() => teleportLandingIndex), "it flew to a place").toBeGreaterThanOrEqual(0);
+  });
+});
+
+test.describe("Slow dive (test)", () => {
+  test("a plain flight is slower and draws its deep frames live; landing clears the flight's reference", async ({ page }) => {
+    await load(page, "slow");
+    await expect(menu(page).locator('[data-dive="slow"]')).toHaveCount(1);
+    const i = await place(page, "Mini Mandelbrot");
+    // Watch the flight from inside the page: the deepest frame drawn and the path it took.
+    const seen = await page.evaluate((n) => new Promise((resolve) => {
+      const t0 = performance.now();
+      let deepLive = 0, deepPreview = 0;
+      flyToPlace(n);
+      const watch = () => {
+        if (isInteracting && mainState.scale < 1e-4) {
+          if (lastMainDeepPath === "perturbation (flight)") deepLive++; else deepPreview++;
+        }
+        if (teleportLandingIndex === n) resolve({ ms: performance.now() - t0, deepLive, deepPreview });
+        else requestAnimationFrame(watch);
+      };
+      requestAnimationFrame(watch);
+    }), i);
+    expect(seen.ms, "slower than Full Motion's 1.8 s").toBeGreaterThan(4000);
+    expect(seen.deepLive, "deep frames drawn live").toBeGreaterThan(0);
+    expect(seen.deepPreview, "none of them the stretched last frame").toBe(0);
+    await settle(page);
+    expect(await page.evaluate(() => mainRenderer.flightDeepLive(Object.assign({}, mainState))), "no flight reference after landing").toBe(false);
+  });
+
+  test("a spiral dive keeps its own pace", async ({ page }) => {
+    await load(page, "slow");
+    await page.evaluate(() => window["__vt"].fractal("Julia:Rabbit"));
+    await settle(page);
+    const ms = await page.evaluate(() => new Promise((resolve) => {
+      const n = TELEPORT_DESTINATIONS.findIndex((d) => d.fractal === "Julia:Rabbit" && d.spiral);
+      const t0 = performance.now();
+      flyToPlace(n);
+      const watch = () => (teleportLandingIndex === n ? resolve({ took: performance.now() - t0, want: SPIRAL_DIVE_MS }) : requestAnimationFrame(watch));
+      requestAnimationFrame(watch);
+    }));
+    expect(Math.abs(ms.took - ms.want), "the spiral dive's own 7 s").toBeLessThan(500);
   });
 });
 

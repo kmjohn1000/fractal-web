@@ -10,9 +10,9 @@
 //
 // An ES module: every top-level declaration is exported (test-hooks.js relies on it), hence the tour
 // prefix on the names (they become flat test globals). Needs platform.js, state.js and controls-fade.js.
-import { Platform } from "../core/platform.js?v=1.84.0";
-import { els, isInteracting, mainState } from "../core/state.js?v=1.84.0";
-import { cfArm, cfToolbar, wakeControls } from "./controls-fade.js?v=1.84.0";
+import { Platform } from "../core/platform.js?v=1.85.0";
+import { els, isInteracting, mainState } from "../core/state.js?v=1.85.0";
+import { cfArm, cfToolbar, wakeControls } from "./controls-fade.js?v=1.85.0";
 
 export const TOUR_DELAY_MS = 1200; // after load, so the launch screen has faded into the first picture
 export const TOUR_SETTLE_MS = 400; // after a gesture step's gesture ends, before its next step shows

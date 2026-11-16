@@ -26,7 +26,7 @@
 // iPhone 15: 460 ppi at 3 px per point, about 60.4 points per cm. Viewing distance 30 cm by
 // default (a 10-degree field is then about 317 points across); 25 cm is stricter.
 /* global window, TELEPORT_DESTINATIONS, COLORMAPS, setColorStyle, mainState, zoomPath, prefersReducedMotion,
-   SPIRAL_DIVE_MS, teleportDurationMs, colorStyleFor, flyToPlace, blendState, setDiveStyle */
+   SPIRAL_DIVE_MS, teleportDurationMs, colorStyleFor, flyToPlace, blendState, setDiveStyle, slowDiveMs */
 import { webkit } from "@playwright/test";
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -281,7 +281,8 @@ async function capture(outDir, only) {
           if (look.tau) blendState.tau = Number(look.tau);
           const st = mainState, d = TELEPORT_DESTINATIONS[to];
           const path = zoomPath([st.cx, st.cy, 2 * st.scale], [Number(d.re), Number(d.im), 2 * d.scale]);
-          const ms = d.spiral && !prefersReducedMotion() ? SPIRAL_DIVE_MS : teleportDurationMs(path.distance);
+          const ms = d.spiral && !prefersReducedMotion() ? SPIRAL_DIVE_MS
+            : look.dive === "slow" ? slowDiveMs(path.distance) : teleportDurationMs(path.distance);
           return { to, ms, efolds: path.distance * Math.SQRT2, drawn: colorStyleFor(st).glsl };
         }, { flight, look: { ...look, tau, dive } });
         if (setup.error) throw new Error(`${name}: ${setup.error}`);

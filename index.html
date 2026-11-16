@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Fractal Atlas&trade;</title>
 
-<link rel="manifest" href="manifest.webmanifest?v=1.84.0">
+<link rel="manifest" href="manifest.webmanifest?v=1.85.0">
 <meta name="theme-color" content="#111111">
-<link rel="icon" href="icons/favicon-32.png?v=1.84.0" sizes="32x32" type="image/png">
+<link rel="icon" href="icons/favicon-32.png?v=1.85.0" sizes="32x32" type="image/png">
 
 <!-- iOS Safari ignores the manifest entirely for install/homescreen purposes
      and needs its own meta tags + a dedicated (non-transparent) icon. -->
@@ -15,7 +15,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fractal Atlas">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.84.0">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.85.0">
 
 <!-- Smart App Banner: Safari on iPhone/iPad offers the App Store app.
      Ignored everywhere else, including the app's own web view. -->
@@ -894,6 +894,7 @@
     <div class="diveMenuTitle" aria-hidden="true">Dive style</div>
     <button role="menuitemradio" data-dive="full" aria-checked="true">Full Motion<span>The flight as it zooms</span></button>
     <button role="menuitemradio" data-dive="blur" aria-checked="false">Blur<span>Softens fast flashing</span></button>
+    <button role="menuitemradio" data-dive="slow" aria-checked="false">Slow dive (test)<span>Slower, drawn all the way down</span></button>
   </div>
   <div id="fractalControls" class="control-row">
     <label id="iterField" class="field">detail <input id="iterSlider" type="range" min="50" max="2000" step="10" value="300"></label>
@@ -1179,6 +1180,6 @@
   </div>
 </div>
 
-<script type="module" src="src/app.js?v=1.84.0"></script>
+<script type="module" src="src/app.js?v=1.85.0"></script>
 </body>
 </html>
