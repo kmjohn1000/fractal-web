@@ -1,17 +1,18 @@
 // Dive style: how Surprise me's flights look. Touch and hold the die (or right-click it, or press the context-menu
-// key) for a small menu: Full Motion, the flights as they always were (the default), or Blur, the flight blend of
-// flight-blend.js, which smooths the fast dark-and-bright sweeps of a quick zoom (the flash check measured up to 19
-// a second in Full Motion, against WCAG 2.3.1's 6). Reduce Motion overrides both with a dissolve (teleport.js).
+// key) for a small menu: Full Motion (the default; since 1.86.0 its plain flights are 1.85's "Slow dive" test
+// style: a steady pace with the deep frames drawn live, teleport.js slowDiveMs and renderer.js setFlightReference),
+// or Blur, the quick 1 to 2.5 s flights through the flight blend of flight-blend.js, which smooths the fast
+// dark-and-bright sweeps of a quick zoom (the flash check measured up to 19 a second in the old quick Full Motion,
+// against WCAG 2.3.1's 6). Reduce Motion overrides both with a dissolve (teleport.js).
 // The choice is kept on the device. Needs state.js (els); teleport.js reads diveStyle and asks
 // consumeDiveLongPress before a tap flies; toolbar-a11y.js lists the menu as a popover (focus, Escape).
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { els } from "../core/state.js?v=1.85.1";
+import { els } from "../core/state.js?v=1.86.0";
 
 export const DIVE_STYLE_KEY = "fractalAtlas.diveStyle";
-// "slow": a test style (user 2026-11-16, not decided): plain flights at a steady, slower pace with their deep frames
-// drawn live (teleport.js slowDiveMs, renderer.js setFlightReference); spiral dives fly as in Full Motion.
-export const DIVE_STYLES = ["full", "blur", "slow"];
+// A stored "slow" (1.85's test style, which became Full Motion in 1.86.0) reads as "full".
+export const DIVE_STYLES = ["full", "blur"];
 export const DIVE_HOLD_MS = 500;
 
 export function readDiveStyle() {

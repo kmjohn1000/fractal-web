@@ -116,10 +116,18 @@ test.describe("dive style", () => {
   });
 });
 
-test.describe("Slow dive (test)", () => {
-  test("a plain flight is slower and draws its deep frames live; landing clears the flight's reference", async ({ page }) => {
+// Full Motion's flights since 1.86.0 (1.85's "Slow dive" test style).
+test.describe("Full Motion flights", () => {
+  test("the menu has two styles, and 1.85's stored Slow dive reads as Full Motion", async ({ page }) => {
     await load(page, "slow");
-    await expect(menu(page).locator('[data-dive="slow"]')).toHaveCount(1);
+    expect(await page.evaluate(() => diveStyle)).toBe("full");
+    await page.locator("#teleportBtn").click({ button: "right" });
+    await expect(menu(page).locator("[data-dive]")).toHaveCount(2);
+    await expect(menu(page).locator('[data-dive="full"]')).toHaveAttribute("aria-checked", "true");
+  });
+
+  test("a plain flight is slower and draws its deep frames live; landing clears the flight's reference", async ({ page }) => {
+    await load(page, null);
     const i = await place(page, "Mini Mandelbrot");
     // Watch the flight from inside the page: the deepest frame drawn and the path it took.
     const seen = await page.evaluate((n) => new Promise((resolve) => {
@@ -145,7 +153,7 @@ test.describe("Slow dive (test)", () => {
   test("a deep-to-deep flight draws its way out live too, from a reference at the start", async ({ page }) => {
     // Start at Mini Mandelbrot (1.5e-12) and fly to Seahorse Valley (4e-10): the path climbs out of the start
     // above DEEP_ZOOM_THRESHOLD before diving into the destination.
-    await load(page, "slow", "x=-1.749003357223038&y=0&s=1.5e-12&r=0&i=2000");
+    await load(page, null, "x=-1.749003357223038&y=0&s=1.5e-12&r=0&i=2000");
     expect(await page.evaluate(() => mainState.scale), "it starts deep").toBe(1.5e-12);
     const i = await place(page, "Seahorse Valley");
     const seen = await page.evaluate((n) => new Promise((resolve) => {
@@ -170,8 +178,20 @@ test.describe("Slow dive (test)", () => {
     expect(seen.in.preview, "none of them the stretched last frame").toBe(0);
   });
 
+  test("Blur keeps the quick flight", async ({ page }) => {
+    await load(page, "blur");
+    const i = await place(page, "Mini Mandelbrot");
+    const ms = await page.evaluate((n) => new Promise((resolve) => {
+      const t0 = performance.now();
+      flyToPlace(n);
+      const watch = () => (teleportLandingIndex === n ? resolve(performance.now() - t0) : requestAnimationFrame(watch));
+      requestAnimationFrame(watch);
+    }), i);
+    expect(ms, "Mini Mandelbrot in about 1.8 s, not Full Motion's 7").toBeLessThan(3500);
+  });
+
   test("a spiral dive keeps its own pace", async ({ page }) => {
-    await load(page, "slow");
+    await load(page, null);
     await page.evaluate(() => window["__vt"].fractal("Julia:Rabbit"));
     await settle(page);
     const ms = await page.evaluate(() => new Promise((resolve) => {

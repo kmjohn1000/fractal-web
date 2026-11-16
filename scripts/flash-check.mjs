@@ -282,7 +282,7 @@ async function capture(outDir, only) {
           const st = mainState, d = TELEPORT_DESTINATIONS[to];
           const path = zoomPath([st.cx, st.cy, 2 * st.scale], [Number(d.re), Number(d.im), 2 * d.scale]);
           const ms = d.spiral && !prefersReducedMotion() ? SPIRAL_DIVE_MS
-            : look.dive === "slow" ? slowDiveMs(path.distance) : teleportDurationMs(path.distance);
+            : look.dive === "full" ? slowDiveMs(path.distance) : teleportDurationMs(path.distance);
           return { to, ms, efolds: path.distance * Math.SQRT2, drawn: colorStyleFor(st).glsl };
         }, { flight, look: { ...look, tau, dive } });
         if (setup.error) throw new Error(`${name}: ${setup.error}`);

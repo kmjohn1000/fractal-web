@@ -4,18 +4,18 @@
 // showHud); the scripts before and after it call cancelTeleport etc.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { FRACTAL_CONFIGS, fractalLabel } from "../core/configs.js?v=1.85.1";
-import { announce } from "../fractals/chaos-run.js?v=1.85.1";
-import { suggestedMaxIter, viewFromBounds } from "../fractals/fractal-defs.js?v=1.85.1";
-import { TELEPORT_DESTINATIONS } from "../fractals/places.js?v=1.85.1";
-import { applyAutoIter, currentName, dualActive, els, mainCanvasAspect, mainRenderer, mainState, mode, pushHistory, setActivePane } from "../core/state.js?v=1.85.1";
-import { applyDefaultColormap, markInteracting } from "../core/state-colors.js?v=1.85.1";
-import { renderAll } from "../render/render-layout.js?v=1.85.1";
-import { exactFromPlace, normalizeAngle, setCenter } from "../core/view-math.js?v=1.85.1";
-import { selectFractal } from "./modes.js?v=1.85.1";
-import { prefersReducedMotion, showHud } from "./compass-ui.js?v=1.85.1";
-import { cancelFlightBlend, landFlightBlend, startCrossfade, startFlightBlend } from "../render/flight-blend.js?v=1.85.1";
-import { closeDiveMenu, consumeDiveLongPress, diveStyle } from "./dive-style.js?v=1.85.1";
+import { FRACTAL_CONFIGS, fractalLabel } from "../core/configs.js?v=1.86.0";
+import { announce } from "../fractals/chaos-run.js?v=1.86.0";
+import { suggestedMaxIter, viewFromBounds } from "../fractals/fractal-defs.js?v=1.86.0";
+import { TELEPORT_DESTINATIONS } from "../fractals/places.js?v=1.86.0";
+import { applyAutoIter, currentName, dualActive, els, mainCanvasAspect, mainRenderer, mainState, mode, pushHistory, setActivePane } from "../core/state.js?v=1.86.0";
+import { applyDefaultColormap, markInteracting } from "../core/state-colors.js?v=1.86.0";
+import { renderAll } from "../render/render-layout.js?v=1.86.0";
+import { exactFromPlace, normalizeAngle, setCenter } from "../core/view-math.js?v=1.86.0";
+import { selectFractal } from "./modes.js?v=1.86.0";
+import { prefersReducedMotion, showHud } from "./compass-ui.js?v=1.86.0";
+import { cancelFlightBlend, landFlightBlend, startCrossfade, startFlightBlend } from "../render/flight-blend.js?v=1.86.0";
+import { closeDiveMenu, consumeDiveLongPress, diveStyle } from "./dive-style.js?v=1.86.0";
 
 // ---------------------------------------------------------------- teleport ("Surprise me")
 
@@ -66,7 +66,8 @@ export function teleportDurationMs(distance) {
 // turning 90 degrees per 3x of zoom: five full turns on the way down from
 // the opening view.
 export const SPIRAL_DIVE_MS = 7000;
-// Slow dive (a test dive style, dive-style.js): a plain flight at a steady SLOW_DIVE_EFOLDS_PER_S (4 e-folds a
+// Full Motion's plain flights (dive-style.js; 1.85's "Slow dive" test style, the default since 1.86.0; Blur keeps
+// teleportDurationMs): a steady SLOW_DIVE_EFOLDS_PER_S (4 e-folds a
 // second is about 55x of zoom a second; Mini Mandelbrot from the whole set takes about 7 s), held between
 // SLOW_DIVE_MIN_MS and SLOW_DIVE_MAX_MS, with its deep frames drawn live (renderer.js setFlightReference).
 export const SLOW_DIVE_EFOLDS_PER_S = 4;
@@ -210,11 +211,12 @@ export function flyTo(st, d, target, landingIndex, spinSign, style = diveStyle) 
     const spin = spinSign * SPIRAL_RAD_PER_ZOOM * Math.SQRT2 * path.distance;
     turn += 2 * Math.PI * Math.round((spin - turn) / (2 * Math.PI));
   }
-  // Slow dive (a test dive style): a plain flight at a steady pace, its deep
+  // Full Motion (since 1.86.0): a plain flight at a steady pace, its deep
   // frames drawn live from reference orbits at the destination (the way in)
   // and at the start view (the way out of a deep start), computed here before
-  // takeoff at the detail the deepest frame near each will ask for.
-  const slow = style === "slow" && !spiral;
+  // takeoff at the detail the deepest frame near each will ask for. Blur keeps
+  // the quick cubic flight under its blend.
+  const slow = style === "full" && !spiral;
   const ease = spiral || slow ? steadyEase : (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
   const durationMs = spiral ? SPIRAL_DIVE_MS : slow ? slowDiveMs(path.distance) : teleportDurationMs(path.distance);
   mainRenderer.setFlightReference(slow ? {
@@ -251,8 +253,8 @@ export function flyTo(st, d, target, landingIndex, spinSign, style = diveStyle) 
       // A spiral dive's frames are all live, and its spiral centers need
       // more iterations the deeper they go (Into the Eye's center goes black
       // halfway down at the starting detail), so auto detail follows the
-      // zoom frame by frame instead of jumping on landing. So do a slow
-      // dive's live deep frames.
+      // zoom frame by frame instead of jumping on landing. So do Full
+      // Motion's live deep frames.
       if (spiral || slow) { st.iterAutoLocked = false; applyAutoIter(); }
     } else {
       land();
