@@ -11,10 +11,10 @@ Ranked by what reaches App Store users first, then cost and risk. The
 (it was not kept 1.66 to 1.70, when Spider, Magnet and the sine family
 shipped): each one changes the listing count, so fixes and polish come first.
 
-1. Real-iPhone check of 1.80.4 and 1.80.5 (the user's), including VoiceOver
-   on the new canvas label and swipe zoom (the six checks are in the 1.80.5
-   Done entry). Nothing else on this list is verified on a phone until it
-   is done.
+1. DONE 2026-11-15: real-iPhone check of 1.80.4 and 1.80.5 (the user's),
+   including VoiceOver on the new canvas label and swipe zoom (the six checks
+   are in the 1.80.5 Done entry); the user checked them on the phone with
+   1.82.4 installed.
 2. Flashing check on Bands and Stripes flights (a safety question; Reduce
    Motion crossfade if it fails).
 3. What is left of the accessibility pass: one-finger alternatives, and
