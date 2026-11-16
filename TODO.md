@@ -1008,6 +1008,12 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
 - [ ] One-finger alternatives: double-tap to zoom in, a one-finger way to
       zoom out, and a rotate control that doesn't need a twist. Box zoom is
       the only one-finger zoom today, so keep it until these exist.
+      Idea (user, 2026-11-15): box zoom as a gesture on the picture instead of
+      a toolbar button. A plain one-finger drag already pans, so it needs its
+      own start: double-tap-and-hold then drag (Maps-style; up/down zooms
+      continuously instead of drawing a box), or a long-press then drag to draw
+      the box; on a Mac, Shift-drag (or Option-drag) draws it. Removing the
+      button frees a toolbar slot. Needs the user's choice of gesture first.
 - [ ] Website only: try dropping `user-scalable=no` and `maximum-scale=1` so
       visitors can enlarge the page; check on an iPhone that gestures still work.
 - [ ] iPad check: layout at Stage Manager window sizes and in split view
