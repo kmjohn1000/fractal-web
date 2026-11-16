@@ -55,12 +55,17 @@ test("walks through every step: gestures over the picture, then a ring round eac
   await expect(page.locator("#tourCount")).toHaveText(`1 of ${n}`);
   await expect(page.locator("#tourRing")).toBeHidden();
   await expect(page.locator("#tourBubble")).toBeFocused();
+  // It sits near the top, leaving the middle of the picture free for the fingers.
+  const area = await page.locator("#canvasArea").boundingBox();
+  const b1 = await page.locator("#tourBubble").boundingBox();
+  expect(b1.y + b1.height).toBeLessThan(area.y + area.height * 0.4);
 
   // The tour blocks nothing: a drag on the picture moves the view, and once it settles the tour goes on.
   const cx = await page.evaluate(() => mainState.cx);
-  await page.mouse.move(60, 120);
+  const mx = area.x + area.width / 2, my = area.y + area.height * 0.6; // the middle, clear of the bubble
+  await page.mouse.move(mx, my);
   await page.mouse.down();
-  await page.mouse.move(140, 160, { steps: 6 });
+  await page.mouse.move(mx + 80, my + 40, { steps: 6 });
   await page.mouse.up();
   expect(await page.evaluate(() => mainState.cx)).not.toBe(cx);
   await expect(text(page)).toContainText("Twist");
@@ -79,6 +84,9 @@ test("walks through every step: gestures over the picture, then a ring round eac
   expect(ring.y).toBeLessThanOrEqual(die.y);
   const bubble = await page.locator("#tourBubble").boundingBox();
   expect(bubble.y + bubble.height).toBeLessThan(die.y);
+  // It clears the whole toolbar (the detail slider's row too), not only the die.
+  const bar = await page.locator("#controls").boundingBox();
+  expect(bubble.y + bubble.height).toBeLessThanOrEqual(bar.y);
   await expect(page.locator("#tourBubble")).toHaveClass(/above/);
 
   // A tap on the bubble is Next.

@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.82.4 — 2026-11-15
+- Changed: the first-run tour's bubbles stay out of the way: the ones for the gestures sit near the top, leaving the picture free, and the ones for buttons sit above the whole toolbar instead of over the detail slider. Shorter wording, and the bubbles lost their small arrow (the ring round the button does the pointing).
+
 ## 1.82.3 — 2026-11-15
 - Changed: the first-run tour no longer blocks the screen. You can pinch, drag and twist while a bubble shows, and the tour moves on once you have; tapping the button a bubble points at does what the button does, and the tour waits while its sheet is open. Tap the bubble for the next one.
 

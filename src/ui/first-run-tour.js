@@ -10,9 +10,9 @@
 //
 // An ES module: every top-level declaration is exported (test-hooks.js relies on it), hence the tour
 // prefix on the names (they become flat test globals). Needs platform.js, state.js and controls-fade.js.
-import { Platform } from "../core/platform.js?v=1.82.3";
-import { els, isInteracting, mainState } from "../core/state.js?v=1.82.3";
-import { cfArm, cfToolbar, wakeControls } from "./controls-fade.js?v=1.82.3";
+import { Platform } from "../core/platform.js?v=1.82.4";
+import { els, isInteracting, mainState } from "../core/state.js?v=1.82.4";
+import { cfArm, cfToolbar, wakeControls } from "./controls-fade.js?v=1.82.4";
 
 export const TOUR_DELAY_MS = 1200; // after load, so the launch screen has faded into the first picture
 export const TOUR_SETTLE_MS = 400; // after a gesture step's gesture ends, before its next step shows
@@ -24,14 +24,14 @@ export const TOUR_SETTLE_MS = 400; // after a gesture step's gesture ends, befor
 // and a tap on a step's ringed control does what the control does and goes on to the next step; while
 // a sheet or menu is open the tour waits out of sight.
 export const TOUR_STEPS = [
-  { gesture: "move", text: "Pinch to zoom in and out. Drag to move around. Try it now." },
-  { gesture: "twist", text: "Twist two fingers to turn the picture." },
-  { targets: ["#teleportBtn"], text: "Tap the die to fly to a surprise place." },
-  { targets: ["#colormapBtn", "#fernColorBtn"], text: "Colors: palettes and Looks that restyle the picture." },
-  { targets: [".fractalMenuBtn"], text: "Pick another fractal here, or browse Places to dive into." },
-  { targets: [".shareBtn"], text: "Save the picture to Photos, or share a link to this exact view." },
+  { gesture: "move", text: "Pinch to zoom, drag to move. Try it." },
+  { gesture: "twist", text: "Twist two fingers to turn the picture. Try it." },
+  { targets: ["#teleportBtn"], text: "Tap the die to fly somewhere surprising." },
+  { targets: ["#colormapBtn", "#fernColorBtn"], text: "Tap Colors for palettes and Looks." },
+  { targets: [".fractalMenuBtn"], text: "Tap here to pick another fractal, or browse Places." },
+  { targets: [".shareBtn"], text: "Save to Photos, or share a link to this exact view." },
   // Last, since it is about what happens once the tour ends (controls-fade.js).
-  { text: "The controls fade away when you leave the screen alone. Touch anywhere to bring them back." },
+  { text: "The controls fade while you explore. Touch anywhere to bring them back." },
 ];
 
 export const tourRing = document.getElementById("tourRing");
@@ -179,18 +179,22 @@ export function tourShow(fresh = false) {
     const cx = r.left + r.width / 2;
     const left = Math.min(Math.max(cx - bw / 2, M), Math.max(M, W - bw - M));
     const above = r.top + r.height / 2 > H / 2;
-    const top = above ? r.top - pad - 12 - bh : r.bottom + pad + 12;
+    // Above a toolbar control the bubble clears the whole toolbar (its slider row too), not only the
+    // control; the ring does the pointing, so the bubble only has to sit over the same side.
+    const barTop = cfToolbar.getBoundingClientRect().top;
+    const top = above ? Math.min(r.top - pad, barTop) - 12 - bh : r.bottom + pad + 12;
     tourBubble.style.left = `${left}px`;
     tourBubble.style.top = `${Math.min(Math.max(top, M), Math.max(M, H - bh - M))}px`;
-    tourBubble.style.setProperty("--x", `${Math.min(Math.max(cx - left, 18), bw - 18)}px`);
     tourBubble.classList.add(above ? "above" : "below");
   } else {
     tourRing.classList.add("hidden");
-    // Over the picture, a little above its middle (clear of the toolbar).
+    // Near the top of the picture, so the middle stays free for the fingers (a gesture that starts on
+    // the bubble never reaches the picture); below the status bar and the row of the HUD and compass.
     const area = els.canvasArea.getBoundingClientRect();
-    const midY = area.height > 0 ? area.top + area.height * 0.42 : H * 0.42;
+    const safeTop = parseFloat(getComputedStyle(els.tour).paddingTop) || 0;
+    const top = Math.max(area.top, safeTop) + 60;
     tourBubble.style.left = `${Math.max(M, (W - bw) / 2)}px`;
-    tourBubble.style.top = `${Math.min(Math.max(midY - bh / 2, M), Math.max(M, H - bh - M))}px`;
+    tourBubble.style.top = `${Math.min(Math.max(top, M), Math.max(M, H - bh - M))}px`;
   }
 
   if (fresh) {
