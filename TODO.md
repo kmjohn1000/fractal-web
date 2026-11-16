@@ -1003,6 +1003,23 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
       and the sheet focus are built and specced). Open: run VoiceOver and
       Voice Control over the app on the phone (the user's; the six checks
       are in the 1.80.5 Done entry), then the items below
+- [ ] Slower Full Motion flights with real frames all the way down (user idea,
+      2026-11-16; not approved). Only the plain (non-spiral) flights of the
+      zoom fractals; the 7 s spiral dives stay as they are. Today a flight
+      takes 1 to 2.5 s (`teleportDurationMs`, cubic ease, peak speed 3x the
+      average): Mini Mandelbrot is 28 e-folds in 1.8 s. Below
+      DEEP_ZOOM_THRESHOLD (1e-3) no new frames are drawn, only the last live
+      frame stretched (`gesturePreviewEligible`), which goes to a flat color:
+      on Mini Mandelbrot about 75% of the zoom. Slowing down alone only
+      stretches that frame longer. Prototype, behind a test switch: (a) a
+      steady pace like the spiral dives' (`steadyEase`; e.g. ~4 e-folds a
+      second, Mini Mandelbrot ~7 s); (b) live deep frames during the flight,
+      using the destination's reference orbit computed before takeoff (a
+      straight dive keeps the destination in view), at the live resolution
+      step. Measure: frame cost on the Mac, the flash rate with
+      `scripts/flash-check.mjs` (a slower pace should cut it in proportion,
+      maybe under the limit without Blur); the feel and the phone's frame
+      rate need the user's iPhone.
 - [ ] One-finger alternatives: double-tap to zoom in, a one-finger way to
       zoom out, and a rotate control that doesn't need a twist. Box zoom is
       the only one-finger zoom today, so keep it until these exist.
