@@ -12,6 +12,10 @@ listing/
 .claude-session-state.md
 .playwright-mcp/
 test-results/
+# Throwaway rendering spikes (WebGPU, precision, stencil, deep rescale): local only.
+scripts/*-spike.html
+scripts/spike-server.mjs
+scripts/spike-tests.html
 # Product and strategy notes: local only (this repo is public). See
 # .githooks/pre-commit.
 /STRATEGY*.md
