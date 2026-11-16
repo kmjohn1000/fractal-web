@@ -486,7 +486,7 @@ test.describe("picker, info card and link", () => {
       const bmp = await createImageBitmap(await res.blob());
       return { ok: res.ok, w: bmp.width, h: bmp.height };
     });
-    expect(loaded, "the thumbnail file loads and is a square image").toEqual({ ok: true, w: 192, h: 192 });
+    expect(loaded, "the thumbnail file loads and is a square image").toEqual({ ok: true, w: 384, h: 384 }); // scripts/render_thumbs.mjs SIZE (384 since 1.80.4)
   });
 
   test("choosing the tile opens the mode: the line-curve row and canvas, at the default depth", async ({ page }) => {
