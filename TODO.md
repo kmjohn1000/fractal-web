@@ -25,11 +25,9 @@ shipped): each one changes the listing count, so fixes and polish come first.
    item; no build unless it fails).
 5. The mirrored palette option, the first step of the OKLCH palette item
    (the biggest visible color upgrade; toggle, seam stays the default).
-6. Saved places (medium): a spike exists on branch
-   `worktree-agent-a3886907b2360519d` (`e7d2344`), not merged; it needs the
-   user's answers to its design questions (where the list lives, storage,
-   fly or cut, keep or replace the colormap). Design is in
-   `docs/saved-places/`.
+6. DROPPED 2026-11-16 (user): no saved places in 1.x. The spike on branch
+   `worktree-agent-a3886907b2360519d` (`e7d2344`) stays unmerged; do not
+   port it.
 7. Open the Mandelbrot family rotated on portrait phones (cheap, visible).
 8. Small UI polish: accent color from the colormap, first-launch gesture
    hint, Haptics at key moments, Copy image in the share menu.
@@ -930,7 +928,8 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
         during deep flights". Skip video export for now.
       Also a "flyover" (user idea 2026-10-14): a tour between Surprise-me
       places, or an ambient drift along the boundary.
-- [ ] Saved places (bookmarks): save the current view by name inside the app
+- [ ] Saved places (bookmarks) (DROPPED for 1.x 2026-11-16, user; the
+      text below is history): save the current view by name inside the app
       and fly back to it later. Today we only have share links and
       per-fractal memory that resets on relaunch. Store the full-precision
       location and colors; decide whether iCloud sync is worth it or
