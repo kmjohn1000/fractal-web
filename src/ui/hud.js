@@ -9,7 +9,7 @@ import { FRACTAL_CONFIGS, FTYPE, fractalLabel } from "../core/configs.js?v=1.86.
 import { EXTRA_MODES, SHAPE_INFO } from "../fractals/fractal-defs.js?v=1.86.1";
 import { apolloFrame } from "../fractals/apollonian.js?v=1.86.1";
 import { digitFractalDepth, isDigitFractal } from "../fractals/digit-fractals.js?v=1.86.1";
-import { DEEP_ZOOM_THRESHOLD, atZoomLimit, deepZoomEligible, isSineType, newtonDeepEligible, perturbationEligibleType, phoenixDeepEligible } from "../core/deepzoom.js?v=1.86.1";
+import { DEEP_ZOOM_THRESHOLD, atZoomLimit, deepZoomEligible, isSineType, newtonDeepEligible, perturbationEligibleType, phoenixDeepEligible, sineLDeepEligible } from "../core/deepzoom.js?v=1.86.1";
 import { TELEPORT_DESTINATIONS } from "../fractals/places.js?v=1.86.1";
 import { COLOR_STYLES, ESCAPE_TIME_TYPES, colorStyle, styleDrawn } from "../render/color-styles.js?v=1.86.1";
 import { currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, hexaflakeView, isInteracting, kochState, kochView, mainRenderer, mainState, mode, shownGeometry, toolbarGrow, treeState, treeView } from "../core/state.js?v=1.86.1";
@@ -140,8 +140,9 @@ export function updateHud(deepPath) {
     if (apollo.steps > 0) precision = "composed inversions (deep zoom)";
   } else if (usesFixedDepth) {
     if (s.scale < DEEP_ZOOM_THRESHOLD) precision = "cell rebasing (deep zoom)";
-  } else if (s.ftype === FTYPE.NOVA || s.ftype === FTYPE.SPIDER || s.ftype === FTYPE.MAGNET || isSineType(s.ftype)) {
-    // Float32 only; limitScale holds the zoom where it stops being sharp.
+  } else if (s.ftype === FTYPE.NOVA || s.ftype === FTYPE.SPIDER || s.ftype === FTYPE.MAGNET || (isSineType(s.ftype) && !sineLDeepEligible(s))) {
+    // Float32 only; limitScale holds the zoom where it stops being sharp. (The Sine L-plane below its float32 floor
+    // is drawn from a float64 reference orbit, so it falls through to the deep-zoom lines below.)
     precision = atZoomLimit(s) ? "float32 (zoom limit: no deeper without losing detail)" : "float32";
   } else if (isInteracting && deepZoomEligible(mainRenderer, s)) {
     precision = "preview (renders at deep zoom once you stop)";

@@ -69,7 +69,8 @@ export const FRACTAL_CONFIGS = {
   "Magnet I":     { label: "Magnet I", ftype: FTYPE.MAGNET, power: 1, juliaC: null,                    view: [-0.6, 3.35, -2.35, 2.35],   dual: false, category: "zoom", defaultColormap: "Classic" },
   "Magnet II":    { label: "Magnet II", ftype: FTYPE.MAGNET, power: 2, juliaC: null,                   view: [-0.45, 2.6, -1.8, 1.8],   dual: false, category: "zoom", defaultColormap: "Plasma" },
   // The sine family (renderSineFamily in shaders.js), float32 only: SINE_MIN_SCALE (deepzoom.js) stops the zoom
-  // where float32 gives out. "Sine Julia" is the Julia set of z -> L sin z for the fixed L = juliaC = 1 + 0.4i (a
+  // where float32 gives out. (The one exception is the L-plane below its float32 floor, which has a deep path from a
+  // float64 reference orbit down to SINE_L_DEEP_MIN_SCALE = 1e-10: renderSineLPlanePerturbation.) "Sine Julia" is the Julia set of z -> L sin z for the fixed L = juliaC = 1 + 0.4i (a
   // field of spirals); "Sine plane" is the plane of z -> sin z + cosh(c), started at z = c.
   // The L-plane is the same FTYPE.SINE without a juliaC, as Mandelbrot is to Julia:Rabbit (both FTYPE.ESCAPE): the pixel is
   // L in z -> L sin z, started at the critical point pi/2. Sine Julia is its Julia preset (dualParent) and its dual view's

@@ -270,9 +270,10 @@ export const TELEPORT_DESTINATIONS = [
   { fractal: "Sine plane", label: "Coral Reef", re: "0.8", im: "1.6", scale: 0.3 },
   { fractal: "Sine plane", label: "Crown Tree", re: "0", im: "1.17", scale: 0.4 },
   { fractal: "Sine plane", label: "Crown Tip", re: "0", im: "1.1713652610778809", scale: 0.01 },
-  // The L-plane (z -> L sin z, L the pixel, started at the critical point pi/2) is float32 only too, with a zoom floor
-  // that follows its center (see minScaleFor in deepzoom.js: 2.4e-4 at |L| = 1, 4.8e-4 at 2.4, 9.5e-4 past 4), so the
-  // deep places sit at or above it at their own center. Touching Discs is L = 1, where the unit disc and the next disc on
+  // The L-plane (z -> L sin z, L the pixel, started at the critical point pi/2) draws in float32 above a floor that
+  // follows its center (sineLFloat32Floor in deepzoom.js: 2.4e-4 at |L| = 1, 4.8e-4 at 2.4, 9.5e-4 past 4; under it the
+  // deep path takes over, down to 1e-10), so the deep places sit at or above it at their own center and keep their
+  // float32 picture. Touching Discs is L = 1, where the unit disc and the next disc on
   // the real axis touch, with yellow flowers growing up and down from the touch; Rim Bulb a bulb on the rim of the
   // second disc with a field of flowers above it; Far Copy the small second body of the set at |L| near 4.8, a
   // whole Mandelbrot-like picture; Yellow Fans the fans of yellow filaments on that body's far edge; Dusty Edge the

@@ -7,7 +7,7 @@
 import { COLORMAPS, buildLUTBytes } from "./colormaps.js?v=1.86.1";
 import { Diag } from "../core/diag.js?v=1.86.1";
 import { isCurveMode, isIfsMode } from "../fractals/fractal-defs.js?v=1.86.1";
-import { SAMPLE_OFFSETS, SINE_L_PASSES, deepZoomEligible, gesturePreviewEligible, sineLHeavy } from "../core/deepzoom.js?v=1.86.1";
+import { SAMPLE_OFFSETS, SINE_L_PASSES, deepZoomEligible, gesturePreviewEligible, sineLDeepEligible, sineLHeavy } from "../core/deepzoom.js?v=1.86.1";
 import { activePane, adaptLiveResolution, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, hexaflakeView, isInteracting, juliaRenderer, juliaState, kochState, kochView, mainRenderer, mainState, mode, paneHistory, treeState, treeView, vectorColors } from "../core/state.js?v=1.86.1";
 import { colormapIndex, vectorLite } from "../core/state-colors.js?v=1.86.1";
 import { dragonNav, fernNav, hexaflakeNav, kochNav, treeNav, vectorFitHalfHeight } from "../ui/vector-interaction.js?v=1.86.1";
@@ -146,6 +146,8 @@ export const DEEP_PASSES = 8;
 export function refinePassCount() {
   const deep = lastMainDeepPath || (dualActive && lastJuliaDeepPath);
   const n = Diag.passesOverride ?? DEEP_PASSES;
+  // The L-plane's deep path is as speckled as its heavy float32 views, so it keeps their 12 (8 was grainier there).
+  if (deep && mode === "fractal" && sineLDeepEligible(mainState)) return Math.min(SAMPLE_OFFSETS.length, Diag.passesOverride ?? SINE_L_PASSES);
   if (deep) return Math.min(SAMPLE_OFFSETS.length, n);
   if (mode === "fractal" && sineLHeavy(mainState)) return Math.min(SAMPLE_OFFSETS.length, Diag.passesOverride ?? SINE_L_PASSES);
   return SAMPLE_OFFSETS.length;

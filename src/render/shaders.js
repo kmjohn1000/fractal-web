@@ -184,6 +184,7 @@ uniform float u_refTexWidth;
 // chooseReference in deepzoom.js doesn't always use the view center. See
 // renderEscapePerturbation.
 uniform vec2  u_refOffset;
+uniform vec2  u_sineL0;   // Sine L-plane's deep path only: the reference orbit's L rounded to float32 (renderSineLPlanePerturbation)
 
 const int FTYPE_ESCAPE  = 0;
 const int FTYPE_SHIP    = 1;
@@ -873,7 +874,7 @@ vec3 renderNewton(vec2 p) {
   return lutColor(t);
 }
 
-// The sine family (float32 only, no deep path). Both maps are entire functions built on the complex sine
+// The sine family (float32 only; the L-plane has a deep path under its float32 floor, renderSineLPlanePerturbation). Both maps are entire functions built on the complex sine
 // sin(a + bi) = sin a cosh b + i cos a sinh b:
 //   FTYPE_SINE      z -> L sin z. With u_isJulia (Sine Julia, and the Julia pane of the L-plane): z0 = the pixel and
 //                   L = u_juliaC. Without it, the L-plane: L = the pixel and z0 = pi/2 (see renderSineFamily);
@@ -1241,6 +1242,90 @@ vec3 renderEscapePerturbation(vec2 uv) {
 #endif
 }
 
+// The Sine L-plane below its float32 floor (sineLDeepEligible in deepzoom.js). The pixel is the parameter L of
+// z -> L sin z, so a float32 L repeats once a pixel is under one step of it, and the orbit's amplification of an
+// error (|L cos z| a step) makes float32 a different orbit from the float64 one in every filament. So: a float64
+// reference orbit Z of the map at L0 (sineLReferenceOrbit), and per pixel only the offset d = z - Z in float32, with
+// dL = L - L0 (small whatever the depth). With z = Z + d:
+//   L sin z - L0 sin Z = dL sin(Z + d) + L0 (sin(Z + d) - sin Z),
+//   sin(Z + d) - sin Z = sin Z (cos d - 1) + cos Z sin d =: A, so  d' = dL (sin Z + A) + L0 A.
+// sin d and cos d - 1 come from one half angle (h = d / 2: sin d = 2 sin h cos h, cos d - 1 = -2 sin^2 h), which keeps
+// cos d - 1 free of the cancellation of 1 - cos for a small d and costs one sine/cosine/exponential, not two.
+// The texture (u_refOrbitTex, width u_refTexWidth, u_refOrbitLen texels used): row 0 = sin Z, cos Z (as x, y, z, w
+// pairs), row 1 = Z's float32 value and rounding remainder. L0 is u_sineL0 as a float32 (its rounding is a relative
+// 6e-8 error in the term L0 A, the size of any float32 rounding in d').
+// Rebase (z = Z + d is the pixel's value, the offset restarts against the orbit's beginning, whose Z[0] is
+// pi/2) when |d|^2 > SINE_REBASE |z|^2, or one step before the reference ends (its last point is huge); the
+// difference of two orbit points is formed from the float32 pairs so it keeps the float64 value's low bits.
+const float SINE_REBASE = 2.0;
+vec4 sineRefAt(int n, float row) {
+  return texture2D(u_refOrbitTex, vec2((float(n) + 0.5) / u_refTexWidth, row));
+}
+vec3 renderSineLPlanePerturbation(vec2 uv) {
+  vec2 dL = uv * u_scale * 2.0 - u_refOffset;
+  vec4 start = sineRefAt(0, 0.75);
+  vec2 d = vec2(0.0);
+  vec2 z = start.xy;
+  int n = 0;
+  int lastUsable = u_refOrbitLen - 2;
+  bool escaped = false;
+  int iter = 0;
+  float prevR2 = dot(z, z);
+#if COLOR_VARIANT == 2
+  vec4 S = stripeStart();
+#elif COLOR_VARIANT == 3
+  vec2 T = trapStart();
+#endif
+  for (int i = 0; i < 2000; i++) {
+    if (i >= u_maxIter) break;
+    prevR2 = dot(z, z);
+    if (n >= lastUsable && n > 0) {
+      vec4 zr = sineRefAt(n, 0.75);
+      d = (zr.xy - start.xy) + ((zr.zw - start.zw) + d);
+      n = 0;
+    }
+    vec4 sc = sineRefAt(n, 0.25);
+    vec2 sZ = sc.xy, cZ = sc.zw;
+    vec2 hd = d * 0.5;
+    float a = reduce2Pi(hd.x);
+    vec2 chsh = coshSinh(hd.y);
+    float sa = sin(a), ca = cos(a);
+    vec2 hs = vec2(sa * chsh.x, ca * chsh.y);
+    vec2 hc = vec2(ca * chsh.x, -sa * chsh.y);
+    vec2 cm1 = -2.0 * cMul(hs, hs);
+    vec2 sd = 2.0 * cMul(hs, hc);
+    vec2 A = cMul(sZ, cm1) + cMul(cZ, sd);
+    d = cMul(dL, sZ + A) + cMul(u_sineL0, A);
+    n++;
+    vec4 zr = sineRefAt(n, 0.75);
+    z = zr.xy + d;
+    iter = i;
+#if COLOR_VARIANT == 2
+    S = stripeStep(S, z / max(max(abs(z.x), abs(z.y)), 1e-30));
+#elif COLOR_VARIANT == 3
+    if (i > 0) T = trapStep(T, z);
+#endif
+    float r2 = dot(z, z);
+    if (r2 > SINE_BAIL2) { escaped = true; break; }
+    if (dot(d, d) > SINE_REBASE * r2) {
+      d = (zr.xy - start.xy) + ((zr.zw - start.zw) + d);
+      n = 0;
+    }
+  }
+#if COLOR_VARIANT == 3
+  return trapColor(T, escaped);
+#endif
+  if (!escaped) return vec3(0.0);
+  float cnt = sineSmoothCount(iter, 0.5 * log(max(prevR2, 1.0)), logAbs(z));
+#if COLOR_VARIANT == 2
+  float A2 = S.w + (S.z - S.w) * (cnt - floor(cnt));
+  return styleColor(clamp(0.5 + (A2 - 0.5) * STRIPE_GAIN, 0.0, 1.0));
+#else
+  if (u_style == STYLE_BANDS) return styleColor(float(iter + 1) * SINE_COLOR_SCALE);
+  return styleColor(cnt * SINE_COLOR_SCALE);
+#endif
+}
+
 void main() {
   vec2 uv = (gl_FragCoord.xy + u_jitter - 0.5 * u_resolution) / u_resolution.y;
 
@@ -1283,6 +1368,10 @@ void main() {
   }
 
   if (u_ftype == FTYPE_SINE || u_ftype == FTYPE_SINEPLANE) {
+    if (u_usePerturbation && u_ftype == FTYPE_SINE && !u_isJulia) {
+      gl_FragColor = vec4(renderSineLPlanePerturbation(uv), 1.0);
+      return;
+    }
     gl_FragColor = vec4(renderSineFamily(u_center + uv * u_scale * 2.0), 1.0);
     return;
   }
