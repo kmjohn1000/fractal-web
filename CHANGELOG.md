@@ -2,6 +2,10 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.87.0 — 2026-11-16
+- Changed: the Sine L-plane now zooms about a million times deeper (to a view half-height of 1e-10), drawn from an exact reference orbit, where it used to stop at 1e-4 to 1e-3. Views at or above the old limit, and the places on it, are unchanged.
+- Changed: dragging or pinching a deep Sine L-plane view moves the last frame and draws the real view when you stop; deep views sharpen through 12 passes.
+
 ## 1.86.1 — 2026-11-16
 - Changed: in the dive style menu, Full Motion's description reads "Zoom style flights".
 
