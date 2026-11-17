@@ -8,7 +8,7 @@ import { Diag } from "../core/diag.js?v=1.86.1";
 import { FRAG_SRC, NEWTON_DEEP_FRAG_SRC, PHOENIX_DEEP_FRAG_SRC, PREVIEW_FRAG_SRC, VERT_SRC, VERT_SRC_300 } from "./shaders.js?v=1.86.1";
 import { apolloCapColor, apolloFrame } from "../fractals/apollonian.js?v=1.86.1";
 import { DIGIT_MAX_CELL_LEVEL, digitBase, digitCellFrame, digitCellLevel, digitColorCycle, digitFractalDepth, digitSubPixelColor, isDigitFractal } from "../fractals/digit-fractals.js?v=1.86.1";
-import { DEEP_ZOOM_THRESHOLD, FIXED_THIRD, PHOENIX_DEEP_SAMPLES, PHOENIX_EXACT_CAP, SAMPLE_OFFSETS, chooseReference, chooseReferenceExact, computeReferenceOrbit, computeReferenceOrbitExact, exactReferencePoint, exactRender, exactRenderEligible, fixedLimbs, newtonDeepEligible, newtonOrbitF64, perturbationEligibleType, phoenixDeepEligible, phoenixEscapeF64, phoenixReference } from "../core/deepzoom.js?v=1.86.1";
+import { DEEP_ZOOM_THRESHOLD, FIXED_THIRD, PHOENIX_DEEP_SAMPLES, PHOENIX_EXACT_CAP, SAMPLE_OFFSETS, chooseReference, chooseReferenceExact, chooseSineLReference, computeReferenceOrbit, computeReferenceOrbitExact, exactReferencePoint, exactRender, exactRenderEligible, fixedLimbs, newtonDeepEligible, newtonOrbitF64, perturbationEligibleType, phoenixDeepEligible, phoenixEscapeF64, phoenixReference, sineLDeepEligible, sineLReferenceOrbit } from "../core/deepzoom.js?v=1.86.1";
 import { EXACT_FROM, EXACT_ONE, exactCenter, exactFracFor, exactValid, toExact } from "../core/view-math.js?v=1.86.1";
 import { colorStyle, colorStyleFor, styleDrawn, trapRangeFor } from "./color-styles.js?v=1.86.1";
 
@@ -66,7 +66,7 @@ export function createFractalRenderer(canvas, host) {
     "juliaC", "newtonRoots", "newtonCustom", "phoenixP", "lut", "style", "density", "offset", "pixelSize", "trapCenter", "digitDepth", "digitLevel",
     "digitCenter", "digitScale", "cellHole", "digitCycle", "subPixelColor", "apoW0", "apoK", "apoL", "apoFlip", "apoRescale",
     "apoSteps", "apoCapColor", "jitter", "usePerturbation", "refOrbitTex", "refOrbitLen", "critOffset",
-    "critLen", "refTexWidth", "refOffset", "trapLo", "trapHi", "trapProbe"];
+    "critLen", "refTexWidth", "refOffset", "sineL0", "trapLo", "trapHi", "trapProbe"];
   function fractalEntry(variant, p) {
     const entry = { prog: p, u: Object.fromEntries(UNIFORMS.map((n) => [n, gl.getUniformLocation(p, `u_${n}`)])) };
     programs.set(variant, entry);
@@ -727,8 +727,7 @@ export function createFractalRenderer(canvas, host) {
     const flightLive = !!flightRef;
     const usePerturbation = perturbationSupported && (flightLive
       || (!host.isInteracting()
-      && perturbationEligibleType(state)
-      && state.scale < DEEP_ZOOM_THRESHOLD));
+      && ((perturbationEligibleType(state) && state.scale < DEEP_ZOOM_THRESHOLD) || sineLDeepEligible(state))));
     gl.uniform1i(u.usePerturbation, usePerturbation ? 1 : 0);
 
     gl.activeTexture(gl.TEXTURE0);
@@ -759,6 +758,32 @@ export function createFractalRenderer(canvas, host) {
       if (cs.variant === 3) updateTrapRange(u, state, cs, sampleIndex);
       drawToCanvas(sampleIndex);
       return "perturbation (flight)";
+    }
+
+    // The Sine L-plane below its float32 floor: a float64 reference orbit of the map at the view's center (or the
+    // longest-lasting point near it), as a 2-row texture (renderSineLPlanePerturbation). Cached per view like the
+    // escape family's, so a pan, zoom, rotation or iteration change re-picks the reference and the settled
+    // refinement passes reuse it.
+    if (sineLDeepEligible(state)) {
+      const key = ["sine-l", state.cx, state.cy, state.scale, state.rotation || 0, state.maxIter, canvas.width, canvas.height].join(",");
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, refOrbitTex);
+      if (key !== refCacheKey) {
+        const ref = chooseSineLReference(state, canvas.width, canvas.height);
+        const lx = state.cx + ref.dx, ly = state.cy + ref.dy;
+        const orbit = sineLReferenceOrbit(lx, ly, state.maxIter);
+        gl.texImage2D(gl.TEXTURE_2D, 0, isWebGL2 ? gl.RGBA32F : gl.RGBA, orbit.length, 2, 0, gl.RGBA, gl.FLOAT, orbit.data);
+        refCache = { dx: ref.dx, dy: ref.dy, refLen: orbit.length, critOffset: 0, critLen: orbit.length, width: orbit.length, l0: [Math.fround(lx), Math.fround(ly)] };
+        refCacheKey = key;
+      }
+      gl.uniform1i(u.refOrbitTex, 1);
+      gl.uniform1i(u.refOrbitLen, refCache.refLen);
+      gl.uniform1f(u.refTexWidth, refCache.width);
+      gl.uniform2f(u.refOffset, refCache.dx, refCache.dy);
+      gl.uniform2f(u.sineL0, refCache.l0[0], refCache.l0[1]);
+      if (cs.variant === 3) updateTrapRange(u, state, cs, sampleIndex);
+      drawToCanvas(sampleIndex);
+      return "perturbation";
     }
 
     // Below exactRender.below (deepzoom.js) the reference comes from the view's exact center (BigInt), so the key names it.

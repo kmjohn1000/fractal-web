@@ -82,8 +82,24 @@ export const isSineType = (ftype) => ftype === FTYPE.SINE || ftype === FTYPE.SIN
 // 3e-4 and 5% at 1e-4; at 4.6 and 5.0 (where a float32 step is 4.8e-7 and the orbits are amplified the most) 4-10% at
 // 1e-3, 7-14% at 3e-4 and 11-15% at 1e-4, 21% at 2e-5. So the floor is the family's 1e-4, and never under two float32
 // steps of the center per pixel on the nominal canvas (minScaleFor): 1.2e-4 at |L| 0.5 to 1, 2.4e-4 at 1 to 2, 4.8e-4
-// at 2 to 4 and 9.5e-4 at 4 to 8, which keeps the measured disagreement near 5% or under at every center.
+// at 2 to 4 and 9.5e-4 at 4 to 8, which keeps the measured disagreement near 5% or under at every center. That is the
+// float32 floor (sineLFloat32Floor, below); the deep path under it (sineLDeepEligible) moves the zoom floor to 1e-10.
 export const isSineLPlane = (state) => state.ftype === FTYPE.SINE && !state.isJulia;
+// Below that float32 floor the L-plane has a deep path (sineLDeepEligible, renderSineLPlanePerturbation in shaders.js):
+// a float64 reference orbit and a float32 offset per pixel. Its floor is a choice: measured against a float64 iteration
+// of the same map, counting only the pixels float64 itself keeps under a one-ulp move of L (tests/visual/sine-lplane-deep
+// .spec.mjs), the offset path is off by 0.1-3% of those pixels at a half-height of 1e-10 (the speckled filament zones
+// are most of the rest), where today's shader is 91-100% off from 1e-8. 1e-12 is the edge of a double center (a pixel
+// is then under two steps of it near |L| 5), and below that it would need an exact center like the escape family's.
+export const SINE_L_DEEP_MIN_SCALE = 1e-10;
+// The float32 floor of the L-plane (see isSineLPlane's comment above): never under SINE_MIN_SCALE, and never under two
+// float32 steps of the center per pixel on the nominal canvas. Views at or above it draw exactly as they always did.
+export const sineLFloat32Floor = (state) =>
+  Math.max(SINE_MIN_SCALE, FLOOR_STEPS * ulp32(Math.max(Math.abs(state.cx), Math.abs(state.cy))) * FLOOR_PIXELS / 2);
+// How far under the float32 floor a view must be before the deep path draws it: a view saved or shared at exactly the old
+// floor (the places that sit on it) stays on the float32 shader, so no view that worked before changes a pixel.
+export const SINE_L_SWITCH = 0.999;
+export const sineLDeepEligible = (state) => isSineLPlane(state) && state.scale < sineLFloat32Floor(state) * SINE_L_SWITCH;
 
 // The zoom floor: how deep each fractal can go before panning stalls and zoom-about-the-cursor drifts. Every
 // way of zooming goes through limitScale, which stops here; the HUD says "As deep as this fractal goes".
@@ -123,8 +139,10 @@ export function minScaleFor(state) {
     return Math.max(SPIDER_MIN_SCALE, FLOOR_STEPS * ulp32(Math.max(Math.abs(state.cx), Math.abs(state.cy))) * FLOOR_PIXELS / 2);
   }
   if (state.ftype === FTYPE.MAGNET) return MAGNET_MIN_SCALE;
+  // The L-plane: float32's floor above, SINE_L_DEEP_MIN_SCALE (or two doubles' steps of the center per pixel, if that is
+  // higher) now that the deep path draws below it.
   if (isSineLPlane(state)) {
-    return Math.max(SINE_MIN_SCALE, FLOOR_STEPS * ulp32(Math.max(Math.abs(state.cx), Math.abs(state.cy))) * FLOOR_PIXELS / 2);
+    return Math.max(SINE_L_DEEP_MIN_SCALE, FLOOR_STEPS * ulp64(Math.max(Math.abs(state.cx), Math.abs(state.cy))) * FLOOR_PIXELS / 2);
   }
   if (isSineType(state.ftype)) return SINE_MIN_SCALE;
   if (perturbationEligibleType(state)) return EXACT_MIN_SCALE;
@@ -491,6 +509,88 @@ export function chooseReferenceExact(state, widthPx, heightPx) {
   return best;
 }
 
+// ---------------------------------------------------------------- Sine L-plane reference
+// The L-plane's squared bailout (SINE_BAIL2 in shaders.js, |z| = 50).
+export const SINE_L_BAIL2 = 2500;
+// How many iterations the L-plane's critical orbit z -> L sin z (z0 = pi/2) survives in float64: the number of steps
+// before |z|^2 passes the bailout, or Infinity if it lasts maxIter. The same loop as renderSineLPlanePerturbation's
+// reference (sineLReferenceOrbit).
+export function sineLEscapeF64(lx, ly, maxIter) {
+  let zx = Math.PI / 2, zy = 0;
+  for (let n = 0; n < maxIter; n++) {
+    const a = Math.sin(zx) * Math.cosh(zy), b = Math.cos(zx) * Math.sinh(zy);
+    const nx = lx * a - ly * b, ny = lx * b + ly * a;
+    zx = nx; zy = ny;
+    if (zx * zx + zy * zy > SINE_L_BAIL2) return n;
+  }
+  return Infinity;
+}
+
+// The reference point for the L-plane's offset path, as chooseReference does for the escape family: the view center if
+// its orbit lasts maxIter, else the longest-lasting point of a coarse grid over the (rotated) view. A reference that
+// escapes early forces every pixel to rebase when it runs out (and a rebase puts an O(1) offset into float32), so
+// a longer one is worth a few ms of float64 on the CPU (a 16 x 16 grid of up to maxIter steps, about 25 ms at 1300).
+// Returns the reference's world offset from the center { dx, dy } (the shader's u_refOffset).
+export const SINE_L_REFERENCE_GRID = 16;
+export function chooseSineLReference(state, widthPx, heightPx) {
+  if (sineLEscapeF64(state.cx, state.cy, state.maxIter) === Infinity) return { dx: 0, dy: 0 };
+  const rot = state.rotation || 0;
+  const rc = Math.cos(rot), rs = Math.sin(rot);
+  const halfW = 0.5 * widthPx / heightPx;
+  let best = { dx: 0, dy: 0, iter: -1 };
+  for (let gy = 0; gy < SINE_L_REFERENCE_GRID; gy++) {
+    for (let gx = 0; gx < SINE_L_REFERENCE_GRID; gx++) {
+      const uvx = ((gx + 0.5) / SINE_L_REFERENCE_GRID * 2 - 1) * halfW;
+      const uvy = ((gy + 0.5) / SINE_L_REFERENCE_GRID * 2 - 1) * 0.5;
+      const dx = (uvx * rc - uvy * rs) * state.scale * 2.0;
+      const dy = (uvx * rs + uvy * rc) * state.scale * 2.0;
+      const iter = sineLEscapeF64(state.cx + dx, state.cy + dy, state.maxIter);
+      if (iter > best.iter) {
+        best = { dx, dy, iter };
+        if (iter === Infinity) return best;
+      }
+    }
+  }
+  return best;
+}
+
+// The float64 reference orbit Z[0..n] of z -> L sin z from Z[0] = pi/2 at L = (lx, ly), stopping after it passes the
+// bailout or maxIter steps, as a 2-row RGBA32F texture of `len` texels per row (Float32Array, row 0 then row 1):
+//   row 0: sin Z (x, y) and cos Z (z, w), computed in float64 (sin(a + bi) = sin a cosh b + i cos a sinh b, the imaginary
+//          part clamped to +-80 as coshSinh in shaders.js does) -- the shader's offset step needs both of them;
+//   row 1: Z as a float32 pair (x, y), and Z's rounding remainder in float32 (z, w), so a rebase can put the
+//          float64 difference of two orbit points into the offset without losing it.
+// Z is kept in float64 to the end, which is the one place this map needs extended precision: it amplifies an error by
+// |L cos z| every step, so a float32 orbit is a different orbit from the first handful of steps.
+export function sineLReferenceOrbit(lx, ly, maxIter) {
+  const f = Math.fround;
+  const cap = maxIter + 1;
+  const data = new Float32Array(cap * 8);
+  let zx = Math.PI / 2, zy = 0, len = 0;
+  const put = () => {
+    const sx = Math.sin(zx), cx = Math.cos(zx), yy = Math.max(-80, Math.min(zy, 80));
+    const ch = Math.cosh(yy), sh = Math.sinh(yy);
+    const k = len * 4;
+    data[k] = sx * ch; data[k + 1] = cx * sh; data[k + 2] = cx * ch; data[k + 3] = -sx * sh;
+    const m = (cap + len) * 4;
+    data[m] = zx; data[m + 1] = zy; data[m + 2] = zx - f(zx); data[m + 3] = zy - f(zy);
+    len++;
+  };
+  put();
+  for (let n = 0; n < maxIter; n++) {
+    const a = Math.sin(zx) * Math.cosh(Math.max(-80, Math.min(zy, 80))), b = Math.cos(zx) * Math.sinh(Math.max(-80, Math.min(zy, 80)));
+    const nx = lx * a - ly * b, ny = lx * b + ly * a;
+    zx = nx; zy = ny;
+    put();
+    if (zx * zx + zy * zy > SINE_L_BAIL2) break;
+  }
+  // Pack the two rows next to each other at the used length (row 1 was written at the full capacity's offset).
+  const out = new Float32Array(len * 8);
+  out.set(data.subarray(0, len * 4), 0);
+  out.set(data.subarray(cap * 4, cap * 4 + len * 4), len * 4);
+  return { data: out, length: len };
+}
+
 // ---------------------------------------------------------------- supersampling
 // Sub-pixel sample offsets (in pixels) for progressive supersampling. One
 // sample per pixel aliases badly wherever the fractal varies faster than the
@@ -532,7 +632,8 @@ export function deepZoomEligible(renderer, state) {
     && perturbationEligibleType(state)
     && state.scale < DEEP_ZOOM_THRESHOLD)
     || (renderer.newtonDeepSupported && newtonDeepEligible(state))
-    || (renderer.phoenixDeepSupported && phoenixDeepEligible(state));
+    || (renderer.phoenixDeepSupported && phoenixDeepEligible(state))
+    || (renderer.perturbationSupported && sineLDeepEligible(state));
 }
 
 // Whether a gesture frame of the main pane is the moving last-frame preview instead of a live render. The deep
