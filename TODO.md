@@ -104,8 +104,13 @@ privacy-label change.
       Dusty Edge: 6.6% to 15.8% of pixels more than 20/255 off), about the
       same on the smooth ones; the whole plane always draws 16 (not "heavy").
       The user chose 12 as the compromise, which 1.80.3 already ships, along
-      with the drag preview (step 2). Only step 3 (perturbation deep path)
-      is left; not approved.
+      with the drag preview (step 2). Step 3 (perturbation deep path) is
+      BUILT 2026-11-16 (1.87.0, merge `ea99e04`): switch-over below the old
+      float32 floor, floor 1e-10, rebase threshold 2, half-angle shader,
+      12 passes; oracle share of reliable pixels wrong 1.7-9% at 1e-8 and
+      0.05-2.7% at 1e-10 (gate 11%). Not verified: phone cost, battery and
+      thermal (iteration auto-cap of 2000 is the slow case), a real
+      iPhone, a live drag. No Places entries deeper than the old floor yet.
       Steps, each its own commit, version bump and CHANGELOG entry, in this
       order:
       0. Visual study for the pass cap (no code): settle the Sine L-plane's
