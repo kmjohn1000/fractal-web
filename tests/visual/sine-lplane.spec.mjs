@@ -1,8 +1,8 @@
 // The sine L-plane ("Sine L plane", FTYPE.SINE without a juliaC; renderSineFamily in shaders.js): z -> L sin z with L the
 // pixel, started at the critical point pi/2, the parameter plane that goes with "Sine Julia" (the Julia set of the same
-// map for L = 1 + 0.4i, which is its Julia preset: dualParent, as Julia:Rabbit is Mandelbrot's). Float32 only, so the
-// zoom stops at the floor minScaleFor gives it, which follows its center (two float32 steps per pixel, never under
-// SINE_MIN_SCALE). Checks the mathematics the picture rests on (the start at pi/2, in float64), that it draws and sits in
+// map for L = 1 + 0.4i, which is its Julia preset: dualParent, as Julia:Rabbit is Mandelbrot's). Float32 above a floor that
+// follows its center (sineLFloat32Floor: two float32 steps per pixel, never under SINE_MIN_SCALE); under it the deep path
+// takes over and the zoom stops at 1e-10 (sine-lplane-deep.spec.mjs). Checks the mathematics the picture rests on (the start at pi/2, in float64), that it draws and sits in
 // the picker, agrees with a float64 iteration of the same map (the smooth count included), turns with the twist
 // gesture's rotation, offers exactly the styles it can draw, stops at its floor by link and wheel, has its places above
 // that floor, shows Sine Julia in the dual view's second pane, and that Sine Julia's own Dual button opens the plane
@@ -14,7 +14,7 @@ import { PNG } from "pngjs";
 /* global SINE_MIN_SCALE, minScaleFor, limitScale, atZoomLimit, mainState, juliaState, mainRenderer, buildShareHash, COLORMAPS,
    colormapIndex, applyShareLink, requestRender, currentName, FTYPE, PICKER_LAYOUT, PICKER_BLURBS, enterDual, exitDual, dualActive,
    setColorStyle, styleDrawn, COLOR_STYLES, SAMPLE_OFFSETS, FRACTAL_CONFIGS, TELEPORT_DESTINATIONS, placeId, fractalLabel, els,
-   selectFractal, dualPresetName, FLOOR_STEPS, FLOOR_PIXELS, ulp32 */
+   selectFractal, dualPresetName, FLOOR_STEPS, FLOOR_PIXELS, ulp32, sineLFloat32Floor */
 
 const DRIVER = new URL("../driver.js", import.meta.url).pathname;
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
@@ -382,9 +382,9 @@ for (const [name, style, cm, view] of [
   });
 }
 
-test("its floor follows its center, and the Julia views of the same type keep the family's 1e-4", async ({ page }) => {
+test("its float32 floor follows its center (the deep path starts under it), and the Julia views of the same type keep the family's 1e-4", async ({ page }) => {
   const r = await page.evaluate(() => {
-    const plane = (cx, cy) => minScaleFor({ ftype: FTYPE.SINE, power: 2, isJulia: false, cx, cy, scale: 1e-20 });
+    const plane = (cx, cy) => sineLFloat32Floor({ ftype: FTYPE.SINE, power: 2, isJulia: false, cx, cy, scale: 1e-20 });
     const julia = (cx, cy) => minScaleFor({ ftype: FTYPE.SINE, power: 2, isJulia: true, cx, cy, scale: 1e-20 });
     const want = (r) => FLOOR_STEPS * ulp32(r) * FLOOR_PIXELS / 2;
     return { family: SINE_MIN_SCALE, near0: plane(0.1, 0.1), at08: plane(0.3, 0.8), at1: plane(1, 0), at24: plane(2.4, 0.18), at5: plane(5, 0.085), julia3: julia(3.14, 0), julia0: julia(0, 0),
@@ -407,14 +407,15 @@ test("the zoom stops at the floor however it is asked for: link and wheel; the i
   const r = await page.evaluate(() => {
     const out = {};
     out.floor = minScaleFor({ ...mainState, scale: 1 });
-    out.limited = limitScale({ ...mainState }, 1e-12);
+    out.limited = limitScale({ ...mainState }, 1e-14);
     out.fine = limitScale({ ...mainState }, 0.5);
-    const hash = buildShareHash().replace(/([&#])s=[^&]*/, "$1s=1e-9");
+    const hash = buildShareHash().replace(/([&#])s=[^&]*/, "$1s=1e-12");
     applyShareLink("https://example.test/" + hash);
     out.linked = mainState.scale;
     return out;
   });
-  expect(r.floor).toBeGreaterThan(1e-4);
+  // the deep path's floor (sine-lplane-deep.spec.mjs), far under the float32 one
+  expect(r.floor).toBe(1e-10);
   expect(r.limited).toBe(r.floor);
   expect(r.fine).toBe(0.5);
   expect(r.linked).toBe(r.floor);
@@ -439,12 +440,12 @@ test("the zoom stops at the floor however it is asked for: link and wheel; the i
   const hud = await page.evaluate(() => ({ at: atZoomLimit(mainState), text: document.getElementById("hud").textContent }));
   expect(hud.at).toBe(true);
   expect(hud.text).toContain("As deep as this fractal goes");
-  expect(hud.text).toContain("float32");
+  expect(hud.text).toContain("perturbation (deep zoom)");
   expect(colorStats(await canvasPng(page)).distinct).toBeGreaterThan(100);
 });
 
-test("the plane at its floor near |L| = 1 still draws a full picture", async ({ page }) => {
-  const floor = await page.evaluate(() => minScaleFor({ ftype: FTYPE.SINE, power: 2, isJulia: false, cx: 0.3, cy: 0.99000463319974052, scale: 1 }));
+test("the plane at its float32 floor near |L| = 1 still draws a full picture", async ({ page }) => {
+  const floor = await page.evaluate(() => sineLFloat32Floor({ ftype: FTYPE.SINE, power: 2, isJulia: false, cx: 0.3, cy: 0.99000463319974052, scale: 1 }));
   await show(page, KEY, { cx: 0.3, cy: 0.99000463319974052, scale: floor * 1.2 });
   const stats = colorStats(await canvasPng(page));
   expect(stats.dominant).toBeLessThan(0.85);
@@ -457,7 +458,7 @@ test("its six places are named, unique, above the floor at their own center, and
     const mine = TELEPORT_DESTINATIONS.filter((d) => d.fractal === "Sine L plane");
     const out = { labels: mine.map((d) => d.label), below: [], notUnique: [], thumbs: [], deepest: Infinity };
     for (const d of mine) {
-      const f = minScaleFor({ ftype: FTYPE.SINE, power: 2, isJulia: false, cx: Number(d.re), cy: Number(d.im), scale: d.scale });
+      const f = sineLFloat32Floor({ ftype: FTYPE.SINE, power: 2, isJulia: false, cx: Number(d.re), cy: Number(d.im), scale: d.scale });
       if (d.scale < f) out.below.push(d.label);
       out.deepest = Math.min(out.deepest, d.scale / f);
       if (TELEPORT_DESTINATIONS.filter((e) => e.label === d.label).length !== 1) out.notUnique.push(d.label);
