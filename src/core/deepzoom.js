@@ -47,8 +47,8 @@ export function newtonDeepEligible(state) {
 // step of the center), shows stair-steps on the boundary by 2.5e-5, goes
 // grainy and blocky by 1e-5 and is mush by 1e-6. Every way of zooming (pinch,
 // wheel, box, keys, share links) goes through limitScale, which stops at
-// 4e-5, and the info card says so. About 37,000 times deeper than the opening
-// view on a phone.
+// 4e-5, and the info card says so. About 58,000 times deeper than the opening
+// view on a phone (measured at 402x874 @3x: the opening half-height is 2.33).
 export const NOVA_MIN_SCALE = 4e-5;
 // Magnet I and II: no deep zoom path either (the map is a rational function, whose poles have no
 // perturbation step worked out here), so the depth is float32's. The interesting part of the plane
