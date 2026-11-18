@@ -217,6 +217,18 @@ privacy-label change.
 Help people find beautiful places, and give them more ways to see them.
 Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation before zoom-to-minibrot.
 
+- [ ] Move "Show whole shape" (`resetBtn` and the five vector-mode twins in
+      `index.html`) off the toolbar into a "more" menu (user idea 2026-11-18;
+      not approved, not started). It is rarely used. No such menu exists yet,
+      so this first needs one: decide what else could live there (candidates:
+      other low-frequency toolbar buttons) before building it for one item,
+      or the toolbar slot just moves. Today the button calls
+      `selectFractal(currentName, { fresh: true })` (`src/ui/teleport.js`);
+      re-picking the fractal already showing keeps its view on purpose
+      (`src/ui/modes.js`), so the picker can't stand in for it. Open: the
+      first-run tour and the `v2` toolbar assume the current layout, and the
+      toolbar-height constants in `ios/CLAUDE.md` apply if the row changes.
+
 
 - [ ] Turning Vicsek ("Vicsek clock", user idea 2026-11-05; not approved, not
       started). Inspired by a short r/fractals animation of the Vicsek cross
