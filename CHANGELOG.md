@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.88.2 — 2026-11-20
+- Fixed: the invisible zoom slider for VoiceOver now moves in whole steps, which is what iOS needs to adjust it with a swipe.
+
 ## 1.88.1 — 2026-11-20
 - Fixed: with VoiceOver, swiping up or down on the fractal now zooms. The picture is now paired with an invisible slider, which VoiceOver can adjust.
 - Fixed: VoiceOver no longer calls the Surprise me die "collapsed".

@@ -11,17 +11,17 @@
 // document-level arrow-key panning in compass-ui.js is untouched). Labels are written at most once per
 // LABEL_DELAY_MS after the view stops changing (never per frame); a zoom step writes at once.
 // An ES module: every top-level declaration is exported (test-hooks.js relies on it).
-import { fractalLabel } from "../core/configs.js?v=1.88.1";
-import { limitScale } from "../core/deepzoom.js?v=1.88.1";
-import { isCurveMode, isIfsMode } from "../fractals/fractal-defs.js?v=1.88.1";
-import { cancelTeleport } from "./teleport.js?v=1.88.1";
-import { currentName, dualActive, els, mainState, mode, pushHistory, shownGeometry } from "../core/state.js?v=1.88.1";
-import { markInteracting } from "../core/state-colors.js?v=1.88.1";
-import { requestRender } from "../render/render-layout.js?v=1.88.1";
-import { activeVectorTarget } from "./vector-interaction.js?v=1.88.1";
-import { landedPlaceName, modeLabel } from "./hud.js?v=1.88.1";
-import { dualPresetName } from "./modes.js?v=1.88.1";
-import { rotationHudText, zoomPhrase } from "./hud-format.js?v=1.88.1";
+import { fractalLabel } from "../core/configs.js?v=1.88.2";
+import { limitScale } from "../core/deepzoom.js?v=1.88.2";
+import { isCurveMode, isIfsMode } from "../fractals/fractal-defs.js?v=1.88.2";
+import { cancelTeleport } from "./teleport.js?v=1.88.2";
+import { currentName, dualActive, els, mainState, mode, pushHistory, shownGeometry } from "../core/state.js?v=1.88.2";
+import { markInteracting } from "../core/state-colors.js?v=1.88.2";
+import { requestRender } from "../render/render-layout.js?v=1.88.2";
+import { activeVectorTarget } from "./vector-interaction.js?v=1.88.2";
+import { landedPlaceName, modeLabel } from "./hud.js?v=1.88.2";
+import { dualPresetName } from "./modes.js?v=1.88.2";
+import { rotationHudText, zoomPhrase } from "./hud-format.js?v=1.88.2";
 
 export const LABEL_DELAY_MS = 350;
 // One swipe zooms by this factor (the keyboard's +/- is 1.25: too small a step for a swipe).
@@ -45,9 +45,11 @@ export function setCanvasA11y(canvas, role, label, valuetext, valuenow) {
     if (zoomInput.hidden) zoomInput.hidden = false;
     if (zoomInput.getAttribute("aria-label") !== label) zoomInput.setAttribute("aria-label", label);
     if (zoomInput.getAttribute("aria-valuetext") !== valuetext) zoomInput.setAttribute("aria-valuetext", valuetext);
-    const now = Math.round(Math.min(A11Y_ZOOM_MAX, Math.max(A11Y_ZOOM_MIN, valuenow)) * 10) / 10;
+    // Whole steps: WebKit raises and lowers a native range with stepUp()/stepDown(), which refuse step="any"; the
+    // depth the person hears is in aria-valuetext, so rounding the number loses nothing.
+    const now = Math.round(Math.min(A11Y_ZOOM_MAX, Math.max(A11Y_ZOOM_MIN, valuenow)));
     if (Number(zoomInput.value) !== now) zoomInput.value = String(now);
-    a11yValue = now;
+    a11yValue = Number(zoomInput.value);
     return;
   }
   if (canvas === els.mainCanvas) zoomInput.hidden = true;

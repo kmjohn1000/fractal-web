@@ -28,10 +28,11 @@ test.afterEach(() => {
 
 // The screen-reader handle on the main canvas: an invisible native range input (the canvas itself is aria-hidden).
 const canvas = (page) => page.locator("#a11yZoom");
-// What VoiceOver's swipe up (+1) or down (-1) does to a native range input: the value moves, an input event fires.
+// What VoiceOver's swipe up (+1) or down (-1) does to a native range input: WebKit calls stepUp()/stepDown()
+// (which throw for step="any", so the step must be a number) and an input event fires.
 const swipe = (page, dir) => page.evaluate((d) => {
   const i = document.getElementById("a11yZoom");
-  i.value = String(Number(i.value) + d * 0.5);
+  if (d > 0) i.stepUp(); else i.stepDown();
   i.dispatchEvent(new Event("input", { bubbles: true }));
 }, dir);
 const flown = (page, i) => page.waitForFunction((n) => mainState.scale === TELEPORT_DESTINATIONS[n].scale, i, { timeout: 30_000 });
