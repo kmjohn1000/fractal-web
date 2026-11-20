@@ -621,6 +621,7 @@
   #diveMenu .diveMenuTitle { font: 600 0.8125rem -apple-system, system-ui, sans-serif; color: #9a9a9a; padding: 2px 4px 0; }
   #diveMenu button { text-align: left; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding-left: 28px; position: relative; }
   #diveMenu button span { font-size: 0.75rem; color: #9a9a9a; font-weight: 400; }
+  #diveMenu #shakeToggle { margin-top: 2px; border-top: 1px solid #444; padding-top: 10px; }
   #diveMenu button[aria-checked="true"]::before { content: "✓"; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); }
   /* Holding the die opens the menu, not iOS's callout or a text selection. */
   #teleportBtn { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
@@ -893,7 +894,10 @@
   <div id="diveMenu" role="menu" aria-label="Dive style">
     <div class="diveMenuTitle" aria-hidden="true">Dive style</div>
     <button role="menuitemradio" data-dive="full" aria-checked="true">Full Motion<span>Zoom style flights</span></button>
-    <button role="menuitemradio" data-dive="blur" aria-checked="false">Blur<span>Softens fast flashing</span></button>  </div>
+    <button role="menuitemradio" data-dive="blur" aria-checked="false">Blur<span>Softens fast flashing</span></button>
+    <!-- The app only (shake.js hides it on the web): shake the phone to roll the die. Off by default. -->
+    <button id="shakeToggle" class="hidden" role="menuitemcheckbox" aria-checked="false">Shake to roll<span>Shake the phone to fly somewhere</span></button>
+  </div>
   <div id="fractalControls" class="control-row">
     <label id="iterField" class="field">detail <input id="iterSlider" type="range" min="50" max="2000" step="10" value="300"></label>
     <button class="iconBtn fractalMenuBtn" aria-haspopup="true" aria-label="Choose fractal type" title="Choose fractal type">
