@@ -10,7 +10,7 @@
 // pixel size: it is blurred in time anyway, and it fades out once it matches the picture.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { els, isInteracting } from "../core/state.js?v=1.87.0";
+import { els, isInteracting } from "../core/state.js?v=1.88.0";
 
 // Each stage's time constant. On the five worst flights of 1.82.4 (12 to 19 transitions a second),
 // 50 ms brought them to 3 to 5, 70 ms to 2 to 4 and 100 ms to 2 to 3. Over all 86 checked flights 70 ms
