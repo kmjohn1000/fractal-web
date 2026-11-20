@@ -11,17 +11,18 @@
 // document-level arrow-key panning in compass-ui.js is untouched). Labels are written at most once per
 // LABEL_DELAY_MS after the view stops changing (never per frame); a zoom step writes at once.
 // An ES module: every top-level declaration is exported (test-hooks.js relies on it).
-import { fractalLabel } from "../core/configs.js?v=1.88.2";
-import { limitScale } from "../core/deepzoom.js?v=1.88.2";
-import { isCurveMode, isIfsMode } from "../fractals/fractal-defs.js?v=1.88.2";
-import { cancelTeleport } from "./teleport.js?v=1.88.2";
-import { currentName, dualActive, els, mainState, mode, pushHistory, shownGeometry } from "../core/state.js?v=1.88.2";
-import { markInteracting } from "../core/state-colors.js?v=1.88.2";
-import { requestRender } from "../render/render-layout.js?v=1.88.2";
-import { activeVectorTarget } from "./vector-interaction.js?v=1.88.2";
-import { landedPlaceName, modeLabel } from "./hud.js?v=1.88.2";
-import { dualPresetName } from "./modes.js?v=1.88.2";
-import { rotationHudText, zoomPhrase } from "./hud-format.js?v=1.88.2";
+import { fractalLabel } from "../core/configs.js?v=1.88.3";
+import { limitScale } from "../core/deepzoom.js?v=1.88.3";
+import { isCurveMode, isIfsMode } from "../fractals/fractal-defs.js?v=1.88.3";
+import { cancelTeleport } from "./teleport.js?v=1.88.3";
+import { currentName, dualActive, els, mainState, mode, pushHistory, shownGeometry } from "../core/state.js?v=1.88.3";
+import { markInteracting } from "../core/state-colors.js?v=1.88.3";
+import { requestRender } from "../render/render-layout.js?v=1.88.3";
+import { activeVectorTarget } from "./vector-interaction.js?v=1.88.3";
+import { landedPlaceName, modeLabel } from "./hud.js?v=1.88.3";
+import { dualPresetName } from "./modes.js?v=1.88.3";
+import { rotationHudText, zoomPhrase } from "./hud-format.js?v=1.88.3";
+import { announce } from "../fractals/chaos-run.js?v=1.88.3";
 
 export const LABEL_DELAY_MS = 350;
 // One swipe zooms by this factor (the keyboard's +/- is 1.25: too small a step for a swipe).
@@ -34,6 +35,12 @@ export const A11Y_ZOOM_MAX = 110;
 export const speech =(s) => s.replace(/×/g, " times");
 
 export const zoomInput = document.getElementById("a11yZoom");
+export const zoomInBtn = document.getElementById("a11yZoomIn");
+export const zoomOutBtn = document.getElementById("a11yZoomOut");
+// The slider and the two buttons come and go together: only the zoomable fractals have a screen-reader zoom.
+export function showZoomHandles(show) {
+  for (const el of [zoomInput, zoomInBtn, zoomOutBtn]) if (el.hidden === show) el.hidden = !show;
+}
 // The value the input shows now; a change away from it is a VoiceOver swipe (up = larger = zoom in).
 export let a11yValue = 0;
 
@@ -42,7 +49,7 @@ export function setCanvasA11y(canvas, role, label, valuetext, valuenow) {
     // The input speaks for the canvas; hide the picture itself so VoiceOver doesn't stop on both.
     if (canvas.getAttribute("aria-hidden") !== "true") canvas.setAttribute("aria-hidden", "true");
     for (const a of ["role", "aria-label"]) canvas.removeAttribute(a);
-    if (zoomInput.hidden) zoomInput.hidden = false;
+    showZoomHandles(true);
     if (zoomInput.getAttribute("aria-label") !== label) zoomInput.setAttribute("aria-label", label);
     if (zoomInput.getAttribute("aria-valuetext") !== valuetext) zoomInput.setAttribute("aria-valuetext", valuetext);
     // Whole steps: WebKit raises and lowers a native range with stepUp()/stepDown(), which refuse step="any"; the
@@ -52,7 +59,7 @@ export function setCanvasA11y(canvas, role, label, valuetext, valuenow) {
     a11yValue = Number(zoomInput.value);
     return;
   }
-  if (canvas === els.mainCanvas) zoomInput.hidden = true;
+  if (canvas === els.mainCanvas) showZoomHandles(false);
   canvas.removeAttribute("aria-hidden");
   if (canvas.getAttribute("role") !== role) canvas.setAttribute("role", role);
   if (canvas.getAttribute("aria-label") !== label) canvas.setAttribute("aria-label", label);
@@ -86,7 +93,7 @@ export function updateCanvasA11y() {
   const d = describeCanvas();
   if (mode !== "fractal") {
     // Pattern modes: no zoom handle, and the main canvas isn't on screen.
-    zoomInput.hidden = true;
+    showZoomHandles(false);
     els.mainCanvas.removeAttribute("aria-hidden");
   }
   if (d) setCanvasA11y(d.canvas, d.role, d.label, d.valuetext, d.valuenow);
@@ -119,6 +126,14 @@ export function a11yZoom(zoomIn) {
 // VoiceOver's swipe up / down (or a screen reader's, or a keyboard's arrows on the focused input) moves the input's
 // value; the direction of the change is the zoom, whatever the size of the step. a11yZoom then writes the real
 // depth back into the input.
+// The buttons: one double-tap = one zoom step, and the new depth is spoken (a button only rereads its own name).
+export function a11yZoomButton(zoomIn) {
+  a11yZoom(zoomIn);
+  const d = describeCanvas();
+  if (d?.valuetext) announce(d.valuetext);
+}
+zoomInBtn.addEventListener("click", () => a11yZoomButton(true));
+zoomOutBtn.addEventListener("click", () => a11yZoomButton(false));
 zoomInput.addEventListener("input", () => {
   const v = Number(zoomInput.value);
   if (v === a11yValue) return;

@@ -98,6 +98,23 @@ test("the zoom handle is invisible, takes no touches, stays out of the Tab order
   await expect(page.locator("#mainCanvas")).toHaveAttribute("aria-hidden", "true");
 });
 
+test("Zoom in / Zoom out buttons for VoiceOver zoom by one step and say the new depth, and exist only in the zoomable fractals", async ({ page }) => {
+  const zin = page.locator("#a11yZoomIn"), zout = page.locator("#a11yZoomOut");
+  await expect.poll(() => zin.evaluate((el) => el.hidden)).toBe(false);
+  await expect(zin).toHaveText("Zoom in");
+  await expect(zout).toHaveText("Zoom out");
+  const s0 = await page.evaluate(() => mainState.scale);
+  await zin.evaluate((el) => el.click()); // a double-tap in VoiceOver is a click
+  expect(await page.evaluate(() => mainState.scale)).toBeCloseTo(s0 / 2, 10);
+  await expect(page.locator("#runAnnounce")).toHaveText(/deeper/);
+  await zout.evaluate((el) => el.click());
+  expect(await page.evaluate(() => mainState.scale)).toBeCloseTo(s0, 10);
+  await expect(page.locator("#runAnnounce")).toHaveText(/whole shape/);
+  await page.evaluate(() => setMode("koch"));
+  await expect.poll(() => zin.evaluate((el) => el.hidden)).toBe(true);
+  await expect(zout).toBeHidden();
+});
+
 test("an arrow key aimed at the page (not the canvas) still pans, as before", async ({ page }) => {
   const cx0 = await page.evaluate(() => mainState.cx);
   await page.keyboard.press("ArrowRight");

@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Fractal Atlas&trade;</title>
 
-<link rel="manifest" href="manifest.webmanifest?v=1.88.2">
+<link rel="manifest" href="manifest.webmanifest?v=1.88.3">
 <meta name="theme-color" content="#111111">
-<link rel="icon" href="icons/favicon-32.png?v=1.88.2" sizes="32x32" type="image/png">
+<link rel="icon" href="icons/favicon-32.png?v=1.88.3" sizes="32x32" type="image/png">
 
 <!-- iOS Safari ignores the manifest entirely for install/homescreen purposes
      and needs its own meta tags + a dedicated (non-transparent) icon. -->
@@ -15,7 +15,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fractal Atlas">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.88.2">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1.88.3">
 
 <!-- Smart App Banner: Safari on iPhone/iPad offers the App Store app.
      Ignored everywhere else, including the app's own web view. -->
@@ -264,7 +264,7 @@
     position: absolute; z-index: 0; left: 0; top: 0; width: 100%; height: 100%; margin: 0; padding: 0;
     opacity: 0; pointer-events: none; -webkit-appearance: none; appearance: none;
   }
-  #a11yZoom[hidden] { display: none; }
+  #a11yZoom[hidden], #a11yZoomIn[hidden], #a11yZoomOut[hidden] { display: none; }
   .srOnly {
     position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
     clip-path: inset(50%); white-space: nowrap; border: 0;
@@ -867,6 +867,10 @@
   <!-- The screen-reader handle on the main canvas (canvas-a11y.js): a real range input, because iOS VoiceOver
        adjusts those with a swipe up or down and does not do that for an ARIA slider on a canvas. Invisible. -->
   <input id="a11yZoom" type="range" min="-10" max="110" step="1" value="0" tabindex="-1" hidden>
+  <!-- Zoom in / out for VoiceOver (canvas-a11y.js): the swipe on the slider above did not zoom on an iPhone
+       (2026-11-20), and a button always works. Invisible, shown only in the zoomable fractals. -->
+  <button id="a11yZoomIn" class="srOnly" type="button" tabindex="-1" hidden>Zoom in</button>
+  <button id="a11yZoomOut" class="srOnly" type="button" tabindex="-1" hidden>Zoom out</button>
   <canvas id="juliaCanvas" class="hidden"></canvas>
   <canvas id="kochCanvas" class="hidden"></canvas>
   <canvas id="treeCanvas" class="hidden"></canvas>
@@ -1190,6 +1194,6 @@
   </div>
 </div>
 
-<script type="module" src="src/app.js?v=1.88.2"></script>
+<script type="module" src="src/app.js?v=1.88.3"></script>
 </body>
 </html>

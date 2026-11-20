@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.88.3 — 2026-11-20
+- Added: two invisible "Zoom in" and "Zoom out" buttons for VoiceOver, right after the picture. A double-tap zooms by one step and says the new depth.
+
 ## 1.88.2 — 2026-11-20
 - Fixed: the invisible zoom slider for VoiceOver now moves in whole steps, which is what iOS needs to adjust it with a swipe.
 
