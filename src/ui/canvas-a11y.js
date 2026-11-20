@@ -5,23 +5,24 @@
 // other canvas (the pattern modes, the dual view's Julia pane) is an image with a label; the pattern modes have
 // no swipe zoom (their depth steppers are real buttons), only the zoomable fractals do.
 // WebKit turns VoiceOver's increment/decrement on an ARIA slider into ArrowUp/ArrowRight (increase) and
-// ArrowDown/ArrowLeft (decrease) keydown events on that element. The canvases are not focusable (no tabindex), so a
-// sighted keyboard user's focus never sits on one and the document-level arrow-key panning (compass-ui.js) is
+// ArrowDown/ArrowLeft (decrease) keydown events on that element. The slider canvas has tabindex="-1" (WebKit must be
+// able to focus it to send those keys; it stays out of the Tab order) and lets go of focus after a pointer gesture,
+// so a sighted keyboard user's focus never sits on it and the document-level arrow-key panning (compass-ui.js) is
 // untouched; this file's listener only sees events aimed at the canvas itself, and stops them there.
 // Nothing here is visible and no pointer or touch handling changes. Labels are written at most once per
 // LABEL_DELAY_MS after the view stops changing (never per frame); a zoom step writes at once.
 // An ES module: every top-level declaration is exported (test-hooks.js relies on it).
-import { fractalLabel } from "../core/configs.js?v=1.88.0";
-import { limitScale } from "../core/deepzoom.js?v=1.88.0";
-import { isCurveMode, isIfsMode } from "../fractals/fractal-defs.js?v=1.88.0";
-import { cancelTeleport } from "./teleport.js?v=1.88.0";
-import { currentName, dualActive, els, mainState, mode, pushHistory, shownGeometry } from "../core/state.js?v=1.88.0";
-import { markInteracting } from "../core/state-colors.js?v=1.88.0";
-import { requestRender } from "../render/render-layout.js?v=1.88.0";
-import { activeVectorTarget } from "./vector-interaction.js?v=1.88.0";
-import { landedPlaceName, modeLabel } from "./hud.js?v=1.88.0";
-import { dualPresetName } from "./modes.js?v=1.88.0";
-import { rotationHudText, zoomPhrase } from "./hud-format.js?v=1.88.0";
+import { fractalLabel } from "../core/configs.js?v=1.88.1";
+import { limitScale } from "../core/deepzoom.js?v=1.88.1";
+import { isCurveMode, isIfsMode } from "../fractals/fractal-defs.js?v=1.88.1";
+import { cancelTeleport } from "./teleport.js?v=1.88.1";
+import { currentName, dualActive, els, mainState, mode, pushHistory, shownGeometry } from "../core/state.js?v=1.88.1";
+import { markInteracting } from "../core/state-colors.js?v=1.88.1";
+import { requestRender } from "../render/render-layout.js?v=1.88.1";
+import { activeVectorTarget } from "./vector-interaction.js?v=1.88.1";
+import { landedPlaceName, modeLabel } from "./hud.js?v=1.88.1";
+import { dualPresetName } from "./modes.js?v=1.88.1";
+import { rotationHudText, zoomPhrase } from "./hud-format.js?v=1.88.1";
 
 export const LABEL_DELAY_MS = 350;
 // One swipe zooms by this factor (the keyboard's +/- is 1.25: too small a step for a swipe).
@@ -45,6 +46,11 @@ export function setCanvasA11y(canvas, role, label, valuetext, valuenow) {
       canvas.setAttribute("aria-orientation", "vertical");
     }
   }
+  // iOS WebKit focuses the element before it sends the increment's arrow key, so a slider that can't take focus
+  // never hears the swipe (VoiceOver just rereads it, found on an iPhone 2026-11-20). -1 keeps it out of the Tab order.
+  if (role === "slider") {
+    if (canvas.getAttribute("tabindex") !== "-1") canvas.setAttribute("tabindex", "-1");
+  } else if (canvas.hasAttribute("tabindex")) canvas.removeAttribute("tabindex");
   if (canvas.getAttribute("aria-label") !== label) canvas.setAttribute("aria-label", label);
   if (role === "slider") {
     const now = String(Math.round(Math.min(A11Y_ZOOM_MAX, Math.max(A11Y_ZOOM_MIN, valuenow)) * 10) / 10);
@@ -104,6 +110,12 @@ export function a11yZoom(zoomIn) {
   markInteracting();
   requestRender();
   updateCanvasA11y();
+}
+
+// The canvas can now take focus, and a click or tap would give it that focus. Let go after every pointer gesture so
+// the document's arrow-key panning (compass-ui.js) keeps working for a sighted keyboard user.
+for (const canvas of document.querySelectorAll("#canvasArea canvas")) {
+  canvas.addEventListener("pointerup", () => { if (document.activeElement === canvas) canvas.blur(); });
 }
 
 export const KEY_DIRECTION = { ArrowUp: true, ArrowRight: true, ArrowDown: false, ArrowLeft: false };

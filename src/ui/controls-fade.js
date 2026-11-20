@@ -14,10 +14,10 @@
 // toolbar (:focus-visible), or the website welcome card or the app's first-run tour shows. Focus moving into the toolbar wakes it.
 // Under automation (Playwright) it is off by default so screenshots and timings stay deterministic; the
 // controls-fade spec turns it on with setControlsFade.
-import { dualActive, els, isInteracting, mainState, mode, setToolbarGrow, toolbarGrow } from "../core/state.js?v=1.88.0";
-import { resizeView } from "../core/view-math.js?v=1.88.0";
-import { layoutCanvasArea, renderAll, requestRender } from "../render/render-layout.js?v=1.88.0";
-import { prefersReducedMotion } from "./compass-ui.js?v=1.88.0";
+import { dualActive, els, isInteracting, mainState, mode, setToolbarGrow, toolbarGrow } from "../core/state.js?v=1.88.1";
+import { resizeView } from "../core/view-math.js?v=1.88.1";
+import { layoutCanvasArea, renderAll, requestRender } from "../render/render-layout.js?v=1.88.1";
+import { prefersReducedMotion } from "./compass-ui.js?v=1.88.1";
 
 // The picture grows into the toolbar's space while the toolbar is faded (a single fractal view only: the
 // vector modes and dual view fade the toolbar but keep their size). The toolbar becomes a fixed overlay
@@ -78,6 +78,9 @@ export function controlsBusy() {
   if (els.welcome && !els.welcome.classList.contains("hidden")) return true;
   if (els.tour && !els.tour.classList.contains("hidden")) return true; // the app's first-run tour points at the toolbar
   if (cfToolbar.querySelector(":focus-visible")) return true;
+  // VoiceOver or Switch Control is running (the app sets this from Swift): touch exploration isn't a pointer-down,
+  // so nothing would ever wake the toolbar for these users. Found on an iPhone 2026-11-20.
+  if (document.documentElement.dataset.screenReader === "1") return true;
   return false;
 }
 
@@ -155,6 +158,8 @@ window.addEventListener("pointerdown", (e) => {
   }
   wakeControls(true, !!t && cfToolbar.contains(t));
 }, { capture: true, passive: true });
+// VoiceOver turned on while the toolbar is faded: bring it back now (and stay up, see controlsBusy).
+window.addEventListener("screenreaderchange", () => wakeControls());
 window.addEventListener("pointermove", (e) => {
   if (e.pointerType === "mouse") wakeControls();
 }, { capture: true, passive: true });

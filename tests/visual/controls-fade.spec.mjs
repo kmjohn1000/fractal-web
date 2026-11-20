@@ -43,6 +43,27 @@ test("off by default under automation, then fades after the idle delay", async (
   expect(pageErrors).toEqual([]);
 });
 
+test("never fades while VoiceOver or Switch Control runs, and turning it on wakes a faded toolbar", async ({ page }) => {
+  await load(page);
+  await fadeOn(page);
+  await waitFaded(page);
+  // The app's Swift side sets the flag and sends this event.
+  await page.evaluate(() => {
+    document.documentElement.dataset.screenReader = "1";
+    window.dispatchEvent(new Event("screenreaderchange"));
+  });
+  expect(await isFaded(page)).toBe(false);
+  await page.waitForTimeout(DELAY * 4);
+  expect(await isFaded(page)).toBe(false);
+  // Off again: the idle fade comes back.
+  await page.evaluate(() => {
+    document.documentElement.dataset.screenReader = "0";
+    window.dispatchEvent(new Event("screenreaderchange"));
+  });
+  await waitFaded(page);
+  expect(pageErrors).toEqual([]);
+});
+
 // Real touches: with a mouse, the move to the button already wakes the toolbar (desktop behavior).
 test.describe("touch", () => {
   test.use({ hasTouch: true });

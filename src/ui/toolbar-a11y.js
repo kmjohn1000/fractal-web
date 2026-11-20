@@ -2,7 +2,7 @@
 // observers and the Escape handler, so app.js imports it last, after every other module has been evaluated
 // (the block used to run after app.js's imports). An ES module: every top-level declaration is exported
 // (test-hooks.js relies on it). Needs state.js (els).
-import { els } from "../core/state.js?v=1.88.0";
+import { els } from "../core/state.js?v=1.88.1";
 
 // Toggle buttons and popovers change state by toggling "active"/"open" at
 // many call sites, so one observer per element mirrors that state into
@@ -24,10 +24,13 @@ export const POPOVERS = [
   { menu: els.shareMenu, openers: [...document.querySelectorAll(".shareBtn")] },
   { menu: els.diveMenu, openers: [els.teleportBtn] }, // touch and hold the die (dive-style.js)
 ];
+// The die rolls when tapped; its menu opens only on touch and hold, so it must not say "collapsed" (VoiceOver
+// read "Surprise me, collapsed" on an iPhone 2026-11-20). It stays in POPOVERS only for focus in and back.
+export const expandable = (btn) => btn !== els.teleportBtn;
 for (const p of POPOVERS) {
   let opener = null;
   for (const btn of p.openers) {
-    btn.setAttribute("aria-expanded", "false");
+    if (expandable(btn)) btn.setAttribute("aria-expanded", "false");
     btn.addEventListener("click", () => { opener = btn; });
   }
   let wasOpen = false;
@@ -35,7 +38,7 @@ for (const p of POPOVERS) {
     const open = p.menu.classList.contains("open");
     if (open === wasOpen) return;
     wasOpen = open;
-    for (const btn of p.openers) btn.setAttribute("aria-expanded", String(open));
+    for (const btn of p.openers) if (expandable(btn)) btn.setAttribute("aria-expanded", String(open));
     if (open) {
       const item = p.menu.querySelector("button.active:not(.hidden)") || p.menu.querySelector("button:not(.hidden)");
       item?.focus({ preventScroll: true });

@@ -2,6 +2,11 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.88.1 — 2026-11-20
+- Fixed: with VoiceOver, swiping up or down on the fractal now zooms. The picture couldn't take focus, so the swipe was never heard.
+- Fixed: VoiceOver no longer calls the Surprise me die "collapsed".
+- Fixed: with VoiceOver or Switch Control on, the toolbar no longer fades away, so there is no hidden toolbar to find.
+
 ## 1.88.0 — 2026-11-20
 - Added: "Shake to roll" in the app: shake the phone to fly somewhere surprising, like the die. Off by default; touch and hold the die to turn it on. The switch is hidden on the website, where there is no shake.
 

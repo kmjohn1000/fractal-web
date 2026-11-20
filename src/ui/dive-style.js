@@ -8,7 +8,7 @@
 // consumeDiveLongPress before a tap flies; toolbar-a11y.js lists the menu as a popover (focus, Escape).
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { els } from "../core/state.js?v=1.88.0";
+import { els } from "../core/state.js?v=1.88.1";
 
 export const DIVE_STYLE_KEY = "fractalAtlas.diveStyle";
 // A stored "slow" (1.85's test style, which became Full Motion in 1.86.0) reads as "full".

@@ -73,6 +73,22 @@ test("an increment (ArrowUp on the canvas) zooms in, a decrement zooms out, and 
   await expect(canvas(page)).toHaveAttribute("aria-valuetext", /whole shape/);
 });
 
+test("the slider canvas can take focus (iOS WebKit needs that to send the swipe) but is not in the Tab order, and a tap lets go", async ({ page }) => {
+  await expect(canvas(page)).toHaveAttribute("tabindex", "-1");
+  await canvas(page).focus();
+  expect(await page.evaluate(() => document.activeElement?.id)).toBe("mainCanvas");
+  // A focused canvas hears the swipe's key.
+  const s0 = await page.evaluate(() => mainState.scale);
+  await page.keyboard.press("ArrowUp");
+  expect(await page.evaluate(() => mainState.scale)).toBeCloseTo(s0 / 2, 10);
+  // After a pointer gesture the canvas gives focus up, so the next arrow key pans the page again.
+  await canvas(page).dispatchEvent("pointerup");
+  expect(await page.evaluate(() => document.activeElement?.id)).not.toBe("mainCanvas");
+  const cx0 = await page.evaluate(() => mainState.cx);
+  await page.keyboard.press("ArrowRight");
+  expect(await page.evaluate(() => mainState.cx)).not.toBe(cx0);
+});
+
 test("an arrow key aimed at the page (not the canvas) still pans, as before", async ({ page }) => {
   const cx0 = await page.evaluate(() => mainState.cx);
   await page.keyboard.press("ArrowRight");

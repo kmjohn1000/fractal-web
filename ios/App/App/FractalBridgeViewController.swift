@@ -21,10 +21,30 @@ class FractalBridgeViewController: CAPBridgeViewController {
         for time in [WKUserScriptInjectionTime.atDocumentStart, .atDocumentEnd] {
             webView?.configuration.userContentController.addUserScript(
                 WKUserScript(source: textScaleScript(), injectionTime: time, forMainFrameOnly: true))
+            webView?.configuration.userContentController.addUserScript(
+                WKUserScript(source: screenReaderScript(), injectionTime: time, forMainFrameOnly: true))
         }
         NotificationCenter.default.addObserver(
             self, selector: #selector(contentSizeChanged),
             name: UIContentSizeCategory.didChangeNotification, object: nil)
+        for name in [UIAccessibility.voiceOverStatusDidChangeNotification,
+                     UIAccessibility.switchControlStatusDidChangeNotification] {
+            NotificationCenter.default.addObserver(
+                self, selector: #selector(screenReaderChanged), name: name, object: nil)
+        }
+    }
+
+    /// Tells the page whether VoiceOver or Switch Control is running (`data-screen-reader` on <html>, and a
+    /// `screenreaderchange` event). The toolbar's fade (src/ui/controls-fade.js) stays off while it is on:
+    /// touch exploration is not a pointer-down, so a faded toolbar would have no way back for these users.
+    private func screenReaderScript() -> String {
+        let on = UIAccessibility.isVoiceOverRunning || UIAccessibility.isSwitchControlRunning
+        return "document.documentElement.dataset.screenReader='\(on ? "1" : "0")';"
+            + "window.dispatchEvent(new Event('screenreaderchange'));"
+    }
+
+    @objc private func screenReaderChanged() {
+        webView?.evaluateJavaScript(screenReaderScript(), completionHandler: nil)
     }
 
     /// Ratio of the user's preferred text size to the default (1 at Large).
