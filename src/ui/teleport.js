@@ -99,12 +99,19 @@ export function setTeleportLandingIndex(v) { teleportLandingIndex = v; }
 // and the live picture shows at once (no flight blend over it).
 export function cancelTeleport() { teleportGeneration++; cancelFlightBlend(); mainRenderer?.setFlightReference(null); }
 
+// The generation of the flight now in the air, 0 when none is (shake.js ignores a shake during one). A bump of
+// teleportGeneration (a touch, a newer flight) also ends it, so isFlying compares the two.
+export let activeFlightGen = 0;
+export function isFlying() { return activeFlightGen !== 0 && activeFlightGen === teleportGeneration; }
+
+// Rolls the die: flies to a place on the current fractal. Returns true when a flight (or Reduce Motion's jump)
+// started, false when this view has no place to go to.
 export function teleport() {
-  if (mode !== "fractal") return;
+  if (mode !== "fractal") return false;
   const own = TELEPORT_DESTINATIONS
     .map((d, i) => ({ d, i }))
     .filter(({ d }) => d.fractal === currentName);
-  if (own.length === 0) return;
+  if (own.length === 0) return false;
   const candidates = own.filter(({ i }) => i !== lastTeleportIndex);
   const st = mainState;
   let d, i, target;
@@ -139,6 +146,7 @@ export function teleport() {
   }
 
   flyTo(st, d, target, landingIndex, spinSign);
+  return true;
 }
 
 // The flight itself, shared by Surprise me and the web's first-visit cold
@@ -224,6 +232,7 @@ export function flyTo(st, d, target, landingIndex, spinSign, style = diveStyle) 
     maxIter: Math.max(suggestedMaxIter(st.baseScale, target.scale), landingIndex >= 0 && d.maxIter ? d.maxIter : 0),
   } : null, slow ? { ...st, maxIter: Math.max(st.maxIter, suggestedMaxIter(st.baseScale, st.scale)) } : null);
   const gen = ++teleportGeneration;
+  activeFlightGen = gen;
   const t0 = performance.now();
 
   // Each frame goes through the same path as a pinch frame: markInteracting
@@ -242,7 +251,7 @@ export function flyTo(st, d, target, landingIndex, spinSign, style = diveStyle) 
   else cancelFlightBlend();
   const step = (now) => {
     if (gen !== teleportGeneration) return; // a newer flight carries the blend on, or a touch cancelled it
-    if (mode !== "fractal" || mainState !== st) { cancelFlightBlend(); mainRenderer.setFlightReference(null); return; }
+    if (mode !== "fractal" || mainState !== st) { activeFlightGen = 0; cancelFlightBlend(); mainRenderer.setFlightReference(null); return; }
     const t = Math.min(1, (now - t0) / durationMs);
     if (t < 1) {
       const k = ease(t);
@@ -257,6 +266,7 @@ export function flyTo(st, d, target, landingIndex, spinSign, style = diveStyle) 
       // Motion's live deep frames.
       if (spiral || slow) { st.iterAutoLocked = false; applyAutoIter(); }
     } else {
+      activeFlightGen = 0;
       land();
       landFlightBlend();
       // The landing frame and the settled render after it are the view's own.

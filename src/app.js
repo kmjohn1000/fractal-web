@@ -64,6 +64,7 @@ import * as share from "./ui/share.js?v=1.87.0";
 import { applyShareHashFromUrl, applyShareLink, parseShareHash } from "./ui/share.js?v=1.87.0";
 import * as shareMenu from "./ui/share-menu.js?v=1.87.0";
 import * as reviewPrompt from "./ui/review-prompt.js?v=1.87.0";
+import * as shake from "./ui/shake.js?v=1.87.0";
 import * as penrose from "./fractals/penrose.js?v=1.87.0";
 import * as canvasA11y from "./ui/canvas-a11y.js?v=1.87.0";
 import * as controlsFade from "./ui/controls-fade.js?v=1.87.0";
@@ -85,7 +86,7 @@ exposeForTests({
   "src/ui/compass-ui.js": compassUi, "src/ui/teleport.js": teleport, "src/ui/pattern-controls.js": patternControls, "src/ui/colormap-picker.js": colormapPicker,
   "src/ui/color-sheet.js": colorSheet, "src/ui/places-sheet.js": placesSheet, "src/ui/share.js": share, "src/ui/share-menu.js": shareMenu,
   "src/fractals/chaos-run.js": chaosRunModule,
-  "src/ui/review-prompt.js": reviewPrompt, "src/fractals/penrose.js": penrose, "src/ui/toolbar-a11y.js": toolbarA11y, "src/ui/controls-fade.js": controlsFade, "src/ui/first-run-tour.js": firstRunTour,"src/ui/canvas-a11y.js": canvasA11y, "src/ui/fractal-picker.js": fractalPicker,
+  "src/ui/review-prompt.js": reviewPrompt, "src/ui/shake.js": shake, "src/fractals/penrose.js": penrose, "src/ui/toolbar-a11y.js": toolbarA11y, "src/ui/controls-fade.js": controlsFade, "src/ui/first-run-tour.js": firstRunTour,"src/ui/canvas-a11y.js": canvasA11y, "src/ui/fractal-picker.js": fractalPicker,
 });
 
 // Pasting a different link into an open tab only changes the hash.

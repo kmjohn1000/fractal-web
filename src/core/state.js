@@ -97,6 +97,7 @@ export const els = {
   fernBackBtn: document.getElementById("fernBackBtn"),
   shareMenu: document.getElementById("shareMenu"),
   diveMenu: document.getElementById("diveMenu"),
+  shakeToggle: document.getElementById("shakeToggle"),
   controls: document.getElementById("controls"),
   colorSheet: document.getElementById("colorSheet"),
   placesSheet: document.getElementById("placesSheet"),

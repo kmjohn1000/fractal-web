@@ -14,6 +14,7 @@ class FractalBridgeViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(SavePhotoPlugin())
         bridge?.registerPluginInstance(RateAppPlugin())
+        bridge?.registerPluginInstance(ShakePlugin())
 
         // Set before and after the page parses, so there's no flash at the
         // wrong size on launch; the notification covers changes while running.
@@ -38,6 +39,35 @@ class FractalBridgeViewController: CAPBridgeViewController {
     @objc private func contentSizeChanged() {
         webView?.evaluateJavaScript(textScaleScript(), completionHandler: nil)
     }
+
+    // Shake to roll the dice (src/ui/shake.js). UIKit delivers a shake to the first responder and up its
+    // responder chain, so this controller asks to be first responder when it appears; the web view takes
+    // that over while the page has focus, and the shake still reaches here through the chain. No motion
+    // permission is needed (unlike the web's devicemotion). The page decides whether the shake does anything
+    // (a Settings toggle, off by default), so this always forwards it.
+    override var canBecomeFirstResponder: Bool { true }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        becomeFirstResponder()
+    }
+
+    override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
+        if motion == .motionShake, let plugin = bridge?.plugin(withName: "Shake") as? ShakePlugin {
+            plugin.notifyListeners("shake", data: [:])
+        } else {
+            super.motionEnded(motion, with: event)
+        }
+    }
+}
+
+/// Carries a phone shake to the page (JS: `Shake.addListener("shake", ...)`, wired in platform.js). The
+/// controller above raises the event from motionEnded; this class only holds the listeners.
+@objc(ShakePlugin)
+public class ShakePlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "ShakePlugin"
+    public let jsName = "Shake"
+    public let pluginMethods: [CAPPluginMethod] = []
 }
 
 /// Saves a PNG straight to the Photos library (JS: `SavePhoto.save({ data })`,

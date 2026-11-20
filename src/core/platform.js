@@ -33,6 +33,7 @@ export const Platform = (() => {
             Filesystem: reg("Filesystem"),
             SavePhoto: reg("SavePhoto"), // app-local, ios/App/App/FractalBridgeViewController.swift
             RateApp: reg("RateApp"), // app-local, same file
+            Shake: reg("Shake"), // app-local, same file: a "shake" event when the phone is shaken
             SplashScreen: reg("SplashScreen"),
             App: reg("App"),
           });
@@ -129,6 +130,22 @@ export const Platform = (() => {
   }
   if (isNative) setTimeout(forceHideLaunchScreen, 10000);
 
+  // Shaking the phone (the app only; the web has no shake, so this never calls the handler there). The Swift
+  // side forwards UIKit's motionEnded for a shake, which needs no motion-permission prompt, unlike the web's
+  // devicemotion. shake.js decides whether the shake does anything.
+  function onShake(handler) {
+    if (!isNative) return;
+    plugins()
+      .then(({ Shake }) => Shake.addListener("shake", () => handler()))
+      .catch(() => {});
+  }
+
+  // A short tap of haptic feedback; the app only, and quietly nothing if it fails.
+  function tapHaptic() {
+    if (!isNative) return;
+    plugins().then(({ Haptics }) => Haptics.impact({ style: "MEDIUM" })).catch(() => {});
+  }
+
   // CSS hook for layout that only the website wants (index.html scopes the
   // wide-screen toolbar cap to html.web, so the app's iPad layout is
   // untouched).
@@ -170,6 +187,10 @@ export const Platform = (() => {
     shareBaseUrl,
     hideLaunchScreen,
     onOpenUrl,
+    onShake,
+    tapHaptic,
+    // Whether the device can shake-to-roll at all (index.html shows the toggle only then).
+    canShake: isNative,
     welcome,
     tour,
 
