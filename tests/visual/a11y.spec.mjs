@@ -26,11 +26,21 @@ test.afterEach(() => {
   expect(pageErrors, "uncaught page errors").toEqual([]);
 });
 
-const canvas = (page) => page.locator("#mainCanvas");
+// The screen-reader handle on the main canvas: an invisible native range input (the canvas itself is aria-hidden).
+const canvas = (page) => page.locator("#a11yZoom");
+// What VoiceOver's swipe up (+1) or down (-1) does to a native range input: the value moves, an input event fires.
+const swipe = (page, dir) => page.evaluate((d) => {
+  const i = document.getElementById("a11yZoom");
+  i.value = String(Number(i.value) + d * 0.5);
+  i.dispatchEvent(new Event("input", { bubbles: true }));
+}, dir);
 const flown = (page, i) => page.waitForFunction((n) => mainState.scale === TELEPORT_DESTINATIONS[n].scale, i, { timeout: 30_000 });
 
 test("the main canvas is a slider named for the view, and the label follows a place jump and a zoom", async ({ page }) => {
-  await expect(canvas(page)).toHaveAttribute("role", "slider");
+  await expect(canvas(page)).toHaveAttribute("type", "range");
+  await expect(canvas(page)).toBeAttached();
+  await expect.poll(() => canvas(page).evaluate((el) => el.hidden)).toBe(false);
+  await expect(page.locator("#mainCanvas")).toHaveAttribute("aria-hidden", "true");
   await expect(canvas(page)).toHaveAttribute("aria-label", /Mandelbrot/);
   await expect(canvas(page)).toHaveAttribute("aria-valuetext", /whole shape/);
   const i = await page.evaluate(() => TELEPORT_DESTINATIONS.findIndex((d) => d.fractal === "Mandelbrot" && d.label === "Elephant Valley"));
@@ -48,9 +58,9 @@ test("the main canvas is a slider named for the view, and the label follows a pl
 
 test("the label is not written on every frame: a burst of renders writes it once, after the view is still", async ({ page }) => {
   const writes = await page.evaluate(async () => {
-    const c = document.getElementById("mainCanvas");
+    const c = document.getElementById("a11yZoom");
     let n = 0;
-    new MutationObserver((m) => { n += m.filter((r) => r.attributeName === "aria-valuenow").length; }).observe(c, { attributes: true });
+    new MutationObserver((m) => { n += m.filter((r) => r.attributeName === "aria-valuetext").length; }).observe(c, { attributes: true });
     for (let k = 0; k < 20; k++) { mainState.scale *= 0.97; window.renderAll(); }
     await new Promise((r) => setTimeout(r, 600));
     return n;
@@ -59,34 +69,32 @@ test("the label is not written on every frame: a burst of renders writes it once
   expect(writes).toBeLessThanOrEqual(2);
 });
 
-test("an increment (ArrowUp on the canvas) zooms in, a decrement zooms out, and the value text says so", async ({ page }) => {
+test("an increment (the slider's value goes up) zooms in, a decrement zooms out, and the value text says so", async ({ page }) => {
   const s0 = await page.evaluate(() => mainState.scale);
   const t0 = await canvas(page).getAttribute("aria-valuetext");
-  await canvas(page).dispatchEvent("keydown", { key: "ArrowUp" });
+  await swipe(page, 1);
   const s1 = await page.evaluate(() => mainState.scale);
   expect(s1).toBeCloseTo(s0 / 2, 10);
   const t1 = await canvas(page).getAttribute("aria-valuetext");
   expect(t1).not.toBe(t0);
   expect(t1).toMatch(/deeper/);
-  await canvas(page).dispatchEvent("keydown", { key: "ArrowDown" });
+  expect(Number(await canvas(page).evaluate((el) => el.value))).toBeCloseTo(1, 5); // one zoom step = one doubling
+  await swipe(page, -1);
   expect(await page.evaluate(() => mainState.scale)).toBeCloseTo(s0, 10);
   await expect(canvas(page)).toHaveAttribute("aria-valuetext", /whole shape/);
 });
 
-test("the slider canvas can take focus (iOS WebKit needs that to send the swipe) but is not in the Tab order, and a tap lets go", async ({ page }) => {
+test("the zoom handle is invisible, takes no touches, stays out of the Tab order, and goes away in a pattern mode", async ({ page }) => {
   await expect(canvas(page)).toHaveAttribute("tabindex", "-1");
-  await canvas(page).focus();
-  expect(await page.evaluate(() => document.activeElement?.id)).toBe("mainCanvas");
-  // A focused canvas hears the swipe's key.
-  const s0 = await page.evaluate(() => mainState.scale);
-  await page.keyboard.press("ArrowUp");
-  expect(await page.evaluate(() => mainState.scale)).toBeCloseTo(s0 / 2, 10);
-  // After a pointer gesture the canvas gives focus up, so the next arrow key pans the page again.
-  await canvas(page).dispatchEvent("pointerup");
-  expect(await page.evaluate(() => document.activeElement?.id)).not.toBe("mainCanvas");
-  const cx0 = await page.evaluate(() => mainState.cx);
-  await page.keyboard.press("ArrowRight");
-  expect(await page.evaluate(() => mainState.cx)).not.toBe(cx0);
+  await expect(canvas(page)).toHaveCSS("opacity", "0");
+  await expect(canvas(page)).toHaveCSS("pointer-events", "none");
+  // A pattern mode has no zoom handle, and the main canvas is not left hidden from screen readers.
+  await page.evaluate(() => setMode("koch"));
+  await expect.poll(() => canvas(page).evaluate((el) => el.hidden)).toBe(true);
+  await expect(page.locator("#mainCanvas")).not.toHaveAttribute("aria-hidden", "true");
+  await page.evaluate(() => setMode("fractal"));
+  await expect.poll(() => canvas(page).evaluate((el) => el.hidden)).toBe(false);
+  await expect(page.locator("#mainCanvas")).toHaveAttribute("aria-hidden", "true");
 });
 
 test("an arrow key aimed at the page (not the canvas) still pans, as before", async ({ page }) => {

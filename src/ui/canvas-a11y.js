@@ -1,15 +1,14 @@
 // Screen-reader access to the fractal itself. The canvases are pictures, so VoiceOver gets nothing from them
-// unless they say what they show. The main canvas in the zoomable fractals is an adjustable element
-// (role="slider"): its label names the view ("Elephant Valley, Mandelbrot set"), its value text says how deep
-// ("40 times deeper"), and VoiceOver's swipe up / swipe down (increment / decrement) zooms in / out. Every
-// other canvas (the pattern modes, the dual view's Julia pane) is an image with a label; the pattern modes have
-// no swipe zoom (their depth steppers are real buttons), only the zoomable fractals do.
-// WebKit turns VoiceOver's increment/decrement on an ARIA slider into ArrowUp/ArrowRight (increase) and
-// ArrowDown/ArrowLeft (decrease) keydown events on that element. The slider canvas has tabindex="-1" (WebKit must be
-// able to focus it to send those keys; it stays out of the Tab order) and lets go of focus after a pointer gesture,
-// so a sighted keyboard user's focus never sits on it and the document-level arrow-key panning (compass-ui.js) is
-// untouched; this file's listener only sees events aimed at the canvas itself, and stops them there.
-// Nothing here is visible and no pointer or touch handling changes. Labels are written at most once per
+// unless they say what they show. In the zoomable fractals the screen-reader handle is #a11yZoom, an invisible
+// native range input laid over the main canvas (the canvas itself is hidden from VoiceOver): its label names the
+// view ("Elephant Valley, Mandelbrot set"), its value text says how deep ("40 times deeper"), and VoiceOver's
+// swipe up / swipe down (increment / decrement) changes its value, which zooms in / out. A real input is
+// needed: on an iPhone (2026-11-20) the swipe did nothing on an ARIA slider on the canvas (not with arrow-key
+// handlers, not with tabindex), while native range inputs, like the toolbar's detail slider, adjust fine.
+// Every other canvas (the pattern modes, the dual view's Julia pane) is an image with a label; the pattern modes
+// have no swipe zoom (their depth steppers are real buttons), only the zoomable fractals do.
+// Nothing here is visible and no pointer or touch handling changes (the input takes no pointer events, and the
+// document-level arrow-key panning in compass-ui.js is untouched). Labels are written at most once per
 // LABEL_DELAY_MS after the view stops changing (never per frame); a zoom step writes at once.
 // An ES module: every top-level declaration is exported (test-hooks.js relies on it).
 import { fractalLabel } from "../core/configs.js?v=1.88.1";
@@ -34,29 +33,27 @@ export const A11Y_ZOOM_MAX = 110;
 // "40× deeper" is read "40 x deeper": say "times".
 export const speech =(s) => s.replace(/×/g, " times");
 
+export const zoomInput = document.getElementById("a11yZoom");
+// The value the input shows now; a change away from it is a VoiceOver swipe (up = larger = zoom in).
+export let a11yValue = 0;
+
 export function setCanvasA11y(canvas, role, label, valuetext, valuenow) {
-  if (canvas.getAttribute("role") !== role) {
-    canvas.setAttribute("role", role);
-    for (const a of ["aria-valuemin", "aria-valuemax", "aria-valuenow", "aria-valuetext", "aria-orientation"]) {
-      if (role !== "slider") canvas.removeAttribute(a);
-    }
-    if (role === "slider") {
-      canvas.setAttribute("aria-valuemin", String(A11Y_ZOOM_MIN));
-      canvas.setAttribute("aria-valuemax", String(A11Y_ZOOM_MAX));
-      canvas.setAttribute("aria-orientation", "vertical");
-    }
-  }
-  // iOS WebKit focuses the element before it sends the increment's arrow key, so a slider that can't take focus
-  // never hears the swipe (VoiceOver just rereads it, found on an iPhone 2026-11-20). -1 keeps it out of the Tab order.
   if (role === "slider") {
-    if (canvas.getAttribute("tabindex") !== "-1") canvas.setAttribute("tabindex", "-1");
-  } else if (canvas.hasAttribute("tabindex")) canvas.removeAttribute("tabindex");
+    // The input speaks for the canvas; hide the picture itself so VoiceOver doesn't stop on both.
+    if (canvas.getAttribute("aria-hidden") !== "true") canvas.setAttribute("aria-hidden", "true");
+    for (const a of ["role", "aria-label"]) canvas.removeAttribute(a);
+    if (zoomInput.hidden) zoomInput.hidden = false;
+    if (zoomInput.getAttribute("aria-label") !== label) zoomInput.setAttribute("aria-label", label);
+    if (zoomInput.getAttribute("aria-valuetext") !== valuetext) zoomInput.setAttribute("aria-valuetext", valuetext);
+    const now = Math.round(Math.min(A11Y_ZOOM_MAX, Math.max(A11Y_ZOOM_MIN, valuenow)) * 10) / 10;
+    if (Number(zoomInput.value) !== now) zoomInput.value = String(now);
+    a11yValue = now;
+    return;
+  }
+  if (canvas === els.mainCanvas) zoomInput.hidden = true;
+  canvas.removeAttribute("aria-hidden");
+  if (canvas.getAttribute("role") !== role) canvas.setAttribute("role", role);
   if (canvas.getAttribute("aria-label") !== label) canvas.setAttribute("aria-label", label);
-  if (role === "slider") {
-    const now = String(Math.round(Math.min(A11Y_ZOOM_MAX, Math.max(A11Y_ZOOM_MIN, valuenow)) * 10) / 10);
-    if (canvas.getAttribute("aria-valuenow") !== now) canvas.setAttribute("aria-valuenow", now);
-    if (canvas.getAttribute("aria-valuetext") !== valuetext) canvas.setAttribute("aria-valuetext", valuetext);
-  }
 }
 
 // What the current view is, for the canvas the mode shows. Plain data, no DOM writes.
@@ -85,6 +82,11 @@ export function describeCanvas() {
 
 export function updateCanvasA11y() {
   const d = describeCanvas();
+  if (mode !== "fractal") {
+    // Pattern modes: no zoom handle, and the main canvas isn't on screen.
+    zoomInput.hidden = true;
+    els.mainCanvas.removeAttribute("aria-hidden");
+  }
   if (d) setCanvasA11y(d.canvas, d.role, d.label, d.valuetext, d.valuenow);
   // The dual view's second pane: a picture of the Julia set of the center point.
   if (mode === "fractal" && dualActive) {
@@ -112,20 +114,12 @@ export function a11yZoom(zoomIn) {
   updateCanvasA11y();
 }
 
-// The canvas can now take focus, and a click or tap would give it that focus. Let go after every pointer gesture so
-// the document's arrow-key panning (compass-ui.js) keeps working for a sighted keyboard user.
-for (const canvas of document.querySelectorAll("#canvasArea canvas")) {
-  canvas.addEventListener("pointerup", () => { if (document.activeElement === canvas) canvas.blur(); });
-}
-
-export const KEY_DIRECTION = { ArrowUp: true, ArrowRight: true, ArrowDown: false, ArrowLeft: false };
-for (const canvas of document.querySelectorAll("#canvasArea canvas")) {
-  canvas.addEventListener("keydown", (e) => {
-    if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
-    const zoomIn = KEY_DIRECTION[e.key];
-    if (zoomIn === undefined || canvas !== els.mainCanvas || mode !== "fractal") return;
-    e.preventDefault();
-    e.stopPropagation(); // not the document's arrow-key pan
-    a11yZoom(zoomIn);
-  });
-}
+// VoiceOver's swipe up / down (or a screen reader's, or a keyboard's arrows on the focused input) moves the input's
+// value; the direction of the change is the zoom, whatever the size of the step. a11yZoom then writes the real
+// depth back into the input.
+zoomInput.addEventListener("input", () => {
+  const v = Number(zoomInput.value);
+  if (v === a11yValue) return;
+  a11yZoom(v > a11yValue);
+  a11yValue = Number(zoomInput.value);
+});

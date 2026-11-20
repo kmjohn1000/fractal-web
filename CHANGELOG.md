@@ -3,7 +3,7 @@
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
 ## 1.88.1 — 2026-11-20
-- Fixed: with VoiceOver, swiping up or down on the fractal now zooms. The picture couldn't take focus, so the swipe was never heard.
+- Fixed: with VoiceOver, swiping up or down on the fractal now zooms. The picture is now paired with an invisible slider, which VoiceOver can adjust.
 - Fixed: VoiceOver no longer calls the Surprise me die "collapsed".
 - Fixed: with VoiceOver or Switch Control on, the toolbar no longer fades away, so there is no hidden toolbar to find.
 
