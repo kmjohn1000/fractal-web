@@ -28,7 +28,8 @@ shipped): each one changes the listing count, so fixes and polish come first.
 6. DROPPED 2026-11-16 (user): no saved places in 1.x. The spike on branch
    `worktree-agent-a3886907b2360519d` (`e7d2344`) stays unmerged; do not
    port it.
-7. Open the Mandelbrot family rotated on portrait phones (cheap, visible).
+7. CLOSED 2026-11-20 (user): the Mandelbrot family keeps opening unrotated
+   (see Explicitly rejected).
 8. Small UI polish: accent color from the colormap, first-launch gesture
    hint, Haptics at key moments, Copy image in the share menu.
 9. Surprise-me additions: rare "golden" places, place of the day (small).
@@ -970,11 +971,6 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
       whether opening keeps or replaces the user's colormap (share links
       replace it); the suggested-name rule; whether Saved sits above the
       fold. Not verified: a real phone, VoiceOver, the app's WebView.
-- [ ] Open the Mandelbrot family rotated 90° on portrait phones: the set is
-      wider than tall, so today it sits small mid-screen with ~45% empty
-      space above and below. Rotation already exists; the opening view's
-      fit would use the swapped aspect. Safe fallback: tighter framing
-      (UI review)
 - [ ] Accent color from the active colormap: selected states (picker ring,
       active buttons, slider fill) use a fixed iOS blue (#3a6ea5/#6cf);
       derive the accent from the current colormap's bright end instead, so
@@ -1395,6 +1391,10 @@ distance estimation → zoom-to-minibrot / AI discovery.
 - Real-time collaborative exploration
 
 ## Explicitly rejected
+- Opening the Mandelbrot family rotated 90° on portrait phones (2026-11-20,
+  user): the set is wider than tall, so it sits small mid-screen with empty
+  space above and below, but the user wants it to keep opening the way it
+  does. Tighter framing was the fallback; not approved either.
 - Toolbar rework (2026-10-04): moving the iter slider into the info card,
   folding Info/Box zoom/Reset into a "⋯" menu for full 44px buttons, and a
   gradient Surprise me button. Mocked up at 360px and declined: the slider
