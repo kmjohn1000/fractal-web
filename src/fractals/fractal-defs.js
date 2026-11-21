@@ -70,20 +70,21 @@ export const PICKER_BLURBS = {
 // WebGL shader ftype) rather than selecting a FRACTAL_CONFIGS entry. All are
 // in the "pattern" category.
 export const EXTRA_MODES = [
-  { key: "koch", label: "Koch snowflake", category: "pattern" },
-  { key: "tree", label: "Pythagoras tree", category: "pattern" },
-  { key: "dragon", label: "Dragon curve", category: "pattern" },
-  { key: "hilbert", label: "Hilbert curve", category: "pattern" },
-  { key: "gosper", label: "Gosper curve", category: "pattern" },
-  { key: "arrowhead", label: "Sierpinski arrowhead", category: "pattern" },
-  { key: "penrose", label: "Penrose tiling", category: "pattern" },
-  { key: "fern", label: "Barnsley fern", category: "pattern" },
-  { key: "sierpinski", label: "Sierpinski triangle", category: "pattern" },
-  { key: "pentagon", label: "Sierpinski pentagon", category: "pattern" },
-  { key: "levy", label: "Lévy C curve", category: "pattern" },
-  { key: "vicsek", label: "Vicsek fractal", category: "pattern" },
-  { key: "corners", label: "Corner rules", category: "pattern" },
-  { key: "hexaflake", label: "Hexaflake", category: "pattern" },
+  { key: "koch", label: "Koch snowflake", category: "pattern", wiki: "https://en.wikipedia.org/wiki/Koch_snowflake" },
+  { key: "tree", label: "Pythagoras tree", category: "pattern", wiki: "https://en.wikipedia.org/wiki/Pythagoras_tree_(fractal)" },
+  // The app draws the Heighway dragon, so the link goes to that section.
+  { key: "dragon", label: "Dragon curve", category: "pattern", wiki: "https://en.wikipedia.org/wiki/Dragon_curve#Heighway_dragon" },
+  { key: "hilbert", label: "Hilbert curve", category: "pattern", wiki: "https://en.wikipedia.org/wiki/Hilbert_curve" },
+  { key: "gosper", label: "Gosper curve", category: "pattern", wiki: "https://en.wikipedia.org/wiki/Gosper_curve" },
+  { key: "arrowhead", label: "Sierpinski arrowhead", category: "pattern", wiki: "https://en.wikipedia.org/wiki/Sierpi%C5%84ski_curve#Arrowhead_curve" },
+  { key: "penrose", label: "Penrose tiling", category: "pattern", wiki: "https://en.wikipedia.org/wiki/Penrose_tiling" },
+  { key: "fern", label: "Barnsley fern", category: "pattern", wiki: "https://en.wikipedia.org/wiki/Barnsley_fern" },
+  { key: "sierpinski", label: "Sierpinski triangle", category: "pattern", wiki: "https://en.wikipedia.org/wiki/Sierpi%C5%84ski_triangle#Chaos_game" },
+  { key: "pentagon", label: "Sierpinski pentagon", category: "pattern", wiki: "https://en.wikipedia.org/wiki/N-flake#Pentaflake" },
+  { key: "levy", label: "Lévy C curve", category: "pattern", wiki: "https://en.wikipedia.org/wiki/L%C3%A9vy_C_curve" },
+  { key: "vicsek", label: "Vicsek fractal", category: "pattern", wiki: "https://en.wikipedia.org/wiki/Vicsek_fractal" },
+  { key: "corners", label: "Corner rules", category: "pattern", wiki: "https://en.wikipedia.org/wiki/Chaos_game#Restricted_chaos_game" },
+  { key: "hexaflake", label: "Hexaflake", category: "pattern", wiki: "https://en.wikipedia.org/wiki/N-flake#Hexaflake" },
 ];
 
 // What each pattern shape's info card says about it (see setHud's `about`):
