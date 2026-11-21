@@ -62,7 +62,7 @@ announcements, alert banner and VoiceOver zoom (1.80.5).
 Later, once the pause ends: Buffalo and Lambda (small each), Nova powers,
 Newton polynomials, higher Multibrot, the L-curves (Terdragon, Peano,
 Moore), then Lyapunov (larger; one listing count each). Big bets, not
-scheduled: WebGPU renderer, AirPlay TV mode, native tvOS, 3D fractals
+scheduled: WebGPU renderer, native tvOS, 3D fractals
 (first resolve the conflict with Deferred), deeper than 1e-30, tilted 3D
 terrain, Sine L-plane step 3 (the perturbation deep path), auto-dive. Held:
 AI-curated discovery, because it needs an external service and a
@@ -906,36 +906,6 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
       2026-10-13 (96px frosted inset, bottom-right; box marker, crosshair
       when deep); not yet approved. Open: depth cue past ~1,000×, Julia
       pane in dual view, non-Mandelbrot fractals, what tapping it does
-- [ ] AirPlay TV mode (user liked it, 2026-10-14): when the iPhone/iPad
-      connects to an Apple TV or AirPlay display, show a clean full-screen
-      fractal there (no toolbar, no info card) and keep the controls on
-      the phone. Natural content: a slow tour of Surprise me places and
-      spiral dives (the flyover idea under Auto-dive). App-only: iOS gives
-      an external-display scene (`UIWindowSceneSessionRoleExternalDisplay
-      NonInteractive`); the app would open a second WKWebView in it on a
-      TV page from the same bundle, and the two web views talk through a
-      small native plugin (`platform.js`). Without this, AirPlay already
-      mirrors the phone screen, toolbar included. Nothing comparable on
-      the web build (Safari's Remote Playback only covers video, and
-      AirPlay of a canvas captureStream video is broken, WebKit bug 281693).
-      Research 2026-10-16 (agent, sources in that session):
-      - iOS 27 SDK: the Info.plist role alone no longer gets the TV scene;
-        register `UISceneAccessory.externalNonInteractive` via
-        `registerSceneAccessory` (iOS 27+), plus the role branch in
-        `AppDelegate.application(_:configurationForConnecting:)` for
-        iOS 15–26
-      - TV web view loads `capacitor://localhost/index.html?tv=1` (same
-        origin, no second bridge); sync the view with the existing share
-        hash (`buildShareHash`/`applyShareLink`, exact doubles); a small
-        `TVDisplay` plugin relays it. Render the TV at 1080p, and let the
-        phone show a cheap preview while connected; keep the phone awake
-        (`isIdleTimerDisabled`)
-      - Video route (AVPlayer/HLS) rejected: seconds of latency, no live
-        control
-      - Test without an Apple TV: the Mac as an AirPlay receiver (Screen
-        Mirroring), or `xcrun simctl io booted screenConfig --display=2`
-      - Size: ~150–200 lines Swift + ~150–250 JS. Risks: new iOS 27 API,
-        GPU contention between two web views, AirPlay compression on motion
 - [ ] Check (unverified bug): `AppDelegate.configurationForConnecting`
       hands `SceneDelegate` to every scene role, so on iOS 16–26 AirPlay
       Screen Mirroring may put a second, non-interactive copy of the whole
@@ -946,7 +916,7 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
       (port shaders.js to Metal, the reference orbit and cell rebasing to
       Swift; MetalFX for 4K upscaling), driven by the Siri Remote (no
       pinch or twist): an ambient tour app. Few thousand lines, and every
-      new fractal gets built twice. Only if AirPlay TV mode gets used
+      new fractal gets built twice. Only if a TV mode gets used (see STRATEGY.md)
 - [ ] Auto-dive, ambient zoom and tours (one item, merged 2026-11-10 from
       "Zoom to nearest minibrot", the old Auto-dive, the user's Ambient
       auto-zoom idea of 2026-11-03 and the XaoS autopilot and tour ideas;
