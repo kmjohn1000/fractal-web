@@ -19,10 +19,15 @@ shipped): each one changes the listing count, so fixes and polish come first.
    now blend frame to frame, and Reduce Motion dissolves (see Done). Since
    1.84.0 the blend is the Blur dive style (touch and hold the die); Full
    Motion is the default. The user checked 1.84.0 on the iPhone (2026-11-16).
-3. What is left of the accessibility pass: one-finger alternatives, and
-   whatever the VoiceOver check turns up (see the Accessibility item).
-4. VoiceOver check of the toolbar buttons' size and spacing (the touch-target
-   item; no build unless it fails).
+3. What is left of the accessibility pass: one-finger alternatives (see the
+   Accessibility item). The VoiceOver check ran on the user's iPhone
+   2026-11-20 (1.88.3): the toolbar no longer fades with VoiceOver or Switch
+   Control on, the die no longer says "collapsed", and VoiceOver zooms through
+   two invisible Zoom in / Zoom out buttons after the picture (the swipe on an
+   invisible slider never worked on iOS, three tries; the slider stays but is
+   unproven). The sheets take and return focus. Not yet checked: Voice Control.
+4. DONE 2026-11-20: VoiceOver check of the toolbar buttons' size and spacing;
+   every double-tap hit the button it was on (1.88.2), so no layout change.
 5. The mirrored palette option, the first step of the OKLCH palette item
    (the biggest visible color upgrade; toggle, seam stays the default).
 6. DROPPED 2026-11-16 (user): no saved places in 1.x. The spike on branch
