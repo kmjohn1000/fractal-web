@@ -34,6 +34,7 @@ export const Platform = (() => {
             SavePhoto: reg("SavePhoto"), // app-local, ios/App/App/FractalBridgeViewController.swift
             RateApp: reg("RateApp"), // app-local, same file
             Shake: reg("Shake"), // app-local, same file: a "shake" event when the phone is shaken
+            QuickActions: reg("QuickActions"), // app-local, same file: Home Screen quick actions
             SplashScreen: reg("SplashScreen"),
             App: reg("App"),
           });
@@ -140,6 +141,26 @@ export const Platform = (() => {
       .catch(() => {});
   }
 
+  // Home Screen quick actions (long-press the app icon; the app only, the web has none). The Swift side keeps
+  // the action that launched the app until the page asks: takePending() resolves to its short name
+  // ("surprise") and clears it, or to null (always null on the web, and if the plugin fails). onQuickAction
+  // handles one chosen while the app was already running. quick-actions.js decides what each does.
+  const quickActions = {
+    takePending: () => {
+      if (!isNative) return Promise.resolve(null);
+      return plugins()
+        .then(({ QuickActions }) => QuickActions.takePending())
+        .then((res) => (res && res.type) || null)
+        .catch(() => null);
+    },
+    onQuickAction: (handler) => {
+      if (!isNative) return;
+      plugins()
+        .then(({ QuickActions }) => QuickActions.addListener("quickAction", (e) => handler(e && e.type)))
+        .catch(() => {});
+    },
+  };
+
   // A short tap of haptic feedback; the app only, and quietly nothing if it fails.
   function tapHaptic() {
     if (!isNative) return;
@@ -188,6 +209,7 @@ export const Platform = (() => {
     hideLaunchScreen,
     onOpenUrl,
     onShake,
+    quickActions,
     tapHaptic,
     // Whether the device can shake-to-roll at all (index.html shows the toggle only then).
     canShake: isNative,

@@ -65,6 +65,8 @@ import { applyShareHashFromUrl, applyShareLink, parseShareHash } from "./ui/shar
 import * as shareMenu from "./ui/share-menu.js?v=1.88.4";
 import * as reviewPrompt from "./ui/review-prompt.js?v=1.88.4";
 import * as shake from "./ui/shake.js?v=1.88.4";
+import * as quickActions from "./ui/quick-actions.js?v=1.88.4";
+import { startQuickActions } from "./ui/quick-actions.js?v=1.88.4";
 import * as penrose from "./fractals/penrose.js?v=1.88.4";
 import * as canvasA11y from "./ui/canvas-a11y.js?v=1.88.4";
 import * as controlsFade from "./ui/controls-fade.js?v=1.88.4";
@@ -86,7 +88,7 @@ exposeForTests({
   "src/ui/compass-ui.js": compassUi, "src/ui/teleport.js": teleport, "src/ui/pattern-controls.js": patternControls, "src/ui/colormap-picker.js": colormapPicker,
   "src/ui/color-sheet.js": colorSheet, "src/ui/places-sheet.js": placesSheet, "src/ui/share.js": share, "src/ui/share-menu.js": shareMenu,
   "src/fractals/chaos-run.js": chaosRunModule,
-  "src/ui/review-prompt.js": reviewPrompt, "src/ui/shake.js": shake, "src/fractals/penrose.js": penrose, "src/ui/toolbar-a11y.js": toolbarA11y, "src/ui/controls-fade.js": controlsFade, "src/ui/first-run-tour.js": firstRunTour,"src/ui/canvas-a11y.js": canvasA11y, "src/ui/fractal-picker.js": fractalPicker,
+  "src/ui/review-prompt.js": reviewPrompt, "src/ui/shake.js": shake, "src/ui/quick-actions.js": quickActions,"src/fractals/penrose.js": penrose, "src/ui/toolbar-a11y.js": toolbarA11y, "src/ui/controls-fade.js": controlsFade, "src/ui/first-run-tour.js": firstRunTour,"src/ui/canvas-a11y.js": canvasA11y, "src/ui/fractal-picker.js": fractalPicker,
 });
 
 // Pasting a different link into an open tab only changes the hash.
@@ -120,7 +122,10 @@ requestRender();
 const arrivedByLink = !!parseShareHash(location.hash);
 applyShareHashFromUrl();
 Platform.onOpenUrl(applyShareLink); // before hideLaunchScreen, which waits on it
-if (!arrivedByLink && Platform.welcome.isFirstVisit()) coldOpen();
+// The opening flight (the website's first visit) gives way to the Surprise Me quick action's roll when the
+// app was launched from it (quick-actions.js).
+const firstVisitFlight = !arrivedByLink && Platform.welcome.isFirstVisit();
+startQuickActions(() => { if (firstVisitFlight) coldOpen(); });
 Platform.welcome.markVisited();
 initWelcomeCard();
 maybeStartTour(); // the app's first launch (the website has the welcome card instead)
