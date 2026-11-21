@@ -63,6 +63,7 @@ const APP_SHELL = [
   "./src/ui/review-prompt.js",
   "./src/ui/canvas-a11y.js",
   "./src/ui/shake.js",
+  "./src/ui/quick-actions.js",
   "./src/ui/share.js",
   "./src/ui/share-menu.js",
   "./src/ui/teleport.js",
