@@ -15,6 +15,7 @@ class FractalBridgeViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(SavePhotoPlugin())
         bridge?.registerPluginInstance(RateAppPlugin())
         bridge?.registerPluginInstance(ShakePlugin())
+        bridge?.registerPluginInstance(QuickActionsPlugin())
 
         // Set before and after the page parses, so there's no flash at the
         // wrong size on launch; the notification covers changes while running.
@@ -88,6 +89,48 @@ public class ShakePlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "ShakePlugin"
     public let jsName = "Shake"
     public let pluginMethods: [CAPPluginMethod] = []
+}
+
+/// Carries a Home Screen quick action (long-press the icon; Info.plist UIApplicationShortcutItems) to the page
+/// (JS: `QuickActions.takePending()` and `QuickActions.addListener("quickAction", ...)`, wired in platform.js).
+/// SceneDelegate calls `receive`. A cold launch arrives before the page exists, so the action is kept in
+/// `pending` until the page calls `takePending` (which returns and clears it). With the page up (the plugin is
+/// registered), a warm action is sent as a "quickAction" event instead. The page decides what the action does.
+@objc(QuickActionsPlugin)
+public class QuickActionsPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "QuickActionsPlugin"
+    public let jsName = "QuickActions"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "takePending", returnType: CAPPluginReturnPromise)
+    ]
+
+    /// The action type to hand over, by its short name ("surprise"), or nil.
+    private static var pending: String?
+    private static weak var live: QuickActionsPlugin?
+
+    private static let types = ["com.kmjohn.fractalexplorer.surprise": "surprise"]
+
+    public override func load() {
+        QuickActionsPlugin.live = self
+    }
+
+    /// Returns whether the type is one of ours.
+    @discardableResult
+    static func receive(_ type: String, warm: Bool) -> Bool {
+        guard let name = types[type] else { return false }
+        if warm, let plugin = live {
+            plugin.notifyListeners("quickAction", data: ["type": name])
+        } else {
+            pending = name
+        }
+        return true
+    }
+
+    @objc func takePending(_ call: CAPPluginCall) {
+        let name = QuickActionsPlugin.pending
+        QuickActionsPlugin.pending = nil
+        call.resolve(name.map { ["type": $0] } ?? [:])
+    }
 }
 
 /// Saves a PNG straight to the Photos library (JS: `SavePhoto.save({ data })`,

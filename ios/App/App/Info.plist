@@ -30,6 +30,17 @@
 	<true/>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Fractal Atlas saves the images you choose to your photo library.</string>
+	<key>UIApplicationShortcutItems</key>
+	<array>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.kmjohn.fractalexplorer.surprise</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Surprise Me</string>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>dice</string>
+		</dict>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
