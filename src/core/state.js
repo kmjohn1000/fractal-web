@@ -41,6 +41,8 @@ export const els = {
   hudPlain: document.querySelector("#hud .hudPlain"),
   hudStats: document.querySelector("#hud .hudStats"),
   hudPlaces: document.querySelector("#hud .hudPlaces"),
+  hudLearn: document.querySelector("#hud .hudLearn"),
+  hudLearnText: document.querySelector("#hud .hudLearnText"),
   hudScale: document.querySelector("#hud .hudScale"),
   hudBar: document.querySelector("#hud .hudBar"),
   hudScaleText: document.querySelector("#hud .hudScaleText"),

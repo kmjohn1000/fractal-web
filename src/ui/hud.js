@@ -5,6 +5,7 @@
 // frame; this file imports nothing from render-layout.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
 import { COLORMAPS } from "../render/colormaps.js?v=1.88.4";
+import { Platform } from "../core/platform.js?v=1.88.4";
 import { FRACTAL_CONFIGS, FTYPE, fractalLabel } from "../core/configs.js?v=1.88.4";
 import { EXTRA_MODES, SHAPE_INFO } from "../fractals/fractal-defs.js?v=1.88.4";
 import { apolloFrame } from "../fractals/apollonian.js?v=1.88.4";
@@ -33,14 +34,15 @@ import { cornerAbout, currentCornerRule } from "../fractals/corner-rules.js?v=1.
 // Runs every render frame, so it does nothing while the overlay is hidden
 // (showing it re-renders, see applyHudVisibility) or when nothing changed.
 export let lastHudKey = "";
-export function setHud(name, plainParts, { unitsPerPx = 0, center = "", tech = "", about = null } = {}) {
+export function setHud(name, plainParts, { unitsPerPx = 0, center = "", tech = "", about = null, learn = null } = {}) {
   if (!hudVisible) return;
   const parts = plainParts.filter(Boolean);
   const bar = unitsPerPx > 0 && Number.isFinite(unitsPerPx) ? scaleBar(unitsPerPx) : null;
-  const key = [name, about && about.lines.join("\n"), about && about.credit, ...parts, bar && bar.px.toFixed(1), bar && bar.label, center, tech].join("\n");
+  const key = [name, about && about.lines.join("\n"), about && about.credit, ...parts, bar && bar.px.toFixed(1), bar && bar.label, center, tech, learn && learn.url].join("\n");
   if (key === lastHudKey) return;
   lastHudKey = key;
   els.hudName.textContent = name;
+  setLearnRow(learn);
   els.hudAbout.classList.toggle("hidden", !about);
   // The Places sheet lists the zoom fractals' places; the pattern shapes (the ones with an `about`) have none.
   els.hudPlaces.classList.toggle("hidden", !!about);
@@ -72,7 +74,43 @@ export function setHud(name, plainParts, { unitsPerPx = 0, center = "", tech = "
   }));
   els.hudStats.classList.toggle("hidden", !tech);
   fitHudAbout(); // last: it measures the card as it now is
+  fitHudBottom();
 }
+
+// At the largest text sizes the whole card can be taller than the canvas area, which would push the Learn more
+// row (its last row) out of sight under the toolbar. The technical readout goes first, then the center point,
+// whichever first leaves the card inside the canvas area (CSS: #hud[data-fit], index.html). Normal sizes keep
+// both; a pattern shape's card was already shortened above, so this changes nothing for it.
+export const HUD_FIT_LEVELS = ["", "stats", "center"];
+export function fitHudBottom() {
+  const limit = els.canvasArea.clientHeight;
+  for (const level of HUD_FIT_LEVELS) {
+    if (level) els.hud.dataset.fit = level; else delete els.hud.dataset.fit;
+    if (els.hud.offsetTop + els.hud.offsetHeight <= limit) break;
+  }
+}
+
+// The "Learn more" row at the bottom of the card: { name, url } from the fractal's or shape's `wiki` field
+// (configs.js, fractal-defs.js), or null where it has no article, which hides the row. The link itself opens
+// through Platform.openLink (a new tab on the web, an in-app Safari view in the app), which refuses any address
+// that is not https://en.wikipedia.org/.
+export const learnMore = (name, url) => (url ? { name, url } : null);
+export function setLearnRow(learn) {
+  els.hudLearn.classList.toggle("hidden", !learn);
+  if (learn) {
+    els.hudLearnText.textContent = `Learn more about ${learn.name} on Wikipedia`;
+    els.hudLearn.dataset.url = learn.url;
+    els.hud.dataset.learn = "";
+  } else {
+    delete els.hudLearn.dataset.url;
+    delete els.hud.dataset.learn;
+  }
+}
+els.hudLearn.setAttribute("aria-description", Platform.openLinkHint);
+els.hudLearn.addEventListener("click", () => {
+  const url = els.hudLearn.dataset.url;
+  if (url) Platform.openLink(url).catch(() => {});
+});
 
 // A pattern's description must not cover the shape: the card may reach down
 // to the middle of the canvas area (where the shape sits) and no further. It
@@ -189,6 +227,7 @@ export function updateHud(deepPath) {
     unitsPerPx: unitsPerCssPx(s.scale, mainRenderer.canvas),
     center: f.center,
     tech: `scale: ${f.scale}   ${iterText}   precision: ${precision}${styleHud.tech}`,
+    learn: learnMore(label, FRACTAL_CONFIGS[currentName].wiki),
   });
 }
 
@@ -217,7 +256,12 @@ export function modeLabel(key) {
 
 // Scale bar for a pattern's view (Canvas2D views keep halfHeight).
 // and the shape's description from SHAPE_INFO (key: its EXTRA_MODES key).
-export const patternBar = (view, canvas, key) => ({ unitsPerPx: unitsPerCssPx(view.halfHeight, canvas), about: key === "corners" ? cornerAbout() : SHAPE_INFO[key] });
+// and the Learn more row (the mode's `wiki`, EXTRA_MODES).
+export const patternBar = (view, canvas, key) => ({
+  unitsPerPx: unitsPerCssPx(view.halfHeight, canvas),
+  about: key === "corners" ? cornerAbout() : SHAPE_INFO[key],
+  learn: learnMore(modeLabel(key), EXTRA_MODES.find((m) => m.key === key).wiki),
+});
 
 // "Depth 8" plus, once zooming in has added levels beyond the slider's, the
 // number added: "Depth 8 (+3 from zoom)".

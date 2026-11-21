@@ -302,8 +302,10 @@ test.describe("layout", () => {
           expect(q.level, where).toBe("full");
           await expect(page.locator("#hud .hudAboutLine").nth(1), where).toBeVisible();
         } else {
-          expect(q.aboutShown, `${where}: some of the description is shown`).toBe(true);
-          expect(["full", "first"], `${where}: the level is full or first`).toContain(q.level);
+          // The Learn more row (44 px, always there) takes the room the description's last lines had, so on these
+          // two screens the description may go entirely: the row is kept before the blurb (fitHudAbout).
+          expect(["full", "first", "none"], `${where}: the level is full, first or none`).toContain(q.level);
+          await expect(page.locator("#hud .hudLearn"), `${where}: the Learn more row is kept`).toBeVisible();
         }
         // The depth line (or the point count), the rotation text and the scale bar are all still there.
         const plain = await page.locator("#hud .hudPlain").innerText();
