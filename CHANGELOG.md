@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## 1.88.4 — 2026-11-21
+- Changed: Shake to roll is on by default in the app. To turn it off, touch and hold the die.
+
 ## 1.88.3 — 2026-11-20
 - Added: two invisible "Zoom in" and "Zoom out" buttons for VoiceOver, right after the picture. A double-tap zooms by one step and says the new depth.
 

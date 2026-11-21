@@ -1,6 +1,6 @@
 // Shake to roll the dice (shake.js): the JS side of the app's shake. The shake itself (UIKit's motionEnded,
 // the Swift plugin) can't be produced here, so these call the handler the plugin would call and check what
-// it does: off by default, rolls the die when on, ignores a shake during a flight, with a sheet or menu open
+// it does: on by default, rolls the die when on, ignores a shake during a flight, with a sheet or menu open
 // or the tour up, and within a second of the last roll; the toggle's storage; and that the website hides
 // the toggle. The Swift side and a real shake are checked by hand on a phone. Plain behavior checks, no
 // baselines. Run through `npm run test:visual`.
@@ -31,7 +31,7 @@ test.afterEach(() => {
   expect(pageErrors).toEqual([]);
 });
 
-test("off by default: a shake does nothing, and the website hides the toggle", async ({ page }) => {
+test("on by default: a shake rolls, and the website hides the toggle", async ({ page }) => {
   await load(page);
   const r = await page.evaluate(() => ({
     enabled: shakeEnabled,
@@ -42,7 +42,13 @@ test("off by default: a shake does nothing, and the website hides the toggle", a
     toggleHidden: els.shakeToggle.classList.contains("hidden"),
     canShake: Platform.canShake,
   }));
-  expect(r).toEqual({ enabled: false, blocked: "off", rolled: false, flying: false, haptics: 0, toggleHidden: true, canShake: false });
+  expect(r).toEqual({ enabled: true, blocked: "", rolled: true, flying: true, haptics: 1, toggleHidden: true, canShake: false });
+});
+
+test("turned off (stored 0): a shake does nothing", async ({ page }) => {
+  await load(page, "0");
+  const r = await page.evaluate(() => ({ enabled: shakeEnabled, blocked: shakeBlockedBy(), rolled: handleShake(10_000), flying: isFlying(), haptics: window.__haptics }));
+  expect(r).toEqual({ enabled: false, blocked: "off", rolled: false, flying: false, haptics: 0 });
 });
 
 test("on: a shake rolls the die with a haptic, and a second shake within a second does not", async ({ page }) => {
@@ -107,14 +113,14 @@ test("the toggle is kept on the device and read back on the next load", async ({
     els.diveMenu.classList.add("open");
   });
   const btn = page.locator("#shakeToggle");
-  await expect(btn).toHaveAttribute("aria-checked", "false");
+  await expect(btn).toHaveAttribute("aria-checked", "true"); // on by default
   await btn.click();
-  await expect(btn).toHaveAttribute("aria-checked", "true");
-  expect(await page.evaluate(() => localStorage.getItem(SHAKE_KEY))).toBe("1");
+  await expect(btn).toHaveAttribute("aria-checked", "false");
+  expect(await page.evaluate(() => localStorage.getItem(SHAKE_KEY))).toBe("0");
   await page.reload();
   await page.waitForFunction(() => window["__faHooks"] > 0, null, { timeout: 90_000 });
-  expect(await page.evaluate(() => shakeEnabled)).toBe(true);
+  expect(await page.evaluate(() => shakeEnabled)).toBe(false); // the choice to turn it off is kept
   await page.evaluate(() => { els.shakeToggle.classList.remove("hidden"); els.diveMenu.classList.add("open"); });
   await btn.click();
-  expect(await page.evaluate(() => [shakeEnabled, localStorage.getItem(SHAKE_KEY)])).toEqual([false, "0"]);
+  expect(await page.evaluate(() => [shakeEnabled, localStorage.getItem(SHAKE_KEY)])).toEqual([true, "1"]);
 });

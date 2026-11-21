@@ -1,5 +1,5 @@
 // Shake to roll the dice: in the iOS app, shaking the phone does what the Surprise-me die does (teleport.js).
-// Off by default, a toggle in the die's touch-and-hold menu (index.html #diveMenu, beside the dive style),
+// On by default (user, 2026-11-21), with a switch in the die's touch-and-hold menu (index.html #diveMenu, beside the dive style),
 // shown only in the app: the website has no shake. The die button stays the way to roll for VoiceOver and for
 // anyone who doesn't shake. The shake itself comes from platform.js (the Swift side forwards motionEnded).
 // A shake does nothing while a flight is in the air, a sheet or menu is open, the first-run tour is up, or
@@ -7,16 +7,17 @@
 // Needs state.js (els), teleport.js (teleport, isFlying), first-run-tour.js (tourShowing), platform.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { Platform } from "../core/platform.js?v=1.88.3";
-import { els } from "../core/state.js?v=1.88.3";
-import { isFlying, teleport } from "./teleport.js?v=1.88.3";
-import { tourShowing } from "./first-run-tour.js?v=1.88.3";
+import { Platform } from "../core/platform.js?v=1.88.4";
+import { els } from "../core/state.js?v=1.88.4";
+import { isFlying, teleport } from "./teleport.js?v=1.88.4";
+import { tourShowing } from "./first-run-tour.js?v=1.88.4";
 
 export const SHAKE_KEY = "fractalAtlas.shakeToRoll";
 export const SHAKE_COOLDOWN_MS = 1000;
 
+// On unless the person turned it off (user, 2026-11-21: on by default; an unset or unreadable choice is on).
 export function readShakeEnabled() {
-  try { return localStorage.getItem(SHAKE_KEY) === "1"; } catch { return false; }
+  try { return localStorage.getItem(SHAKE_KEY) !== "0"; } catch { return true; }
 }
 export let shakeEnabled = readShakeEnabled();
 
