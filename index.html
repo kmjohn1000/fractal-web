@@ -150,24 +150,26 @@
   #hud .hudStat { white-space: nowrap; }
   /* The card lets taps through to the fractal, except this one button, which
      opens the Places sheet (places-sheet.js). */
+  /* Browse places and Learn more share one row (Learn more to the right); the row wraps to two only when the card is
+     too narrow for both (Larger Text). Its negative margins let the buttons overhang the card's padding. */
+  #hud .hudActions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; column-gap: 2px; margin: 2px -8px -10px; }
   #hud .hudPlaces {
-    pointer-events: auto; display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; min-height: 44px; margin: 2px -8px -10px; padding: 0 8px;
+    pointer-events: auto; display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; min-height: 44px; margin: 0; padding: 0 8px;
     background: none; border: none; color: #6cf; font: 600 0.8125rem -apple-system, system-ui, sans-serif; text-shadow: none;
   }
   #hud .hudPlaces .placesIcon { flex: none; width: 18px; height: 18px; }
   #hud .hudPlaces:active { transform: none; background: rgba(255,255,255,0.08); }
   /* "Learn more about X on Wikipedia" (hud.js setHud; absent for a shape with no article): the last row of the card,
-     a button like Browse places (taps get through the card only here). At least 44 px tall; the text wraps and the row
-     grows with Larger Text (rem follows --text-scale). The Places button above gives up its bottom overhang while this
-     row is showing (data-learn), so the two stack and this one reaches the card's edge. */
+     a button like Browse places (taps get through the card only here), to the right of it in the same row. At least
+     44 px tall; it grows with Larger Text (rem follows --text-scale) and wraps below Browse places only when the
+     card is too narrow for both. */
   #hud .hudLearn {
-    pointer-events: auto; display: flex; align-items: center; justify-content: flex-start; gap: 6px; min-width: 0; min-height: 44px; margin: 2px -8px -10px; padding: 4px 8px;
+    pointer-events: auto; display: flex; align-items: center; justify-content: flex-start; gap: 6px; min-width: 0; min-height: 44px; margin: 0; padding: 4px 8px;
     box-sizing: border-box; text-align: left; text-wrap: pretty;
     background: none; border: none; color: #6cf; font: 600 0.8125rem/1.25 -apple-system, system-ui, sans-serif; text-shadow: none;
   }
   #hud .hudLearn .learnIcon { flex: none; width: 18px; height: 18px; }
   #hud .hudLearn:active { transform: none; background: rgba(255,255,255,0.08); }
-  #hud[data-learn] .hudPlaces { margin-bottom: 0; }
   /* At the largest text sizes the card can outgrow the canvas area: the technical readout, then the center, make
      room (fitHudBottom in hud.js), so the Learn more row stays on screen. */
   #hud[data-fit="stats"] .hudStats, #hud[data-fit="center"] .hudStats, #hud[data-fit="center"] .hudCenter { display: none; }
@@ -866,7 +868,7 @@
   });
 </script>
 <div id="canvasArea">
-  <div id="hud" class="hidden"><div class="hudName"></div><div class="hudAbout hidden"><p class="hudAboutLine"></p><p class="hudAboutLine"></p><p class="hudCredit hidden"></p></div><div class="hudPlain"></div><div class="hudScale"><span class="hudBar"></span><span class="hudScaleText"></span></div><div class="hudCenter"></div><div class="hudStats"></div><button class="hudPlaces" type="button" aria-haspopup="true" data-opens-places>Browse places</button><button class="hudLearn hidden" type="button"><svg class="learnIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg><span class="hudLearnText"></span></button></div>
+  <div id="hud" class="hidden"><div class="hudName"></div><div class="hudAbout hidden"><p class="hudAboutLine"></p><p class="hudAboutLine"></p><p class="hudCredit hidden"></p></div><div class="hudPlain"></div><div class="hudScale"><span class="hudBar"></span><span class="hudScaleText"></span></div><div class="hudCenter"></div><div class="hudStats"></div><div class="hudActions"><button class="hudPlaces" type="button" aria-haspopup="true" data-opens-places>Browse places</button><button class="hudLearn hidden" type="button"><svg class="learnIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg><span class="hudLearnText"></span></button></div></div>
   <i id="remProbe" aria-hidden="true"></i>
   <div id="welcome" class="hidden" role="region" aria-label="About Fractal Atlas">
     <button id="welcomeClose" class="welcomeClose" aria-label="Close" title="Close">&#x2715;</button>

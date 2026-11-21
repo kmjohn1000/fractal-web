@@ -161,7 +161,7 @@ test.describe("the row", () => {
     await expect(page.locator("#hud .hudLearn")).toBeHidden();
   });
 
-  test("the row is the last thing in the card, at least 44 px tall, under Browse places on a fractal", async ({ page }) => {
+  test("the row is the last thing in the card, at least 44 px tall, and shares Browse places' row on a fractal (to its right)", async ({ page }) => {
     await show(page, "Mandelbrot");
     const q = await page.evaluate(() => {
       const r = (el) => { const b = el.getBoundingClientRect(); return { y: b.y, b: b.bottom, h: b.height, x: b.x, r: b.right }; };
@@ -171,7 +171,9 @@ test.describe("the row", () => {
     });
     expect(q.row.h).toBeGreaterThanOrEqual(44);
     expect(q.events).toBe("auto");
-    expect(q.row.y).toBeGreaterThanOrEqual(q.places.b - 1);
+    // One row by default: Learn more to the right of Browse places, level with it.
+    expect(q.row.x).toBeGreaterThanOrEqual(q.places.r - 1);
+    expect(Math.abs(q.row.y - q.places.y)).toBeLessThanOrEqual(2);
     expect(q.row.b).toBeLessThanOrEqual(q.hud.b + 1);
     expect(q.row.x).toBeGreaterThanOrEqual(q.hud.x - 9);
     expect(q.row.r).toBeLessThanOrEqual(q.hud.r + 9);
