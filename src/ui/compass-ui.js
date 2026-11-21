@@ -144,6 +144,7 @@ export function resetRotation(key) {
     if (!cur || cur.st !== st) return; // mode/fractal changed mid-animation
     const t = durationMs ? Math.min(1, (now - t0) / durationMs) : 1;
     st.rotation = t < 1 ? from * (1 - ease(t)) : 0;
+    if (t === 1) Platform.haptic("snap"); // the compass reached upright
     if (p.fractalPane) markInteracting();
     renderAll();
     if (t < 1) requestAnimationFrame(step);

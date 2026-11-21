@@ -6,6 +6,7 @@
 // fern.js, chaos-run.js and teleport.js (cancelTeleport, inside startDotRun only).
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
+import { Platform } from "../core/platform.js?v=1.88.4";
 import { KOCH_GROW_MS, KOCH_GROW_STEP_SHARE } from "../fractals/koch.js?v=1.88.4";
 import { isCurveMode } from "../fractals/fractal-defs.js?v=1.88.4";
 import { dragonState, els, fernState, fernView, hexaflakeState, kochState, kochView, mode, treeState } from "../core/state.js?v=1.88.4";
@@ -254,6 +255,9 @@ export function scheduleSharedRun(seed, system) {
 
 for (const btn of document.querySelectorAll(".replayPlayBtn")) btn.addEventListener("click", toggleDotReplay);
 els.fernResetBtn.addEventListener("click", stopDotReplay);
+// Reset, in every view, gives a medium tap (the fractal's own Reset included; the keyboard's reset clicks these too).
+[els.resetBtn, els.kochResetBtn, els.treeResetBtn, els.hexaflakeResetBtn, els.dragonResetBtn, els.fernResetBtn]
+  .forEach((btn) => btn.addEventListener("click", () => Platform.haptic("reset")));
 syncReplayButtons();
 
 els.kochResetBtn.addEventListener("click", () => {

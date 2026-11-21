@@ -174,8 +174,18 @@ export const Platform = (() => {
 
   // A short tap of haptic feedback; the app only, and quietly nothing if it fails.
   function tapHaptic() {
-    if (!isNative) return;
-    plugins().then(({ Haptics }) => Haptics.impact({ style: "MEDIUM" })).catch(() => {});
+    haptic("land");
+  }
+
+  // Haptics at key moments (a flight landing, the compass snapping upright, a palette picked, Reset, the twist
+  // crossing 0 degrees), all through this one helper so they stay subtle and consistent: a light tick for the
+  // small acknowledgements, a medium tap for the two that finish something bigger. The web has no haptics
+  // here, so every kind is a no-op there. Unknown kinds do nothing.
+  const HAPTIC_STYLES = { tick: "LIGHT", snap: "LIGHT", land: "MEDIUM", reset: "MEDIUM" };
+  function haptic(kind) {
+    const style = HAPTIC_STYLES[kind];
+    if (!isNative || !style) return;
+    plugins().then(({ Haptics }) => Haptics.impact({ style })).catch(() => {});
   }
 
   // CSS hook for layout that only the website wants (index.html scopes the
@@ -222,6 +232,7 @@ export const Platform = (() => {
     onShake,
     quickActions,
     tapHaptic,
+    haptic,
     // Whether the device can shake-to-roll at all (index.html shows the toggle only then).
     canShake: isNative,
     welcome,

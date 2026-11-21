@@ -11,7 +11,8 @@ import { ifsData } from "../fractals/ifs.js?v=1.88.4";
 import { isCurveMode, isIfsMode, viewFromBounds } from "../fractals/fractal-defs.js?v=1.88.4";
 import { endVectorInteracting, markVectorInteracting } from "../core/state-colors.js?v=1.88.4";
 import { requestRender } from "../render/render-layout.js?v=1.88.4";
-import { normalizeAngle } from "../core/view-math.js?v=1.88.4";
+import { Platform } from "../core/platform.js?v=1.88.4";
+import { crossedUpright, normalizeAngle } from "../core/view-math.js?v=1.88.4";
 import { touchDotReplay } from "./pattern-controls.js?v=1.88.4";
 import { cancelTeleport } from "./teleport.js?v=1.88.4";
 
@@ -190,7 +191,9 @@ export function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive 
       // set rotation before recomputing `after` so the before/after anchor
       // trick keeps the midpoint stable under combined pinch+rotate.
       const angle = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
+      const prevRotation = vectorView.view.rotation || 0;
       vectorView.view.rotation = normalizeAngle(pinchStartRotation + (angle - pinchStartAngle));
+      if (crossedUpright(prevRotation, vectorView.view.rotation)) Platform.haptic("tick"); // the twist passed through upright
       const after = vectorView.screenToWorld(midX, midY);
       vectorView.view.cx += before[0] - after[0];
       vectorView.view.cy += before[1] - after[1];

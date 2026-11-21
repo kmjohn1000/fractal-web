@@ -4,6 +4,7 @@
 // showHud); the scripts before and after it call cancelTeleport etc.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
+import { Platform } from "../core/platform.js?v=1.88.4";
 import { FRACTAL_CONFIGS, fractalLabel } from "../core/configs.js?v=1.88.4";
 import { announce } from "../fractals/chaos-run.js?v=1.88.4";
 import { suggestedMaxIter, viewFromBounds } from "../fractals/fractal-defs.js?v=1.88.4";
@@ -192,6 +193,7 @@ export function flyTo(st, d, target, landingIndex, spinSign, style = diveStyle) 
       st.iterAutoLocked = false;
     }
     teleportLandingIndex = landingIndex;
+    Platform.haptic("land");
     // Say where it landed (the info card may be off, and the canvas is a picture). Heading home (-1) has no name.
     if (landingIndex >= 0) announce(`${d.label}, ${fractalLabel(currentName)}`);
   };

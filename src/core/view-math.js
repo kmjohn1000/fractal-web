@@ -234,6 +234,12 @@ export function normalizeAngle(a) {
   return ((a + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
 }
 
+// Whether a twist from rotation `prev` to `next` (both normalized) went through 0 (upright), for the haptic
+// tick. Only a short step across 0 counts: a jump of half a turn or more is the wrap at 180 degrees, not 0.
+export function crossedUpright(prev, next) {
+  return (prev < 0 && next >= 0 || prev > 0 && next <= 0) && Math.abs(next - prev) < Math.PI / 2;
+}
+
 // Inverse of screenToComplex, solved for (cx, cy): the center a view would
 // need so that local screen point (sx, sy) maps exactly to world point
 // (targetX, targetY) at the view's current scale/rotation. This is the

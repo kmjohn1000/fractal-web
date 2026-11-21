@@ -8,7 +8,8 @@ import { applyAutoIter, dualActive, els, isInteracting, juliaRenderer, juliaStat
 import { limitScale } from "../core/deepzoom.js?v=1.88.4";
 import { cancelSettle, markInteracting } from "../core/state-colors.js?v=1.88.4";
 import { renderAll, requestRender } from "../render/render-layout.js?v=1.88.4";
-import { EXACT_FROM, centerForAnchor, exactValid, moveCenter, normalizeAngle, screenToComplex } from "../core/view-math.js?v=1.88.4";
+import { Platform } from "../core/platform.js?v=1.88.4";
+import { EXACT_FROM, centerForAnchor, crossedUpright, exactValid, moveCenter, normalizeAngle, screenToComplex } from "../core/view-math.js?v=1.88.4";
 import { cancelTeleport, glideMainTo } from "./teleport.js?v=1.88.4";
 import { colorSheetTapJustClosed } from "./color-sheet.js?v=1.88.4";
 
@@ -166,7 +167,9 @@ export function attachFractalInteraction(canvas, getState, paneName, renderer) {
       // below keeps the midpoint under the fingers stable under combined
       // pinch+rotate, exactly like it already does for pinch+pan.
       const angle = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
+      const prevRotation = st.rotation || 0;
       st.rotation = normalizeAngle(pinchStartRotation + (angle - pinchStartAngle));
+      if (crossedUpright(prevRotation, st.rotation)) Platform.haptic("tick"); // the twist passed through upright
       const after = screenToWorldHere(mid.x, mid.y);
       moveCenter(st, before.ox - after.ox, before.oy - after.oy);
       markInteracting();

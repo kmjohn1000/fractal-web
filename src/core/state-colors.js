@@ -4,6 +4,7 @@
 // colormaps.js and, inside function bodies only, render-layout.js and share.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
+import { Platform } from "./platform.js?v=1.88.4";
 import { COLORMAPS } from "../render/colormaps.js?v=1.88.4";
 import { FRACTAL_CONFIGS } from "./configs.js?v=1.88.4";
 import { COLOR_BANDS_RANGE, COLOR_STYLES, colorStyle } from "../render/color-styles.js?v=1.88.4";
@@ -45,6 +46,7 @@ export function pickColormap(i) {
   colormapPicked = true;
   colormapIndex = i;
   updateLUT();
+  Platform.haptic("tick");
 }
 // Called when the fractal changes (selectFractal) or a flight starts
 // (flyTo, with the place it lands on): moves to the default unless a palette
