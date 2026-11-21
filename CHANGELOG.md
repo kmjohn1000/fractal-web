@@ -7,6 +7,8 @@ Newest version at the top. See CLAUDE.md for when and how to bump.
 - Changed: at the largest text sizes the info card drops its technical readout and center point first so the Learn more row stays visible, and on landscape phones the description yields to the row.
 - Added: long-press the app icon and tap Surprise Me to fly to a random place.
 - Changed: the Reset buttons are named "Whole shape" (they were "Show whole shape"), one short name for VoiceOver and Voice Control.
+- Changed: the interface accent color follows the bright end of the current colormap.
+- Added: light haptic taps in the app when you land on a place, snap the compass, pick a palette, reset the view, or twist through zero degrees.
 
 ## 1.88.4 — 2026-11-21
 - Changed: Shake to roll is on by default in the app. To turn it off, touch and hold the die.
