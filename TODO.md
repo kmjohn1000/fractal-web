@@ -841,14 +841,39 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
 - [ ] "Learn more" link to each fractal's Wikipedia article, e.g. in the
       info card next to the blurb above (user idea 2026-10-13). A `wiki`
       field per FRACTAL_CONFIGS/EXTRA_MODES entry, taken from
-      `docs/learn-more-links.md` (local, not in the repo; verified table, all 23 entries: 20 links,
-      Celtic and both Phoenix entries hidden; four open decisions listed
-      there). In the app,
-      open it through `platform.js` (an in-app Safari sheet via
-      `@capacitor/browser`, a new plugin, or the system browser), not a
+      `docs/learn-more-links.md` (local, not in the repo; verified table, 35 rows:
+      26 with links, 8 of them to a section of an article, and 9 with none; open
+      table choices listed there). In the app,
+      open it through `platform.js`, not a
       plain link that would navigate the WebView away from the app. It's a
       user-tapped outbound link, so the "no external services" privacy
       answer should still hold, but re-check privacy.html wording
+      DECIDED 2026-11-21 (user; not approved to build yet; design, mock-ups
+      and a MathWorld catalog are in a session scratchpad): the link opens in
+      an in-app view (`SFSafariViewController` through a small app-local
+      Swift plugin like SavePhoto, registered in `platform.js`, https
+      `en.wikipedia.org` only; no new dependency; the web build opens a new
+      tab with `rel="noopener"`). The row goes at the bottom of the info card
+      (v1 and v2 alike), is hidden for the nine fractals with no article, and
+      links to the right section of the article where one fits. Wikipedia is
+      the source if it is what we end up using; MathWorld as a second link is
+      undecided. Label "Learn more about X on Wikipedia", hint "Opens in a
+      web view" (app) or "Opens in a new tab" (web); 44 pt row, grows with
+      Larger Text; one line, checked at the biggest text size.
+      Privacy first: privacy.html says its page is updated before a change
+      ships, so this wording goes live (push the site) before the app update
+      that adds the link. Draft: in the opening paragraph, replace "and no
+      network requests from the app to any server" with "and the app makes no
+      network requests of its own. The one exception is a link you choose to
+      open (see Learn more links below)." New section after "Sharing a view":
+      "Learn more links. Some fractals show a Learn more link to an article on
+      Wikipedia. It opens only when you tap it, in a web view inside the app
+      that iOS provides. The page is loaded from Wikipedia's servers, so
+      Wikipedia, like any website, can see that your device requested it. The
+      app sends nothing about how you use it, and it cannot see what you do in
+      that view. Wikipedia's own privacy policy applies to that page." Then
+      bump "Last updated". The App Store privacy label should stay "Data Not
+      Collected"; check that in App Store Connect before shipping.
 - [ ] More Looks (user, 2026-10-22; none of the open ones is approved to
       build). Nine Looks are shipped: Default, Edge glow, Stripes, Bands,
       Orbs, Rays (1.40.0), Relief (1.41.0), Halo and Paper cut (1.60.0); the
