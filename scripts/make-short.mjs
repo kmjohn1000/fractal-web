@@ -460,6 +460,59 @@ async function renderDiveFrames() {
   console.log(`${done} frames in ${((Date.now() - t0) / 1000).toFixed(0)} s (${(done ? (Date.now() - t0) / done : 0).toFixed(0)} ms/frame) -> ${framesDir}`);
 }
 
+// ---------------------------------------------------------------- koch renderer
+// The app's own Koch view (Canvas2D), shot frame by frame on a fake clock so each generation's grow-in (startGrow) plays
+// at the path's pace. R.path(seconds) -> (t) => { depth, grow (0..1 while generation `depth` grows in, else null),
+// view {cx, cy, halfHeight, rotation}, fill, caption {text, alpha}, note (small line under it), dim (0..1) }.
+async function renderKochFrames() {
+  mkdirSync(framesDir, { recursive: true });
+  const dsf = R.dsf ?? 1;
+  const { page, errors, close } = await openApp({ width: W / dsf, height: H / dsf, dsf, passCount: passes });
+  const t0 = Date.now();
+  let done = 0;
+  try {
+    await page.evaluate(`(() => {
+      window.__clk = 1000;
+      performance.now = () => window.__clk; // the grow-in runs on this clock
+      __vt.mode("koch");
+      vectorColors.koch = SOLID_COLORS.findIndex((c) => c.name === ${JSON.stringify(R.color || "Ice")});
+      const mk = (id, css) => { const d = document.createElement("div"); d.id = id; d.style.cssText = css; document.body.appendChild(d); return d; };
+      const k = ${dsf};
+      mk("__cap", "position:fixed;left:0;right:0;top:13.5%;text-align:center;color:#fff;z-index:50;white-space:pre-line;line-height:1.18;" +
+        "font:italic 400 " + (${R.captionSize ?? 66} / k) + "px ui-serif,'New York',Georgia,serif;text-shadow:0 " + (${R.captionSize ?? 66} * 0.04 / k) + "px " + (${R.captionSize ?? 66} * 0.3 / k) + "px rgba(0,0,0,0.65);opacity:0;pointer-events:none");
+      mk("__note", "position:fixed;left:0;right:0;bottom:8%;text-align:center;color:#fff;z-index:50;white-space:pre-line;line-height:1.3;" +
+        "font:400 " + (${R.noteSize ?? 50} / k) + "px -apple-system,system-ui,sans-serif;letter-spacing:0.02em;text-shadow:0 2px 12px rgba(0,0,0,0.7);opacity:0;pointer-events:none");
+      mk("__dim", "position:fixed;inset:0;background:#000;z-index:60;opacity:0;pointer-events:none");
+    })()`);
+    for (let i = 0; i < Math.min(N, Math.round(until * FPS)); i++) {
+      if (only.length ? !only.includes(i) : i % stride && i !== N - 1) continue;
+      const file = join(framesDir, `${pad(i)}.jpg`);
+      if (resume && existsSync(file)) continue;
+      const s = path(i / FPS);
+      await page.evaluate(`(() => {
+        const s = ${JSON.stringify(s)};
+        kochState.depth = s.depth; kochState.fill = s.fill ?? true;
+        Object.assign(kochView.view, { cx: 0, cy: 0, rotation: 0 }, s.view);
+        window.__clk = 1000;
+        if (s.grow != null && s.grow < 1) { kochView.startGrow(s.depth, 1000); window.__clk = 1000 + s.grow * 1000; } else kochView.cancelGrow();
+        const set = (id, text, a) => { const e = document.getElementById(id); e.textContent = text || ""; e.style.opacity = text ? a : 0; };
+        set("__cap", s.caption?.text, s.caption?.alpha ?? 1);
+        set("__note", s.note?.text, s.note?.alpha ?? 1);
+        document.getElementById("__dim").style.opacity = s.dim || 0;
+        requestRender();
+      })()`);
+      await page.evaluate("new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))");
+      await page.screenshot({ path: file, type: "jpeg", quality: 95, animations: "disabled", caret: "hide" });
+      done++;
+      if (done % 60 === 0) console.log(`${((Date.now() - t0) / 1000).toFixed(0)}s  frame ${i + 1}/${N}`);
+    }
+    if (errors.length) throw new Error(`page errors: ${errors.join("; ")}`);
+  } finally {
+    await close();
+  }
+  console.log(`${done} frames in ${((Date.now() - t0) / 1000).toFixed(0)} s -> ${framesDir}`);
+}
+
 // ---------------------------------------------------------------- capture renderer: scenes
 
 // A scene's play speed over its own video time: a piecewise-linear profile through the
@@ -1041,7 +1094,8 @@ if (command === "frames" || command === "build") {
     layout = R.layout(meta, { fps: FPS, W: OW, H: OH });
     if (layout.seconds !== picSeconds) throw new Error(`the captured scenes make a ${layout.seconds} s picture, not ${picSeconds} s: run \`meta\` again, then \`build\``);
     await composeFrames();
-  } else await renderDiveFrames();
+  } else if (R.type === "koch") await renderKochFrames();
+  else await renderDiveFrames();
 }
 if (command === "scenes" || command === "meta") await captureScenes();
 if (command === "compose") await composeFrames();
