@@ -3,6 +3,7 @@
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
 ## Unreleased
+- Added: long-press the app icon and tap Surprise Me to fly to a random place.
 - Changed: the Reset buttons are named "Whole shape" (they were "Show whole shape"), one short name for VoiceOver and Voice Control.
 
 ## 1.88.4 — 2026-11-21
