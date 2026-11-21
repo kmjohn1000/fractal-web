@@ -25,7 +25,13 @@ shipped): each one changes the listing count, so fixes and polish come first.
    Control on, the die no longer says "collapsed", and VoiceOver zooms through
    two invisible Zoom in / Zoom out buttons after the picture (the swipe on an
    invisible slider never worked on iOS, three tries; the slider stays but is
-   unproven). The sheets take and return focus. Not yet checked: Voice Control.
+   unproven). The sheets take and return focus. Voice Control checked
+   2026-11-21 (1.88.4): names, tap by name, numbers and Go all work; the
+   Reset button showed two alternating names, now one short name, "Whole
+   shape" (unreleased, no version bump by the user's call; the user rechecks). The "Mandelbrot" label over the picture
+   is the invisible zoom handle's name, left as is; iOS opening its Numbers
+   app on "Show numbers" is a system quirk, not the app. The user closed the
+   pass 2026-11-21; the one-finger alternatives stay on hold.
 4. DONE 2026-11-20: VoiceOver check of the toolbar buttons' size and spacing;
    every double-tap hit the button it was on (1.88.2), so no layout change.
 5. The mirrored palette option, the first step of the OKLCH palette item
