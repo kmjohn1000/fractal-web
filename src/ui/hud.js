@@ -98,10 +98,14 @@ export const learnMore = (name, url) => (url ? { name, url } : null);
 export function setLearnRow(learn) {
   els.hudLearn.classList.toggle("hidden", !learn);
   if (learn) {
-    els.hudLearnText.textContent = `Learn more about ${learn.name} on Wikipedia`;
+    // The row shows only "Learn more" (user, 2026-11-21: the long sentence was too long); the spoken name keeps
+    // the subject and the source, and contains the visible words, so Voice Control's "tap Learn more" works.
+    els.hudLearnText.textContent = "Learn more";
+    els.hudLearn.setAttribute("aria-label", `Learn more about ${learn.name} on Wikipedia`);
     els.hudLearn.dataset.url = learn.url;
     els.hud.dataset.learn = "";
   } else {
+    els.hudLearn.removeAttribute("aria-label");
     delete els.hudLearn.dataset.url;
     delete els.hud.dataset.learn;
   }

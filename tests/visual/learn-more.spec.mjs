@@ -127,9 +127,17 @@ test.describe("the row", () => {
       const label = await show(page, key);
       const row = page.locator("#hud .hudLearn");
       await expect(row, key).toBeVisible();
-      await expect(row, key).toHaveText(`Learn more about ${label} on Wikipedia`);
+      await expect(row, key).toHaveText("Learn more"); // short on screen
+      await expect(row, key).toHaveAttribute("aria-label", `Learn more about ${label} on Wikipedia`); // full when spoken; contains the visible words
       await expect(row, key).toHaveAttribute("aria-description", hint);
       expect(await row.evaluate((el) => el.tagName), key).toBe("BUTTON");
+      // The visible text is the same for every key now, so wait until the card has finished laying out (the row
+      // stops moving) before the click, or it can land on the previous layout.
+      await expect.poll(async () => {
+        const a = JSON.stringify(await row.boundingBox());
+        await page.waitForTimeout(150);
+        return a === JSON.stringify(await row.boundingBox());
+      }, { message: `${key} row settles` }).toBe(true);
       await row.click();
       const opened = await page.evaluate(() => window.__opened.splice(0));
       expect(opened, `${key} opens its address once`).toEqual([url]);
