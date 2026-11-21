@@ -1,5 +1,15 @@
 // An ES module: every top-level declaration is exported (test-hooks.js and the importing files rely on it).
 
+// The one kind of address the app opens for a person: an English Wikipedia article (the "Learn more" row in the
+// info card). https only, on en.wikipedia.org itself (no other host, port or login), so nothing else can be
+// reached through openLink; the Swift side (OpenLinkPlugin) checks the same rule again.
+export function isWikipediaUrl(value) {
+  if (typeof value !== "string") return false;
+  let u;
+  try { u = new URL(value); } catch { return false; }
+  return u.protocol === "https:" && u.hostname === "en.wikipedia.org" && u.port === "" && u.username === "" && u.password === "";
+}
+
 // Web vs. native (Capacitor iOS app) implementations of anything
 // platform-specific -- saving and sharing. The app's scripts call only these and
 // never checks the platform itself (see CLAUDE.md). The same files serve
@@ -33,6 +43,7 @@ export const Platform = (() => {
             Filesystem: reg("Filesystem"),
             SavePhoto: reg("SavePhoto"), // app-local, ios/App/App/FractalBridgeViewController.swift
             RateApp: reg("RateApp"), // app-local, same file
+            OpenLink: reg("OpenLink"), // app-local, same file: opens a Wikipedia article in an in-app Safari view
             Shake: reg("Shake"), // app-local, same file: a "shake" event when the phone is shaken
             SplashScreen: reg("SplashScreen"),
             App: reg("App"),
@@ -247,6 +258,29 @@ export const Platform = (() => {
         throw err;
       }
       return true;
+    },
+
+    // What the "Learn more" row's tap says to a screen reader (aria-description): where the link goes.
+    openLinkHint: isNative ? "Opens in a web view" : "Opens in a new tab",
+
+    // Opens an English Wikipedia address (isWikipediaUrl; anything else is refused and returns false, never
+    // navigates). Web: a new tab with noopener,noreferrer, so the page cannot reach back and the app's own
+    // address is not sent. App: an in-app Safari view (SFSafariViewController) with a Done button; the page is
+    // loaded by iOS, not the app, and the web view of the app itself is never navigated away. Resolves true
+    // once opened (the web cannot confirm a tab opened), false if refused or it failed.
+    async openLink(url) {
+      if (!isWikipediaUrl(url)) return false;
+      if (!isNative) {
+        window.open(url, "_blank", "noopener,noreferrer");
+        return true;
+      }
+      try {
+        const { OpenLink } = await plugins();
+        await OpenLink.open({ url });
+        return true;
+      } catch {
+        return false;
+      }
     },
 
     // Asks iOS to show its rating sheet (the app only; the web has none).

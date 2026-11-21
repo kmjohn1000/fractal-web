@@ -1,5 +1,6 @@
 import UIKit
 import Photos
+import SafariServices
 import StoreKit
 import WebKit
 import Capacitor
@@ -15,6 +16,7 @@ class FractalBridgeViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(SavePhotoPlugin())
         bridge?.registerPluginInstance(RateAppPlugin())
         bridge?.registerPluginInstance(ShakePlugin())
+        bridge?.registerPluginInstance(OpenLinkPlugin())
 
         // Set before and after the page parses, so there's no flash at the
         // wrong size on launch; the notification covers changes while running.
@@ -88,6 +90,46 @@ public class ShakePlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "ShakePlugin"
     public let jsName = "Shake"
     public let pluginMethods: [CAPPluginMethod] = []
+}
+
+/// Opens an English Wikipedia article in an in-app Safari view (JS: `OpenLink.open({ url })`, called from
+/// Platform.openLink in platform.js, which checks the same rule first). SFSafariViewController is Safari's own
+/// view with a Done button: iOS loads the page, the app never sees it or what is done there, it shares no
+/// cookies with the app, and the app's own web view is never navigated away. Only https://en.wikipedia.org/
+/// addresses are accepted (no other host, port or login); anything else is rejected without opening.
+@objc(OpenLinkPlugin)
+public class OpenLinkPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "OpenLinkPlugin"
+    public let jsName = "OpenLink"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "open", returnType: CAPPluginReturnPromise)
+    ]
+
+    @objc func open(_ call: CAPPluginCall) {
+        guard let text = call.getString("url"),
+              let url = URL(string: text),
+              url.scheme == "https",
+              url.host == "en.wikipedia.org",
+              url.port == nil, url.user == nil, url.password == nil else {
+            call.reject("Not an English Wikipedia address")
+            return
+        }
+        DispatchQueue.main.async {
+            guard var top = self.bridge?.viewController else {
+                call.reject("No view to show the page in")
+                return
+            }
+            // A second tap while the view is up must not present on top of itself.
+            if top.presentedViewController is SFSafariViewController {
+                call.resolve()
+                return
+            }
+            while let next = top.presentedViewController { top = next }
+            top.present(SFSafariViewController(url: url), animated: true) {
+                call.resolve()
+            }
+        }
+    }
 }
 
 /// Saves a PNG straight to the Photos library (JS: `SavePhoto.save({ data })`,
