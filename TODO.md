@@ -562,12 +562,28 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
         Bird's Eye at 8000, together with multi-pass iteration state in
         float textures (+150-250 lines; see Deep-zoom engine). Test: 20
         zoom-ins at 8000 without context loss
+        TRIED 2026-11-21 (spike branch `worktree-agent-a0797b6af4de56763`,
+        `#fence`, not merged; the user's iPhone in Safari, fresh Safari for
+        each run, Bird's Eye, 20 pinch zoom-ins): the pacing worked (every
+        submission 23-70 ms, 300+ per run) and the context was lost anyway,
+        at 4-10 zoom-ins, the same as the unpaced baseline at detail 8000;
+        the baseline at detail 2000 survived all 20. So the loss is not
+        long GPU submissions; it comes with the 8000 setting. Gate not met.
+        Not built. Note for any phone test: force-quit Safari before each
+        run, or leftover pages make every run fail sooner (that cost one
+        misleading run)
       - Offscreen float accumulation buffer instead of
         `preserveDrawingBuffer` + `alpha:false` (~100-140 lines; the phone
         has no `EXT_float_blend`, so use RGBA16F, which blends, or a
         ping-pong pair with the average done in the shader). Enables
         the two items above and "Render past the screen edges"; touches
         Save/Share readback and the preview snapshot path
+        TRIED 2026-11-21 (same spike, `#accum`): on the iPhone at detail
+        8000 it lost graphics within 1-3 zoom-ins (the baseline took 4-10),
+        its deep passes ran 500-990 ms unpaced, and the report logged the
+        RGBA16F framebuffer going incomplete at the loss. No gain, so it
+        doesn't pay by itself; "Render past the screen edges" would need a
+        different route. Not built
       - Dynamic resolution during live float32 gestures, driven by frame
         time (~50 lines)
       - GPU chaos game for the point-based IFS modes: WebGL2 point splats,
