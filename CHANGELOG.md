@@ -3,6 +3,8 @@
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
 ## Unreleased
+- Added: a "Learn more" link at the bottom of the info card for 26 fractals and shapes. In the app it opens the Wikipedia article in a web view inside the app; on the web, in a new tab. VoiceOver says which article.
+- Changed: at the largest text sizes the info card drops its technical readout and center point first so the Learn more row stays visible, and on landscape phones the description yields to the row.
 - Added: long-press the app icon and tap Surprise Me to fly to a random place.
 - Changed: the Reset buttons are named "Whole shape" (they were "Show whole shape"), one short name for VoiceOver and Voice Control.
 

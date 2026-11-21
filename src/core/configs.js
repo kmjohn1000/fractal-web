@@ -30,36 +30,40 @@ export const PHOENIX_P = [-0.5, 0];
 // opens in until the user picks one (see applyDefaultColormap in
 // state-colors.js); without it, the first colormap, Inferno. Chosen by looking
 // at each fractal's views in every palette, not by rule.
+// wiki (optional) is the Wikipedia article (or a section of one) for the "Learn more" row in the info card; left
+// out where no article fits (Celtic, Phoenix, Julia:Phoenix, Spider, Magnet I and II, Sine Julia, Sine plane, Sine L-plane),
+// which hides the row. Only https://en.wikipedia.org/ addresses (Platform.openLink refuses the rest). The EXTRA_MODES
+// entries (fractal-defs.js) carry the same field.
 export const FRACTAL_CONFIGS = {
   // The escape-time and Julia boxes are the sets' measured extents
   // (antenna/tips included; for dust-like Julia sets, points surviving 60+
   // iterations) plus a ~0.1 margin, so each opens filling the screen.
   // Tricorn's tips reach y = +-1.54, which its old +-1.25 box clipped even
   // before aspect fitting.
-  "Mandelbrot":   { label: "Mandelbrot", ftype: FTYPE.ESCAPE,  power: 2, juliaC: null,               view: [-2.15, 0.65, -1.25, 1.25], dual: true,  category: "zoom" },
+  "Mandelbrot":   { label: "Mandelbrot", ftype: FTYPE.ESCAPE,  power: 2, juliaC: null,               view: [-2.15, 0.65, -1.25, 1.25], dual: true,  category: "zoom", wiki: "https://en.wikipedia.org/wiki/Mandelbrot_set" },
   // flipY: the screen's up is -Im c, the classic picture with the ship's masts
   // up (the set sits at Im c < 0). A view of this fractal carries the flag as
   // state.flipY (see freshState and screenToComplex); share links without
   // the fl field open without it, as they always did.
-  "Burn. Ship":   { label: "Burning Ship", ftype: FTYPE.SHIP,    power: 2, juliaC: null,               view: [-2.15, 1.25, -1.85, 0.65], dual: true,  category: "zoom", flipY: true, defaultColormap: "Fire" },
-  "Tricorn":      { label: "Tricorn", ftype: FTYPE.TRICORN, power: 2, juliaC: null,               view: [-2.1,  1.15, -1.7,  1.7],  dual: true,  category: "zoom", defaultColormap: "Classic" },
+  "Burn. Ship":   { label: "Burning Ship", ftype: FTYPE.SHIP,    power: 2, juliaC: null,               view: [-2.15, 1.25, -1.85, 0.65], dual: true,  category: "zoom", flipY: true, defaultColormap: "Fire", wiki: "https://en.wikipedia.org/wiki/Burning_Ship_fractal" },
+  "Tricorn":      { label: "Tricorn", ftype: FTYPE.TRICORN, power: 2, juliaC: null,               view: [-2.1,  1.15, -1.7,  1.7],  dual: true,  category: "zoom", defaultColormap: "Classic", wiki: "https://en.wikipedia.org/wiki/Tricorn_(mathematics)" },
   "Celtic":       { label: "Celtic Mandelbrot", ftype: FTYPE.CELTIC, power: 2, juliaC: null,     view: [-2.0,  0.45, -1.85, 1.85], dual: true,  category: "zoom" },
-  "Multibrot³": { label: "Multibrot³", ftype: FTYPE.ESCAPE, power: 3, juliaC: null,             view: [-0.82, 0.82, -1.45, 1.45], dual: true,  category: "zoom", defaultColormap: "Viridis" },
+  "Multibrot³": { label: "Multibrot³", ftype: FTYPE.ESCAPE, power: 3, juliaC: null,             view: [-0.82, 0.82, -1.45, 1.45], dual: true,  category: "zoom", defaultColormap: "Viridis", wiki: "https://en.wikipedia.org/wiki/Multibrot_set" },
   // Needs the previous iterate as state, so no perturbation (deep zoom) path
   // -- see perturbationEligibleType.
   "Phoenix":      { label: "Phoenix", ftype: FTYPE.PHOENIX, power: 2, juliaC: null,               view: [-2.0, 0.65, -0.78, 0.78], dual: true,  category: "zoom", defaultColormap: "Hot" },
   // A Julia preset has no dual view of its own; dualParent is the set whose
   // dual view shows it (see openPresetInDual): the parent in the main pane,
   // centered on the preset's c, and the preset in the Julia pane.
-  "Julia:Rabbit": { label: "Douady rabbit", group: "julia", ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.12256, 0.74486], view: [-1.42, 1.42, -1.2, 1.2], dual: false, dualParent: "Mandelbrot", category: "zoom" },
-  "Julia:Dragon": { label: "Dragon", group: "julia", ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.4, 0.6],         view: [-1.5, 1.5, -1.1, 1.1],   dual: false, dualParent: "Mandelbrot", category: "zoom" },
-  "Julia:Spiral": { label: "Spiral", group: "julia", ftype: FTYPE.ESCAPE,  power: 2, juliaC: [0.285, 0.01],       view: [-0.95, 0.95, -1.2, 1.2], dual: false, dualParent: "Mandelbrot", category: "zoom" },
+  "Julia:Rabbit": { label: "Douady rabbit", group: "julia", ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.12256, 0.74486], view: [-1.42, 1.42, -1.2, 1.2], dual: false, dualParent: "Mandelbrot", category: "zoom", wiki: "https://en.wikipedia.org/wiki/Douady_rabbit" },
+  "Julia:Dragon": { label: "Dragon", group: "julia", ftype: FTYPE.ESCAPE,  power: 2, juliaC: [-0.4, 0.6],         view: [-1.5, 1.5, -1.1, 1.1],   dual: false, dualParent: "Mandelbrot", category: "zoom", wiki: "https://en.wikipedia.org/wiki/Julia_set#Quadratic_polynomials" },
+  "Julia:Spiral": { label: "Spiral", group: "julia", ftype: FTYPE.ESCAPE,  power: 2, juliaC: [0.285, 0.01],       view: [-0.95, 0.95, -1.2, 1.2], dual: false, dualParent: "Mandelbrot", category: "zoom", wiki: "https://en.wikipedia.org/wiki/Julia_set#Quadratic_polynomials" },
   "Julia:Phoenix": { label: "Phoenix", ariaLabel: "Phoenix Julia set", group: "julia", ftype: FTYPE.PHOENIX, power: 2, juliaC: [0.5667, 0],        view: [-0.8, 0.88, -1.38, 1.38], dual: false, dualParent: "Phoenix", category: "zoom", defaultColormap: "Hot" },
-  "Newton z³": { label: "Newton's method", ftype: FTYPE.NEWTON, power: 3, juliaC: null,              view: [-2.0, 2.0, -1.5, 1.5],   dual: false, category: "zoom" },
+  "Newton z³": { label: "Newton's method", ftype: FTYPE.NEWTON, power: 3, juliaC: null,              view: [-2.0, 2.0, -1.5, 1.5],   dual: false, category: "zoom", wiki: "https://en.wikipedia.org/wiki/Newton_fractal" },
   // Newton's method for z^3 - 1 plus the pixel's c, started at z = 1 (see
   // renderNova). Float32 only, no deep zoom: NOVA_MIN_SCALE (deepzoom.js)
   // stops the zoom where float32 gives out.
-  "Nova":         { label: "Nova", ftype: FTYPE.NOVA, power: 3, juliaC: null,                          view: [-1.5349683626594732, 0.7651604068431261, -1.103032752613002, 1.1970960168895974],   dual: false, category: "zoom", defaultColormap: "Classic" },
+  "Nova":         { label: "Nova", ftype: FTYPE.NOVA, power: 3, juliaC: null,                          view: [-1.5349683626594732, 0.7651604068431261, -1.103032752613002, 1.1970960168895974],   dual: false, category: "zoom", defaultColormap: "Classic", wiki: "https://en.wikipedia.org/wiki/Newton_fractal#Nova_fractal" },
   // z <- z^2 + c, then c <- z + c/2, from z = c = the pixel (see renderEscapeFast). Float32 only, no deep zoom:
   // SPIDER_MIN_SCALE (deepzoom.js) stops the zoom where float32 gives out.
   "Spider":       { label: "Spider", ftype: FTYPE.SPIDER, power: 2, juliaC: null,                       view: [-1.62, 0.44, -1.3, 1.3], dual: false, category: "zoom", defaultColormap: "Turbo" },
@@ -81,10 +85,10 @@ export const FRACTAL_CONFIGS = {
   // Digit-test fractals (see FRAG_SRC's renderDigitFractal) — defined on
   // the unit square, so centered there with a little margin. power is
   // unused by these but kept non-null for consistency with the others.
-  "Carpet":       { label: "Sierpinski carpet", ftype: FTYPE.CARPET,  power: 2, juliaC: null,               view: [-0.15, 1.15, -0.15, 1.15], dual: false, category: "zoom", defaultColormap: "Glacier" },
-  "Gasket":       { label: "Sierpinski gasket", ftype: FTYPE.GASKET,  power: 2, juliaC: null,               view: [-0.15, 1.15, -0.15, 1.15], dual: false, category: "zoom", defaultColormap: "Plasma" },
+  "Carpet":       { label: "Sierpinski carpet", ftype: FTYPE.CARPET,  power: 2, juliaC: null,               view: [-0.15, 1.15, -0.15, 1.15], dual: false, category: "zoom", defaultColormap: "Glacier", wiki: "https://en.wikipedia.org/wiki/Sierpi%C5%84ski_carpet" },
+  "Gasket":       { label: "Sierpinski gasket", ftype: FTYPE.GASKET,  power: 2, juliaC: null,               view: [-0.15, 1.15, -0.15, 1.15], dual: false, category: "zoom", defaultColormap: "Plasma", wiki: "https://en.wikipedia.org/wiki/Sierpi%C5%84ski_triangle" },
   // The packing fills the unit circle (see APOLLO_DUAL).
-  "Apollonian":   { label: "Apollonian gasket", ftype: FTYPE.APOLLONIAN, power: 2, juliaC: null,         view: [-1.05, 1.05, -1.05, 1.05], dual: false, category: "zoom" },
+  "Apollonian":   { label: "Apollonian gasket", ftype: FTYPE.APOLLONIAN, power: 2, juliaC: null,         view: [-1.05, 1.05, -1.05, 1.05], dual: false, category: "zoom", wiki: "https://en.wikipedia.org/wiki/Apollonian_gasket" },
 };
 export const FRACTAL_NAMES = Object.keys(FRACTAL_CONFIGS);
 // FRACTAL_CONFIGS keys double as share-link ids (f=...), so they never
