@@ -72,6 +72,7 @@ import * as canvasA11y from "./ui/canvas-a11y.js?v=1.88.4";
 import * as controlsFade from "./ui/controls-fade.js?v=1.88.4";
 import * as firstRunTour from "./ui/first-run-tour.js?v=1.88.4";
 import { maybeStartTour } from "./ui/first-run-tour.js?v=1.88.4";
+import * as accent from "./ui/accent.js?v=1.88.4";
 import * as toolbarA11y from "./ui/toolbar-a11y.js?v=1.88.4"; // last: it attaches its observers on load, after every module above has run
 
 exposeForTests({
@@ -88,7 +89,7 @@ exposeForTests({
   "src/ui/compass-ui.js": compassUi, "src/ui/teleport.js": teleport, "src/ui/pattern-controls.js": patternControls, "src/ui/colormap-picker.js": colormapPicker,
   "src/ui/color-sheet.js": colorSheet, "src/ui/places-sheet.js": placesSheet, "src/ui/share.js": share, "src/ui/share-menu.js": shareMenu,
   "src/fractals/chaos-run.js": chaosRunModule,
-  "src/ui/review-prompt.js": reviewPrompt, "src/ui/shake.js": shake, "src/ui/quick-actions.js": quickActions,"src/fractals/penrose.js": penrose, "src/ui/toolbar-a11y.js": toolbarA11y, "src/ui/controls-fade.js": controlsFade, "src/ui/first-run-tour.js": firstRunTour,"src/ui/canvas-a11y.js": canvasA11y, "src/ui/fractal-picker.js": fractalPicker,
+  "src/ui/review-prompt.js": reviewPrompt, "src/ui/shake.js": shake, "src/ui/quick-actions.js": quickActions,"src/fractals/penrose.js": penrose, "src/ui/toolbar-a11y.js": toolbarA11y, "src/ui/controls-fade.js": controlsFade, "src/ui/first-run-tour.js": firstRunTour, "src/ui/accent.js": accent,"src/ui/canvas-a11y.js": canvasA11y, "src/ui/fractal-picker.js": fractalPicker,
 });
 
 // Pasting a different link into an open tab only changes the hash.

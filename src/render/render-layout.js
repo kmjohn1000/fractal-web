@@ -13,6 +13,7 @@ import { colormapIndex, vectorLite } from "../core/state-colors.js?v=1.88.4";
 import { dragonNav, fernNav, hexaflakeNav, kochNav, treeNav, vectorFitHalfHeight } from "../ui/vector-interaction.js?v=1.88.4";
 import { flash, prefersReducedMotion, updateCompasses } from "../ui/compass-ui.js?v=1.88.4";
 import { cmGradient, labelColorButton } from "../ui/colormap-picker.js?v=1.88.4";
+import { syncAccent } from "../ui/accent.js?v=1.88.4";
 import { COLOR_LOOKS, colorSheetStyles, currentLookId } from "../ui/color-sheet.js?v=1.88.4";
 import { scheduleCanvasA11y } from "../ui/canvas-a11y.js?v=1.88.4";
 import { reviewNoteDeep } from "../ui/review-prompt.js?v=1.88.4";
@@ -26,6 +27,7 @@ export function updateLUT() {
   juliaRenderer.setLUT(bytes);
   const cm = COLORMAPS[colormapIndex];
   els.colormapPill.style.background = cmGradient(cm.stops);
+  syncAccent();
   labelColormapButton();
 }
 

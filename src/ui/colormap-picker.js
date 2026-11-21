@@ -11,6 +11,7 @@ import { treeSwatchStops } from "../fractals/pythagoras.js?v=1.88.4";
 import { hexaflakeShade } from "../fractals/hexaflake.js?v=1.88.4";
 import { dragonView, els, fernView, vectorColors } from "../core/state.js?v=1.88.4";
 import { colorSheetApplies, colorSheetSolid, openColorSheet, openSolidColorSheet } from "./color-sheet.js?v=1.88.4";
+import { syncAccent } from "./accent.js?v=1.88.4";
 
 // ---------------------------------------------------------------- color buttons
 
@@ -79,6 +80,7 @@ export function updateColorSwatches() {
   });
   // The ring on the chaos-game Play (chaos-run.js, the .ring rules in index.html) takes the dot shape's picked color.
   const ring = SOLID_COLORS[vectorColors[fernView.system]];
+  syncAccent();
   if (ring) document.getElementById("fernReplayBtn").style.setProperty("--run-ring", `rgb(${ring.rgb.map((v) => Math.round(v)).join(",")})`);
 }
 

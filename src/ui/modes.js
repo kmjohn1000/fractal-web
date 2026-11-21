@@ -17,6 +17,7 @@ import { cancelTeleport } from "./teleport.js?v=1.88.4";
 import { restoreToolbarFlow } from "./controls-fade.js?v=1.88.4";
 import { stopDepthPlay } from "./pattern-controls.js?v=1.88.4";
 import { updateColorSwatches } from "./colormap-picker.js?v=1.88.4";
+import { syncAccent } from "./accent.js?v=1.88.4";
 import { applyCornerRule, dealCornerRule } from "../fractals/corner-rules.js?v=1.88.4";
 
 // ---------------------------------------------------------------- fractal-type / mode switching
@@ -239,6 +240,7 @@ export function setMode(next) {
   // First visit to a vector mode: fit its view now that its canvas is
   // visible and has a real size (later visits keep wherever you left it).
   if (mode !== "fractal" && !fittedVectorModes.has(mode)) fitVectorView(mode);
+  syncAccent(); // the accent follows the palette (or solid color) of the mode now shown
   updateMenuActiveState();
   requestRender();
 }

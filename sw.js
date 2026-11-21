@@ -51,6 +51,7 @@ const APP_SHELL = [
   "./src/ui/controls-fade.js",
   "./src/ui/dive-style.js",
   "./src/ui/first-run-tour.js",
+  "./src/ui/accent.js",
   "./src/ui/colormap-picker.js",
   "./src/ui/compass-ui.js",
   "./src/ui/fractal-picker.js",
