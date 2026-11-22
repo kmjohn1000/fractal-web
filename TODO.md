@@ -782,6 +782,23 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
       dual view's orbit row is 2*(maxIter+1) texels; iPhone's
       MAX_TEXTURE_SIZE is 16384). It is step 1 of the "Deep-zoom order"
       item under Later.
+      PHONE TEST 2026-11-21 (the user's iPhone 15 in Safari, fresh Safari
+      for each run, Bird's Eye, about 20 pinch zoom-ins a run): the trigger
+      is the work one draw does on a pixel. One draw at 2000 with the
+      shader's loop compiled to 8000 held (about 29 zoom-ins), so the
+      compiled bound is not it; one draw at 3000 held once (about 29);
+      one draw at 4000 lost the context, as 8000 always has. With the
+      iterations split over draws, each pixel's state kept in float
+      textures between them, 8000 held in every run: at 1000 a draw
+      (about 23 zoom-ins) and at 2000 a draw (about 28 and 22). So
+      multi-pass iteration is the route, with no draw iterating a pixel
+      more than about 2000 times. Cost on that phone: about 0.9 s a pass
+      at 8000 and 2000 a draw, with one bounded draw submitted at a time
+      behind a fence so the page is never blocked, against about 0.27 s
+      for today's one draw at 2000. Also measured: the float32 deltas give
+      about 91% of sampled pixels the exact count at Bird's Eye at 8000
+      (98% at 2000), in one draw or many; the rest fall in the speckle.
+      Not tried: any other device, the app's web view, a long hot session
 - [ ] Playful Surprise-me ideas (same research, 2026-10-15):
       - Top 3:
         - Rare "golden" places drawn about 1 in 15 taps, with a gold "Rare
