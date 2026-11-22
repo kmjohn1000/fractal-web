@@ -31,6 +31,8 @@
 //   loopAudio optional, a looping Short: fadeOut 0 (no fade to black) and the bed folded so its end runs into its start,
 //             crossfading this many seconds (the audio master must be at least seconds + loopAudio long)
 //   renderer  { type: "dive", ... } or { type: "capture", ... }  (below)
+//   (renderer "tree": the app's Pythagoras tree recolored per frame, a fractional depth, a sky glow, falling petals/leaves/snow
+//    and a small label; see renderTreeFrames below and scripts/shorts/fractal-tree-seasons.mjs)
 //   audio     the sound bed: an object, or a function ({layout, meta, seconds}) => object (below)
 //   post      the post.md text: an object, or a function ({layout, meta, facts}) => object
 //             { titles: [3 strings], notes (files line), description, hashtags, pinned,
@@ -89,6 +91,7 @@
 //   {type:"plucks", gain, voice: {partials: [[ratio, amp, tau]], attack, length}, echo,
 //      events: [{t, hz, gain, pan: -1..1}]}   one short decaying tone per event, placed to the sample
 //   {type:"shimmer", gain, seed, bands: [{hp, lp, env: "<expression in t>"}]}   filtered noise
+//   {type:"wav", file, gain}   a rendered sound file (scripts/shorts/sleighbells.csd is a Csound example), mixed from time 0
 //
 // ------------------------------------------------------------------ commands
 //   frames    render the picture: dive = shoot every frame in headless WebKit; capture =
@@ -134,7 +137,7 @@
 import { webkit } from "@playwright/test";
 import { spawn, spawnSync } from "node:child_process";
 /* global window, setMode, fernView, vectorColors, SOLID_COLORS, fernState, els, fitVectorView, setIfsRandom,
-   fernRenderOpts, syncReplayButtons, IFS_SYSTEMS, replayTimeOf, ifsTransformColors */
+   fernRenderOpts, syncReplayButtons, IFS_SYSTEMS, replayTimeOf, ifsTransformColors, treeView, treeState, vectorFitView */
 /* eslint no-unused-vars: ["error", { "vars": "local" }] */
 // (the globals are the app's: the callbacks given to page.evaluate run inside the page)
 import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
@@ -422,7 +425,7 @@ async function renderDiveFrames() {
       const file = join(framesDir, `${pad(i)}.jpg`);
       if (resume && existsSync(file)) continue;
       const s = path(i / FPS);
-      const base = { cx: s.cx, cy: s.cy, scale: s.scale, offset: s.offset, rotation: s.rotation, fractal: s.fractal, roots: s.roots };
+      const base = { cx: s.cx, cy: s.cy, scale: s.scale, offset: s.offset, rotation: s.rotation, fractal: s.fractal, roots: s.roots, maxIter: s.maxIter };
       const blended = s.layers.slice(1).filter((l) => l.weight > 0.002);
       // The base picture; while a further layer (the Bands look) is still dissolving, a
       // shot of it is blended in over the picture (ImageMagick).
@@ -489,6 +492,41 @@ async function renderKochFrames() {
       const file = join(framesDir, `${pad(i)}.jpg`);
       if (resume && existsSync(file)) continue;
       const s = path(i / FPS);
+      if (s.flakes) { // several snowflakes, each shot alone, laid over one backdrop in order, a later one on top (a hard overlap)
+        const tmp = join(workDir, "tmp"), bg = join(tmp, "backdrop.png");
+        if (!existsSync(bg)) {
+          mkdirSync(tmp, { recursive: true });
+          await page.evaluate(`(() => { kochState.depth = 0; Object.assign(kochView.view, { cx: 100, cy: 100, halfHeight: 1, rotation: 0 }); kochView.cancelGrow(); requestRender(); })()`);
+          await page.evaluate("new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))");
+          await page.screenshot({ path: bg, type: "png", animations: "disabled", caret: "hide" });
+        }
+        const args = [bg];
+        for (const [k, f] of s.flakes.entries()) {
+          if (f.alpha <= 0.002) continue;
+          await page.evaluate(`(() => {
+            const f = ${JSON.stringify(f)};
+            kochState.depth = f.depth; kochState.fill = f.fill ?? true;
+            Object.assign(kochView.view, { cx: 0, cy: 0, rotation: 0 }, f.view);
+            window.__clk = 1000;
+            if (f.grow != null && f.grow < 1) { kochView.startGrow(f.depth, 1000); window.__clk = 1000 + f.grow * 1000; } else kochView.cancelGrow();
+            for (const id of ["__cap", "__note"]) { const e = document.getElementById(id); e.textContent = ""; e.style.opacity = 0; }
+            requestRender();
+          })()`);
+          await page.evaluate("new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))");
+          const shot = join(tmp, `flake${k}.png`);
+          await page.screenshot({ path: shot, type: "png", animations: "disabled", caret: "hide" });
+          // the flake laid over what is below it (a hard overlap): hue-turned to its color, cut out by where its shot differs
+          // from the backdrop, the cutout softened by 3% and dimmed by the flake's alpha
+          args.push("(", shot, "-alpha", "off", ...(f.hue ? ["-modulate", `100,100,${(100 + ((((f.hue % 360) + 540) % 360) - 180) / 1.8).toFixed(3)}`] : []), ")",
+            "(", shot, bg, "-compose", "difference", "-composite", "-alpha", "off", "-colorspace", "gray", "-level", "0,3%", ...(f.alpha < 1 ? ["-evaluate", "multiply", f.alpha.toFixed(4)] : []), ")", "-compose", "over", "-composite");
+        }
+        if (s.dim > 0.002) args.push("-fill", "black", "-colorize", `${(Math.min(1, s.dim) * 100).toFixed(1)}%`);
+        const r = spawnSync("magick", [...args, "-quality", "95", file]);
+        if (r.status !== 0) throw new Error(`magick failed: ${r.stderr}`);
+        done++;
+        if (done % 30 === 0) console.log(`${((Date.now() - t0) / 1000).toFixed(0)}s  frame ${i + 1}/${N}`);
+        continue;
+      }
       await page.evaluate(`(() => {
         const s = ${JSON.stringify(s)};
         kochState.depth = s.depth; kochState.fill = s.fill ?? true;
@@ -501,6 +539,91 @@ async function renderKochFrames() {
         document.getElementById("__dim").style.opacity = s.dim || 0;
         requestRender();
       })()`);
+      await page.evaluate("new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))");
+      await page.screenshot({ path: file, type: "jpeg", quality: 95, animations: "disabled", caret: "hide" });
+      done++;
+      if (done % 60 === 0) console.log(`${((Date.now() - t0) / 1000).toFixed(0)}s  frame ${i + 1}/${N}`);
+    }
+    if (errors.length) throw new Error(`page errors: ${errors.join("; ")}`);
+  } finally {
+    await close();
+  }
+  console.log(`${done} frames in ${((Date.now() - t0) / 1000).toFixed(0)} s -> ${framesDir}`);
+}
+
+// ---------------------------------------------------------------- tree renderer
+// The app's Pythagoras tree view (Canvas2D), recolored every frame: a Short can walk its one picked color through the seasons.
+// R.path(seconds) -> (t) => { depth (a fraction: level floor(depth)+1 is blended in at the fraction, so the tree grows and
+// sheds its finest level smoothly), color [r, g, b] (the picked color; the trunk keeps the app's wood under "Green"),
+// rotation (radians, a sway), sky [r, g, b, alpha] (a glow laid over the dark backdrop with `lighten`, so the tree's own
+// pixels are not touched), particles [{x, y, r, rot, a, kind: "petal"|"leaf"|"snow", color: [r, g, b]}] (css px of the page,
+// drawn on an overlay canvas), label {text, alpha}, dim (0..1) }. The app is not changed: each frame adds a SOLID_COLORS
+// entry named "Green" (the tree view builds its style table from the index it is given) and draws treeView itself.
+async function renderTreeFrames() {
+  mkdirSync(framesDir, { recursive: true });
+  const dsf = R.dsf ?? 1;
+  const { page, errors, close } = await openApp({ width: W / dsf, height: H / dsf, dsf, passCount: passes });
+  const t0 = Date.now();
+  let done = 0;
+  try {
+    await page.evaluate(`(() => {
+      __vt.mode("tree");
+      window.__fit = vectorFitView("tree");
+      const mk = (tag, id, css) => { const d = document.createElement(tag); d.id = id; d.style.cssText = css; document.body.appendChild(d); return d; };
+      const k = ${dsf};
+      mk("div", "__sky", "position:fixed;inset:0;z-index:30;mix-blend-mode:lighten;pointer-events:none;opacity:0");
+      const fx = mk("canvas", "__fx", "position:fixed;left:0;top:0;width:100%;height:100%;z-index:40;pointer-events:none");
+      fx.width = Math.round(window.innerWidth * k); fx.height = Math.round(window.innerHeight * k);
+      window.__off = document.createElement("canvas");
+      mk("div", "__cap", "position:fixed;left:0;right:0;top:${R.labelTop ?? "8%"};text-align:center;color:#fff;z-index:50;white-space:pre-line;line-height:1.18;" +
+        "font:italic 400 " + (${R.labelSize ?? 64} / k) + "px ui-serif,'New York',Georgia,serif;letter-spacing:0.03em;text-shadow:0 " + (${R.labelSize ?? 64} * 0.04 / k) + "px " + (${R.labelSize ?? 64} * 0.3 / k) + "px rgba(0,0,0,0.65);opacity:0;pointer-events:none");
+      mk("div", "__dim", "position:fixed;inset:0;background:#000;z-index:60;opacity:0;pointer-events:none");
+      window.__drawTree = (s) => {
+        SOLID_COLORS.push({ name: "Green", rgb: s.color.map((v) => Math.max(0, Math.min(255, Math.round(v)))) });
+        const idx = SOLID_COLORS.length - 1, cv = els.treeCanvas, ctx = cv.getContext("2d");
+        Object.assign(treeView.view, { cx: __fit.cx + (s.dx || 0), cy: __fit.cy + (s.dy || 0), halfHeight: __fit.scale * (s.zoom || 1), rotation: s.rotation || 0 });
+        treeState.depth = Math.floor(s.depth);
+        vectorColors.tree = idx;
+        const opts = (d) => ({ depth: d, colorIndex: idx, fitHalfHeight: __fit.scale, lite: false });
+        const d0 = Math.floor(s.depth), g = s.depth - d0;
+        if (g > 0.003) {
+          treeView.render(opts(d0 + 1));
+          __off.width = cv.width; __off.height = cv.height;
+          __off.getContext("2d").drawImage(cv, 0, 0);
+          treeView.render(opts(d0));
+          ctx.globalAlpha = g; ctx.drawImage(__off, 0, 0); ctx.globalAlpha = 1;
+        } else treeView.render(opts(d0));
+        const sky = document.getElementById("__sky");
+        if (s.sky) {
+          sky.style.background = "radial-gradient(ellipse 85% 60% at 50% 38%, rgba(" + s.sky.slice(0, 3).join(",") + ",1) 0%, rgba(" + s.sky.slice(0, 3).join(",") + ",0) 100%)";
+          sky.style.opacity = s.sky[3];
+        } else sky.style.opacity = 0;
+        const f = document.getElementById("__fx"), c = f.getContext("2d"), K = f.width / window.innerWidth;
+        c.clearRect(0, 0, f.width, f.height);
+        for (const p of s.particles || []) {
+          c.save(); c.translate(p.x * K, p.y * K); c.rotate(p.rot); c.globalAlpha = p.a;
+          const col = "rgb(" + p.color.join(",") + ")", r = p.r * K;
+          if (p.kind === "snow") {
+            const gr = c.createRadialGradient(0, 0, 0, 0, 0, r);
+            gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(0.45, "rgba(235,245,255,0.85)"); gr.addColorStop(1, "rgba(220,235,255,0)");
+            c.fillStyle = gr; c.beginPath(); c.arc(0, 0, r, 0, 6.2832); c.fill();
+          } else if (p.kind === "petal") {
+            c.fillStyle = col; c.beginPath(); c.ellipse(0, 0, r, r * 0.56, 0, 0, 6.2832); c.fill();
+          } else { // a leaf: a pointed oval
+            c.fillStyle = col; c.beginPath(); c.moveTo(-r, 0); c.quadraticCurveTo(0, -r * 0.7, r, 0); c.quadraticCurveTo(0, r * 0.7, -r, 0); c.fill();
+          }
+          c.restore();
+        }
+        const cap = document.getElementById("__cap");
+        cap.textContent = s.label?.text || ""; cap.style.opacity = s.label?.text ? s.label.alpha : 0;
+        document.getElementById("__dim").style.opacity = s.dim || 0;
+      };
+    })()`);
+    for (let i = 0; i < Math.min(N, Math.round(until * FPS)); i++) {
+      if (only.length ? !only.includes(i) : i % stride && i !== N - 1) continue;
+      const file = join(framesDir, `${pad(i)}.jpg`);
+      if (resume && existsSync(file)) continue;
+      await page.evaluate(`window.__drawTree(${JSON.stringify(path(i / FPS))})`);
       await page.evaluate("new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))");
       await page.screenshot({ path: file, type: "jpeg", quality: 95, animations: "disabled", caret: "hide" });
       done++;
@@ -864,6 +987,11 @@ function synthArgs(cfg, wavFile) {
       });
       parts.push(`${bl.join("")}amix=inputs=${bl.length}:normalize=0,volume=${L.gain}[sh${li}]`);
       mixIn.push(`[sh${li}]`);
+    } else if (L.type === "wav") { // a rendered sound file (e.g. from Csound), mixed in at its own time zero
+      if (!existsSync(L.file)) throw new Error(`audio layer file missing: ${L.file}`);
+      const idx = addInput(`amovie=filename='${L.file}'`);
+      parts.push(`[${idx}:a]aformat=channel_layouts=stereo,volume=${L.gain ?? 1}[wv${li}]`);
+      mixIn.push(`[wv${li}]`);
     } else throw new Error(`unknown audio layer type ${L.type}`);
   }
   parts.push(`${mixIn.join("")}amix=inputs=${mixIn.length}:normalize=0,aformat=channel_layouts=stereo[m]`);
@@ -1095,6 +1223,7 @@ if (command === "frames" || command === "build") {
     if (layout.seconds !== picSeconds) throw new Error(`the captured scenes make a ${layout.seconds} s picture, not ${picSeconds} s: run \`meta\` again, then \`build\``);
     await composeFrames();
   } else if (R.type === "koch") await renderKochFrames();
+  else if (R.type === "tree") await renderTreeFrames();
   else await renderDiveFrames();
 }
 if (command === "scenes" || command === "meta") await captureScenes();
