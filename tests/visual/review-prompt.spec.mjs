@@ -6,7 +6,7 @@
 // Plain behavior checks, no screenshots. Run through `npm run test:visual`.
 import { test, expect } from "@playwright/test";
 
-/* global reviewShouldAsk, reviewRecordDay, reviewParse, reviewDaysBetween, reviewMaybeAsk, reviewNoteOpen,
+/* global startTour, endTour, tourShowing, reviewTourUp, reviewShouldAsk,reviewRecordDay, reviewParse, reviewDaysBetween, reviewMaybeAsk, reviewNoteOpen,
    reviewLoad, reviewSave, reviewNoteDeep, REVIEW_KEY */
 
 let pageErrors = [];
@@ -121,6 +121,35 @@ test.describe("where it runs", () => {
     expect(r.again).toBe(false);
     expect(r.asksAfter).toBe(1);
     expect(r.failed).toBe(false);
+    expect(pageErrors).toEqual([]);
+  });
+
+  test("it never asks over the first-run tour, and asks at the next good moment once the tour is gone", async ({ page }) => {
+    await load(page);
+    const r = await page.evaluate(async () => {
+      window["__asks"] = 0;
+      const deps = { isNative: true, delayMs: 0, request: async () => { window["__asks"]++; }, today: () => "2026-11-02" };
+      const out = {};
+      reviewSave({ days: ["2026-11-01", "2026-11-02"], askedOn: null });
+      localStorage.removeItem("fractalAtlas.tourDone");
+      startTour();
+      out.tourUp = tourShowing() && reviewTourUp();
+      out.duringTour = await reviewMaybeAsk(deps);
+      out.asksDuring = window["__asks"];
+      out.storedDuring = reviewLoad().askedOn; // not written down, or the ask would be lost for 120 days
+      endTour();
+      out.tourGone = !tourShowing() && !reviewTourUp();
+      out.afterTour = await reviewMaybeAsk(deps);
+      out.asksAfter = window["__asks"];
+      return out;
+    });
+    expect(r.tourUp).toBe(true);
+    expect(r.duringTour).toBe(false);
+    expect(r.asksDuring).toBe(0);
+    expect(r.storedDuring).toBeNull();
+    expect(r.tourGone).toBe(true);
+    expect(r.afterTour).toBe(true);
+    expect(r.asksAfter).toBe(1);
     expect(pageErrors).toEqual([]);
   });
 

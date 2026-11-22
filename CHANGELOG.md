@@ -2,6 +2,9 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
+## Unreleased
+- Fixed: the rating request no longer appears on top of the first-run tour; it waits for the next good moment after the tour.
+
 ## 1.81.0 — 2026-11-22
 Everything since 1.80.0. This entry replaces the working versions 1.80.1 to 1.88.4 (2026-11-08 to 2026-11-21), which were renumbered into it on 2026-11-22; notes in the code and in commit messages that name those versions mean this one.
 - Added: Four Seasons, an animated place for the Pythagoras tree. It grows, then turns through spring blossom, summer green, autumn reds and a bare blue-white winter, with a gentle sway and falling petals, leaves and snow. Find it under the tree in Places; touch the tree to stop it. The Places sheet lists animated places after each fractal's flown-to places.

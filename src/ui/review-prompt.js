@@ -71,6 +71,13 @@ export function reviewNoteOpen(isNative = Platform.isNative, today = reviewDayKe
   if (next !== state) reviewSave(next);
 }
 
+// Whether the first-run tour is on screen (first-run-tour.js tourShowing; read from the page here, because that
+// file's imports lead back to render-layout.js, which imports this one).
+export function reviewTourUp() {
+  const tour = document.getElementById("tour");
+  return !!tour && !tour.classList.contains("hidden");
+}
+
 // Called after a successful save to Photos or share. Asks REVIEW_DELAY_MS later if the moment is
 // right, and writes down that it asked before it asks, so a crash can't make it ask twice.
 // `deps` lets the spec stand in for the app, the clock and the iOS call.
@@ -80,11 +87,14 @@ export function reviewMaybeAsk(deps = {}) {
     request = () => Platform.requestReview(),
     delayMs = REVIEW_DELAY_MS,
     today = reviewDayKey,
+    busy = reviewTourUp,
   } = deps;
   if (!isNative) return Promise.resolve(false);
   return new Promise((resolve) => {
     setTimeout(async () => {
       try {
+        // Not over the first-run tour: nothing is written down, so the next good moment after the tour asks.
+        if (busy()) { resolve(false); return; }
         const day = today();
         const state = reviewRecordDay(reviewLoad(), day);
         if (!reviewShouldAsk(state, day)) { resolve(false); return; }
