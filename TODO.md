@@ -70,6 +70,23 @@ privacy-label change.
 
 ## Now
 
+- [ ] The rating request can land on top of the first-run tour (seen
+      2026-11-22 in the 1.81.0 release's simulator check, at Seahorse
+      Valley on both devices; not approved, not built). The simulator had two
+      opened days, the view was deeper than `REVIEW_DEEP_SCALE` and sat for
+      4 s, so `reviewNoteDeep` asked while bubble 1 of 7 was up. On a phone
+      it needs an existing user who opens a deep link, or zooms past 1e-6
+      during the tour. Fix sketch: `reviewMaybeAsk` (`review-prompt.js`)
+      returns false while the tour is showing, with a case in the
+      review-prompt spec. Tier 2.
+
+- [ ] The store screenshots' place count differs from the app's: the
+      `5-burning-ship` promo caption counts `TELEPORT_DESTINATIONS` (162)
+      while the picker's Places row uses `placeCount()` (163, with the
+      animated Four Seasons), so shots 2 and 5 of one set disagree (seen in
+      the 1.81.0 set, 2026-11-22). Decide which number the caption means
+      (`counts()` in `scripts/store-screenshots.mjs`); tier 1.
+
 - [ ] Revisit the Grayscale palette (user, 2026-11-10: "I may want to
       revisit grayscale"). It has a mid-grey stop, `[0.50, 150, 150, 150]`
       in `colormaps.js` (it was a straight black-to-white ramp up to
