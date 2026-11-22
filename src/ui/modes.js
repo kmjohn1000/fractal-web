@@ -8,7 +8,7 @@ import { LINE_CURVES } from "../fractals/dragon.js?v=1.88.4";
 import { isCurveMode, isIfsMode, suggestedMaxIter, viewFromBounds } from "../fractals/fractal-defs.js?v=1.88.4";
 import { ignoresMaxIter } from "../fractals/digit-fractals.js?v=1.88.4";
 import { TELEPORT_DESTINATIONS } from "../fractals/places.js?v=1.88.4";
-import { applyAutoIter, currentName, dragonState, dragonView, dualActive, els, fernView, freshState, juliaHistory, juliaState, kochView, mainCanvasAspect, mainHistory, mainState, mode, setActivePane, setCurrentName, setDualActive, setJuliaHistory, setJuliaState, setMainHistory, setMainState, setModeKey } from "../core/state.js?v=1.88.4";
+import { applyAutoIter, currentName, dragonState, dragonView, dualActive, els, fernView, freshState, juliaHistory, juliaState, kochView, mainCanvasAspect, mainHistory, mainState, mode, setActivePane, setCurrentName, setDualActive, setJuliaHistory, setJuliaState, setMainHistory, setMainState, setModeKey, treeView } from "../core/state.js?v=1.88.4";
 import { setCenter } from "../core/view-math.js?v=1.88.4";
 import { applyDefaultColormap } from "../core/state-colors.js?v=1.88.4";
 import { crosshairFlash, labelColormapButton, layoutCanvasArea, requestRender } from "../render/render-layout.js?v=1.88.4";
@@ -198,6 +198,7 @@ export function setMode(next) {
   stopDepthPlay();
   kochView.cancelGrow();
   fernView.cancelReplay(); // any mode or shape switch ends a replay; the requestRender below draws normally
+  if (next !== "tree") treeView.season = null; // leaving the tree ends the Four Seasons look (tree-seasons-player.js)
   setModeKey(next);
   els.fractalTypeRow.classList.remove("open"); // collapse the picker on any mode switch
   els.shareMenu.classList.remove("open");

@@ -11,8 +11,10 @@
 // read placeId); see scripts/check-test-globals.mjs.
 
 import { FRACTAL_CONFIGS, fractalLabel, slugify } from "../core/configs.js?v=1.88.4";
-import { PICKER_LAYOUT, viewFromBounds } from "../fractals/fractal-defs.js?v=1.88.4";
+import { EXTRA_MODES, PICKER_LAYOUT, viewFromBounds } from "../fractals/fractal-defs.js?v=1.88.4";
 import { TELEPORT_DESTINATIONS } from "../fractals/places.js?v=1.88.4";
+import { SEASON_PLACES } from "../fractals/tree-seasons.js?v=1.88.4";
+import { flyToSeasonsPlace } from "./tree-seasons-player.js?v=1.88.4";
 import { currentName, dualActive, els, mainCanvasAspect, mode } from "../core/state.js?v=1.88.4";
 import { capitalize, zoomPhrase } from "./hud-format.js?v=1.88.4";
 import { exitDual, selectFractal } from "./modes.js?v=1.88.4";
@@ -51,7 +53,8 @@ export const placeId = (d) => `${slugify(d.fractal)}-${slugify(d.label)}`;
 // The fractals that have places, in the picker's order, each with its TELEPORT_DESTINATIONS indexes,
 // shallowest place first. A place's scale is the width of its view, so a larger scale is shallower;
 // every place in a group is measured against the same opening view, so comparing scales compares
-// depths (the sort is stable: equal scales keep their order in places.js).
+// depths (the sort is stable: equal scales keep their order in places.js). `animated`: the group's
+// animated places (SEASON_PLACES), listed after the flown-to ones; they have no depth.
 export function placeGroups() {
   const keys = PICKER_LAYOUT.flatMap((section) => section.groups.flatMap((group) => group.keys));
   return keys
@@ -59,13 +62,21 @@ export function placeGroups() {
       key,
       indexes: TELEPORT_DESTINATIONS.flatMap((d, i) => (d.fractal === key ? [i] : []))
         .sort((a, b) => TELEPORT_DESTINATIONS[b].scale - TELEPORT_DESTINATIONS[a].scale),
+      animated: SEASON_PLACES.flatMap((d, i) => (d.fractal === key ? [i] : [])),
     }))
-    .filter((g) => g.indexes.length > 0);
+    .filter((g) => g.indexes.length > 0 || g.animated.length > 0);
 }
+
+// How many places the sheet lists: the flown-to ones and the animated ones.
+export const placeCount = () => TELEPORT_DESTINATIONS.length + SEASON_PLACES.length;
+
+// A group's name, for a fractal (FRACTAL_CONFIGS) or a pattern mode (EXTRA_MODES).
+export const placeGroupLabel = (key) => (FRACTAL_CONFIGS[key] ? fractalLabel(key) : EXTRA_MODES.find((m) => m.key === key).label);
 
 // The chip strip's short name: "Julia: Rabbit" where the section title says "Julia set: Douady rabbit".
 export function placeChipLabel(key) {
   const c = FRACTAL_CONFIGS[key];
+  if (!c) return placeGroupLabel(key);
   return c.group === "julia" ? `Julia: ${c.label}` : c.label;
 }
 
@@ -101,6 +112,20 @@ export function placeRow(i, aspect) {
   return row;
 }
 
+// The row of an animated place (SEASON_PLACES[i]): the same row, saying "Plays" where the others say how deep
+// and "Play" where they say "Dive". A tap lands on the tree and plays it (tree-seasons-player.js).
+export function animatedPlaceRow(i) {
+  const d = SEASON_PLACES[i];
+  const img = colorSheetEl("img", { src: `icons/places/${placeId(d)}.webp`, alt: "", width: 64, height: 64, loading: "lazy", decoding: "async" });
+  img.addEventListener("error", () => { img.style.visibility = "hidden"; });
+  const row = colorSheetEl("button", { class: "placeRow", "data-place": placeId(d), "aria-label": `${d.label}, animated through the year. Play` },
+    img,
+    colorSheetEl("span", { class: "placeText" }, colorSheetEl("span", { class: "placeName" }, d.label), colorSheetEl("span", { class: "placeDepth" }, "Animated through the year")),
+    colorSheetEl("span", { class: "dive", "aria-hidden": "true" }, "Play"));
+  row.addEventListener("click", () => { closePlacesSheet(); flyToSeasonsPlace(i); });
+  return row;
+}
+
 // Builds the sheet's contents; it is rebuilt only when the depths in it would read differently (the
 // screen changed shape), since the places themselves never change.
 export function renderPlacesSheet() {
@@ -118,8 +143,8 @@ export function renderPlacesSheet() {
   const scroller = colorSheetEl("div", { class: "placesScroll" });
 
   const sections = groups.map((g) => {
-    const head = colorSheetEl("h3", { class: "placesGroupHead" }, fractalLabel(g.key), colorSheetEl("span", {}, String(g.indexes.length)));
-    const list = colorSheetEl("div", { class: "placesList" }, ...g.indexes.map((i) => placeRow(i, aspect)));
+    const head = colorSheetEl("h3", { class: "placesGroupHead" }, placeGroupLabel(g.key), colorSheetEl("span", {}, String(g.indexes.length + g.animated.length)));
+    const list = colorSheetEl("div", { class: "placesList" }, ...g.indexes.map((i) => placeRow(i, aspect)), ...g.animated.map((i) => animatedPlaceRow(i)));
     const section = colorSheetEl("section", { class: "placesGroup", "data-fractal": g.key }, head, list);
     const chip = colorSheetEl("button", { class: "chip", "data-fractal": g.key }, placeChipLabel(g.key));
     chip.addEventListener("click", () => scrollPlacesTo(section));
@@ -202,7 +227,7 @@ export function flyToPlaceFrom(i) {
 export const placesRow = colorSheetEl("button", { class: "placesRow", "aria-haspopup": "true", "data-opens-places": "" },
   placesIcon(),
   colorSheetEl("span", { class: "placesRowTitle" }, "Places"),
-  colorSheetEl("span", { class: "placesRowSub" }, `${TELEPORT_DESTINATIONS.length} named places to dive into`),
+  colorSheetEl("span", { class: "placesRowSub" }, `${placeCount()} named places to dive into`),
   colorSheetEl("span", { class: "placesRowGo", "aria-hidden": "true" }, "›"));
 els.fractalTypeRow.prepend(placesRow);
 

@@ -15,7 +15,8 @@ import { fractalLabel } from "../core/configs.js?v=1.88.4";
 import { limitScale } from "../core/deepzoom.js?v=1.88.4";
 import { isCurveMode, isIfsMode } from "../fractals/fractal-defs.js?v=1.88.4";
 import { cancelTeleport } from "./teleport.js?v=1.88.4";
-import { currentName, dualActive, els, mainState, mode, pushHistory, shownGeometry } from "../core/state.js?v=1.88.4";
+import { currentName, dualActive, els, mainState, mode, pushHistory, shownGeometry, treeView } from "../core/state.js?v=1.88.4";
+import { SEASON_PLAYING_LABEL } from "../fractals/tree-seasons.js?v=1.88.4";
 import { markInteracting } from "../core/state-colors.js?v=1.88.4";
 import { requestRender } from "../render/render-layout.js?v=1.88.4";
 import { activeVectorTarget } from "./vector-interaction.js?v=1.88.4";
@@ -85,6 +86,8 @@ export function describeCanvas() {
   // The pattern's picker name (the same one the info card titles it with), and the turn if it has one. The
   // depth stays on the mode's own buttons and info card; these views have no a11y zoom (see the header).
   const key = isCurveMode(mode) ? t.v.curve : isIfsMode(mode) ? t.v.system : mode;
+  // The Four Seasons place while its cycle plays (tree-seasons-player.js).
+  if (mode === "tree" && treeView.season?.playing) return { canvas: t.canvas, role: "img", label: SEASON_PLAYING_LABEL, valuetext: "", valuenow: 0 };
   const turn = rotationHudText(t.v.view.rotation);
   return { canvas: t.canvas, role: "img", label: `${modeLabel(key)}${turn ? `, ${turn.toLowerCase()}` : ""}`, valuetext: "", valuenow: 0 };
 }

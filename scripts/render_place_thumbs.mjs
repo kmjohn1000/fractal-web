@@ -1,5 +1,5 @@
 // Renders the Places sheet's thumbnails into icons/places/<id>.webp: each named place
-// (TELEPORT_DESTINATIONS) as it lands on an iPhone-shaped screen, cropped to the square that
+// (TELEPORT_DESTINATIONS, then the animated SEASON_PLACES) as it lands on an iPhone-shaped screen, cropped to the square that
 // spans the screen's width (the places are framed to fit a portrait phone's width) at
 // 160 px, with all 16 sharpening passes. Re-run after adding or moving a place:
 //
@@ -13,7 +13,7 @@
 // <folder>/icons/places/ instead of the project's icons/places/ (what `npm run smoke:scripts`
 // does).
 
-/* global document, window, requestAnimationFrame, TELEPORT_DESTINATIONS, placeId */
+/* global document, window, requestAnimationFrame, TELEPORT_DESTINATIONS, SEASON_PLACES, placeId, playSeasonsPlace, seasonsRun */
 import { createServer } from "node:http";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { extname, join, normalize, resolve } from "node:path";
@@ -22,6 +22,7 @@ import { chromium } from "@playwright/test";
 const root = new URL("..", import.meta.url).pathname;
 const outDir = join(process.env.SCRIPT_OUT_DIR ? resolve(process.env.SCRIPT_OUT_DIR) : root, "icons/places");
 const SIZE = 160; // px: 2x a 64 pt tile, plus a little
+const SEASONS_THUMB_S = 9; // seconds into the Four Seasons cycle that its thumbnail shows
 const PAGES = 4;
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".png": "image/png", ".webp": "image/webp", ".webmanifest": "application/manifest+json" };
 
@@ -49,7 +50,11 @@ let failures = 0;
 try {
   const probe = await browser.newPage();
   await probe.goto(appUrl);
-  const places = await probe.evaluate(() => TELEPORT_DESTINATIONS.map((d, i) => ({ i, id: placeId(d), label: d.label })));
+  // The animated places (SEASON_PLACES, listed under the tree) follow the flown-to ones; `season` is their index.
+  const places = await probe.evaluate(() => [
+    ...TELEPORT_DESTINATIONS.map((d, i) => ({ i, id: placeId(d), label: d.label })),
+    ...SEASON_PLACES.map((d, season) => ({ season, id: placeId(d), label: d.label })),
+  ]);
   await probe.close();
   const todo = places.filter((p) => (!filter || p.id.includes(filter.toLowerCase())) && (!missingOnly || !existsSync(join(outDir, `${p.id}.webp`)))).slice(0, limit);
   const ids = new Set(places.map((p) => p.id));
@@ -79,7 +84,12 @@ try {
     while (next < todo.length) {
       const p = todo[next++];
       try {
-        await page.evaluate((i) => window["__vt"].place(i), p.i);
+        if (p.season !== undefined) {
+          // Four Seasons: its blossom moment (pink canopy, petals falling), 9 s into the cycle.
+          await page.evaluate((t) => { playSeasonsPlace(); seasonsRun.t0 = performance.now() - t * 1000; }, SEASONS_THUMB_S);
+        } else {
+          await page.evaluate((i) => window["__vt"].place(i), p.i);
+        }
         await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
         await settle();
         await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
