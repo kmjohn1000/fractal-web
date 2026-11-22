@@ -1100,6 +1100,28 @@ Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation be
       control already offsets the palette (`u_offset` in `shaders.js`); the
       animation could drive that same uniform. (The old reference to a coloring "Style item"
       was stale: the Looks shipped in 1.40.0.)
+- [ ] Tree "seasons" mode (user idea 2026-11-21; idea only, not approved to
+      build): an animated cycle for the Pythagoras tree that blends its color
+      through spring green, blossom pink, summer green, autumn gold and red,
+      and a pale bare winter (depth eased down to about 7), with a slow sway
+      (small rotation about the trunk). The trigger is the user's own: shake
+      the tree and the leaves fall and the season changes (a shake of the
+      phone, through the motion sensor and a `Platform` call like the
+      haptics, plus a drag-wiggle on the web build; each shake advances one
+      season, leaves or blossoms falling off the finest levels as it turns).
+      Also (user idea 2026-11-21): the same cycle as a self-playing loop that
+      is a Place ("Four Seasons" under the tree), so it works on the web too
+      with no shake: landing on it starts the animation, a touch stops it.
+      Places are static views today (`TELEPORT_DESTINATIONS` in `places.js`:
+      fractal, center, scale, optional rotation and colormap), so this needs
+      a new optional field on a place for an animation, played by the tree
+      view.
+      The app's tree already takes any solid
+      color and a depth; what is missing is the blend between colors and the
+      timing. Could share the Colormap animation toggle above. A Short, "Fractal
+      Tree Through the Seasons", already shows the effect with extras (falling
+      petals, leaves and snow, a sky glow, labels) drawn by `scripts/make-short.mjs`'s
+      `tree` renderer, not by the app; those extras are not part of this item.
 - [ ] Koch snowflake Easter egg (user idea 2026-10-17; not approved to
       build). Trigger: a full 360° twist in one gesture on the Koch view.
       The snowflake splits into its seven-piece self-tiling (one copy at
