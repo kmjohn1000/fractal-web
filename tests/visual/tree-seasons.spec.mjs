@@ -7,7 +7,7 @@ import { test, expect } from "@playwright/test";
 import { writeFileSync } from "node:fs";
 
 /* global treeView, treeState, vectorColors, els, mode, setMode, seasonsRun, seasonsPlaying, SEASON_PLACES, SEASON_CYCLE_S,
-   seasonAt, placeId, requestRender, SOLID_COLORS */
+   seasonAt, SEASON_KINDS, seasonParticles, SEASON_PARTICLES_MAX, placeId, requestRender, SOLID_COLORS */
 
 const HIDE_TRANSIENTS = "#speedBubble, .compass, #crosshair { visibility: hidden !important; }";
 let pageErrors = [];
@@ -147,6 +147,26 @@ test("choosing the place lands on the tree and plays the cycle; four moments sho
 });
 
 const els_label = (page) => page.evaluate(() => els.treeCanvas.getAttribute("aria-label"));
+
+test("the falling things: leaves bigger than petals bigger than snowflakes, many leaves in autumn, a hard cap", async ({ page }) => {
+  await load(page);
+  const r = await page.evaluate(() => {
+    const size = Object.fromEntries(SEASON_KINDS.map((K) => [K.kind, K.r]));
+    const count = (t, kind) => seasonParticles(t, 400, 800, []).filter((p) => p.kind === kind).length;
+    let most = 0;
+    for (let t = 0; t < 30; t += 0.25) most = Math.max(most, seasonParticles(t, 400, 800, []).length);
+    return { size, petals: count(8.6, "petal"), leaves: count(19.8, "leaf"), leavesEarly: count(16.5, "leaf"), leavesLate: count(23, "leaf"), snow: count(25, "snow"), summer: seasonParticles(13, 400, 800, []).length, most, max: SEASON_PARTICLES_MAX };
+  });
+  expect(r.size.leaf[0], "the smallest leaf is bigger than the biggest petal").toBeGreaterThan(r.size.petal[1]);
+  expect(r.size.petal[0], "the smallest petal is bigger than the biggest flake").toBeGreaterThan(r.size.snow[1]);
+  expect(r.petals).toBeGreaterThan(0);
+  expect(r.leaves, "a gust of leaves: 3 to 4 times the old 40 at the peak").toBeGreaterThanOrEqual(120);
+  expect(r.leavesEarly, "the gust builds").toBeLessThan(r.leaves * 0.6);
+  expect(r.leavesLate, "and thins").toBeLessThan(r.leaves * 0.6);
+  expect(r.snow).toBeGreaterThan(0);
+  expect(r.summer).toBe(0);
+  expect(r.most, "never more than the hard cap").toBeLessThanOrEqual(r.max);
+});
 
 test("the tree sways a little while it plays", async ({ page }) => {
   await load(page);
