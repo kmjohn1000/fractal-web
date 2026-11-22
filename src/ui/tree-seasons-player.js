@@ -100,7 +100,7 @@ export function startSeasons() {
   const first = seasonLook(0);
   const season = { ...first, ...base, playing: true };   // `playing`: the canvas's screen-reader label says so (canvas-a11y.js)
   const overlay = seasonsOverlay();
-  const run = { gen, t0: performance.now(), last: -Infinity, overlay, ctx: overlay.getContext("2d"), season };
+  const run = { gen, t0: performance.now(), last: -Infinity, overlay, ctx: overlay.getContext("2d"), season, list: [] };
   seasonsRun = run;
   treeView.season = season;
   document.addEventListener("pointerdown", seasonsTouch, true);
@@ -116,7 +116,7 @@ export function startSeasons() {
       renderAll();
       const k = seasonsFitOverlay(overlay);
       run.ctx.clearRect(0, 0, overlay.width, overlay.height);
-      drawSeasonParticles(run.ctx, seasonParticles(t, overlay.width / k, overlay.height / k), k);
+      drawSeasonParticles(run.ctx, seasonParticles(t, overlay.width / k, overlay.height / k, run.list), k);
     }
     requestAnimationFrame(step);
   };
