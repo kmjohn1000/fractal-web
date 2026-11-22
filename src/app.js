@@ -60,6 +60,8 @@ import { updateColorSwatches } from "./ui/colormap-picker.js?v=1.88.4";
 import * as colorSheet from "./ui/color-sheet.js?v=1.88.4";
 import { fitColorSegment, prepareColorSheet } from "./ui/color-sheet.js?v=1.88.4";
 import * as placesSheet from "./ui/places-sheet.js?v=1.88.4";
+import * as treeSeasons from "./fractals/tree-seasons.js?v=1.88.4";
+import * as treeSeasonsPlayer from "./ui/tree-seasons-player.js?v=1.88.4";
 import * as share from "./ui/share.js?v=1.88.4";
 import { applyShareHashFromUrl, applyShareLink, parseShareHash } from "./ui/share.js?v=1.88.4";
 import * as shareMenu from "./ui/share-menu.js?v=1.88.4";
@@ -90,6 +92,7 @@ exposeForTests({
   "src/ui/color-sheet.js": colorSheet, "src/ui/places-sheet.js": placesSheet, "src/ui/share.js": share, "src/ui/share-menu.js": shareMenu,
   "src/fractals/chaos-run.js": chaosRunModule,
   "src/ui/review-prompt.js": reviewPrompt, "src/ui/shake.js": shake, "src/ui/quick-actions.js": quickActions,"src/fractals/penrose.js": penrose, "src/ui/toolbar-a11y.js": toolbarA11y, "src/ui/controls-fade.js": controlsFade, "src/ui/first-run-tour.js": firstRunTour, "src/ui/accent.js": accent,"src/ui/canvas-a11y.js": canvasA11y, "src/ui/fractal-picker.js": fractalPicker,
+  "src/fractals/tree-seasons.js": treeSeasons, "src/ui/tree-seasons-player.js": treeSeasonsPlayer,
 });
 
 // Pasting a different link into an open tab only changes the hash.

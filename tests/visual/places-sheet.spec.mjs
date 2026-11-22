@@ -5,7 +5,7 @@
 import { test, expect } from "@playwright/test";
 import { existsSync } from "node:fs";
 
-/* global TELEPORT_DESTINATIONS, PICKER_LAYOUT, FRACTAL_CONFIGS, mainState, mainHistory, currentName, dualActive, mode,
+/* global TELEPORT_DESTINATIONS, SEASON_PLACES, PICKER_LAYOUT, FRACTAL_CONFIGS, mainState, mainHistory, currentName, dualActive, mode,
    hudVisible, placeId, viewFromBounds, mainCanvasAspect, teleportLandingIndex, enterDual */
 
 const DRIVER = new URL("../driver.js", import.meta.url).pathname;
@@ -51,7 +51,7 @@ test.afterEach(() => {
 test.describe("what the sheet lists", () => {
   test("every place has a unique id and a thumbnail file", async ({ page }) => {
     await load(page);
-    const ids = await page.evaluate(() => TELEPORT_DESTINATIONS.map((d) => placeId(d)));
+    const ids = await page.evaluate(() => [...TELEPORT_DESTINATIONS, ...SEASON_PLACES].map((d) => placeId(d)));
     expect(new Set(ids).size, "two places share an id").toBe(ids.length);
     const missing = ids.filter((id) => !existsSync(`${THUMBS}${id}.webp`));
     expect(missing, "places without icons/places/<id>.webp (node scripts/render_place_thumbs.mjs --missing)").toEqual([]);
@@ -67,16 +67,19 @@ test.describe("what the sheet lists", () => {
       chips: [...document.querySelectorAll("#placesSheet .chip")].map((c) => c.dataset.fractal),
       pickerOrder: PICKER_LAYOUT.flatMap((s) => s.groups.flatMap((g) => g.keys)),
       expected: TELEPORT_DESTINATIONS.map((d) => ({ fractal: d.fractal, id: placeId(d), scale: d.scale })),
+      // The animated places (SEASON_PLACES) follow their group's flown-to ones, without a depth.
+      animated: SEASON_PLACES.map((d) => ({ fractal: d.fractal, id: placeId(d) })),
     }));
-    const order = seen.pickerOrder.filter((k) => seen.expected.some((e) => e.fractal === k));
+    const order = seen.pickerOrder.filter((k) => [...seen.expected, ...seen.animated].some((e) => e.fractal === k));
     expect(seen.groups.map((g) => g.fractal)).toEqual(order);
     expect(seen.chips).toEqual(order);
     for (const g of seen.groups) {
       // Within a group the places run shallowest to deepest: a larger view scale is a shallower place.
       const shallowToDeep = seen.expected.filter((e) => e.fractal === g.fractal).sort((a, b) => b.scale - a.scale);
-      expect(g.places, g.fractal).toEqual(shallowToDeep.map((e) => e.id));
+      const animated = seen.animated.filter((e) => e.fractal === g.fractal);
+      expect(g.places, g.fractal).toEqual([...shallowToDeep, ...animated].map((e) => e.id));
     }
-    expect(seen.groups.flatMap((g) => g.places).length).toBe(seen.expected.length);
+    expect(seen.groups.flatMap((g) => g.places).length).toBe(seen.expected.length + seen.animated.length);
   });
 
   test("a row names the place, how deep it is and that it dives, and is a real button", async ({ page }) => {
@@ -271,7 +274,7 @@ test.describe("the Places icon", () => {
       expect(picker.color).toBe("rgb(102, 204, 255)");
       expect([picker.w, picker.h]).toEqual([20, 20]);
       // (The spans have no spaces between them in the markup; the icon adds no text.)
-      expect(picker.text).toBe(`Places${await page.evaluate(() => TELEPORT_DESTINATIONS.length)} named places to dive into›`);
+      expect(picker.text).toBe(`Places${await page.evaluate(() => TELEPORT_DESTINATIONS.length + SEASON_PLACES.length)} named places to dive into›`);
       expect(picker.label).toBeNull();
       expect(picker.height, "the row stays a comfortable tap target").toBeGreaterThanOrEqual(44);
       await page.keyboard.press("Escape");

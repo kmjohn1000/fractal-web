@@ -161,11 +161,13 @@ export function createPythagorasTreeView(canvas) {
   // color turned TREE_ALT_HUE degrees around the hue wheel. When the picked
   // color is Green the trunk and the first two branches are wood
   // (TREE_WOOD_RGB); every other color shades its trunk like the rest.
-  function styleTable(colorIndex, rotation) {
-    const key = colorIndex + "|" + rotation;
+  // override ({ rgb, wood }): a color that is not in SOLID_COLORS (the Four Seasons animation blends one each
+  // frame) with its own say on the wooden trunk; the key then holds the rounded rgb.
+  function styleTable(colorIndex, rotation, override) {
+    const key = (override ? `rgb${override.rgb.map(Math.round)}|${!!override.wood}` : colorIndex) + "|" + rotation;
     if (key === cssKey) return css;
-    const base = SOLID_COLORS[colorIndex].rgb;
-    const wood = SOLID_COLORS[colorIndex].name === TREE_WOOD_COLOR;
+    const base = override ? override.rgb : SOLID_COLORS[colorIndex].rgb;
+    const wood = override ? !!override.wood : SOLID_COLORS[colorIndex].name === TREE_WOOD_COLOR;
     const alt = hueTurned(base, TREE_ALT_HUE);
     // The light in world coordinates (screenToWorld's rotation of a screen vector).
     const rc = Math.cos(rotation), rs = Math.sin(rotation);
@@ -223,7 +225,42 @@ export function createPythagorasTreeView(canvas) {
     return [view.cx + wx * view.halfHeight, view.cy + wy * view.halfHeight];
   }
 
+  // The Four Seasons look (tree-seasons-player.js): while `season` is set, the tree is drawn from it instead of
+  // from the picked color and depth: { rgb, depth (a fraction blends the next level in), sway (radians added to
+  // the view's rotation for this draw only), baseColor, baseDepth (the picked color and depth when it began) }.
+  // The picked color and depth are never written. A render whose opts differ from the base ones (the user
+  // picked a color or moved the depth slider) ends it and draws what was picked.
+  let season = null;
+  let blendCanvas = null;
+
   function render(opts) {
+    if (season && (opts.colorIndex !== season.baseColor || opts.depth !== season.baseDepth)) season = null;
+    if (!season) { renderOnce(opts); return; }
+    const s = season;
+    const turn = view.rotation || 0;
+    view.rotation = turn + (s.sway || 0);
+    const d0 = Math.floor(s.depth), g = s.depth - d0;
+    const at = (depth) => ({ ...opts, depth, rgb: s.rgb, wood: true });
+    if (g > 0.003) {
+      // Level d0 + 1 fades in over level d0: the tree grows and sheds its finest level smoothly.
+      renderOnce(at(d0 + 1));
+      blendCanvas ||= document.createElement("canvas");
+      if (blendCanvas.width !== canvas.width || blendCanvas.height !== canvas.height) {
+        blendCanvas.width = canvas.width;
+        blendCanvas.height = canvas.height;
+      }
+      blendCanvas.getContext("2d").drawImage(canvas, 0, 0);
+      renderOnce(at(d0));
+      ctx.globalAlpha = g;
+      ctx.drawImage(blendCanvas, 0, 0);
+      ctx.globalAlpha = 1;
+    } else {
+      renderOnce(at(d0));
+    }
+    view.rotation = turn;
+  }
+
+  function renderOnce(opts) {
     resize();
     paintBackdrop(ctx, canvas.width, canvas.height);
     extraLevels = 0;
@@ -251,7 +288,7 @@ export function createPythagorasTreeView(canvas) {
     // Flat mode is one run in tree order.
     let fills;
     if (shaded) {
-      fills = styleTable(opts.colorIndex, view.rotation || 0);
+      fills = styleTable(opts.colorIndex, view.rotation || 0, opts.rgb && { rgb: opts.rgb, wood: opts.wood });
       styCount.fill(0);
       for (let i = 0; i < r.n; i++) styCount[sty[i]]++;
       for (let s = 0, sum = 0; s < 128; s++) { const c = styCount[s]; styCount[s] = sum; sum += c; }
@@ -309,13 +346,15 @@ export function createPythagorasTreeView(canvas) {
         runFrom = runEnd;
       }
     } else {
-      ctx.fillStyle = solidCss(opts.colorIndex);
+      ctx.fillStyle = opts.rgb ? `rgb(${opts.rgb.map(Math.round)})` : solidCss(opts.colorIndex);
       drawRun(0, r.n);
     }
   }
 
   return {
     view, resize, render, worldToScreen, screenToWorld,
+    get season() { return season; },
+    set season(v) { season = v; },
     get dpr() { return dpr; },
     // Levels the last render added beyond the depth slider because of zoom.
     get extraLevels() { return extraLevels; },
