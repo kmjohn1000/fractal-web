@@ -264,6 +264,16 @@ test.describe("the Places icon", () => {
         };
       }, sel);
       const shapes = ["path", "circle", "ellipse"];
+      // The icon is drawn in the accent color, which follows the colormap (accent.js): whatever --accent is now.
+      const accent = await page.evaluate(() => {
+        const s = document.createElement("span");
+        s.style.color = "var(--accent)";
+        document.body.append(s);
+        const c = getComputedStyle(s).color;
+        s.remove();
+        return c;
+      });
+      expect(accent).toMatch(/^rgb\(\d+, \d+, \d+\)$/);
 
       // The picker's row.
       await page.locator(".fractalMenuBtn:visible").first().click();
@@ -271,7 +281,7 @@ test.describe("the Places icon", () => {
       expect(picker.count).toBe(1);
       expect(picker.ariaHidden).toBe("true");
       expect(picker.shapes).toEqual(shapes);
-      expect(picker.color).toBe("rgb(102, 204, 255)");
+      expect(picker.color).toBe(accent);
       expect([picker.w, picker.h]).toEqual([20, 20]);
       // (The spans have no spaces between them in the markup; the icon adds no text.)
       expect(picker.text).toBe(`Places${await page.evaluate(() => TELEPORT_DESTINATIONS.length + SEASON_PLACES.length)} named places to dive into›`);
@@ -287,7 +297,7 @@ test.describe("the Places icon", () => {
       expect(card.count).toBe(1);
       expect(card.ariaHidden).toBe("true");
       expect(card.shapes).toEqual(shapes);
-      expect(card.color).toBe("rgb(102, 204, 255)");
+      expect(card.color).toBe(accent);
       expect(card.w).toBeGreaterThanOrEqual(16);
       expect(card.text).toBe("Browse places");
       expect(card.height, "the button stays a comfortable tap target").toBeGreaterThanOrEqual(44);

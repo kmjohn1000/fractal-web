@@ -479,7 +479,7 @@ test.describe("picker, info card and link", () => {
     }));
     expect(r.layout).toBe(1);
     expect(r.group.slice(-2)).toEqual(["arrowhead", "penrose"]);
-    expect(r.modes).toEqual([{ key: "penrose", label: "Penrose tiling", category: "pattern" }]);
+    expect(r.modes).toEqual([{ key: "penrose", label: "Penrose tiling", category: "pattern", wiki: "https://en.wikipedia.org/wiki/Penrose_tiling" }]);
     expect(r.tiles).toEqual([{ text: "Penrose tiling", src: "icons/thumbs/penrose.webp" }]);
     const loaded = await page.evaluate(async () => {
       const res = await fetch("icons/thumbs/penrose.webp");
