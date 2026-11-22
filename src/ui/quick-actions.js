@@ -11,10 +11,10 @@
 // action is a deliberate choice, not a shake that can happen by accident).
 // Needs platform.js, state.js (els), teleport.js (teleport, isFlying), first-run-tour.js (tourShowing).
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it).
-import { Platform } from "../core/platform.js?v=1.88.4";
-import { els } from "../core/state.js?v=1.88.4";
-import { isFlying, teleport } from "./teleport.js?v=1.88.4";
-import { tourShowing } from "./first-run-tour.js?v=1.88.4";
+import { Platform } from "../core/platform.js?v=1.81.0";
+import { els } from "../core/state.js?v=1.81.0";
+import { isFlying, teleport } from "./teleport.js?v=1.81.0";
+import { tourShowing } from "./first-run-tour.js?v=1.81.0";
 
 export const QUICK_ACTION_SURPRISE = "surprise";
 export const QUICK_ACTION_COLD_DELAY_MS = 250; // after the first painted frame, as the launch screen fades

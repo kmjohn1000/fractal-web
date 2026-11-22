@@ -7,10 +7,10 @@
 // Needs state.js (els), teleport.js (teleport, isFlying), first-run-tour.js (tourShowing), platform.js.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { Platform } from "../core/platform.js?v=1.88.4";
-import { els } from "../core/state.js?v=1.88.4";
-import { isFlying, teleport } from "./teleport.js?v=1.88.4";
-import { tourShowing } from "./first-run-tour.js?v=1.88.4";
+import { Platform } from "../core/platform.js?v=1.81.0";
+import { els } from "../core/state.js?v=1.81.0";
+import { isFlying, teleport } from "./teleport.js?v=1.81.0";
+import { tourShowing } from "./first-run-tour.js?v=1.81.0";
 
 export const SHAKE_KEY = "fractalAtlas.shakeToRoll";
 export const SHAKE_COOLDOWN_MS = 1000;

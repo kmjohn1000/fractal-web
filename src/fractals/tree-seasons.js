@@ -3,7 +3,7 @@
 // drawn. No DOM and no state: tree-seasons-player.js plays it (the tree view draws the color and depth,
 // pythagoras.js `season`; the particles go on a canvas of their own above the tree).
 // An ES module: every top-level declaration is exported (test-hooks.js relies on it).
-import { kochSnowflake } from "./koch.js?v=1.88.4";
+import { kochSnowflake } from "./koch.js?v=1.81.0";
 
 // The Places sheet lists these under the fractal named by `fractal` (a PICKER_LAYOUT key), after that
 // fractal's flown-to places (TELEPORT_DESTINATIONS has only the zoomable fractals' places). `animation`

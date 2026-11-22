@@ -2,98 +2,28 @@
 
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
-## Unreleased
-- Added: Four Seasons, an animated place for the Pythagoras tree. It grows, then turns through spring blossom, summer green, autumn reds and a bare blue-white winter, with a gentle sway and falling petals, leaves and snow. Find it under the tree in Places; touch the tree to stop it.
-- Changed: the Places sheet lists animated places after each fractal's flown-to places.
-- Added: a "Learn more" link at the bottom of the info card for 26 fractals and shapes. In the app it opens the Wikipedia article in a web view inside the app; on the web, in a new tab. VoiceOver says which article.
-- Changed: at the largest text sizes the info card drops its technical readout and center point first so the Learn more row stays visible, and on landscape phones the description yields to the row.
+## 1.81.0 — 2026-11-22
+Everything since 1.80.0. This entry replaces the working versions 1.80.1 to 1.88.4 (2026-11-08 to 2026-11-21), which were renumbered into it on 2026-11-22; notes in the code and in commit messages that name those versions mean this one.
+- Added: Four Seasons, an animated place for the Pythagoras tree. It grows, then turns through spring blossom, summer green, autumn reds and a bare blue-white winter, with a gentle sway and falling petals, leaves and snow. Find it under the tree in Places; touch the tree to stop it. The Places sheet lists animated places after each fractal's flown-to places.
+- Added: Shake to roll in the app: shake the phone to fly somewhere surprising, like the die. On by default; touch and hold the die to turn it off. The switch is hidden on the website, where there is no shake.
 - Added: long-press the app icon and tap Surprise Me to fly to a random place.
-- Changed: the Reset buttons are named "Whole shape" (they were "Show whole shape"), one short name for VoiceOver and Voice Control.
-- Changed: the interface accent color follows the bright end of the current colormap.
+- Added: a "Learn more" link at the bottom of the info card for 26 fractals and shapes. In the app it opens the Wikipedia article in a web view inside the app; on the web, in a new tab. VoiceOver says which article. At the largest text sizes the info card drops its technical readout and center point first so the row stays visible, and on landscape phones the description yields to it.
 - Added: light haptic taps in the app when you land on a place, snap the compass, pick a palette, reset the view, or twist through zero degrees.
-
-## 1.88.4 — 2026-11-21
-- Changed: Shake to roll is on by default in the app. To turn it off, touch and hold the die.
-
-## 1.88.3 — 2026-11-20
-- Added: two invisible "Zoom in" and "Zoom out" buttons for VoiceOver, right after the picture. A double-tap zooms by one step and says the new depth.
-
-## 1.88.2 — 2026-11-20
-- Fixed: the invisible zoom slider for VoiceOver now moves in whole steps, which is what iOS needs to adjust it with a swipe.
-
-## 1.88.1 — 2026-11-20
-- Fixed: with VoiceOver, swiping up or down on the fractal now zooms. The picture is now paired with an invisible slider, which VoiceOver can adjust.
-- Fixed: VoiceOver no longer calls the Surprise me die "collapsed".
-- Fixed: with VoiceOver or Switch Control on, the toolbar no longer fades away, so there is no hidden toolbar to find.
-
-## 1.88.0 — 2026-11-20
-- Added: "Shake to roll" in the app: shake the phone to fly somewhere surprising, like the die. Off by default; touch and hold the die to turn it on. The switch is hidden on the website, where there is no shake.
-
-## 1.87.0 — 2026-11-16
-- Changed: the Sine L-plane now zooms about a million times deeper (to a view half-height of 1e-10), drawn from an exact reference orbit, where it used to stop at 1e-4 to 1e-3. Views at or above the old limit, and the places on it, are unchanged.
-- Changed: dragging or pinching a deep Sine L-plane view moves the last frame and draws the real view when you stop; deep views sharpen through 12 passes.
-
-## 1.86.1 — 2026-11-16
-- Changed: in the dive style menu, Full Motion's description reads "Zoom style flights".
-
-## 1.86.0 — 2026-11-16
-- Changed: Full Motion now flies the way Slow dive (test) did. Surprise me's plain flights take a steady 4 to 12 seconds, and on the Mandelbrot set, its Julia sets, Multibrot³, the Tricorn and Celtic they show real detail all the way down and back up, instead of a stretched blur. Spiral dives fly as before, and Blur keeps the quick flight.
-- Removed: the Slow dive (test) choice in the dive style menu. If you had picked it, you now get Full Motion.
-
-## 1.85.1 — 2026-11-16
-- Changed: Slow dive (test) now also draws the way out live. A flight that starts deep zooms out through real detail instead of a stretched, shrinking picture, on the same fractals as the way in.
-
-## 1.85.0 — 2026-11-16
-- Added, to try out: a third dive style, Slow dive (test), in the Surprise me menu (touch and hold the die). Plain flights take a steady 4 to 12 seconds, and on the Mandelbrot set, its Julia sets, Multibrot³, the Tricorn and Celtic the deep part of the flight is drawn all the way down instead of turning to a stretched blur. Spiral dives fly as before.
-
-## 1.84.0 — 2026-11-16
-- Added: touch and hold Surprise me (or right-click it) to choose the dive style. Full Motion, the default, flies the way it always has, spiral dives included; Blur softens the fast flashing a quick zoom can make (1.83.0's flights). The choice is remembered.
-- Changed: flights are back to full motion unless you pick Blur. With Reduce Motion on, they still dissolve to the place.
-- Changed: the website's first-visit flight, which starts without a tap, always uses Blur.
-
-## 1.83.0 — 2026-11-16
-- Fixed: Surprise me's flights no longer flash. A fast zoom could sweep big parts of the screen from dark to bright and back several times a second, in every color style; the picture now blends from frame to frame during a flight, so it stays under three flashes a second.
+- Changed: the interface accent color follows the bright end of the current colormap.
+- Changed: the toolbar fades away after a few seconds without a touch, and the picture grows to fill the screen; touch anywhere to bring the toolbar back. A touch on a faded toolbar only wakes it, it doesn't press a button, and a drag or pinch still moves the picture. The toolbar stays while a sheet or menu is open, while you drag a slider and while the keyboard is in it. With Reduce Motion it hides without fading. Share links, Back and the info card read the same whether or not the picture has grown.
+- Added: in the iPhone and iPad app, the first launch shows a short tour: small bubbles, one at a time, for pinch and drag, twisting to turn the picture, the die, Colors, the fractal picker and its Places, Share, and the fading controls. It doesn't block the screen: you can pinch, drag and twist while a bubble shows, and the tour moves on once you have; tapping the button a bubble points at does what the button does. Tap the bubble for the next one, or Skip. It shows once, and people who already have the app see it once after this update. The website keeps its welcome card.
+- Changed: Surprise me's plain flights take a steady 4 to 12 seconds, and on the Mandelbrot set, its Julia sets, Multibrot³, the Tricorn and Celtic they show real detail all the way down and back up, instead of a stretched blur. Spiral dives fly as before.
+- Added: touch and hold Surprise me (or right-click it) to choose the dive style. Full Motion is the default; Blur keeps the quick flight and blends the picture from frame to frame, which softens the fast flashing a quick zoom can make. The choice is remembered. The website's first-visit flight, which starts without a tap, always uses Blur.
 - Changed: with Reduce Motion on, Surprise me and the places list dissolve to the new place instead of flying there.
-
-## 1.82.4 — 2026-11-15
-- Changed: the first-run tour's bubbles stay out of the way: the ones for the gestures sit near the top, leaving the picture free, and the ones for buttons sit above the whole toolbar instead of over the detail slider. Shorter wording, and the bubbles lost their small arrow (the ring round the button does the pointing).
-
-## 1.82.3 — 2026-11-15
-- Changed: the first-run tour no longer blocks the screen. You can pinch, drag and twist while a bubble shows, and the tour moves on once you have; tapping the button a bubble points at does what the button does, and the tour waits while its sheet is open. Tap the bubble for the next one.
-
-## 1.82.2 — 2026-11-15
-- Changed: the first-run tour ends with one more bubble: the controls fade away when you leave the screen alone, and a touch anywhere brings them back.
-
-## 1.82.1 — 2026-11-14
-- Changed: people who already have the app also see the first-run tour once, on the first launch after this update.
-
-## 1.82.0 — 2026-11-14
-- New: in the iPhone and iPad app, the first launch shows a short tour: small bubbles, one at a time, for pinch and drag, twisting to turn the picture, the die, Colors, the fractal picker and its Places, and Share. Tap anywhere for the next one, or Skip. It shows once, and not to anyone who already used the app. The website keeps its welcome card.
-
-## 1.81.0 — 2026-11-14
-- Changed: the toolbar fades away after a few seconds without a touch, and the picture grows to fill the screen; touch anywhere to bring the toolbar back. A touch on a faded toolbar only wakes it, it doesn't press a button, and a drag or pinch still moves the picture.
-- The toolbar stays while a sheet or menu is open, while you drag a slider and while the keyboard is in it. With Reduce Motion it hides without fading. Share links, Back and the info card read the same whether or not the picture has grown.
-
-## 1.80.6 — 2026-11-13
-- Changed: in the iPhone and iPad app, the rating request can now come after the second day you open the app (it was the third), and also after you rest on a very deep zoom, not only after you save or share a picture.
-
-## 1.80.5 — 2026-11-10
-- Added: screen readers can use the picture. The fractal reads its name (or the place's), how deep you are, and can be swiped up and down with VoiceOver to zoom; pattern pictures have labels too.
-- Added: VoiceOver says the place's name when a flight lands (Surprise me, Places, the cold open), and the "graphics turned off" message is announced as an alert.
-
-## 1.80.4 — 2026-11-10
-- Changed: the fractal picker's thumbnails are sharper (384 px instead of 192).
-
-## 1.80.3 — 2026-11-10
-- Changed: zoomed in on the Sine L-plane, dragging now moves the last picture and redraws when you stop, instead of redrawing every frame, and the picture finishes sharpening sooner (12 of its 16 passes; the speckled areas are a little grainier than before, the shapes are the same).
-- Changed: the Grayscale palette has a brighter middle (a mid-grey stop at 150 instead of a straight black-to-white ramp). This came in with 1.80.1 and was not listed there.
-
-## 1.80.2 — 2026-11-10
-- Added a Sine L-plane place, Golden Shells: nested gold and blue spirals next to Dusty Edge, at that fractal's zoom floor.
-- Changed: a share link from a newer version of the app (a fractal or mode this version does not have) now says "This link needs a newer version of Fractal Atlas" instead of silently opening the default view.
-
-## 1.80.1 — 2026-11-08
+- Changed: the Sine L-plane now zooms about a million times deeper (to a view half-height of 1e-10), drawn from an exact reference orbit, where it used to stop at 1e-4 to 1e-3. Views at or above the old limit, and the places on it, are unchanged. Dragging or pinching a zoomed-in view moves the last frame and draws the real view when you stop, and its views sharpen through 12 of their 16 passes (the speckled areas are a little grainier than before, the shapes are the same).
+- Added a Sine L-plane place, Golden Shells: nested gold and blue spirals next to Dusty Edge.
+- Added: screen readers can use the picture. The fractal reads its name (or the place's) and how deep you are; pattern pictures have labels too. With VoiceOver, swiping up or down on the fractal zooms, and two invisible "Zoom in" and "Zoom out" buttons right after the picture zoom by one step and say the new depth. VoiceOver says the place's name when a flight lands, and the "graphics turned off" message is announced as an alert.
+- Changed: with VoiceOver or Switch Control on, the toolbar no longer fades away. VoiceOver no longer calls the Surprise me die "collapsed". The Reset buttons are named "Whole shape" (they were "Show whole shape"), one short name for VoiceOver and Voice Control.
 - Changed: a chaos-game run now shows how far it has played as a ring around the Play button, instead of a counter floating over the picture. The ring closes with one soft pulse when the run ends. The points and coverage numbers stay on the info card.
+- Changed: a share link from a newer version of the app (a fractal or mode this version does not have) now says "This link needs a newer version of Fractal Atlas" instead of silently opening the default view.
+- Changed: the fractal picker's thumbnails are sharper (384 px instead of 192).
+- Changed: the Grayscale palette has a brighter middle (a mid-grey stop at 150 instead of a straight black-to-white ramp).
+- Changed: in the iPhone and iPad app, the rating request can now come after the second day you open the app (it was the third), and also after you rest on a very deep zoom, not only after you save or share a picture.
 - Fixed: the toolbar buttons now sit above the "detail" slider's oversized touch area, so a tap or VoiceOver double-tap near the slider's edge reaches the button.
 
 ## 1.80.0 — 2026-11-08

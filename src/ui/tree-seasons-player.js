@@ -12,16 +12,16 @@
 // chooses the place again (it starts over), or leaves the tree (modes.js setMode). With Reduce Motion the place
 // lands on the still spring tree, plays nothing and says nothing.
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it).
-import { treeState, treeView, vectorColors, els, mode, dualActive } from "../core/state.js?v=1.88.4";
-import { SEASON_DEEP, SEASON_LABEL, SEASON_PLACES, SEASON_SPRING, drawSeasonParticles, seasonAt, seasonParticles } from "../fractals/tree-seasons.js?v=1.88.4";
-import { announce } from "../fractals/chaos-run.js?v=1.88.4";
-import { renderAll } from "../render/render-layout.js?v=1.88.4";
-import { normalizeAngle } from "../core/view-math.js?v=1.88.4";
-import { exitDual, setMode } from "./modes.js?v=1.88.4";
-import { fitVectorView, treeNav } from "./vector-interaction.js?v=1.88.4";
-import { prefersReducedMotion } from "./compass-ui.js?v=1.88.4";
-import { cancelTeleport } from "./teleport.js?v=1.88.4";
-import { updateCanvasA11y } from "./canvas-a11y.js?v=1.88.4";
+import { treeState, treeView, vectorColors, els, mode, dualActive } from "../core/state.js?v=1.81.0";
+import { SEASON_DEEP, SEASON_LABEL, SEASON_PLACES, SEASON_SPRING, drawSeasonParticles, seasonAt, seasonParticles } from "../fractals/tree-seasons.js?v=1.81.0";
+import { announce } from "../fractals/chaos-run.js?v=1.81.0";
+import { renderAll } from "../render/render-layout.js?v=1.81.0";
+import { normalizeAngle } from "../core/view-math.js?v=1.81.0";
+import { exitDual, setMode } from "./modes.js?v=1.81.0";
+import { fitVectorView, treeNav } from "./vector-interaction.js?v=1.81.0";
+import { prefersReducedMotion } from "./compass-ui.js?v=1.81.0";
+import { cancelTeleport } from "./teleport.js?v=1.81.0";
+import { updateCanvasA11y } from "./canvas-a11y.js?v=1.81.0";
 
 export const SEASONS_FRAME_MS = 33;   // at most about 30 frames a second: the tree is drawn twice while a level blends in
 

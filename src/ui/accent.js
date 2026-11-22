@@ -9,10 +9,10 @@
 // updateColorSwatches (the pattern shapes' solid colors, a mode change).
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
-import { COLORMAPS, SOLID_COLORS, sampleColor } from "../render/colormaps.js?v=1.88.4";
-import { isCurveMode, isIfsMode } from "../fractals/fractal-defs.js?v=1.88.4";
-import { dragonView, fernView, mode, vectorColors } from "../core/state.js?v=1.88.4";
-import { colormapIndex } from "../core/state-colors.js?v=1.88.4";
+import { COLORMAPS, SOLID_COLORS, sampleColor } from "../render/colormaps.js?v=1.81.0";
+import { isCurveMode, isIfsMode } from "../fractals/fractal-defs.js?v=1.81.0";
+import { dragonView, fernView, mode, vectorColors } from "../core/state.js?v=1.81.0";
+import { colormapIndex } from "../core/state-colors.js?v=1.81.0";
 
 // The toolbar's backdrop is near-black (rgba(28,28,30,...) over the art); contrast is judged against this.
 export const ACCENT_BACKDROP = [28, 28, 30];
