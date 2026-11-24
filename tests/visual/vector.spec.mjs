@@ -963,3 +963,100 @@ test.describe("the finish holds when the view moves", () => {
     expect(corner[0] + corner[1] + corner[2], "the corner is the backdrop, not black").toBeGreaterThan(0);
   });
 });
+
+// A touch the system never reported lifting (iOS WebKit now and then drops a pointerup) must not act as a phantom
+// second finger: the next touch starts a fresh sequence (isPrimary), so it is a one-finger pan, not a pinch or twist.
+for (const m of ["koch", "tree"]) {
+  test(`${m}: a finger the system never lifted does not turn the next one-finger drag into a pinch; a real pinch still zooms`, async ({ page }) => {
+    await show(page, m, 4, { cx: 0, cy: 1, halfHeight: 1.5, rotation: 0 });
+    const r = await page.evaluate(async ([m]) => {
+      HTMLElement.prototype.setPointerCapture = () => {};
+      const v = VECTOR_VIEWS[m][0].view, canvas = VECTOR_VIEWS[m][1];
+      const rect = canvas.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+      const fire = (type, id, x, y, primary) => canvas.dispatchEvent(new PointerEvent(type, { pointerId: id, clientX: x, clientY: y, bubbles: true, pointerType: "touch", isPrimary: primary }));
+      const frame = () => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)));
+      const snap = () => ({ cx: v.cx, cy: v.cy, h: v.halfHeight, rot: v.rotation || 0 });
+      fire("pointerdown", 1, cx - 60, cy, true);
+      fire("pointermove", 1, cx - 55, cy + 4, true); // never lifted
+      await frame();
+      const before = snap();
+      fire("pointerdown", 2, cx + 80, cy, true);
+      for (let s = 1; s <= 8; s++) { fire("pointermove", 2, cx + 80 + s * 8, cy + s * 5, true); await frame(); }
+      fire("pointerup", 2, 0, 0, true);
+      await frame();
+      const after = snap();
+      // A real pinch: the second finger goes down while the first is still down.
+      fire("pointerdown", 3, cx - 40, cy, true);
+      fire("pointerdown", 4, cx + 40, cy, false);
+      for (let s = 1; s <= 8; s++) { fire("pointermove", 3, cx - 40 - s * 8, cy, true); fire("pointermove", 4, cx + 40 + s * 8, cy, false); await frame(); }
+      fire("pointerup", 3, 0, 0, true);
+      fire("pointerup", 4, 0, 0, false);
+      return { before, after, pinched: snap() };
+    }, [m]);
+    expect(r.after.h, "no zoom").toBe(r.before.h);
+    expect(r.after.rot, "no twist").toBe(r.before.rot);
+    expect(Math.hypot(r.after.cx - r.before.cx, r.after.cy - r.before.cy), "the view panned").toBeGreaterThan(0);
+    expect(r.pinched.h, "a real pinch zooms in").toBeLessThan(r.after.h * 0.7);
+  });
+
+  // The backstops: the browser's finger list (touchstart's touches, a plain Event carrying a list since WebKit has
+  // no Touch constructor), the page losing focus, and a move from a pointer that isn't tracked.
+  test(`${m}: backstops: touch list drops a stale pointer, a listed second finger pinches, blur and hidden reset, stray moves are ignored`, async ({ page }) => {
+    await show(page, m, 4, { cx: 0, cy: 1, halfHeight: 1.5, rotation: 0 });
+    const r = await page.evaluate(async ([m]) => {
+      HTMLElement.prototype.setPointerCapture = () => {};
+      const v = VECTOR_VIEWS[m][0].view, canvas = VECTOR_VIEWS[m][1];
+      const rect = canvas.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+      const fire = (type, id, x, y) => canvas.dispatchEvent(new PointerEvent(type, { pointerId: id, clientX: x, clientY: y, bubbles: true, pointerType: "touch", isPrimary: false }));
+      const touchstart = (...pts) => { const ev = new Event("touchstart", { bubbles: true }); ev.touches = pts.map(([x, y], i) => ({ identifier: i, clientX: x, clientY: y })); canvas.dispatchEvent(ev); };
+      const frame = () => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)));
+      const snap = () => ({ cx: v.cx, cy: v.cy, h: v.halfHeight, rot: v.rotation || 0 });
+      // One finger drag from the new pointer id, then lift it. Returns the view before and after.
+      const drag = async (id, x0) => {
+        const before = snap();
+        for (let s = 1; s <= 8; s++) { fire("pointermove", id, x0 + s * 8, cy + s * 5); await frame(); }
+        fire("pointerup", id, 0, 0);
+        await frame();
+        return { before, after: snap() };
+      };
+      const out = {};
+      // (a) a stale pointer, the new one not primary, the browser lists one finger
+      fire("pointerdown", 1, cx - 60, cy); fire("pointermove", 1, cx - 55, cy + 4); // never lifted
+      fire("pointerdown", 2, cx + 80, cy); touchstart([cx + 80, cy]);
+      out.touchList = await drag(2, cx + 80);
+      // (c) blur, then hidden: a stale pointer, a new single touch
+      for (const how of ["blur", "hidden"]) {
+        fire("pointerdown", 3, cx - 60, cy); // never lifted
+        if (how === "blur") window.dispatchEvent(new Event("blur"));
+        else { Object.defineProperty(document, "visibilityState", { value: "hidden", configurable: true }); document.dispatchEvent(new Event("visibilitychange")); delete document.visibilityState; }
+        fire("pointerdown", 4, cx + 80, cy);
+        out[how] = await drag(4, cx + 80);
+      }
+      // (d) stray moves and ups from an untracked pointer, then one finger
+      const before = snap();
+      for (let s = 1; s <= 5; s++) { fire("pointermove", 9, cx + s * 10, cy + s * 10); await frame(); }
+      fire("pointerup", 9, cx, cy); fire("pointercancel", 9, cx, cy);
+      await frame();
+      out.stray = { before, after: snap() };
+      fire("pointerdown", 5, cx + 80, cy);
+      out.afterStray = await drag(5, cx + 80);
+      // (b) a real second finger, both in the touch list
+      fire("pointerdown", 6, cx - 40, cy); touchstart([cx - 40, cy]);
+      fire("pointerdown", 7, cx + 40, cy); touchstart([cx - 40, cy], [cx + 40, cy]);
+      const pre = snap();
+      for (let s = 1; s <= 8; s++) { fire("pointermove", 6, cx - 40 - s * 8, cy); fire("pointermove", 7, cx + 40 + s * 8, cy); await frame(); }
+      fire("pointerup", 6, 0, 0); fire("pointerup", 7, 0, 0);
+      out.pinch = { before: pre, after: snap() };
+      return out;
+    }, [m]);
+    for (const k of ["touchList", "blur", "hidden", "afterStray"]) {
+      expect(r[k].after.h, `${k}: no zoom`).toBe(r[k].before.h);
+      expect(r[k].after.rot, `${k}: no twist`).toBe(r[k].before.rot);
+      expect(Math.hypot(r[k].after.cx - r[k].before.cx, r[k].after.cy - r[k].before.cy), `${k}: panned`).toBeGreaterThan(0);
+    }
+    expect(r.stray.after, "stray moves, up and cancel: the view is untouched").toEqual(r.stray.before);
+    expect(r.pinch.after.h, "a listed second finger pinches").toBeLessThan(r.pinch.before.h * 0.7);
+  });
+}

@@ -286,3 +286,139 @@ test("a tampered pair is ignored and the link opens at its doubles", async ({ pa
   }, DEEP);
   expect(r).toEqual({ notHex: null, onlyOne: null, tooLong: null, wrongDouble: null });
 });
+
+// ---------------------------------------------------------------- a touch the system never lifted
+
+// iOS WebKit now and then drops a pointerup. The stale touch must not act as a phantom second finger: the next touch
+// starts a fresh sequence (isPrimary), so it is a one-finger pan, not a pinch or twist.
+test("a finger the system never lifted does not turn the next one-finger drag into a pinch (fractal canvas)", async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    HTMLElement.prototype.setPointerCapture = () => {};
+    const canvas = els.mainCanvas, rect = canvas.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+    const fire = (type, id, x, y, primary) => canvas.dispatchEvent(new PointerEvent(type, { pointerId: id, clientX: x, clientY: y, bubbles: true, pointerType: "touch", isPrimary: primary }));
+    const frame = () => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)));
+    const snap = () => ({ cx: mainState.cx, cy: mainState.cy, scale: mainState.scale, rotation: mainState.rotation || 0 });
+    fire("pointerdown", 1, cx - 60, cy, true);
+    fire("pointermove", 1, cx - 55, cy + 4, true); // never lifted
+    await frame();
+    const before = snap();
+    fire("pointerdown", 2, cx + 80, cy, true);
+    for (let s = 1; s <= 8; s++) { fire("pointermove", 2, cx + 80 + s * 8, cy + s * 5, true); await frame(); }
+    fire("pointerup", 2, cx + 144, cy + 40, true);
+    await frame();
+    return { before, after: snap() };
+  });
+  expect(r.after.scale, "no zoom").toBe(r.before.scale);
+  expect(r.after.rotation, "no twist").toBe(r.before.rotation);
+  expect(Math.hypot(r.after.cx - r.before.cx, r.after.cy - r.before.cy), "the view panned").toBeGreaterThan(0);
+});
+
+test("two fingers down together still pinch (fractal canvas)", async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    HTMLElement.prototype.setPointerCapture = () => {};
+    const canvas = els.mainCanvas, rect = canvas.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+    const fire = (type, id, x, y, primary) => canvas.dispatchEvent(new PointerEvent(type, { pointerId: id, clientX: x, clientY: y, bubbles: true, pointerType: "touch", isPrimary: primary }));
+    const frame = () => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)));
+    const before = mainState.scale;
+    fire("pointerdown", 1, cx - 40, cy, true);
+    fire("pointerdown", 2, cx + 40, cy, false);
+    for (let s = 1; s <= 8; s++) { fire("pointermove", 1, cx - 40 - s * 8, cy, true); fire("pointermove", 2, cx + 40 + s * 8, cy, false); await frame(); }
+    fire("pointerup", 1, 0, 0, true);
+    fire("pointerup", 2, 0, 0, false);
+    return { before, after: mainState.scale };
+  });
+  expect(r.after, "fingers spread: zoomed in").toBeLessThan(r.before * 0.7);
+});
+
+// The backstops: the browser's own finger list (touchstart's touches), the page losing focus, and moves/ups from a
+// pointer that isn't tracked. A touchstart is a plain Event carrying a touches list (WebKit has no Touch constructor).
+// The scenario's source is sent to the page and run there (a function can't cross page.evaluate); `how` is exposed to it as a global.
+async function driveFractal(page, scenario, how) {
+  return page.evaluate(async ([src, how]) => {
+    globalThis.how = how;
+    const scenario = (0, eval)("(" + src + ")");
+    HTMLElement.prototype.setPointerCapture = () => {};
+    const canvas = els.mainCanvas, rect = canvas.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+    const fire = (type, id, x, y, primary) => canvas.dispatchEvent(new PointerEvent(type, { pointerId: id, clientX: x, clientY: y, bubbles: true, pointerType: "touch", isPrimary: primary }));
+    const touchstart = (...pts) => { const ev = new Event("touchstart", { bubbles: true }); ev.touches = pts.map(([x, y], i) => ({ identifier: i, clientX: x, clientY: y })); canvas.dispatchEvent(ev); };
+    const frame = () => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)));
+    const snap = () => ({ cx: mainState.cx, cy: mainState.cy, scale: mainState.scale, rotation: mainState.rotation || 0 });
+    return scenario({ fire, touchstart, frame, snap, cx, cy });
+  }, [scenario.toString(), how]);
+}
+const panned = (r) => Math.hypot(r.after.cx - r.before.cx, r.after.cy - r.before.cy);
+
+test("touch list backstop: a stale pointer is dropped when the new one is not primary and one finger is down (fractal canvas)", async ({ page }) => {
+  const r = await driveFractal(page, async ({ fire, touchstart, frame, snap, cx, cy }) => {
+    fire("pointerdown", 1, cx - 60, cy, false); fire("pointermove", 1, cx - 55, cy + 4, false); // never lifted
+    await frame();
+    const before = snap();
+    fire("pointerdown", 2, cx + 80, cy, false); touchstart([cx + 80, cy]);
+    for (let s = 1; s <= 8; s++) { fire("pointermove", 2, cx + 80 + s * 8, cy + s * 5, false); await frame(); }
+    fire("pointerup", 2, 0, 0, false);
+    await frame();
+    return { before, after: snap() };
+  });
+  expect(r.after.scale, "no zoom").toBe(r.before.scale);
+  expect(r.after.rotation, "no twist").toBe(r.before.rotation);
+  expect(panned(r), "the view panned").toBeGreaterThan(0);
+});
+
+test("touch list backstop: a real second finger, listed by the browser, still pinches (fractal canvas)", async ({ page }) => {
+  const r = await driveFractal(page, async ({ fire, touchstart, frame, snap, cx, cy }) => {
+    const before = snap();
+    fire("pointerdown", 1, cx - 40, cy, false); touchstart([cx - 40, cy]);
+    fire("pointerdown", 2, cx + 40, cy, false); touchstart([cx - 40, cy], [cx + 40, cy]);
+    for (let s = 1; s <= 8; s++) { fire("pointermove", 1, cx - 40 - s * 8, cy, false); fire("pointermove", 2, cx + 40 + s * 8, cy, false); await frame(); }
+    fire("pointerup", 1, 0, 0, false); fire("pointerup", 2, 0, 0, false);
+    return { before, after: snap() };
+  });
+  expect(r.after.scale, "fingers spread: zoomed in").toBeLessThan(r.before.scale * 0.7);
+});
+
+for (const how of ["blur", "visibilitychange", "pagehide"]) {
+  test(`${how} forgets the fingers, so the next single touch pans (fractal canvas)`, async ({ page }) => {
+    const r = await driveFractal(page, async ({ fire, frame, snap, cx, cy }) => {
+      fire("pointerdown", 1, cx - 60, cy, false); fire("pointermove", 1, cx - 55, cy + 4, false);
+      await frame();
+      const before = snap();
+      if (how === "blur") window.dispatchEvent(new Event("blur"));
+      else if (how === "pagehide") window.dispatchEvent(new Event("pagehide"));
+      else {
+        Object.defineProperty(document, "visibilityState", { value: "hidden", configurable: true });
+        document.dispatchEvent(new Event("visibilitychange"));
+        delete document.visibilityState;
+      }
+      fire("pointerdown", 2, cx + 80, cy, false); // not primary: only the page-hidden reset can have removed the stale one
+      for (let s = 1; s <= 8; s++) { fire("pointermove", 2, cx + 80 + s * 8, cy + s * 5, false); await frame(); }
+      fire("pointerup", 2, 0, 0, false);
+      await frame();
+      return { before, after: snap() };
+    }, how);
+    expect(r.after.scale, "no zoom").toBe(r.before.scale);
+    expect(r.after.rotation, "no twist").toBe(r.before.rotation);
+    expect(panned(r), "the view panned").toBeGreaterThan(0);
+  });
+}
+
+test("a move or up from a pointer that isn't tracked changes nothing (fractal canvas)", async ({ page }) => {
+  const r = await driveFractal(page, async ({ fire, frame, snap, cx, cy }) => {
+    const before = snap();
+    for (let s = 1; s <= 5; s++) { fire("pointermove", 9, cx + s * 10, cy + s * 10, false); await frame(); }
+    fire("pointerup", 9, cx, cy, false); fire("pointercancel", 9, cx, cy, false);
+    await frame();
+    const stray = snap();
+    // Had the move added it, this one touch would now be a pinch with it.
+    fire("pointerdown", 1, cx - 40, cy, false);
+    for (let s = 1; s <= 4; s++) { fire("pointermove", 1, cx - 40 - s * 8, cy + s * 4, false); await frame(); }
+    fire("pointerup", 1, 0, 0, false);
+    await frame();
+    return { before, after: snap(), stray };
+  });
+  expect(r.stray, "stray moves, up and cancel: the view is untouched").toEqual(r.before);
+  expect(r.after.scale, "no zoom").toBe(r.before.scale);
+  expect(r.after.rotation, "no twist").toBe(r.before.rotation);
+});

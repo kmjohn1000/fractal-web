@@ -12,6 +12,7 @@
 // prefix on the names (they become flat test globals). Needs platform.js, state.js and controls-fade.js.
 import { Platform } from "../core/platform.js?v=1.81.0";
 import { els, isInteracting, mainState } from "../core/state.js?v=1.81.0";
+import { startsNewTouchSequence } from "../core/view-math.js?v=1.81.0";
 import { cfArm, cfToolbar, wakeControls } from "./controls-fade.js?v=1.81.0";
 
 export const TOUR_DELAY_MS = 1200; // after load, so the launch screen has faded into the first picture
@@ -211,8 +212,12 @@ els.tour.addEventListener("click", (e) => {
   else tourNext();
 });
 // The fingers on the screen, for the gesture steps. These only watch (capture, passive).
-window.addEventListener("pointerdown", (e) => { if (tourShowing()) tourPointers.add(e.pointerId); }, { capture: true, passive: true });
-for (const type of ["pointerup", "pointercancel"]) {
+window.addEventListener("pointerdown", (e) => {
+  if (!tourShowing()) return;
+  if (startsNewTouchSequence(e)) tourPointers.clear(); // a finger whose pointerup never came would block the step for good
+  tourPointers.add(e.pointerId);
+}, { capture: true, passive: true });
+for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) {
   window.addEventListener(type, (e) => {
     tourPointers.delete(e.pointerId);
     tourCheckGesture();

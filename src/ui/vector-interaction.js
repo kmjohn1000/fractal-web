@@ -12,7 +12,7 @@ import { isCurveMode, isIfsMode, viewFromBounds } from "../fractals/fractal-defs
 import { endVectorInteracting, markVectorInteracting } from "../core/state-colors.js?v=1.81.0";
 import { requestRender } from "../render/render-layout.js?v=1.81.0";
 import { Platform } from "../core/platform.js?v=1.81.0";
-import { crossedUpright, normalizeAngle } from "../core/view-math.js?v=1.81.0";
+import { crossedUpright, normalizeAngle, startsNewTouchSequence, dropUnmatchedTouches, onPageHidden } from "../core/view-math.js?v=1.81.0";
 import { touchDotReplay } from "./pattern-controls.js?v=1.81.0";
 import { cancelTeleport } from "./teleport.js?v=1.81.0";
 
@@ -128,7 +128,14 @@ export function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive 
   canvas.addEventListener("pointerdown", (e) => {
     cancelTeleport(); // a touch ends a flight and a compass reset (the fractal canvas does the same)
     canvas.setPointerCapture(e.pointerId);
-    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (startsNewTouchSequence(e) && pointers.size) {
+      // A finger whose pointerup never came: forget it and the gesture state it left, as a full release does.
+      pointers.clear();
+      panStart = null;
+      pinchStartDist = null;
+      pinchStartAngle = null;
+    }
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, touch: e.pointerType === "touch" });
     rebase();
     touchDotReplay(); // a touch on the picture ends a default chaos-game replay (the app's own run follows the view)
     if (isBoxZoomActive() && pointers.size === 1) {
@@ -161,8 +168,10 @@ export function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive 
   });
 
   canvas.addEventListener("pointermove", (e) => {
-    if (!pointers.has(e.pointerId)) return;
-    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const known = pointers.get(e.pointerId);
+    if (!known) return; // a pointer this handler isn't tracking (forgotten as stale, say) is never added back by a move
+    known.x = e.clientX;
+    known.y = e.clientY;
     if (boxDragging()) {
       const startClientX = parseFloat(els.boxRect.dataset.startClientX);
       const startClientY = parseFloat(els.boxRect.dataset.startClientY);
@@ -203,6 +212,7 @@ export function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive 
   });
 
   function release(e) {
+    if (!pointers.has(e.pointerId)) return; // already gone (forgotten as stale, or a lostpointercapture after the pointerup)
     if (boxDragging()) {
       commitVectorBoxZoom();
       els.boxRect.classList.add("hidden");
@@ -225,6 +235,40 @@ export function attachVectorViewInteraction(canvas, vectorView, isBoxZoomActive 
   }
   canvas.addEventListener("pointerup", release);
   canvas.addEventListener("pointercancel", release);
+  // The capture ending with no pointerup is a lost finger too (after a normal pointerup the pointer is already
+  // gone, and release ignores it).
+  canvas.addEventListener("lostpointercapture", release);
+
+  // Restart the gesture from the pointers that are left, as the end of release does.
+  function resyncGesture() {
+    pinchStartDist = null;
+    pinchStartAngle = null;
+    panStart = null;
+    if (pointers.size === 1) {
+      const [p] = pointers.values();
+      const local = localPixel(p.x, p.y);
+      const world = vectorView.screenToWorld(local.x, local.y);
+      panStart = { worldX: world[0], worldY: world[1] };
+    } else if (pointers.size >= 2) {
+      const pts = [...pointers.values()];
+      pinchStartDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      pinchStartHalfHeight = vectorView.view.halfHeight;
+      pinchStartAngle = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
+      pinchStartRotation = vectorView.view.rotation || 0;
+    }
+    if (pointers.size === 0) endVectorInteracting(); // the full-detail frame, as a release does
+  }
+  // The browser's own list of fingers is the backstop: a touchstart (it follows the pointerdown of the same
+  // finger) lists the fingers really down, so a stored touch pointer with no finger is stale. Passive, no preventDefault.
+  canvas.addEventListener("touchstart", (e) => { if (dropUnmatchedTouches(pointers, e.touches)) resyncGesture(); }, { passive: true });
+  // Focus lost, page hidden: a finger may lift unseen, so every pointer is forgotten, the box in progress is
+  // cancelled and nothing is left half-started.
+  onPageHidden(() => {
+    if (!pointers.size) return;
+    pointers.clear();
+    if (boxDragging()) els.boxRect.classList.add("hidden");
+    resyncGesture();
+  });
 
   function checkpoint() {
     const now = performance.now();
