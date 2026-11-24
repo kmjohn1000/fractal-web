@@ -234,6 +234,51 @@ export function normalizeAngle(a) {
   return ((a + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
 }
 
+// Whether a pointerdown is the first contact of a new touch sequence. For touch, isPrimary is true only for the
+// first finger down while no other touch is active (a second finger is not primary), so every pointer stored from
+// before it is stale: iOS WebKit now and then drops a pointerup/pointercancel, and a finger that already lifted
+// would otherwise act as a phantom second finger of the next one-finger drag. Mouse and pen are left alone.
+export function startsNewTouchSequence(e) {
+  return e.pointerType === "touch" && e.isPrimary === true;
+}
+
+// The backstop to the rule above, against the browser's own list of fingers. `pointers` is a handler's Map of
+// pointerId -> { x, y, touch }; `touches` is a touchstart's e.touches (a list of the fingers really down, which
+// includes the one that just landed). If more touch pointers are stored than fingers are down, the surplus are
+// stale: every finger is matched to the nearest stored pointer (newest first, so the one that just landed wins a
+// tie) and the unmatched ones are deleted. Touch identifiers don't map to pointerIds, so position does the matching.
+// Returns true if any were deleted (the caller then restarts its gesture from what is left).
+export function dropUnmatchedTouches(pointers, touches) {
+  const stored = [...pointers].filter(([, p]) => p.touch).reverse();
+  if (stored.length <= touches.length) return false;
+  const unmatched = new Map(stored);
+  for (let i = 0; i < touches.length; i++) {
+    let best = null, bestDist = Infinity;
+    for (const [id, p] of unmatched) {
+      const d = Math.hypot(p.x - touches[i].clientX, p.y - touches[i].clientY);
+      if (d < bestDist) { bestDist = d; best = id; }
+    }
+    if (best !== null) unmatched.delete(best);
+  }
+  for (const id of unmatched.keys()) pointers.delete(id);
+  return unmatched.size > 0;
+}
+
+// Every pointer handler's "drop everything" callback runs when the page loses focus, goes hidden or is hidden
+// for good (a finger lifted while the page wasn't looking never reports its pointerup). The window and document
+// listeners are added once here, whatever number of handlers register.
+export const pageHiddenCallbacks = new Set();
+export let pageHiddenWired = false;
+export function onPageHidden(callback) {
+  pageHiddenCallbacks.add(callback);
+  if (pageHiddenWired) return;
+  pageHiddenWired = true;
+  const run = () => { for (const fn of pageHiddenCallbacks) fn(); };
+  window.addEventListener("blur", run);
+  window.addEventListener("pagehide", run);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") run(); });
+}
+
 // Whether a twist from rotation `prev` to `next` (both normalized) went through 0 (upright), for the haptic
 // tick. Only a short step across 0 counts: a jump of half a turn or more is the wrap at 180 degrees, not 0.
 export function crossedUpright(prev, next) {

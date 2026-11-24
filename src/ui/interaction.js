@@ -9,7 +9,7 @@ import { limitScale } from "../core/deepzoom.js?v=1.81.0";
 import { cancelSettle, markInteracting } from "../core/state-colors.js?v=1.81.0";
 import { renderAll, requestRender } from "../render/render-layout.js?v=1.81.0";
 import { Platform } from "../core/platform.js?v=1.81.0";
-import { EXACT_FROM, centerForAnchor, crossedUpright, exactValid, moveCenter, normalizeAngle, screenToComplex } from "../core/view-math.js?v=1.81.0";
+import { EXACT_FROM, centerForAnchor, crossedUpright, exactValid, moveCenter, normalizeAngle, screenToComplex, startsNewTouchSequence, dropUnmatchedTouches, onPageHidden } from "../core/view-math.js?v=1.81.0";
 import { cancelTeleport, glideMainTo } from "./teleport.js?v=1.81.0";
 import { colorSheetTapJustClosed } from "./color-sheet.js?v=1.81.0";
 
@@ -64,7 +64,15 @@ export function attachFractalInteraction(canvas, getState, paneName, renderer) {
   canvas.addEventListener("pointerdown", (e) => {
     cancelTeleport();
     canvas.setPointerCapture(e.pointerId);
-    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (startsNewTouchSequence(e) && pointers.size) {
+      // A finger whose pointerup never came: forget it and the gesture state it left, as a full release does.
+      pointers.clear();
+      multiTouch = false;
+      panStart = null;
+      pinchStartDist = null;
+      pinchStartAngle = null;
+    }
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, touch: e.pointerType === "touch" });
     if (pointers.size >= 2) multiTouch = true;
     setActivePane(paneName);
     downPos = { x: e.clientX, y: e.clientY };
@@ -122,8 +130,10 @@ export function attachFractalInteraction(canvas, getState, paneName, renderer) {
   });
 
   canvas.addEventListener("pointermove", (e) => {
-    if (!pointers.has(e.pointerId)) return;
-    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const known = pointers.get(e.pointerId);
+    if (!known) return; // a pointer this handler isn't tracking (forgotten as stale, say) is never added back by a move
+    known.x = e.clientX;
+    known.y = e.clientY;
 
     if (boxZoomActive && els.boxRect.dataset.pane === paneName && !els.boxRect.classList.contains("hidden")) {
       const startClientX = parseFloat(els.boxRect.dataset.startClientX);
@@ -178,6 +188,7 @@ export function attachFractalInteraction(canvas, getState, paneName, renderer) {
   });
 
   function release(e) {
+    if (!pointers.has(e.pointerId)) return; // already gone (forgotten as stale, or a lostpointercapture after the pointerup)
     if (boxZoomActive && els.boxRect.dataset.pane === paneName && !els.boxRect.classList.contains("hidden")) {
       commitBoxZoom(paneName, getState(), renderer, canvas);
       els.boxRect.classList.add("hidden");
@@ -218,6 +229,40 @@ export function attachFractalInteraction(canvas, getState, paneName, renderer) {
   }
   canvas.addEventListener("pointerup", release);
   canvas.addEventListener("pointercancel", release);
+  // The capture ending with no pointerup is a lost finger too (after a normal pointerup the pointer is already
+  // gone, and release ignores it).
+  canvas.addEventListener("lostpointercapture", release);
+
+  // Restart the gesture from the pointers that are left, as the end of release does.
+  function resyncGesture() {
+    pinchStartDist = null;
+    pinchStartAngle = null;
+    panStart = null;
+    if (pointers.size === 0) multiTouch = false;
+    if (pointers.size === 1) {
+      const [p] = pointers.values();
+      const local = toLocal(p.x, p.y);
+      const world = screenToWorldHere(local.x, local.y);
+      panStart = { worldX: world.x, worldY: world.y, localX: local.x, localY: local.y };
+    } else if (pointers.size >= 2) {
+      const pts = [...pointers.values()];
+      pinchStartDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      pinchStartScale = getState().scale;
+      pinchStartAngle = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
+      pinchStartRotation = getState().rotation || 0;
+    }
+  }
+  // The browser's own list of fingers is the backstop: a touchstart (it follows the pointerdown of the same
+  // finger) lists the fingers really down, so a stored touch pointer with no finger is stale. Passive, no preventDefault.
+  canvas.addEventListener("touchstart", (e) => { if (dropUnmatchedTouches(pointers, e.touches)) resyncGesture(); }, { passive: true });
+  // Focus lost, page hidden: a finger may lift unseen, so every pointer is forgotten, the box in progress is
+  // cancelled and nothing is left half-started.
+  onPageHidden(() => {
+    if (!pointers.size) return;
+    pointers.clear();
+    if (els.boxRect.dataset.pane === paneName) els.boxRect.classList.add("hidden");
+    resyncGesture();
+  });
 
   canvas.addEventListener("wheel", (e) => {
     e.preventDefault();

@@ -3,6 +3,7 @@
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
 ## Unreleased
+- Fixed: a finger the system forgot to lift no longer turns the next one-finger drag into a pinch or twist.
 - Fixed: the rating request no longer appears on top of the first-run tour; it waits for the next good moment after the tour.
 
 ## 1.81.0 — 2026-11-22
