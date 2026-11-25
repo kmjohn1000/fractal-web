@@ -287,9 +287,46 @@ function patchPentagon(src, o) {
   return src.replace(re, `export const PENTAGON_RATIO = ${o.pentagonRatio};`);
 }
 
+// fractionalPower (a dive recipe's `fractionalPower: true`): the escape-time shader reads the Multibrot power as a real
+// number, so a path frame's `power` (2..3) can sweep between the Mandelbrot set and Multibrot³. Patched in only for the
+// Short's page (the app's shader keeps its exact 2 and 3 paths: a branch added to the loop changed pixels in ten
+// default states, measured 2026-11-25). z^p uses the principal branch (a cut along the negative real axis), no deep zoom.
+function patchFractionalPower(src) {
+  const sub = (from, to, count = 1) => {
+    const n = src.split(from).length - 1;
+    if (n !== count) throw new Error(`shaders.js patch: ${JSON.stringify(from.slice(0, 60))} found ${n} times, wanted ${count}; the shader has changed`);
+    src = src.split(from).join(to);
+  };
+  sub(`vec2 cMul(vec2 a, vec2 b) {
+  return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
+}
+
+vec2 cDiv(`, `vec2 cMul(vec2 a, vec2 b) {
+  return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
+}
+
+vec2 cPowReal(vec2 z, float e) {
+  float r = length(z);
+  if (r < 1e-30) return vec2(0.0);
+  float th = atan(z.y, z.x) * e;
+  return pow(r, e) * vec2(cos(th), sin(th));
+}
+
+float powerLogBase() {
+  return u_power == 3.0 ? log2(3.0) : (u_power > 2.0 ? log2(u_power) : 1.0);
+}
+
+vec2 cDiv(`);
+  sub("float logBase = u_power > 2.5 ? log2(3.0) : 1.0;", "float logBase = powerLogBase();", 4);
+  sub("vec2 f = u_power > 2.5 ? 3.0 * cMul(z, z) : 2.0 * z;", "vec2 f = u_power == 3.0 ? 3.0 * cMul(z, z) : (u_power == 2.0 ? 2.0 * z : u_power * cPowReal(z, u_power - 1.0));");
+  sub("u_ftype == FTYPE_ESCAPE && u_power < 2.5 && !u_isJulia", "u_ftype == FTYPE_ESCAPE && u_power == 2.0 && !u_isJulia");
+  sub("if (u_power > 2.5) zsq = cMul(zsq, z); // power 3 (Multibrot^3)", "if (u_power == 3.0) zsq = cMul(zsq, z); else if (u_power != 2.0) zsq = cPowReal(z, u_power);");
+  return src;
+}
+
 // A static server for the repo (tests/serve.mjs) and a headless WebKit page on the app.
 // size: css px; dsf: device scale factor. Only the picture: the UI is hidden.
-async function openApp({ width, height, dsf = 1, passCount = 16, url = "index.html", ui = false, replay = null }) {
+async function openApp({ width, height, dsf = 1, passCount = 16, url = "index.html", ui = false, replay = null, fractionalPower = false }) {
   const server = spawn("node", [join(root, "tests/serve.mjs"), String(PORT)], { stdio: "ignore" });
   for (let i = 0; ; i++) {
     if (await fetch(`http://127.0.0.1:${PORT}/index.html`).then((r) => r.ok, () => false)) break;
@@ -301,6 +338,10 @@ async function openApp({ width, height, dsf = 1, passCount = 16, url = "index.ht
   if (replay) await context.route(/\/fern\.js(\?.*)?$/, async (route) => {
     const res = await route.fetch();
     await route.fulfill({ response: res, body: patchReplay(await res.text(), replay) });
+  });
+  if (fractionalPower) await context.route(/\/shaders\.js(\?.*)?$/, async (route) => {
+    const res = await route.fetch();
+    await route.fulfill({ response: res, body: patchFractionalPower(await res.text()) });
   });
   if (replay && replay.pentagonRatio !== undefined) await context.route(/\/ifs\.js(\?.*)?$/, async (route) => {
     const res = await route.fetch();
@@ -350,7 +391,7 @@ async function openApp({ width, height, dsf = 1, passCount = 16, url = "index.ht
 
 async function startPage(width, height, passCount) {
   const dsf = R.dsf ?? 1;
-  const app = await openApp({ width: width / dsf, height: height / dsf, dsf, passCount });
+  const app = await openApp({ width: width / dsf, height: height / dsf, dsf, passCount, fractionalPower: !!R.fractionalPower });
   await app.page.evaluate(`__vt.fractal(${JSON.stringify(R.fractal || "Mandelbrot")}); window.__curFractal = ${JSON.stringify(R.fractal || "Mandelbrot")}; window.dispatchEvent(new Event('resize'))`);
   // The palette joins the page's list (the app is not changed), then is picked as a user pick.
   if (R.palette) await app.page.evaluate(`(() => { COLORMAPS.push(${JSON.stringify(R.palette)}); pickColormap(COLORMAPS.length - 1); })()`);
@@ -373,6 +414,7 @@ async function setFrame(page, v, label) {
       if (k !== colormapIndex) pickColormap(k);
     }
     setColorStyle({ style: v.style, density: v.density, offset: v.offset });
+    if (v.power !== undefined) mainState.power = v.power; // (a recipe with fractionalPower: the Multibrot exponent, 2..3)
     Object.assign(mainState, { cx: v.cx, cy: v.cy, scale: v.scale, rotation: v.rotation || 0, newtonRoots: v.roots || null });
     if (v.maxIter) { mainState.maxIter = v.maxIter; mainState.iterAutoLocked = true; } else { mainState.iterAutoLocked = false; applyAutoIter(); }
     requestRender();
@@ -425,7 +467,7 @@ async function renderDiveFrames() {
       const file = join(framesDir, `${pad(i)}.jpg`);
       if (resume && existsSync(file)) continue;
       const s = path(i / FPS);
-      const base = { cx: s.cx, cy: s.cy, scale: s.scale, offset: s.offset, rotation: s.rotation, fractal: s.fractal, roots: s.roots, maxIter: s.maxIter };
+      const base = { cx: s.cx, cy: s.cy, scale: s.scale, offset: s.offset, rotation: s.rotation, fractal: s.fractal, roots: s.roots, maxIter: s.maxIter, power: s.power };
       const blended = s.layers.slice(1).filter((l) => l.weight > 0.002);
       // The base picture; while a further layer (the Bands look) is still dissolving, a
       // shot of it is blended in over the picture (ImageMagick).
