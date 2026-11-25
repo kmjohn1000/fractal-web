@@ -229,6 +229,22 @@ privacy-label change.
 Help people find beautiful places, and give them more ways to see them.
 Buffalo/Lambda first (quick win; Celtic is done, 1.16.0); distance estimation before zoom-to-minibrot.
 
+- [ ] Multibrot exponent slider: let the user sweep the power in z^p + c from 2
+      (Mandelbrot) to 3 (Multibrot³) in the app (user idea 2026-11-25; not
+      approved, not started). The Multibrot Short used a patched copy of the
+      shader (`patchFractionalPower` in `scripts/make-short.mjs`: `cPowReal`,
+      `powerLogBase()`, the glow step, the cardioid skip gated on `u_power == 2.0`,
+      and the loop's `z^p`). The app's shader reads `u_power` as exactly 2 or 3.
+      Do NOT add that branch to the shared escape-time loop as it stands: it
+      changed pixels in 10 default-identity states (multibrot-open, phoenix,
+      julia-rabbit/phoenix, dual views; checked 2026-11-25), even for fractals
+      that don't use it. Build it as its own shader variant (like `COLOR_VARIANT`,
+      compiled only when the slider is off 2 or 3) so the default programs stay
+      byte-identical. Open: fractional p has a branch cut along the negative real
+      axis (a seam), no deep zoom (the perturbation path assumes 2 or 3; cap the
+      zoom or hide the slider when deep), the Julia and dual views, share-link
+      field, and the picker thumbnail and Learn-more row. Tier 3 verification.
+
 - [ ] Move "Show whole shape" (`resetBtn` and the five vector-mode twins in
       `index.html`) off the toolbar into a "more" menu (user idea 2026-11-18;
       not approved, not started). It is rarely used. No such menu exists yet,
