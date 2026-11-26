@@ -15,7 +15,7 @@ import { HEXAFLAKE_DEFAULT_DEPTH, HEXAFLAKE_MAX_DEPTH, currentName, dragonState,
 import { colormapIndex, colormapIndexNamed, defaultColormapName, setColorStyle, setColormapIndex, setColormapPicked } from "../core/state-colors.js?v=1.81.0";
 import { requestRender, updateLUT } from "../render/render-layout.js?v=1.81.0";
 import { exactFromLink, exactLinkFields, normalizeAngle, setCenter } from "../core/view-math.js?v=1.81.0";
-import { enterDual, exitDual, selectFractal, setCornerRule, setMode } from "./modes.js?v=1.81.0";
+import { enterDual, exitDual, selectFractal, setCornerRule, setMode, syncPowerUi } from "./modes.js?v=1.81.0";
 import { VECTOR_VIEWS, dragonNav, fernNav, fitVectorView, fittedVectorModes } from "./vector-interaction.js?v=1.81.0";
 import { PENROSE_HH_MAX, PENROSE_HH_MIN, penroseCenterFields, penroseClampHalfHeight, penroseParseExact } from "../fractals/penrose.js?v=1.81.0";
 import { cancelTeleport } from "./teleport.js?v=1.81.0";
@@ -54,6 +54,8 @@ export function buildShareHash() {
     // the field (every link made before 1.44.0) opens as it always did.
     if (s.flipY) p.set("fl", "1");
     put("i", s.maxIter); if (s.iterAutoLocked) p.set("il", "1");
+    // The Multibrot's exponent, only when it isn't the fractal's own (3); a link without it opens at 3, as before.
+    if (FRACTAL_CONFIGS[currentName].powerSlider && s.power !== FRACTAL_CONFIGS[currentName].power) put("pw", s.power);
     put("cm", COLORMAPS[colormapIndex].name);
     // The color style, only when it isn't the default coloring, so links made
     // without one are unchanged.
@@ -126,6 +128,14 @@ export function parseStyleFields(p) {
   };
 }
 
+// The Multibrot exponent of a link (pw): counts only for a fractal with the power slider and only inside 2..6, rounded
+// to hundredths like the slider; anything else is the fractal's own power (a link without pw opens as it always did).
+export function parsePower(p, config) {
+  const raw = p.get("pw");
+  const v = raw === null || raw === "" ? NaN : Number(raw);
+  return config.powerSlider && Number.isFinite(v) && v >= 2 && v <= 6 ? Math.round(v * 100) / 100 : config.power;
+}
+
 // Parses a share hash into a plain state object, or null if it isn't a
 // valid v1 link -- any missing/out-of-range field rejects the whole link,
 // so a malformed one falls back to the normal default view.
@@ -162,6 +172,8 @@ export function parseShareHash(hash) {
       const st = { mode: m, name, ...view, maxIter: int("i", 50, 2000), iterAutoLocked: p.get("il") === "1",
         // fl=1 only counts on a fractal that has the flipped picture; lenient, like the style fields.
         flipY: !!FRACTAL_CONFIGS[name].flipY && p.get("fl") === "1",
+        // pw counts only on a fractal with the power slider, and only 2..6; lenient: else the fractal's own power.
+        power: parsePower(p, FRACTAL_CONFIGS[name]),
         cm: cmIndex(), dual: false, color: parseStyleFields(p),
         // The exact center of a deep view, when the link has a valid one (see exactFromLink); else null.
         exact: exactFromLink(p, "ex", "ey", view.cx, view.cy, view.scale) };
@@ -233,6 +245,8 @@ export function applyShareState(st) {
     setColorStyle({ style: st.color.style, density: st.color.density, offset: st.color.offset });
     if (dualActive) exitDual();
     selectFractal(st.name, { fresh: true });
+    mainState.power = st.power; // (the Multibrot slider's exponent; before the scale floor below, which depends on it)
+    syncPowerUi();
     // (the floor of a fractal whose zoom limit follows its center, Spider's, is worked out at the link's center,
     // which is set just below, not at the opening view's)
     Object.assign(mainState, { scale: limitScale({ ...mainState, cx: st.cx, cy: st.cy }, st.scale), rotation: st.rotation, flipY: st.flipY,

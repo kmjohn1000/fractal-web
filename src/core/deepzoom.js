@@ -18,9 +18,18 @@ export const ESCAPE_RADIUS_SQ = 65536.0;
 // perturbStep in shaders.js for the per-type delta formulas. Covers both
 // parameter-space and Julia mode.
 export function perturbationEligibleType(state) {
+  if (isFractionalPower(state)) return false;
   return state.ftype === FTYPE.ESCAPE || state.ftype === FTYPE.TRICORN || state.ftype === FTYPE.SHIP ||
     state.ftype === FTYPE.CELTIC;
 }
+
+// The Multibrot slider's powers between and above the whole ones the shaders know (2 and 3): drawn by a program with
+// a real-number power (FRACTIONAL_POWER in shaders.js, renderer.js), in float32 only. The perturbation path steps the
+// orbit with 2 or 3, so these have no deep zoom: FRACTIONAL_POWER_MIN_SCALE stops the zoom where float32 gives out.
+export function isFractionalPower(state) {
+  return state.ftype === FTYPE.ESCAPE && state.power > 2 && state.power !== 3;
+}
+export const FRACTIONAL_POWER_MIN_SCALE = 5e-5;
 
 // Newton's deep zoom is fixed point instead (NEWTON_DEEP_FRAG_SRC in
 // shaders.js), and only where float32 actually fails: once the view is
@@ -135,6 +144,7 @@ export const ulp64 = (r) => (r > 0 ? 2 ** (Math.floor(Math.log2(r)) - 52) : 0);
 export const ulp32 = (r) => (r > 0 ? 2 ** (Math.floor(Math.log2(r)) - 23) : 0);
 export function minScaleFor(state) {
   if (state.ftype === FTYPE.NOVA) return NOVA_MIN_SCALE;
+  if (isFractionalPower(state)) return FRACTIONAL_POWER_MIN_SCALE;
   if (state.ftype === FTYPE.SPIDER) {
     return Math.max(SPIDER_MIN_SCALE, FLOOR_STEPS * ulp32(Math.max(Math.abs(state.cx), Math.abs(state.cy))) * FLOOR_PIXELS / 2);
   }

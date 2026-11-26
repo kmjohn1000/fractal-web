@@ -8,7 +8,7 @@ import { Diag } from "../core/diag.js?v=1.81.0";
 import { FRAG_SRC, NEWTON_DEEP_FRAG_SRC, PHOENIX_DEEP_FRAG_SRC, PREVIEW_FRAG_SRC, VERT_SRC, VERT_SRC_300 } from "./shaders.js?v=1.81.0";
 import { apolloCapColor, apolloFrame } from "../fractals/apollonian.js?v=1.81.0";
 import { DIGIT_MAX_CELL_LEVEL, digitBase, digitCellFrame, digitCellLevel, digitColorCycle, digitFractalDepth, digitSubPixelColor, isDigitFractal } from "../fractals/digit-fractals.js?v=1.81.0";
-import { DEEP_ZOOM_THRESHOLD, FIXED_THIRD, PHOENIX_DEEP_SAMPLES, PHOENIX_EXACT_CAP, SAMPLE_OFFSETS, chooseReference, chooseReferenceExact, chooseSineLReference, computeReferenceOrbit, computeReferenceOrbitExact, exactReferencePoint, exactRender, exactRenderEligible, fixedLimbs, newtonDeepEligible, newtonOrbitF64, perturbationEligibleType, phoenixDeepEligible, phoenixEscapeF64, phoenixReference, sineLDeepEligible, sineLReferenceOrbit } from "../core/deepzoom.js?v=1.81.0";
+import { DEEP_ZOOM_THRESHOLD, FIXED_THIRD, PHOENIX_DEEP_SAMPLES, PHOENIX_EXACT_CAP, SAMPLE_OFFSETS, chooseReference, chooseReferenceExact, chooseSineLReference, computeReferenceOrbit, computeReferenceOrbitExact, exactReferencePoint, exactRender, exactRenderEligible, fixedLimbs, newtonDeepEligible, isFractionalPower, newtonOrbitF64, perturbationEligibleType, phoenixDeepEligible, phoenixEscapeF64, phoenixReference, sineLDeepEligible, sineLReferenceOrbit } from "../core/deepzoom.js?v=1.81.0";
 import { EXACT_FROM, EXACT_ONE, exactCenter, exactFracFor, exactValid, toExact } from "../core/view-math.js?v=1.81.0";
 import { colorStyle, colorStyleFor, styleDrawn, trapRangeFor } from "./color-styles.js?v=1.81.0";
 
@@ -62,6 +62,12 @@ export function createFractalRenderer(canvas, host) {
   // code stays exactly what it was. The others (see colorStyleFor) compile
   // the first time a style asks for them.
   const programs = new Map();
+  // A program key is the color variant, plus FRACTIONAL_KEY when the escape-time power is neither 2 nor 3 (the Multibrot
+  // slider's in-between values): that program is compiled with FRACTIONAL_POWER, which swaps in a real-number power. The
+  // programs for powers 2 and 3 are compiled exactly as before (every fractional line sits in an #ifdef with the old line in
+  // its #else), so a default view draws the same pixels.
+  const FRACTIONAL_KEY = 10;
+  const variantSource = (key) => `#define COLOR_VARIANT ${key % FRACTIONAL_KEY}\n${key >= FRACTIONAL_KEY ? "#define FRACTIONAL_POWER\n" : ""}${FRAG_SRC}`;
   const UNIFORMS = ["resolution", "center", "scale", "rotCos", "rotSin", "flipY", "maxIter", "ftype", "power", "isJulia",
     "juliaC", "newtonRoots", "newtonCustom", "phoenixP", "lut", "style", "density", "offset", "pixelSize", "trapCenter", "digitDepth", "digitLevel",
     "digitCenter", "digitScale", "cellHole", "digitCycle", "subPixelColor", "apoW0", "apoK", "apoL", "apoFlip", "apoRescale",
@@ -84,7 +90,7 @@ export function createFractalRenderer(canvas, host) {
         Diag.link(`${canvas.id} escape-time variant ${variant}, finishing a warm-up`, performance.now() - t0);
         entry = fractalEntry(variant, inFlight);
       } else {
-        entry = fractalEntry(variant, link(`#define COLOR_VARIANT ${variant}\n${FRAG_SRC}`, VERT_SRC, `escape-time variant ${variant}`));
+        entry = fractalEntry(variant, link(variantSource(variant), VERT_SRC, `escape-time variant ${variant}`));
       }
     }
     return entry;
@@ -104,7 +110,7 @@ export function createFractalRenderer(canvas, host) {
     if (!p) {
       const t0 = performance.now();
       p = gl.createProgram();
-      for (const [type, src] of [[gl.VERTEX_SHADER, VERT_SRC], [gl.FRAGMENT_SHADER, `#define COLOR_VARIANT ${variant}\n${FRAG_SRC}`]]) {
+      for (const [type, src] of [[gl.VERTEX_SHADER, VERT_SRC], [gl.FRAGMENT_SHADER, variantSource(variant)]]) {
         const s = gl.createShader(type);
         gl.shaderSource(s, src);
         gl.compileShader(s);
@@ -645,7 +651,7 @@ export function createFractalRenderer(canvas, host) {
       return "perturbation + fixed point";
     }
     const cs = colorStyleFor(state);
-    const { prog, u } = fractalProgram(cs.variant);
+    const { prog, u } = fractalProgram(cs.variant + (isFractionalPower(state) ? FRACTIONAL_KEY : 0));
     gl.useProgram(prog);
     const jitter = SAMPLE_OFFSETS[sampleIndex];
     gl.uniform2f(u.jitter, jitter[0], jitter[1]);

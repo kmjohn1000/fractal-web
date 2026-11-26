@@ -4,13 +4,14 @@
 // An ES module: every top-level declaration is exported (test-hooks.js and app.js rely on it) and
 // the other converted files' names are imported, with the same ?v= query everywhere (npm run stamp).
 import { Platform } from "../core/platform.js?v=1.81.0";
-import { FRACTAL_CONFIGS } from "../core/configs.js?v=1.81.0";
+import { FRACTAL_CONFIGS, powerViewBounds } from "../core/configs.js?v=1.81.0";
+import { viewFromBounds } from "../fractals/fractal-defs.js?v=1.81.0";
 import { limitScale } from "../core/deepzoom.js?v=1.81.0";
-import { activePane, currentName, dualActive, els, juliaState, mainState, mode, paneRenderer, paneState, pushHistory, setActivePane, shownPane } from "../core/state.js?v=1.81.0";
+import { activePane, currentName, dualActive, els, juliaState, mainCanvasAspect, mainState, mode, paneRenderer, paneState, pushHistory, setActivePane, shownPane } from "../core/state.js?v=1.81.0";
 import { markInteracting, popHistory } from "../core/state-colors.js?v=1.81.0";
 import { renderAll, requestRender } from "../render/render-layout.js?v=1.81.0";
 import { moveCenter, normalizeAngle, screenToComplex } from "../core/view-math.js?v=1.81.0";
-import { closeDual, enterDual, openPresetInDual } from "./modes.js?v=1.81.0";
+import { closeDual, enterDual, openPresetInDual, syncPowerUi } from "./modes.js?v=1.81.0";
 import { KEY_PAN_FRACTION, keyAction } from "./interaction.js?v=1.81.0";
 import { activeVectorTarget } from "./vector-interaction.js?v=1.81.0";
 import { cancelTeleport, teleportGeneration } from "./teleport.js?v=1.81.0";
@@ -248,7 +249,7 @@ els.welcomeClose.addEventListener("click", () => {
 // scripts set from code (URL restore, fractal switches, Koch's depth animation,
 // a curve's max depth changing) goes through the value/max setters, which
 // are wrapped here once per slider instead of patched at every call site.
-export const SLIDERS = [els.iterSlider, els.kochDepthSlider, els.treeDepthSlider, els.hexaflakeDepthSlider, els.dragonDepthSlider, els.fernPointsSlider];
+export const SLIDERS = [els.iterSlider, els.powerSlider,els.kochDepthSlider, els.treeDepthSlider, els.hexaflakeDepthSlider, els.dragonDepthSlider, els.fernPointsSlider];
 
 export function syncSliderFill(slider) {
   const min = parseFloat(slider.min), max = parseFloat(slider.max);
@@ -281,6 +282,31 @@ els.iterSlider.addEventListener("input", () => {
   requestRender();
 });
 
+// The Multibrot exponent (z^p + c): both panes, the Julia set of the same power. A value within 0.04 of a whole number
+// snaps to it, so 3 (and 2, 4, 5, 6) can be landed on exactly. Powers other than 2 and 3 have no deep zoom
+// (isFractionalPower), so a view already deeper than their floor is brought up to it.
+els.powerSlider.addEventListener("input", () => {
+  const raw = parseFloat(els.powerSlider.value);
+  const whole = Math.round(raw);
+  const p = Math.abs(raw - whole) < 0.04 ? whole : Math.round(raw * 100) / 100;
+  // The view follows the exponent (the set changes size and turns) while it is still the one the last exponent opened
+  // with, untouched; one that has been panned, zoomed or turned stays where it is.
+  const config = FRACTAL_CONFIGS[currentName];
+  const aspect = mainCanvasAspect();
+  const old = viewFromBounds(powerViewBounds(config, mainState.power), aspect);
+  const untouched = !mainState.rotation && [["cx", old.cx], ["cy", old.cy], ["scale", old.scale]].every(([k, v]) => Math.abs(mainState[k] - v) <= 1e-6 * Math.max(1, Math.abs(v)));
+  for (const st of [mainState, juliaState]) {
+    if (!st) continue;
+    st.power = p;
+  }
+  if (untouched) {
+    const fitted = viewFromBounds(powerViewBounds(config, p), aspect);
+    Object.assign(mainState, fitted, { baseScale: fitted.scale });
+  }
+  for (const st of [mainState, juliaState]) if (st) st.scale = limitScale(st, st.scale);
+  syncPowerUi();
+  requestRender();
+});
 
 els.dualBtn.addEventListener("click", () => {
   if (dualActive) closeDual();

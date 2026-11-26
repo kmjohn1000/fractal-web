@@ -15,7 +15,7 @@ import { TELEPORT_DESTINATIONS } from "../fractals/places.js?v=1.81.0";
 import { COLOR_STYLES, ESCAPE_TIME_TYPES, colorStyle, styleDrawn } from "../render/color-styles.js?v=1.81.0";
 import { currentName, dragonState, dragonView, dualActive, els, fernState, fernView, hexaflakeState, hexaflakeView, isInteracting, kochState, kochView, mainRenderer, mainState, mode, shownGeometry, toolbarGrow, treeState, treeView } from "../core/state.js?v=1.81.0";
 import { colormapIndex } from "../core/state-colors.js?v=1.81.0";
-import { dualPresetName } from "./modes.js?v=1.81.0";
+import { dualPresetName, powerText } from "./modes.js?v=1.81.0";
 import { teleportLandingIndex } from "./teleport.js?v=1.81.0";
 import { hudVisible } from "./compass-ui.js?v=1.81.0";
 import { COLOR_LOOKS, bandsText, lookPalette, shiftText } from "./color-sheet.js?v=1.81.0";
@@ -218,7 +218,9 @@ export function updateHud(deepPath) {
   // The centre and depth read the same whether or not the picture has grown under a faded toolbar.
   const shown = shownGeometry(s);
   const f = formatHudCoords(shown.cx, shown.cy, shown.scale);
-  const label = fractalLabel(currentName);
+  // The Multibrot slider's exponent names the set ("Multibrot, power 2.35"); at the fractal's own power, its own name.
+  const label = FRACTAL_CONFIGS[currentName].powerSlider && s.power !== FRACTAL_CONFIGS[currentName].power
+    ? `Multibrot, power ${powerText(s.power)}` : fractalLabel(currentName);
   const deep = zoomPhrase(s.baseScale, shown.scale);
   const styleHud = colorStyleHud(s);
   setHud(place || label, [

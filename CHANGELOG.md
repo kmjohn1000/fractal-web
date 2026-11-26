@@ -3,6 +3,7 @@
 Newest version at the top. See CLAUDE.md for when and how to bump.
 
 ## Unreleased
+- Added: a power slider on Multibrot³ (2 to 6) that changes the exponent in z^p + c: 2 is the Mandelbrot set, 3 the cubic one, and 4, 5 and 6 grow a lobe each; sweeping between them unfolds one into the next. It shares the row with the detail slider, snaps to whole numbers, and the view re-fits as it moves until you pan or zoom. The exponent is in share links and the info card, and the Julia pane takes it too. Exponents other than 2 and 3 zoom to about 5e-5 (no deep zoom yet), and show a faint seam where the complex power wraps.
 - Fixed: a finger the system forgot to lift no longer turns the next one-finger drag into a pinch or twist.
 - Fixed: the rating request no longer appears on top of the first-run tour; it waits for the next good moment after the tour.
 

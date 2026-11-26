@@ -48,7 +48,7 @@ export const FRACTAL_CONFIGS = {
   "Burn. Ship":   { label: "Burning Ship", ftype: FTYPE.SHIP,    power: 2, juliaC: null,               view: [-2.15, 1.25, -1.85, 0.65], dual: true,  category: "zoom", flipY: true, defaultColormap: "Fire", wiki: "https://en.wikipedia.org/wiki/Burning_Ship_fractal" },
   "Tricorn":      { label: "Tricorn", ftype: FTYPE.TRICORN, power: 2, juliaC: null,               view: [-2.1,  1.15, -1.7,  1.7],  dual: true,  category: "zoom", defaultColormap: "Classic", wiki: "https://en.wikipedia.org/wiki/Tricorn_(mathematics)" },
   "Celtic":       { label: "Celtic Mandelbrot", ftype: FTYPE.CELTIC, power: 2, juliaC: null,     view: [-2.0,  0.45, -1.85, 1.85], dual: true,  category: "zoom" },
-  "Multibrot³": { label: "Multibrot³", ftype: FTYPE.ESCAPE, power: 3, juliaC: null,             view: [-0.82, 0.82, -1.45, 1.45], dual: true,  category: "zoom", defaultColormap: "Viridis", wiki: "https://en.wikipedia.org/wiki/Multibrot_set" },
+  "Multibrot³": { label: "Multibrot³", ftype: FTYPE.ESCAPE, power: 3, powerSlider: true, juliaC: null,            view: [-0.82, 0.82, -1.45, 1.45], dual: true,  category: "zoom", defaultColormap: "Viridis", wiki: "https://en.wikipedia.org/wiki/Multibrot_set" },
   // Needs the previous iterate as state, so no perturbation (deep zoom) path
   // -- see perturbationEligibleType.
   "Phoenix":      { label: "Phoenix", ftype: FTYPE.PHOENIX, power: 2, juliaC: null,               view: [-2.0, 0.65, -0.78, 0.78], dual: true,  category: "zoom", defaultColormap: "Hot" },
@@ -98,6 +98,15 @@ export const FRACTAL_NAMES = Object.keys(FRACTAL_CONFIGS);
 export function fractalLabel(name) {
   const c = FRACTAL_CONFIGS[name];
   return c.group === "julia" ? `Julia set: ${c.label}` : c.label;
+}
+// The opening view of the Multibrot at power p (the power slider, 2..6), as [xmin, xmax, ymin, ymax]: the Mandelbrot's
+// own view at 2, the config's view (Multibrot³) at 3, a square round the set past 3 (the set lies inside |c| <= 2^(1/(p-1)),
+// and its lobes turn as p changes, so it needs room on every side), blended in between so a sweep glides.
+export function powerViewBounds(config, p) {
+  const lerp = (a, b, u) => a.map((v, i) => v + (b[i] - v) * u);
+  if (p <= 3) return lerp(FRACTAL_CONFIGS["Mandelbrot"].view, config.view, Math.max(0, p - 2));
+  const R = 1.06 * Math.pow(2, 1 / (p - 1));
+  return lerp(config.view, [-R, R, -R, R], Math.min(1, p - 3));
 }
 // File-name-safe id, shared by export file names and picker thumbnails
 // (icons/thumbs/<slug>.webp, rendered by scripts/render_thumbs.mjs).

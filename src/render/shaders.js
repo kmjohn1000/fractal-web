@@ -209,6 +209,18 @@ vec2 cMul(vec2 a, vec2 b) {
   return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
 }
 
+#ifdef FRACTIONAL_POWER
+// z^e for a real exponent e (principal branch: the cut runs along the negative real axis, a faint seam in the picture).
+// Only the program compiled with FRACTIONAL_POWER has it: the escape-time power is then a real number above 2 (the
+// Multibrot slider), never 2 or 3, which keep their exact multiplies in the other programs.
+vec2 cPowReal(vec2 z, float e) {
+  float r = length(z);
+  if (r < 1e-30) return vec2(0.0);
+  float th = atan(z.y, z.x) * e;
+  return pow(r, e) * vec2(cos(th), sin(th));
+}
+#endif
+
 vec2 cDiv(vec2 a, vec2 b) {
   float d = dot(b, b);
   return vec2(a.x * b.x + a.y * b.y, a.y * b.x - a.x * b.y) / max(d, 1e-20);
@@ -242,7 +254,11 @@ const float ESCAPE_RADIUS_SQ = 65536.0;
 // the bailout, which makes the formula negative, and lutColor's fract() would
 // wrap that to the TOP of the colormap (inferno's pale yellow in the corners).
 vec3 escapeColor(int iter, vec2 z) {
+#ifdef FRACTIONAL_POWER
+  float logBase = log2(u_power);
+#else
   float logBase = u_power > 2.5 ? log2(3.0) : 1.0;
+#endif
   if (u_style == STYLE_BANDS) return styleColor(floor(float(iter) + 1.0) * 0.025);
   float n = max(float(iter) + 1.0 - log2(log2(sqrt(dot(z, z)))) / logBase, 0.0);
   return styleColor(n * 0.025);
@@ -275,7 +291,11 @@ vec4 glowStep(vec4 D, vec2 z) {
   float add = u_isJulia ? 0.0 : 1.0;
   vec4 n;
   if (u_ftype == FTYPE_ESCAPE) {
+#ifdef FRACTIONAL_POWER
+    vec2 f = u_power * cPowReal(z, u_power - 1.0);
+#else
     vec2 f = u_power > 2.5 ? 3.0 * cMul(z, z) : 2.0 * z;
+#endif
     n = vec4(cMul(f, D.xy) + vec2(add, 0.0), 0.0, 0.0);
   } else {
     // f's Jacobian (p q / r s) at z, then D = J D + add I.
@@ -336,7 +356,11 @@ vec3 reliefColor(int iter, vec2 z, vec4 D) {
   float len = length(g);
   vec2 u = len > 1e-30 ? g / len : vec2(0.0);
   float shade = (dot(u, RELIEF_LIGHT) + RELIEF_HEIGHT) / (1.0 + RELIEF_HEIGHT);
+#ifdef FRACTIONAL_POWER
+  float logBase = log2(u_power);
+#else
   float logBase = u_power > 2.5 ? log2(3.0) : 1.0;
+#endif
   float n = max(float(iter) + 1.0 - log2(log2(sqrt(dot(z, z)))) / logBase, 0.0);
   return styleColor(n * 0.025) * shade;
 }
@@ -428,7 +452,11 @@ vec3 paperColor(int iter, vec2 z, vec4 D) {
   float len = length(g);
   vec2 u = len > 1e-30 ? g / len : vec2(0.0);
   float r = sqrt(dot(z, z));
+#ifdef FRACTIONAL_POWER
+  float logBase = log2(u_power);
+#else
   float logBase = u_power > 2.5 ? log2(3.0) : 1.0;
+#endif
   float n = max(float(iter) + 1.0 - log2(log2(r)) / logBase, 0.0);
   // Far out the count is clamped at 0 (as in escapeColor): one flat bottom layer.
   if (n <= 0.0) return paperLayer(0.0, 0.0);
@@ -480,7 +508,11 @@ vec4 stripeStep(vec4 S, vec2 z) {
 }
 
 vec3 stripeColor(int iter, vec2 z, vec4 S) {
+#ifdef FRACTIONAL_POWER
+  float logBase = log2(u_power);
+#else
   float logBase = u_power > 2.5 ? log2(3.0) : 1.0;
+#endif
   float n = max(float(iter) + 1.0 - log2(log2(sqrt(dot(z, z)))) / logBase, 0.0);
   float A = S.w + (S.z - S.w) * (n - floor(n));
   return styleColor(clamp(0.5 + (A - 0.5) * STRIPE_GAIN, 0.0, 1.0));
@@ -1010,7 +1042,11 @@ vec3 renderEscapeFast(vec2 p) {
   // (Halo needs the interior's orbit; Paper cut colors the interior itself.)
   if (u_style != STYLE_HALO)
 #endif
+#ifdef FRACTIONAL_POWER
+  if (false) {   // (the cardioid and period-2 shortcut is the quadratic map's)
+#else
   if (u_ftype == FTYPE_ESCAPE && u_power < 2.5 && !u_isJulia) {
+#endif
     float x = c.x, y = c.y;
     float q = (x - 0.25) * (x - 0.25) + y * y;
     if (q * (q + x - 0.25) < 0.25 * y * y || (x + 1.0) * (x + 1.0) + y * y < 0.0625) {
@@ -1055,8 +1091,12 @@ vec3 renderEscapeFast(vec2 p) {
       zsq = cMul(z, z);
       zsq.x = abs(zsq.x);
     } else {
+#ifdef FRACTIONAL_POWER
+      zsq = cPowReal(z, u_power); // a real power above 2 (the Multibrot slider)
+#else
       zsq = cMul(z, z);
       if (u_power > 2.5) zsq = cMul(zsq, z); // power 3 (Multibrot^3)
+#endif
     }
     vec2 zNext = zsq + c;
     // Branch on a uniform, so every pixel takes the same side: the extra

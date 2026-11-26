@@ -677,6 +677,12 @@
     color: rgba(235,235,245,0.6);
   }
 
+  /* With the power slider shown (Multibrot), "detail" and "power" share the one slider row, half each, so the toolbar
+     keeps its height and the picture its size. */
+  #fractalControls.hasPower label.field { flex: 1 1 calc(50% - 6px); min-width: 0; }
+  #fractalControls.hasPower label.field input[type=range] { min-width: 0; }
+  #powerField .val { min-width: 2.4rem; text-align: right; font: 0.75rem ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; }
+
   button {
     font: 0.8125rem -apple-system, system-ui, sans-serif; padding: 10px 14px;
     min-height: 44px; min-width: 44px; box-sizing: border-box;
@@ -933,6 +939,8 @@
   </div>
   <div id="fractalControls" class="control-row">
     <label id="iterField" class="field">detail <input id="iterSlider" type="range" min="50" max="2000" step="10" value="300"></label>
+    <!-- The Multibrot's exponent (z^power + c), 2 to 6; shown only for a fractal whose config has powerSlider (modes.js). -->
+    <label id="powerField" class="field hidden">power <input id="powerSlider" type="range" min="2" max="6" step="0.01" value="3" aria-label="Exponent, 2 to 6"><output id="powerVal" class="val" aria-hidden="true">3</output></label>
     <button class="iconBtn fractalMenuBtn" aria-haspopup="true" aria-label="Choose fractal type" title="Choose fractal type">
       <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
         <!-- A Sierpinski triangle, one step: three corner triangles round the half-size hole. -->

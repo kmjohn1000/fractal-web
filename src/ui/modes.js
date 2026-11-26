@@ -30,6 +30,17 @@ import { applyCornerRule, dealCornerRule } from "../fractals/corner-rules.js?v=1
 // Reset and share links want a clean slate and pass { fresh: true }.
 export const fractalMemory = new Map();
 
+// The Multibrot exponent as text: "3" at a whole number, else two decimals ("2.35").
+export const powerText = (p) => (Number.isInteger(p) ? String(p) : p.toFixed(2));
+// Shows the power slider (only for a fractal whose config has powerSlider) at the main pane's exponent.
+export function syncPowerUi() {
+  const has = !!FRACTAL_CONFIGS[currentName].powerSlider;
+  els.powerField.classList.toggle("hidden", !has);
+  els.powerField.parentElement.classList.toggle("hasPower", has && !els.iterField.classList.contains("hidden"));
+  els.powerSlider.value = mainState.power;
+  els.powerVal.textContent = powerText(mainState.power);
+}
+
 export function selectFractal(name, { fresh = false } = {}) {
   cancelTeleport();
   restoreToolbarFlow(); // the picture goes back to the shown-toolbar size before the view is worked out
@@ -69,6 +80,7 @@ export function selectFractal(name, { fresh = false } = {}) {
   const usesFixedDepth = ignoresMaxIter(config.ftype);
   els.iterSlider.disabled = usesFixedDepth;
   els.iterField.classList.toggle("hidden", usesFixedDepth);
+  syncPowerUi();
   els.juliaCanvas.classList.toggle("hidden", !dualActive);
   if (!dualActive) els.crosshair.classList.add("hidden");
   layoutCanvasArea();
