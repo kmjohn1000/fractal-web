@@ -1,6 +1,9 @@
 .DS_Store
 *.log
 .vscode/
+*.code-workspace
+# Xcode Cloud config stub (not used)
+ios/App/App.xcodeproj/xcshareddata/xcodecloud/
 node_modules/
 # The Python tools' environment (see requirements.txt): local only.
 .venv/
@@ -39,5 +42,6 @@ tests/baselines/
 fastlane/metadata/
 fastlane/screenshots/
 fastlane/report.xml
+fastlane/Preview.html
 fastlane/README.md
 fastlane/.env*
